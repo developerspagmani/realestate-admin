@@ -320,7 +320,7 @@ export const bookingService = {
 // Properties service
 export const propertyService = {
   getProperties: async (token: string, params?: { page?: string; limit?: string; search?: string; tenantId?: string; ownerId?: string; industryType?: number | string }) => {
-    return await makeApiCall(propertyEndpoints.getAll(params), {
+    return await makeApiCall(adminEndpoints.getProperties(params), {
       headers: { 'Authorization': `Bearer ${token}` },
     });
   },
