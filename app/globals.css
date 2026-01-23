@@ -1,0 +1,77 @@
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --bs-primary: #000;
+  --bs-primary-rgb: 0, 0, 0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Soft background utilities for premium UI */
+.bg-primary-soft {
+  background-color: rgba(13, 110, 253, 0.1) !important;
+  color: #0d6efd !important;
+}
+
+.bg-success-soft {
+  background-color: rgba(25, 135, 84, 0.1) !important;
+  color: #198754 !important;
+}
+
+.bg-danger-soft {
+  background-color: rgba(220, 53, 69, 0.1) !important;
+  color: #dc3545 !important;
+}
+
+.bg-warning-soft {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+  color: #997404 !important;
+}
+
+.bg-info-soft {
+  background-color: rgba(13, 202, 240, 0.1) !important;
+  color: #087990 !important;
+}
+
+.bg-secondary-soft {
+  background-color: rgba(108, 117, 125, 0.1) !important;
+  color: #495057 !important;
+}
+
+.extra-small {
+  font-size: 0.75rem;
+}
+
+.uppercase-xs {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #6c757d;
+}
+
+.hvr-float {
+  transition: transform 0.2s ease-out;
+}
+
+.hvr-float:hover {
+  transform: translateY(-5px);
+}
