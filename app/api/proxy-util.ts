@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_API_URL || 'http://localhost:3001/api';
+const BACKEND_URL = process.env.BACKEND_API_URL || 'https://realestate-api-seven.vercel.app/api';
 
 export async function proxyRequest(request: NextRequest, endpoint: string) {
     const url = `${BACKEND_URL}${endpoint}`;
