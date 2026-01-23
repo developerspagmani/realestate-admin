@@ -34,7 +34,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
 }) => {
     const images = [
         ...(selectedProperty.mainImage ? [selectedProperty.mainImage] : []),
-        ...(selectedProperty.gallery || [])
+        ...(selectedProperty.gallery || []).filter((g: any) => g.id !== selectedProperty.mainImage?.id && g.url !== selectedProperty.mainImage?.url)
     ];
 
     return (

@@ -16,7 +16,16 @@ interface GallerySliderProps {
     setCurrentIndex?: (i: number) => void;
 }
 
-const GallerySlider: React.FC<GallerySliderProps> = ({ images }) => {
+const GallerySlider: React.FC<GallerySliderProps> = ({ images, currentIndex = 0, setCurrentIndex }) => {
+    const [swiper, setSwiper] = React.useState<any>(null);
+
+    // Sync swiper with currentIndex prop if external control is needed
+    React.useEffect(() => {
+        if (swiper && currentIndex !== swiper.activeIndex) {
+            swiper.slideTo(currentIndex);
+        }
+    }, [currentIndex, swiper]);
+
     if (!images || images.length === 0) return (
         <div className="gallery-container d-flex align-items-center justify-content-center bg-light rounded-4" style={{ height: '400px' }}>
             <i className="bi bi-image text-muted opacity-25" style={{ fontSize: '4rem' }}></i>
@@ -35,15 +44,20 @@ const GallerySlider: React.FC<GallerySliderProps> = ({ images }) => {
                 loop={images.length > 1}
                 className="mySwiper h-100"
                 style={{ height: '450px' }}
+                onSwiper={setSwiper}
+                onSlideChange={(s) => setCurrentIndex?.(s.activeIndex)}
+                initialSlide={currentIndex}
             >
                 {images.map((img: any, idx: number) => (
-                    <SwiperSlide key={img.id || idx}>
-                        <img
-                            src={img.url}
-                            className="w-100 h-100 object-fit-cover shadow-inner"
-                            alt={`Slide ${idx + 1}`}
-                        />
-                    </SwiperSlide>
+                    img && img.url ? (
+                        <SwiperSlide key={img.id || idx}>
+                            <img
+                                src={img.url}
+                                className="w-100 h-100 object-fit-cover shadow-inner"
+                                alt={`Slide ${idx + 1}`}
+                            />
+                        </SwiperSlide>
+                    ) : null
                 ))}
             </Swiper>
 

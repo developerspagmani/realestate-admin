@@ -30,7 +30,7 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
 }) => {
     const uImages = [
         ...(selectedUnit.mainImage ? [selectedUnit.mainImage] : []),
-        ...(selectedUnit.gallery || [])
+        ...(selectedUnit.gallery || []).filter((g: any) => g.id !== selectedUnit.mainImage?.id && g.url !== selectedUnit.mainImage?.url)
     ];
 
     return (
