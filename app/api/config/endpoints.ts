@@ -132,10 +132,10 @@ export const adminEndpoints = {
     return `/users?${buildQueryString(allParams)}`;
   },
   getProperties: (params?: Record<string, any>) =>
-    params ? `/realestate-admin/properties?${buildQueryString(params)}` : '/realestate-admin/properties',
+    params ? `/properties?${buildQueryString(params)}` : '/properties',
   getWorkspaces: (params?: Record<string, any>) =>
-    params ? `/realestate-admin/workspace?${buildQueryString(params)}` : '/realestate-admin/workspace',
-  createWorkspace: () => '/realestate-admin/workspace',
+    params ? `/workspaces?${buildQueryString(params)}` : '/workspaces',
+  createWorkspace: () => '/workspaces',
   getAnalytics: (params?: Record<string, any>) =>
     params ? `/realestate-admin/analytics?${buildQueryString(params)}` : '/realestate-admin/analytics',
 };

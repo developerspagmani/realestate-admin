@@ -320,7 +320,7 @@ export const bookingService = {
 // Properties service
 export const propertyService = {
   getProperties: async (token: string, params?: { page?: string; limit?: string; search?: string; tenantId?: string; ownerId?: string; industryType?: number | string }) => {
-    return await makeApiCall(adminEndpoints.getProperties(params), {
+    return await makeApiCall(propertyEndpoints.getAll(params), {
       headers: { 'Authorization': `Bearer ${token}` },
     });
   },
@@ -453,7 +453,7 @@ export const workspaceService = {
   },
 
   createWorkspace: async (token: string, workspaceData: any) => {
-    return await makeApiCall('/realestate-admin/workspace', {
+    return await makeApiCall(adminEndpoints.createWorkspace(), {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(workspaceData),
