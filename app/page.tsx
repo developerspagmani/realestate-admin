@@ -122,8 +122,8 @@ export default function Home() {
         <div className="position-absolute top-0 start-0 w-100 h-100 bg-grid opacity-10"></div>
         <div className="container position-relative z-1">
           <div className="reveal">
-            <h1 className="hero-title fw-300 mb-2 tracking-tight">Intelligence for Assets.</h1>
-            <h1 className="hero-title fw-300 mb-4 tracking-tight text-stroke">The Era of Autonomous Estate.</h1>
+            <h1 className="hero-title fw-300 mb-2 tracking-tight">Intelligence for Real Estate.</h1>
+            <h1 className="hero-subtitle fw-300 mb-4 tracking-tight text-stroke">The Era of Autonomous Estate.</h1>
             <p className="hero-subtitle mx-auto fw-400 opacity-50 mb-5" style={{ maxWidth: '700px' }}>
               Virpanix merges spatial computing with predictive AI to redefine institutional real estate management. Maximize yield. Automate operations.
             </p>
@@ -321,8 +321,8 @@ export default function Home() {
             </div>
           </div>
           <div className="row g-5 align-items-center">
-            <div className="col-lg-7 reveal">
-              <div className="card bg-charcoal p-5 rounded-5 border-0 shadow-pro position-relative overflow-hidden">
+            <div className="col-lg-6 reveal">
+              <div className="card bg-charcoal text-white p-5 rounded-5 border-0 shadow-pro position-relative overflow-hidden">
                 <div className="mb-5 d-flex justify-content-between align-items-center">
                   <h5 className="fw-400 m-0 tracking-tight lg-large">Performance Report</h5>
                   <span className="x-small bg-white/10 text-white rounded-pill px-3 py-1 fw-500 tracking-widest">REAL-TIME</span>
@@ -358,7 +358,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <div className="col-lg-5 reveal ps-lg-5" style={{ transitionDelay: '200ms' }}>
+            <div className="col-lg-6 reveal ps-lg-5" style={{ transitionDelay: '200ms' }}>
               <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-4 d-block">The Advantage</span>
               <h3 className="display-5 fw-300 mb-4 tracking-tight text-white">Better Ops. <br className="d-none d-md-block" /> More Growth.</h3>
               <p className="opacity-40 mb-5 text-white">Our intelligence engine doesn't just manage; it optimizes. Every data point is used to drive your business forward.</p>
