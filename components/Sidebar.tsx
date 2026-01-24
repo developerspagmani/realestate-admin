@@ -10,9 +10,11 @@ import Image from 'next/image';
 interface SidebarProps {
   activePage?: string;
   onSidebarCollapse?: (width: string) => void;
+  showMobile?: boolean;
+  onMobileClose?: () => void;
 }
 
-export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps) {
+export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onMobileClose }: SidebarProps) {
   const { user, isAuthenticated, isAdmin, isOwner, isUser, logout, hasModule } = useAuthContext();
   const { tenantType } = useManagementContext();
   const [mounted, setMounted] = useState(false);
@@ -35,10 +37,9 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
     }
   };
 
-  const getMenuItems = () => {
+  const getMenuItems = (isAdmin: boolean, isOwner: boolean, isUser: boolean, tenantType: number, hasModule: (m: string) => boolean, activePage?: string, user?: any) => {
     if (!user) return [];
 
-    // Terminology Adapter
     const labels = {
       properties: tenantType === 2 ? 'Spaces / Centers' : 'Properties',
       units: tenantType === 2 ? 'Workspaces / Desks' : 'Units / Flats',
@@ -46,7 +47,6 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
       leads: 'Leads',
     };
 
-    // Admin Role (2) - Use Unified Real Estate Routes
     if (isAdmin) {
       return [
         {
@@ -62,7 +62,6 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
           items: [
             { href: '/realestate-admin/properties', label: labels.properties, icon: 'bi-building', active: activePage === 'properties' },
             { href: '/realestate-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' },
-
             { href: '/realestate-admin/units', label: labels.units, icon: 'bi-laptop', active: activePage === 'units' },
             { href: '/realestate-admin/amenities', label: 'Amenities', icon: 'bi-grid', active: activePage === 'amenities' },
             { href: '/realestate-admin/agents', label: 'Agents', icon: 'bi-briefcase', active: activePage === 'agents' },
@@ -83,7 +82,6 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
             { href: '/realestate-admin/settings', label: 'Settings', icon: 'bi-gear-wide-connected', active: activePage === 'settings' }
           ]
         },
-        // Marketing/Widgets Section
         ...(hasModule('widget_creator') ? [{
           title: 'Marketing',
           items: [
@@ -93,7 +91,6 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
       ];
     }
 
-    // Owner Role (3) - Use Unified Real Estate Routes
     if (isOwner) {
       return [
         {
@@ -105,7 +102,6 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
             { href: '/realestate-owner-admin/agents', label: 'Agents', icon: 'bi-briefcase', active: activePage === 'agents' },
           ]
         },
-
         {
           title: 'Inventory',
           items: [
@@ -141,7 +137,6 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
       ];
     }
 
-    // Regular User Role (1)
     if (isUser) {
       return [
         {
@@ -161,11 +156,10 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
         }
       ];
     }
-
     return [];
   };
 
-  const menuItems = getMenuItems();
+  const menuItems = getMenuItems(isAdmin, isOwner, isUser, tenantType, hasModule, activePage, user);
 
   if (!mounted || !user) {
     return (
@@ -181,7 +175,7 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
     <div className="d-flex">
       {/* Sidebar navigation */}
       <div
-        className={`sidebar bg-white border-end shadow-sm ${collapsed ? 'collapsed' : ''}`}
+        className={`sidebar bg-white border-end shadow-sm ${collapsed ? 'collapsed' : ''} ${showMobile ? 'show-mobile' : ''}`}
         style={{
           width: collapsed ? '70px' : '250px',
           height: '100vh',
@@ -189,29 +183,38 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
           position: 'fixed',
           top: '0',
           left: '0',
-          zIndex: '1000',
+          zIndex: '1050',
           display: 'flex',
           flexDirection: 'column'
         }}
       >
-        {/* Toggle Button */}
-        <button
-          className="btn btn-sm btn-light border shadow-sm position-absolute rounded-circle"
-          style={{
-            zIndex: '1001',
-            top: '24px',
-            right: '-12px',
-            width: '24px',
-            height: '24px',
-            padding: '0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          <i className={`bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-left'} small`}></i>
-        </button>
+        {/* Mobile Close Button */}
+        {showMobile && (
+          <button
+            className="btn btn-close position-absolute top-0 end-0 m-3 d-lg-none"
+            onClick={onMobileClose}
+          ></button>
+        )}
+
+        {/* Toggle Button (Desktop only) */}
+        {!showMobile && (
+          <button
+            className="btn btn-sm btn-light border shadow-sm position-absolute rounded-circle d-none d-lg-flex"
+            style={{
+              zIndex: '1051',
+              top: '24px',
+              right: '-12px',
+              width: '24px',
+              height: '24px',
+              padding: '0',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            <i className={`bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-left'} small`}></i>
+          </button>
+        )}
 
         {/* Logo Section */}
         <div className="p-4 border-bottom d-flex align-items-center gap-2">
@@ -224,38 +227,36 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
               className="img-fluid"
             />
           </div>
-          {!collapsed && (
-            <div className="fw-bold text-dark mb-0 text-nowrap">
+          {(!collapsed || showMobile) && (
+            <div className="fw-bold text-dark mb-0 text-nowrap letter-spacing-tight">
               VIRPANIX
-
             </div>
-
           )}
         </div>
 
         {/* Navigation Menu */}
         <div className="flex-grow-1 overflow-auto px-2 py-4 custom-scrollbar">
-          {menuItems.map((section, sectionIndex) => (
+          {menuItems.map((section: any, sectionIndex: number) => (
             <div key={sectionIndex} className="mb-4">
-              {!collapsed && (
+              {(!collapsed || showMobile) && (
                 <div className="px-3 mb-2">
-                  <span className="text-muted text-uppercase fw-bold" style={{ fontSize: '10px', letterSpacing: '1px' }}>
+                  <span className="text-muted text-uppercase fw-bold opacity-50" style={{ fontSize: '10px', letterSpacing: '1px' }}>
                     {section.title}
                   </span>
                 </div>
               )}
-              {section.items.map((item) => (
+              {section.items.map((item: any) => (
                 <div key={item.href} className="px-2 mb-1">
                   <a
                     href={item.href}
                     className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all ${item.active
-                      ? 'active bg-primary-soft text-primary fw-semibold shadow-sm'
+                      ? 'active bg-primary text-white fw-semibold shadow-sm'
                       : 'text-secondary hover-bg-light'
                       }`}
                     style={{ textDecoration: 'none' }}
                   >
                     <i className={`bi ${item.icon} fs-5`}></i>
-                    {!collapsed && (
+                    {(!collapsed || showMobile) && (
                       <span className="text-nowrap">{item.label}</span>
                     )}
                   </a>
@@ -271,27 +272,27 @@ export default function Sidebar({ activePage, onSidebarCollapse }: SidebarProps)
               className="nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all text-danger hover-bg-danger-light w-100 border-0 bg-transparent"
             >
               <i className="bi bi-box-arrow-right fs-5"></i>
-              {!collapsed && <span className="text-nowrap fw-semibold">Logout</span>}
+              {(!collapsed || showMobile) && <span className="text-nowrap fw-semibold">Logout</span>}
             </button>
           </div>
         </div>
 
         {/* User Profile Section */}
         <div className="p-3 border-top bg-light-soft mt-auto">
-          <div className={`d-flex align-items-center gap-3 ${collapsed ? 'justify-content-center' : ''}`}>
+          <div className={`d-flex align-items-center gap-3 ${(collapsed && !showMobile) ? 'justify-content-center' : ''}`}>
             <div
               className="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm"
               style={{ minWidth: '36px', height: '36px', fontSize: '14px' }}
             >
               {user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2)}
             </div>
-            {!collapsed && (
+            {(!collapsed || showMobile) && (
               <div className="flex-grow-1 overflow-hidden">
                 <div className="fw-bold text-dark text-truncate small">{user.name}</div>
                 <div className="text-muted text-truncate" style={{ fontSize: '10px' }}>{user.email}</div>
               </div>
             )}
-            {!collapsed && (
+            {(!collapsed || showMobile) && (
               <div className="dropdown">
                 <button className="btn btn-link btn-sm p-0 border-0" data-bs-toggle="dropdown">
                   <i className="bi bi-three-dots-vertical text-muted"></i>

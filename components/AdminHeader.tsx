@@ -7,7 +7,11 @@ import { tenantService, userService, getAuthToken } from '@/app/services/api';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 
-export default function AdminHeader() {
+interface AdminHeaderProps {
+    onMenuClick?: () => void;
+}
+
+export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     const { user, logout, isAdmin, isOwner } = useAuthContext();
     const {
         tenantType, setTenantType,
@@ -76,8 +80,16 @@ export default function AdminHeader() {
     const profilePath = isAdmin ? '/user/profile' : isOwner ? '/user/profile' : '/user/profile'; // Assuming profile is shared
 
     return (
-        <header className="admin-header bg-white border-bottom sticky-top shadow-sm px-4">
+        <header className="admin-header bg-white border-bottom sticky-top shadow-sm px-3 px-md-4">
             <div className="d-flex align-items-center justify-content-between h-100" style={{ height: '70px' }}>
+
+                {/* Mobile Menu Toggle */}
+                <button
+                    className="btn btn-icon d-lg-none me-2"
+                    onClick={onMenuClick}
+                >
+                    <i className="bi bi-list fs-3"></i>
+                </button>
 
                 {/* Left Side: Search & Welcome */}
                 <div className="d-flex align-items-center gap-4 flex-grow-1">
