@@ -267,20 +267,14 @@ export default function PublicWidgetPage() {
             {!isBuilderActiveListing && config?.showLogo !== false && (
                 <header className="p-3 bg-white border-bottom sticky-top shadow-sm z-3">
                     <div className="container d-flex justify-content-between align-items-center">
-                        <div className="d-flex align-items-center gap-3">
+                        <div className="property-logo">
                             {config?.logoUrl ? (
-                                <img src={config.logoUrl} alt="Logo" style={{ height: '32px', objectFit: 'contain' }} />
+                                <img src={config.logoUrl} alt="Logo" style={{ height: '60px', objectFit: 'contain' }} />
                             ) : (
                                 <div className="rounded-3 p-2 d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px', backgroundColor: theme.primaryColor }}>
                                     <i className="bi bi-house-heart-fill text-white fs-5"></i>
                                 </div>
                             )}
-                            <div>
-                                <h5 className="fw-extrabold mb-0 letter-spacing-tight">{widget.name}</h5>
-                                <span className="extra-small text-muted d-flex align-items-center gap-1">
-                                    <i className="bi bi-patch-check-fill text-primary" style={{ color: theme.primaryColor }}></i> Verified Real Estate Portal
-                                </span>
-                            </div>
                         </div>
                         <div className="d-flex align-items-center gap-3">
                             <button className="btn btn-primary btn-sm rounded-pill px-4" style={{ backgroundColor: theme.primaryColor, border: 'none' }} onClick={() => setCurrentView('PROPERTY_DETAIL')}>
@@ -380,21 +374,26 @@ export default function PublicWidgetPage() {
 
             {/* Global Footer: Hide if in builder landing page (it has its own) OR if footer is disabled in config */}
             {!isBuilderActiveListing && config?.showFooter !== false && (
-                <footer className="py-5 bg-light border-top mt-5">
+                <footer className="py-5 bg-light border-top mt-5 mb-2">
                     <div className="container text-center">
                         <div className="mb-4 text-muted">
                             {config?.logoUrl ? (
-                                <img src={config.logoUrl} alt="Logo" style={{ height: '40px', objectFit: 'contain', margin: 'auto' }} className="mb-2" />
+                                <img src={config.logoUrl} alt="Logo" style={{ height: '50px', objectFit: 'contain', margin: 'auto' }} className="mb-2" />
                             ) : (
-                                <i className="bi bi-building fs-3 text-muted"></i>
+                                <i className="bi bi-building fs-3 text-muted">Your Company Name</i>
                             )}
+                            <div>
+                                <i className="bi bi-patch-check-fill text-primary" style={{ color: theme.primaryColor }}></i> Verified Real Estate Portal
+                            </div>
                         </div>
                         <p className="extra-small text-muted mb-0">
+
                             {config?.footerText || `© 2026 ${widget.name}. All rights reserved.`}
                         </p>
                     </div>
                 </footer>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }
