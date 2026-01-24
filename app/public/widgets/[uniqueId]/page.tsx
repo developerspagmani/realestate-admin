@@ -299,18 +299,18 @@ export default function PublicWidgetPage() {
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         color: (config?.heroBgUrl || config?.heroTitle) ? (config?.heroTextColor || '#ffffff') : 'inherit',
-                        minHeight: config?.heroBgUrl ? '550px' : 'auto',
+                        minHeight: config?.heroBgUrl ? (isBuilderLayout ? '550px' : '400px') : 'auto',
                         display: 'flex',
                         alignItems: 'center',
                         textAlign: 'center',
                         marginTop: '-1px',
                     }}>
                         <div className="container position-relative z-1 py-4">
-                            <h1 className="display-4 fw-extrabold mb-3 animate-fade-up letter-spacing-tight">
+                            <h1 className="display-4 fw-extrabold mb-3 animate-fade-up letter-spacing-tight hero-title">
                                 {config?.heroTitle || 'Premium Real Estate'}
                             </h1>
                             {config?.heroSubtitle && (
-                                <p className="lead mb-0 opacity-90 animate-fade-up mx-auto" style={{ maxWidth: '700px', animationDelay: '0.1s' }}>
+                                <p className="lead mb-0 opacity-90 animate-fade-up mx-auto hero-subtitle" style={{ maxWidth: '700px', animationDelay: '0.1s' }}>
                                     {config?.heroSubtitle}
                                 </p>
                             )}
@@ -340,11 +340,12 @@ export default function PublicWidgetPage() {
                     </button>
 
                     {showChat && (
-                        <div className="chatbot-window shadow-2xl animate-fade-in" style={{
+                        <div className="chatbot-window shadow-2xl animate-fade-in chat-responsive" style={{
                             position: 'fixed',
                             bottom: '100px',
                             right: '24px',
                             width: '380px',
+                            maxWidth: 'calc(100vw - 48px)',
                             maxHeight: '600px',
                             height: '70vh',
                             zIndex: 1000

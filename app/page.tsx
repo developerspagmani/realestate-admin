@@ -102,15 +102,17 @@ export default function Home() {
         <div className="container h-100 d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center gap-2">
             <div className="logo-box bg-white text-black fw-600 px-2 py-0 rounded-1" style={{ fontSize: '1rem' }}>V</div>
-            <span className="fw-500 text-uppercase tracking-tighter" style={{ fontSize: '1.1rem' }}>Virpanix</span>
+            <span className="fw-600 text-uppercase tracking-tighter text-white" style={{ fontSize: '1.2rem' }}>Virpanix</span>
           </div>
-          <div className="d-none d-md-flex align-items-center gap-5 small tracking-tight fw-400 opacity-60">
-            <a href="#about" className="text-white text-decoration-none hvr-opacity">Portfolio</a>
-            <a href="#features" className="text-white text-decoration-none hvr-opacity">Platform</a>
-            <a href="#workflow" className="text-white text-decoration-none hvr-opacity">Intelligence</a>
-            <a href="#results" className="text-white text-decoration-none hvr-opacity">Impact</a>
-            <Link href="/login" className="text-white text-decoration-none hvr-opacity">Sign In</Link>
+          <div className="d-none d-lg-flex align-items-center gap-4 small tracking-tight fw-400">
+            <a href="#about" className="text-white opacity-60 text-decoration-none hvr-opacity">Portfolio</a>
+            <a href="#features" className="text-white opacity-60 text-decoration-none hvr-opacity">Platform</a>
+            <a href="#results" className="text-white opacity-60 text-decoration-none hvr-opacity">Impact</a>
+            <Link href="/login" className="text-white opacity-60 text-decoration-none hvr-opacity">Sign In</Link>
             <Link href="/register" className="btn btn-white btn-sm rounded-pill px-4 fw-600 bg-white text-black">Get Started</Link>
+          </div>
+          <div className="d-lg-none">
+            <Link href="/login" className="btn btn-outline-light btn-sm rounded-pill px-3 me-2">Sign In</Link>
           </div>
         </div>
       </nav>
@@ -125,11 +127,11 @@ export default function Home() {
             <p className="hero-subtitle mx-auto fw-400 opacity-50 mb-5" style={{ maxWidth: '700px' }}>
               Virpanix merges spatial computing with predictive AI to redefine institutional real estate management. Maximize yield. Automate operations.
             </p>
-            <div className="d-flex gap-4 justify-content-center align-items-center">
-              <Link href="/register" className="btn btn-white btn-lg rounded-pill px-5 py-3 fw-600 bg-white text-black hvr-shift">
+            <div className="d-flex flex-column flex-md-row gap-3 gap-md-4 justify-content-center align-items-center">
+              <Link href="/register" className="btn btn-white rounded-pill px-5 py-3 fw-600 bg-white text-black hvr-shift w-md-auto">
                 Start Exploring
               </Link>
-              <button className="btn btn-outline-light btn-lg rounded-pill px-5 py-3 border-opacity-25 hvr-shift fw-400">
+              <button className="btn btn-outline-light rounded-pill px-5 py-3 border-opacity-25 hvr-shift fw-400 w-md-auto text-white">
                 Watch Intro
               </button>
             </div>
@@ -154,8 +156,8 @@ export default function Home() {
               </div>
             </div>
             <div className="col-lg-6 px-lg-5">
-              <span className="text-uppercase tracking-widest small fw-bold text-secondary mb-3 d-block">Who We Are</span>
-              <h2 className="display-3 fw-300 mb-4 tracking-tight leading-tight">Redefining Reality through Intelligent Systems.</h2>
+              <span className="text-uppercase tracking-widest small fw-bold text-white opacity-40 mb-3 d-block">Who We Are</span>
+              <h2 className="display-4 display-md-3 fw-300 mb-4 tracking-tight leading-tight text-white">Redefining Reality through Intelligent Systems.</h2>
               <p className="opacity-50 mb-4 lh-lg">
                 We aren't just a booking platform. We are an intelligence layer for the real estate industry. By combining spatial computing, AI lead generation, and autonomous management workflows, we empower owners to operate at 10x efficiency.
               </p>
@@ -179,21 +181,21 @@ export default function Home() {
         <div className="container py-5">
           <div className="row g-5 align-items-center">
             <div className="col-lg-6 reveal">
-              <span className="text-uppercase tracking-widest x-small fw-600 text-secondary mb-4 d-block">The Vision</span>
-              <h2 className="display-3 fw-300 mb-4 tracking-tight leading-tight">
-                Breaking the boundaries <br /> of physics and property.
+              <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-4 d-block">The Vision</span>
+              <h2 className="display-4 display-md-3 fw-300 mb-4 tracking-tight leading-tight text-white">
+                Breaking the boundaries <br className="d-none d-md-block" /> of physics and property.
               </h2>
               <p className="opacity-50 mt-4 lh-lg" style={{ fontSize: '1.2rem' }}>
                 Virpanix isn't just software. It's an intelligent layer for the physical world. We bridge the gap between static assets and dynamic digital efficiency, enabling institutional real estate owners to operate at 10x scale.
               </p>
               <div className="row g-4 mt-5">
-                <div className="col-6">
-                  <h5 className="fw-300 mb-2">01. Spatial Computing</h5>
-                  <p className="small opacity-40">Converting physical architecture into data-driven digital assets.</p>
+                <div className="col-12 col-md-6">
+                  <h5 className="fw-300 mb-2 text-white">01. Spatial Computing</h5>
+                  <p className="small opacity-40 text-white">Converting physical architecture into data-driven digital assets.</p>
                 </div>
-                <div className="col-6">
-                  <h5 className="fw-300 mb-2">02. Autonomous Ops</h5>
-                  <p className="small opacity-40">Self-optimizing management layers for complex property portfolios.</p>
+                <div className="col-12 col-md-6">
+                  <h5 className="fw-300 mb-2 text-white">02. Autonomous Ops</h5>
+                  <p className="small opacity-40 text-white">Self-optimizing management layers for complex property portfolios.</p>
                 </div>
               </div>
             </div>
@@ -211,10 +213,10 @@ export default function Home() {
       </section>
 
       {/* Capabilities / Features Grid */}
-      <section id="features" className="py-15 bg-black border-top border-secondary/10">
+      <section id="features" className="py-10 py-md-15 bg-black border-top border-secondary/10">
         <div className="container text-center mb-10 reveal">
-          <span className="text-uppercase tracking-widest x-small fw-600 text-secondary mb-3 d-block">Capabilities</span>
-          <h2 className="display-4 fw-300 tracking-tight">Built for Global Scale.</h2>
+          <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-3 d-block">Capabilities</span>
+          <h2 className="display-4 fw-300 tracking-tight text-white">Built for Global Scale.</h2>
         </div>
         <div className="container">
           <div className="row g-0 border border-secondary/20 rounded-5 overflow-hidden">
@@ -248,11 +250,11 @@ export default function Home() {
               { num: '03', title: 'Activate', desc: 'Deploy autonomous booking engines and investor portals.' },
               { num: '04', title: 'Optimize', desc: 'Continuous machine learning of market trends to maximize yields.' }
             ].map((s, i) => (
-              <div key={i} className="col-lg-3 reveal" style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="p-4 border-start border-secondary/20">
-                  <span className="display-6 fw-100 opacity-20 d-block mb-3">{s.num}</span>
-                  <h4 className="fw-300 mb-3 fs-3">{s.title}</h4>
-                  <p className="opacity-40 small mb-0">{s.desc}</p>
+              <div key={i} className="col-md-6 col-lg-3 reveal mb-4 mb-lg-0" style={{ transitionDelay: `${i * 100}ms` }}>
+                <div className="p-4 border-start border-secondary/20 h-100">
+                  <span className="display-6 fw-100 opacity-20 d-block mb-3 text-white">{s.num}</span>
+                  <h4 className="fw-300 mb-3 fs-3 text-white">{s.title}</h4>
+                  <p className="opacity-40 small mb-0 text-white">{s.desc}</p>
                 </div>
               </div>
             ))}
@@ -267,26 +269,26 @@ export default function Home() {
             <div className="col-lg-5 reveal">
               <div className="position-relative">
                 <div className="position-absolute top-0 start-0 w-100 h-100 bg-white opacity-5 blur-3xl"></div>
-                <div className="card bg-black border border-secondary/20 p-5 rounded-5 position-relative z-1 mb-4 hvr-shift">
+                <div className="card bg-black border border-secondary/20 p-4 p-md-5 rounded-5 position-relative z-1 mb-4 hvr-shift">
                   <div className="d-flex align-items-center gap-3 mb-4">
                     <div className="bg-white text-black rounded-circle px-2 py-1 small fw-600">01</div>
-                    <h4 className="fw-300 mb-0">For Portfolio Owners</h4>
+                    <h4 className="fw-300 mb-0 text-white">For Portfolio Owners</h4>
                   </div>
-                  <p className="opacity-40 mb-0 fw-400">Maximize portfolio yield with automated operational workflows and spatial monetization data.</p>
+                  <p className="opacity-40 mb-0 fw-400 text-white">Maximize portfolio yield with automated operational workflows and spatial monetization data.</p>
                 </div>
-                <div className="card bg-black border border-secondary/20 p-5 rounded-5 position-relative z-1 hvr-shift" style={{ marginLeft: '4rem' }}>
+                <div className="card bg-black border border-secondary/20 p-4 p-md-5 rounded-5 position-relative z-1 hvr-shift ms-0 ms-md-5">
                   <div className="d-flex align-items-center gap-3 mb-4">
                     <div className="bg-white text-black rounded-circle px-2 py-1 small fw-600">02</div>
-                    <h4 className="fw-300 mb-0">For Asset Managers</h4>
+                    <h4 className="fw-300 mb-0 text-white">For Asset Managers</h4>
                   </div>
-                  <p className="opacity-40 mb-0 fw-400">Transform commercial floorplates into dynamic, high-velocity assets with autonomous booking engines.</p>
+                  <p className="opacity-40 mb-0 fw-400 text-white">Transform commercial floorplates into dynamic, high-velocity assets with autonomous booking engines.</p>
                 </div>
               </div>
             </div>
             <div className="col-lg-7 ps-lg-5 reveal" style={{ transitionDelay: '200ms' }}>
-              <span className="text-uppercase tracking-widest x-small fw-600 text-secondary mb-4 d-block">Solutions</span>
-              <h2 className="display-4 fw-300 mb-4 tracking-tight">Success for every <br /> business model.</h2>
-              <p className="opacity-40 mb-5 lh-lg" style={{ fontSize: '1.2rem' }}>
+              <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-4 d-block">Solutions</span>
+              <h2 className="display-4 fw-300 mb-4 tracking-tight text-white">Success for every <br className="d-none d-md-block" /> business model.</h2>
+              <p className="opacity-40 mb-5 lh-lg text-white" style={{ fontSize: '1.1rem' }}>
                 Whether you're managing a single grade-A tower or a global institutional portfolio, Virpanix scales with you. We eliminate capital friction and administrative overhead, allowing you to focus on the strategic optimization of your assets.
               </p>
               <div className="row g-4">
@@ -357,9 +359,9 @@ export default function Home() {
               </div>
             </div>
             <div className="col-lg-5 reveal ps-lg-5" style={{ transitionDelay: '200ms' }}>
-              <span className="text-uppercase tracking-widest x-small fw-600 text-secondary mb-4 d-block">The Advantage</span>
-              <h3 className="display-5 fw-300 mb-4 tracking-tight">Better Ops. <br /> More Growth.</h3>
-              <p className="opacity-40 mb-5">Our intelligence engine doesn't just manage; it optimizes. Every data point is used to drive your business forward.</p>
+              <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-4 d-block">The Advantage</span>
+              <h3 className="display-5 fw-300 mb-4 tracking-tight text-white">Better Ops. <br className="d-none d-md-block" /> More Growth.</h3>
+              <p className="opacity-40 mb-5 text-white">Our intelligence engine doesn't just manage; it optimizes. Every data point is used to drive your business forward.</p>
               <ul className="list-unstyled d-flex flex-column gap-3 mb-0">
                 {['99.9% Platform Uptime', 'Unified Billing Core', 'GDPR & SOC2 Ready', 'Global API Access'].map((t, i) => (
                   <li key={i} className="d-flex align-items-center gap-3 fw-500 small opacity-60">
@@ -382,9 +384,9 @@ export default function Home() {
               { label: 'Retention Rate', value: '98.4%' },
               { label: 'Average ROI Inc', value: '2.4x' }
             ].map((s, i) => (
-              <div key={i} className="col-md-3 reveal" style={{ transitionDelay: `${i * 100}ms` }}>
-                <h2 className="display-5 fw-200 mb-1">{s.value}</h2>
-                <p className="x-small opacity-30 text-uppercase tracking-widest fw-600 mb-0">{s.label}</p>
+              <div key={i} className="col-md-3 reveal mb-5 mb-md-0" style={{ transitionDelay: `${i * 100}ms` }}>
+                <h2 className="display-5 fw-200 mb-1 text-white">{s.value}</h2>
+                <p className="x-small opacity-30 text-uppercase tracking-widest fw-600 mb-0 text-white">{s.label}</p>
               </div>
             ))}
           </div>
@@ -392,9 +394,9 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-black text-center reveal">
+      <section className="py-15 py-md-20 bg-black text-center reveal">
         <div className="container">
-          <h2 className="display-2 fw-300 mb-5 tracking-tighter">Ready to automate <br /> your estate?</h2>
+          <h2 className="display-3 display-md-2 fw-300 mb-5 tracking-tighter text-white">Ready to automate <br /> your estate?</h2>
           <div className="d-flex gap-4 justify-content-center pt-2">
             <Link href="/register" className="btn btn-white btn-lg rounded-pill px-5 py-3 fw-600 bg-white text-black hvr-shift">Try it Free</Link>
             <button className="btn btn-outline-light btn-lg rounded-pill px-5 py-3 fw-400 border-opacity-25 hvr-shift">Book Demo</button>
@@ -403,9 +405,9 @@ export default function Home() {
       </section>
 
       {/* Gallery Section - Glassy Swiper */}
-      <section className="py-20 bg-black overflow-hidden border-top border-secondary/10">
+      <section className="py-15 py-md-20 bg-black overflow-hidden border-top border-secondary/10">
         <div className="container text-center mb-10 reveal">
-          <span className="text-uppercase tracking-widest x-small fw-600 text-secondary mb-3 d-block">Experience</span>
+          <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-3 d-block">Experience</span>
           <h2 className="display-4 fw-300 tracking-tight text-white">Curated Spaces.</h2>
         </div>
         <div className="container-fluid px-md-5 reveal">
@@ -488,7 +490,7 @@ export default function Home() {
 
       <style jsx>{`
                 .hero-title { font-size: clamp(3rem, 10vw, 6rem); line-height: 1.05; }
-                .hero-subtitle { font-size: 1.5rem; }
+                .hero-subtitle { font-size: 1.2rem; }
                 .tracking-tighter { letter-spacing: -0.05em; }
                 .tracking-tight { letter-spacing: -0.02em; }
                 .tracking-widest { letter-spacing: 0.15em; }
@@ -499,6 +501,7 @@ export default function Home() {
                 .fw-500 { font-weight: 500; }
                 .fw-600 { font-weight: 600; }
                 .x-small { font-size: 0.7rem; }
+                .py-10 { padding-top: 5rem; padding-bottom: 5rem; }
                 .py-15 { padding-top: 10rem; padding-bottom: 10rem; }
                 .py-20 { padding-top: 15rem; padding-bottom: 15rem; }
                 .mb-10 { margin-bottom: 8rem; }
@@ -570,9 +573,15 @@ export default function Home() {
                 .hvr-float:hover { transform: translateY(-10px); }
 
                 @media (max-width: 991px) {
-                    .py-15 { padding-top: 5rem; padding-bottom: 5rem; }
-                    .p-10 { padding: 2rem; }
-                    .hero-title { font-size: 3.5rem; }
+                    .py-10 { padding-top: 3rem; padding-bottom: 3rem; }
+                    .py-15 { padding-top: 4rem; padding-bottom: 4rem; }
+                    .py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+                    .mb-10 { margin-bottom: 3rem; }
+                    .p-10 { padding: 1.5rem; }
+                    .hero-title { font-size: 2.8rem; }
+                    .hero-subtitle { font-size: 1rem; }
+                    .display-3 { font-size: 2.5rem !important; }
+                    .display-4 { font-size: 2.2rem !important; }
                 }
             `}</style>
     </div>

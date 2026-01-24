@@ -311,6 +311,15 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
     const [floorType, setFloorType] = useState('marble');
     const [planId, setPlanId] = useState<'A' | 'B' | 'C'>('A');
     const [isDay, setIsDay] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
+    const [sidebarVisible, setSidebarVisible] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 992);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Dynamic Hotspots based on Plan
     const hotspotsConfig: Record<string, Hotspot[]> = {
@@ -332,28 +341,33 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
     const hotspots = hotspotsConfig[planId];
 
     return (
-        <div className="tour-wrapper bg-dark rounded-4 shadow-lg overflow-hidden position-relative">
+        <div className={`tour-wrapper bg-dark shadow-lg overflow-hidden position-relative ${isMobile ? 'mobile-tour' : ''}`}>
             {/* UI: Header */}
-            <div className="tour-header position-absolute top-0 start-0 end-0 p-4 d-flex justify-content-between align-items-center z-index-10">
-                <div className="glass-panel text-white p-2 px-4 rounded-pill d-flex align-items-center">
-                    <div className="me-3">
-                        <i className="bi bi-house-fill fs-4 text-primary"></i>
+            <div className="tour-header position-absolute top-0 start-0 end-0 p-3 p-md-4 d-flex justify-content-between align-items-center z-index-10">
+                <div className="glass-panel text-white p-2 px-3 px-md-4 rounded-pill d-flex align-items-center">
+                    <div className="me-2 me-md-3">
+                        <i className="bi bi-house-fill fs-5 fs-md-4 text-primary"></i>
                     </div>
                     <div>
-                        <h6 className="mb-0 fw-bold">3D Property Tour</h6>
-                        <small className="opacity-75">Next.js & Three.js Demo</small>
+                        <h6 className="mb-0 fw-bold small-mobile">3D Property Tour</h6>
+                        <small className="opacity-75 d-none d-md-block">Next.js & Three.js Demo</small>
                     </div>
                 </div>
                 <div className="d-flex gap-2">
-                    <button className="btn-icon-glass"><i className="bi bi-rss"></i></button>
-                    <button className="btn-icon-glass"><i className="bi bi-eye"></i></button>
-                    <button className="btn-icon-glass"><i className="bi bi-gear"></i></button>
+                    {isMobile && (
+                        <button className="btn-icon-glass" onClick={() => setSidebarVisible(!sidebarVisible)}>
+                            <i className={`bi ${sidebarVisible ? 'bi-x-lg' : 'bi-sliders'}`}></i>
+                        </button>
+                    )}
+                    <button className="btn-icon-glass d-none d-md-flex"><i className="bi bi-rss"></i></button>
+                    <button className="btn-icon-glass d-none d-md-flex"><i className="bi bi-eye"></i></button>
+                    <button className="btn-icon-glass d-none d-md-flex"><i className="bi bi-gear"></i></button>
                 </div>
             </div>
 
             {/* UI: Left Sidebar (Info & Customize) */}
-            <div className="tour-sidebar-left position-absolute top-0 bottom-0 start-0 p-4 z-index-10 d-flex flex-column gap-3 mt-5 pt-5" style={{ width: '280px' }}>
-                <div className="glass-card p-4 rounded-4 animate__animated animate__fadeInLeft">
+            <div className={`tour-sidebar-left position-absolute top-0 bottom-0 start-0 p-3 p-md-4 z-index-10 d-flex flex-column gap-3 mt-5 pt-5 ${isMobile && !sidebarVisible ? 'd-none' : ''}`} style={{ width: isMobile ? '100%' : '280px', backgroundColor: isMobile ? 'rgba(0,0,0,0.8)' : 'transparent', backdropFilter: isMobile ? 'blur(10px)' : 'none' }}>
+                <div className="glass-card p-3 p-md-4 rounded-4 animate__animated animate__fadeInLeft overflow-auto">
                     <h6 className="fw-bold mb-3">Apartment Info</h6>
                     <ul className="list-unstyled mb-0 small opacity-90">
                         <li className="mb-2"><strong>Plan Type:</strong> Plan {planId} - {planId === 'A' ? 'Classic' : planId === 'B' ? 'Studio' : 'Executive'}</li>
@@ -363,11 +377,11 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
                     </ul>
                 </div>
 
-                <div className="glass-card p-4 rounded-4 animate__animated animate__fadeInLeft" style={{ animationDelay: '0.2s' }}>
+                <div className="glass-card p-3 p-md-4 rounded-4 animate__animated animate__fadeInLeft" style={{ animationDelay: '0.2s' }}>
                     <h6 className="fw-bold mb-3">Customize</h6>
                     <div className="mb-3">
                         <label className="extra-small opacity-75 d-block mb-2">Wall Color</label>
-                        <div className="d-flex gap-2">
+                        <div className="d-flex gap-2 flex-wrap">
                             {['#ffffff', '#F5E6CC', '#D2B48C', '#b4b4b4', '#e5d9d2'].map(c => (
                                 <div
                                     key={c}
@@ -407,7 +421,7 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
                 </div>
 
                 {/* Plan Selection Card */}
-                <div className="glass-card p-4 rounded-4 animate__animated animate__fadeInLeft" style={{ animationDelay: '0.4s' }}>
+                <div className="glass-card p-3 p-md-4 rounded-4 animate__animated animate__fadeInLeft" style={{ animationDelay: '0.4s' }}>
                     <h6 className="fw-bold mb-3">Select Floor Plan</h6>
                     <div className="d-grid gap-2">
                         {(['A', 'B', 'C'] as const).map(p => (
@@ -420,13 +434,18 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
                             </button>
                         ))}
                     </div>
+                    {isMobile && (
+                        <button className="btn btn-light btn-sm w-100 mt-3 rounded-pill fw-bold" onClick={() => setSidebarVisible(false)}>
+                            Apply Changes
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* UI: Right Sidebar (Details) */}
             {selectedHotspot && (
-                <div className="tour-sidebar-right position-absolute top-0 bottom-0 end-0 p-4 z-index-10 d-flex flex-column gap-3 mt-5 pt-5" style={{ width: '320px' }}>
-                    <div className="glass-card p-4 rounded-4 animate__animated animate__fadeInRight">
+                <div className={`tour-sidebar-right position-absolute top-0 bottom-0 end-0 p-3 p-md-4 z-index-10 d-flex flex-column gap-3 mt-5 pt-5 ${isMobile ? 'start-0' : ''}`} style={{ width: isMobile ? '100%' : '320px', backgroundColor: isMobile ? 'rgba(0,0,0,0.8)' : 'transparent', backdropFilter: isMobile ? 'blur(10px)' : 'none' }}>
+                    <div className="glass-card p-3 p-md-4 rounded-4 animate__animated animate__fadeInRight">
                         <div className="d-flex justify-content-between mb-3">
                             <h6 className="fw-bold mb-0">{selectedHotspot.name} Details</h6>
                             <button className="btn-close btn-close-white btn-sm" onClick={() => setSelectedHotspot(null)}></button>
@@ -454,26 +473,26 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
             )}
 
             {/* UI: Bottom Toolbar */}
-            <div className="tour-toolbar position-absolute bottom-0 start-50 translate-middle-x p-4 z-index-10">
-                <div className="glass-toolbar p-2 rounded-pill d-flex gap-1 animate__animated animate__fadeInUp">
+            <div className={`tour-toolbar position-absolute bottom-0 start-50 translate-middle-x p-3 p-md-4 z-index-10 w-100 d-flex justify-content-center ${isMobile && (sidebarVisible || selectedHotspot) ? 'd-none' : ''}`}>
+                <div className="glass-toolbar p-2 rounded-pill d-flex gap-1 animate__animated animate__fadeInUp overflow-auto no-scrollbar" style={{ maxWidth: '90vw' }}>
                     <button className={`btn-tool-pill ${isDay ? 'active' : ''}`} onClick={() => setIsDay(!isDay)}>
                         <i className={`bi bi-${isDay ? 'sun' : 'moon-stars'} me-2`}></i> {isDay ? 'Day' : 'Night'}
                     </button>
-                    <button className="btn-tool-pill"><i className="bi bi-layers me-2"></i> Toggle Plan</button>
-                    <button className="btn-tool-pill"><i className="bi bi-arrow-repeat me-2"></i> 360° View</button>
-                    <button className="btn-tool-pill"><i className="bi bi-chat-dots me-2"></i> Enquire</button>
+                    <button className="btn-tool-pill"><i className="bi bi-layers me-2"></i> Plan</button>
+                    <button className="btn-tool-pill"><i className="bi bi-arrow-repeat me-2"></i> 360°</button>
+                    <button className="btn-tool-pill"><i className="bi bi-chat-dots me-2"></i> Chat</button>
                 </div>
             </div>
 
             {/* Canvas: 3D Scene */}
-            <div className="tour-canvas" style={{ flex: 1, height: '700px' }}>
+            <div className="tour-canvas" style={{ flex: 1, height: isMobile ? '500px' : '700px' }}>
                 <Canvas shadows gl={{ antialias: true }}>
                     <Suspense fallback={<Html center><div className="spinner-border text-primary"></div></Html>}>
-                        <PerspectiveCamera makeDefault position={[15, 12, 15]} fov={45} />
+                        <PerspectiveCamera makeDefault position={isMobile ? [20, 15, 20] : [15, 12, 15]} fov={isMobile ? 50 : 45} />
                         <OrbitControls
                             enablePan={false}
                             minDistance={5}
-                            maxDistance={35}
+                            maxDistance={isMobile ? 45 : 35}
                             maxPolarAngle={Math.PI / 2.1}
                         />
 
@@ -505,6 +524,11 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
                 .tour-wrapper {
                     height: 800px;
                     border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 24px;
+                }
+                .tour-wrapper.mobile-tour {
+                    height: 600px;
+                    border-radius: 16px;
                 }
                 .glass-panel {
                     background: rgba(255, 255, 255, 0.1);
@@ -598,6 +622,14 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
                     background: rgba(255, 255, 255, 0.1);
                 }
                 .z-index-10 { z-index: 10; }
+                
+                @media (max-width: 768px) {
+                    .small-mobile { font-size: 14px; }
+                    .btn-icon-glass { width: 36px; height: 36px; }
+                    .tour-wrapper { height: 600px; }
+                    .no-scrollbar::-webkit-scrollbar { display: none; }
+                    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                }
             `}</style>
         </div>
     );
