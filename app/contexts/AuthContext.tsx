@@ -7,7 +7,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: number; // 1: user, 2: admin/owner, 3: super admin
+  role: number; // 1: user, 2: admin, 3: owner, 4: agent
   tenantId?: string;
   status?: string;
   createdAt?: string;
@@ -24,7 +24,7 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  login: (credentials: { email: string; password: string; tenantId?: string }) => Promise<boolean>;
+  login: (credentials: { email?: string; phone?: string; password: string; tenantId?: string }) => Promise<boolean>;
   logout: () => void;
   checkAuth: () => boolean;
   clearError: () => void;
@@ -33,6 +33,7 @@ export interface AuthContextType extends AuthState {
   isAdmin: boolean;
   isOwner: boolean;
   isUser: boolean;
+  isAgent: boolean;
   hasRole: (role: number) => boolean;
   // Tenant helper
   tenantId?: string;
@@ -170,7 +171,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     initialize();
   }, []);
 
-  const login = async (credentials: { email: string; password: string; tenantId?: string }): Promise<boolean> => {
+  const login = async (credentials: { email?: string; phone?: string; password: string; tenantId?: string }): Promise<boolean> => {
     dispatch({ type: 'LOGIN_START' });
 
     try {
@@ -266,6 +267,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return '/realestate-admin/dashboard';
       case 3: // Owner
         return '/realestate-owner-admin/dashboard';
+      case 4: // Agent
+        return '/realestate-agent/dashboard';
       case 1: // Regular User
       default:
         return '/user/dashboard';
@@ -283,6 +286,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isAdmin: state.user?.role === 2,    // Admin (role 2)
     isOwner: state.user?.role === 3,    // Owner (role 3)
     isUser: state.user?.role === 1,     // Regular User (role 1)
+    isAgent: state.user?.role === 4,    // Agent (role 4)
     hasRole: (role: number) => state.user?.role === role,
     // Tenant helper
     tenantId: state.user?.tenantId,

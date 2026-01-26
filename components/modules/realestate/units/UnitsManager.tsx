@@ -7,6 +7,7 @@ import { unitService, propertyService, mediaService, getAuthToken } from '@/app/
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { Seats, Property, MediaItem } from '@/types';
 import MainLayout from '@/components/MainLayout';
+import Toast from '@/components/common/Toast';
 import MediaSelector from '@/components/shared/MediaSelector';
 
 interface UnitsManagerProps {
@@ -46,6 +47,16 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const [loading, setLoading] = useState(true);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -182,16 +193,16 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             };
 
             if (!token || !tenantId) {
-                alert('Session expired or tenant not found');
+                showToast('Session expired or tenant not found', 'error');
                 return;
             }
 
             if (editingWorkspace) {
                 await unitService.updateUnit(token, editingWorkspace.id, payload, tenantId);
-                setSuccessMessage('Workspace updated successfully!');
+                showToast('Workspace updated successfully!');
             } else {
                 await unitService.createUnit(token, payload, tenantId);
-                setSuccessMessage('Workspace added successfully!');
+                showToast('Workspace added successfully!');
             }
 
             loadData();
@@ -199,7 +210,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
         } catch (error) {
             console.error('Failed to save unit:', error);
-            alert('Error saving unit.');
+            showToast('Error saving unit.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -403,7 +414,6 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                             </div>
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body p-4">
-                                    {successMessage && <div className="alert alert-success">{successMessage}</div>}
                                     <div className="row g-4">
                                         <div className="col-md-5">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Workspace Code / Name</label>
@@ -492,19 +502,20 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                                 </div>
                                             </div>
                                         </div>
+                                        <div className="modal-footer border-0 p-4 pt-0">
+                                            <button type="button" className="btn btn-light px-4 fw-bold" onClick={resetForm}>Discard</button>
+                                            <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm" disabled={isSubmitting}>
+                                                {isSubmitting ? 'Saving...' : editingWorkspace ? 'Save Changes' : 'Create Workspace'}
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="modal-footer border-0 p-4 pt-0">
-                                    <button type="button" className="btn btn-light px-4 fw-bold" onClick={resetForm}>Discard</button>
-                                    <button type="submit" className="btn btn-primary px-4 fw-bold shadow-sm" disabled={isSubmitting}>
-                                        {isSubmitting ? 'Saving...' : editingWorkspace ? 'Save Changes' : 'Create Workspace'}
-                                    </button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
             <MediaSelector
                 show={showMediaModal}
@@ -528,12 +539,19 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             />
 
             <style jsx>{`
-            .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
-            .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
-            .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
-            .extra-small { font-size: 11px; }
-            .btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; }
-       `}</style>
-        </MainLayout>
+                .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
+                .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
+                .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
+                .extra-small { font-size: 11px; }
+                .btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; }
+            `}</style>
+
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
+        </MainLayout >
     );
 }

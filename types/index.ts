@@ -84,6 +84,7 @@ export interface Property extends BaseListing {
   floorPlan?: MediaItem;
   brochureId?: string;
   brochure?: MediaItem;
+  agentId?: string;
 }
 
 export interface Unit {

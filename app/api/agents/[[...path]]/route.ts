@@ -32,3 +32,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const endpoint = `/agents${path ? `/${path}` : ''}${searchParams ? `?${searchParams}` : ''}`;
     return proxyRequest(request, endpoint);
 }
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) {
+    const resolvedParams = await params;
+    const path = resolvedParams.path ? resolvedParams.path.join('/') : '';
+    const searchParams = request.nextUrl.searchParams.toString();
+    const endpoint = `/agents${path ? `/${path}` : ''}${searchParams ? `?${searchParams}` : ''}`;
+    return proxyRequest(request, endpoint);
+}

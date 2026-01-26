@@ -10,6 +10,7 @@ import DashboardStats from '@/components/modules/realestate/dashboard/DashboardS
 import DashboardRecentBookings from '@/components/modules/realestate/dashboard/DashboardRecentBookings';
 import DashboardTopUnits from '@/components/modules/realestate/dashboard/DashboardTopUnits';
 import DashboardCharts from '@/components/modules/realestate/dashboard/DashboardCharts';
+import Toast from '@/components/common/Toast';
 
 interface DashboardManagerProps {
     mode: 'admin' | 'owner';
@@ -44,6 +45,15 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
     const [historicalData, setHistoricalData] = useState<any[]>([]);
     const [periodLabel, setPeriodLabel] = useState('Last 6 Months');
     const [chartParams, setChartParams] = useState<any>({ period: 'last6months' });
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     const router = useRouter();
 
@@ -99,6 +109,7 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
             }
         } catch (error) {
             console.error('Failed to load dashboard data:', error);
+            showToast('Failed to load dashboard data', 'error');
         } finally {
             setLoading(false);
         }
@@ -159,6 +170,12 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
       `}</style>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

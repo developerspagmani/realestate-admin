@@ -6,6 +6,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { leadService, agentService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
+import Toast from '@/components/common/Toast';
 import { Agent } from '@/types';
 
 interface Lead {
@@ -58,6 +59,15 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [filterSource, setFilterSource] = useState<string>('all');
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
     const router = useRouter();
 
     useEffect(() => {
@@ -180,25 +190,27 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             let res;
             if (editingLead) {
                 res = await leadService.updateLead(token, editingLead.id, payload, tenantId);
-                if (res.success) setSuccessMessage('Lead updated successfully!');
+                if (res.success) {
+                    showToast('Lead updated successfully');
+                }
             } else {
                 res = await leadService.createLead(token, payload);
-                if (res.success) setSuccessMessage('Lead created successfully!');
+                if (res.success) {
+                    showToast('Lead created successfully');
+                }
             }
 
             if (res.success) {
                 loadLeads();
-                setTimeout(() => {
-                    setIsSubmitting(false);
-                    setSuccessMessage(null);
-                    resetForm();
-                }, 1000);
+                setIsSubmitting(false);
+                resetForm();
             } else {
                 setIsSubmitting(false);
-                alert('Failed to save lead');
+                showToast('Failed to save lead', 'error');
             }
         } catch (error) {
             console.error('Failed to save lead:', error);
+            showToast('Error saving lead', 'error');
             setIsSubmitting(false);
         }
     };
@@ -212,9 +224,11 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                 'new': 1, 'contacted': 2, 'qualified': 3, 'converted': 4, 'lost': 5
             };
             await leadService.updateLeadStatus(token, id, statusMap[newStatus], tenantId);
+            showToast('Status updated successfully');
             loadLeads();
         } catch (error) {
             console.error('Failed to update status:', error);
+            showToast('Failed to update status', 'error');
         }
     };
 
@@ -225,9 +239,11 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             if (!token) return;
             const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
             await leadService.deleteLead(token, id, tenantId);
+            showToast('Lead deleted successfully');
             loadLeads();
         } catch (error) {
             console.error('Delete error:', error);
+            showToast('Error deleting lead', 'error');
         }
     };
 
@@ -407,7 +423,6 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                             </div>
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body p-4">
-                                    {successMessage && <div className="alert alert-success">{successMessage}</div>}
                                     <div className="row g-4">
                                         <div className="col-md-6">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Full Name</label>
@@ -506,6 +521,12 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
             .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
        `}</style>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { amenityService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
+import Toast from '@/components/common/Toast';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { Amenity } from '@/types';
 
@@ -23,6 +24,15 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
     const [editingAmenity, setEditingAmenity] = useState<Amenity | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     // Form State
     const [formData, setFormData] = useState({
@@ -56,6 +66,7 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
             }
         } catch (error) {
             console.error('Failed to load amenities:', error);
+            showToast('Failed to load amenities', 'error');
         } finally {
             setLoading(false);
         }
@@ -64,7 +75,7 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
     const handleEdit = (amenity: Amenity) => {
         // Can only edit own amenities
         if (mode === 'owner' && !amenity.tenantId) {
-            alert("You cannot edit global system amenities.");
+            showToast("You cannot edit global system amenities.", 'error');
             return;
         }
 
@@ -80,7 +91,7 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
 
     const handleDelete = async (id: string, tenantId: string | null) => {
         if (mode === 'owner' && !tenantId) {
-            alert("You cannot delete global system amenities.");
+            showToast("You cannot delete global system amenities.", 'error');
             return;
         }
 
@@ -92,9 +103,10 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
 
             await amenityService.deleteAmenity(token, id);
             setAmenities(amenities.filter(a => a.id !== id));
+            showToast('Amenity deleted successfully');
         } catch (error) {
             console.error('Failed to delete amenity:', error);
-            alert('Error deleting amenity.');
+            showToast('Error deleting amenity.', 'error');
         }
     };
 
@@ -107,15 +119,17 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
 
             if (editingAmenity) {
                 await amenityService.updateAmenity(token, editingAmenity.id, formData);
+                showToast('Amenity updated successfully');
             } else {
                 await amenityService.createAmenity(token, formData);
+                showToast('Amenity created successfully');
             }
 
             await loadAmenities();
             handleCloseModal();
         } catch (error) {
             console.error('Failed to save amenity:', error);
-            alert('Error saving amenity.');
+            showToast('Error saving amenity.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -308,6 +322,12 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
                     </div>
                 </div>
             )}
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

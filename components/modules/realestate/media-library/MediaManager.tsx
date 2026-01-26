@@ -7,6 +7,7 @@ import { mediaService, getAuthToken } from '@/app/services/api';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
+import Toast from '@/components/common/Toast';
 
 interface MediaManagerProps {
     mode: 'admin' | 'owner';
@@ -30,6 +31,15 @@ export default function MediaManager({ mode }: MediaManagerProps) {
     const [filterFolder, setFilterFolder] = useState<string>('all');
     const [sortBy, setSortBy] = useState<string>('uploadedAt');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     // Form states
     const [formData, setFormData] = useState({
@@ -79,6 +89,7 @@ export default function MediaManager({ mode }: MediaManagerProps) {
             }
         } catch (error) {
             console.error('Failed to load media items:', error);
+            showToast('Failed to load media items', 'error');
         } finally {
             setLoading(false);
         }
@@ -143,9 +154,10 @@ export default function MediaManager({ mode }: MediaManagerProps) {
             setShowUploadModal(false);
             setUploadFiles(null);
             setFormData({ title: '', alt: '', caption: '', description: '', tags: '', folder: '' });
+            showToast('Upload successful');
         } catch (error) {
             console.error('Upload failed:', error);
-            alert('Upload failed');
+            showToast('Upload failed', 'error');
         } finally {
             setIsUploading(false);
         }
@@ -160,8 +172,10 @@ export default function MediaManager({ mode }: MediaManagerProps) {
         try {
             await mediaService.deleteMedia(token, id);
             loadMediaItems();
+            showToast('Item deleted successfully');
         } catch (error) {
             console.error('Delete failed:', error);
+            showToast('Failed to delete item', 'error');
         }
     };
 
@@ -362,6 +376,12 @@ export default function MediaManager({ mode }: MediaManagerProps) {
         .btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; }
         .cursor-pointer { cursor: pointer; }
       `}</style>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

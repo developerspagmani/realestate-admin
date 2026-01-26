@@ -79,6 +79,7 @@ export const authEndpoints = {
   login: () => '/auth/login',
   getMe: () => '/auth/me',
   updatePassword: () => '/auth/password',
+  verifyEmail: () => '/auth/verify-email',
 };
 
 // User endpoints - Matches app/api/users/[[...path]]
@@ -298,7 +299,20 @@ export const agentEndpoints = {
   create: () => '/agents',
   update: (id: string) => `/agents/${id}`,
   delete: (id: string) => `/agents/${id}`,
-  getCommissions: (id: string) => `/agents/${id}/commissions`
+  getCommissions: (id: string) => `/agents/${id}/commissions`,
+  // Assignments
+  assignProperty: () => '/agents/assignments',
+  getAssignments: (id: string) => `/agents/${id}/assignments`,
+  unassignProperty: (id: string) => `/agents/assignments/${id}`,
+  // Lead Assignments
+  assignLead: () => '/agents/lead-assignments',
+  getLeadAssignments: (id: string) => `/agents/${id}/lead-assignments`,
+  unassignLead: (id: string) => `/agents/lead-assignments/${id}`,
+  // Agent Dashboard (Role 4)
+  getMyProfile: () => '/agents/my/profile',
+  getMyLeads: () => '/agents/my/leads',
+  getMyCommissions: () => '/agents/my/commissions',
+  updateMyLeadStatus: (id: string) => `/agents/my/leads/${id}/status`,
 };
 
 // Property 3D endpoints

@@ -6,6 +6,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { userService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
+import Toast from '@/components/common/Toast';
 import Link from 'next/link';
 
 interface Owner {
@@ -40,6 +41,16 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
         password: '' // Only for new owners
     });
     const [searchTerm, setSearchTerm] = useState('');
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
     const router = useRouter();
 
     const basePath = mode === 'realestate-admin' ? '/realestate-admin/owners' : '/realestate-admin/owners';
@@ -69,6 +80,7 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
             }
         } catch (error) {
             console.error('Failed to load owners:', error);
+            showToast('Failed to load owners', 'error');
         } finally {
             setLoading(false);
         }
@@ -109,6 +121,7 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                 if (response.success) {
                     setShowModal(false);
                     loadOwners();
+                    showToast('Owner updated successfully');
                 }
             } else {
                 const response = await userService.createUser(token, {
@@ -124,13 +137,14 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                 if (response.success) {
                     setShowModal(false);
                     loadOwners();
+                    showToast('Owner created successfully');
                 } else {
-                    alert(response.message || 'Failed to create owner');
+                    showToast(response.message || 'Failed to create owner', 'error');
                 }
             }
         } catch (error) {
             console.error('Error saving owner:', error);
-            alert('An error occurred while saving the owner');
+            showToast('An error occurred while saving the owner', 'error');
         }
     };
 
@@ -155,9 +169,13 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
             const response = await userService.deleteUser(token, id);
             if (response.success) {
                 loadOwners();
+                showToast('Owner deleted successfully');
+            } else {
+                showToast(response.message || 'Failed to delete owner', 'error');
             }
         } catch (error) {
             console.error('Error deleting owner:', error);
+            showToast('Error deleting owner', 'error');
         }
     };
 
@@ -414,6 +432,12 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                 .transition-all { transition: all 0.2s ease; }
                 .table-hover tbody tr:hover { background-color: rgba(0,0,0,0.01); }
             `}</style>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

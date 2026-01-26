@@ -15,7 +15,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onMobileClose }: SidebarProps) {
-  const { user, isAuthenticated, isAdmin, isOwner, isUser, logout, hasModule } = useAuthContext();
+  const { user, isAuthenticated, isAdmin, isOwner, isUser, isAgent, logout, hasModule } = useAuthContext();
   const { tenantType } = useManagementContext();
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -37,7 +37,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     }
   };
 
-  const getMenuItems = (isAdmin: boolean, isOwner: boolean, isUser: boolean, tenantType: number, hasModule: (m: string) => boolean, activePage?: string, user?: any) => {
+  const getMenuItems = (isAdmin: boolean, isOwner: boolean, isUser: boolean, isAgent: boolean, tenantType: number, hasModule: (m: string) => boolean, activePage?: string, user?: any) => {
     if (!user) return [];
 
     const labels = {
@@ -137,6 +137,25 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
       ];
     }
 
+    if (isAgent) {
+      return [
+        {
+          title: 'Workforce',
+          items: [
+            { href: '/realestate-agent/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', active: activePage === 'dashboard' },
+            { href: '/realestate-agent/leads', label: 'My Leads', icon: 'bi-person-badge', active: activePage === 'leads' },
+            { href: '/realestate-agent/commissions', label: 'Commissions', icon: 'bi-cash-stack', active: activePage === 'commissions' },
+          ]
+        },
+        {
+          title: 'Account',
+          items: [
+            { href: '/realestate-agent/profile', label: 'My Profile', icon: 'bi-person-circle', active: activePage === 'profile' },
+          ]
+        }
+      ];
+    }
+
     if (isUser) {
       return [
         {
@@ -159,7 +178,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     return [];
   };
 
-  const menuItems = getMenuItems(isAdmin, isOwner, isUser, tenantType, hasModule, activePage, user);
+  const menuItems = getMenuItems(isAdmin, isOwner, isUser, isAgent, tenantType, hasModule, activePage, user);
 
   if (!mounted || !user) {
     return (

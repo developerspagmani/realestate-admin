@@ -7,6 +7,7 @@ import { User } from '@/types';
 import { userService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
+import Toast from '@/components/common/Toast';
 
 interface UsersManagerProps {
     mode: 'admin' | 'owner';
@@ -29,6 +30,16 @@ export default function UsersManager({ mode }: UsersManagerProps) {
     });
     const [searchTerm, setSearchTerm] = useState('');
     const [filterRole, setFilterRole] = useState<string>('all');
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
     const router = useRouter();
 
     useEffect(() => {
@@ -73,6 +84,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
             }
         } catch (error) {
             console.error('Failed to load users:', error);
+            showToast('Failed to load users', 'error');
         } finally {
             setLoading(false);
         }
@@ -128,9 +140,10 @@ export default function UsersManager({ mode }: UsersManagerProps) {
 
             resetForm();
             loadUsers();
+            showToast(editingUser ? 'User updated successfully' : 'User created successfully');
         } catch (error) {
             console.error('Failed to save user:', error);
-            alert('Error saving user. Please check all fields.');
+            showToast('Error saving user. Please check all fields.', 'error');
         }
     };
 
@@ -153,9 +166,10 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                 if (!token) return;
                 await userService.deleteUser(token, id);
                 loadUsers();
+                showToast('User deleted successfully');
             } catch (error) {
                 console.error('Failed to delete user:', error);
-                alert('Could not delete user.');
+                showToast('Could not delete user.', 'error');
             }
         }
     };
@@ -473,6 +487,12 @@ export default function UsersManager({ mode }: UsersManagerProps) {
         .extra-small { font-size: 0.7rem; }
         .btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; }
       `}</style>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

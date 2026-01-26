@@ -6,7 +6,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.email || !formData.password) {
+    if (!formData.username || !formData.password) {
       setError('Please fill in all fields');
       return;
     }
@@ -39,7 +39,12 @@ export default function LoginPage() {
     setLocalLoading(true);
 
     try {
-      const success = await login(formData);
+      // Determine if username is email or phone
+      const loginPayload = formData.username.includes('@')
+        ? { email: formData.username, password: formData.password }
+        : { phone: formData.username, password: formData.password };
+
+      const success = await login(loginPayload);
 
       if (success) {
         // Use role-based redirect
@@ -84,12 +89,13 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
-              <label className="form-label">Email</label>
+              <label className="form-label">Email or Phone Number</label>
               <input
-                type="email"
+                type="text"
                 className="form-control"
-                name="email"
-                value={formData.email}
+                name="username"
+                placeholder="email@example.com or +1234567890"
+                value={formData.username}
                 onChange={handleChange}
                 required
                 disabled={localLoading}

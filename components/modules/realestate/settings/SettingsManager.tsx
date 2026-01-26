@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
+import Toast from '@/components/common/Toast';
 
 interface SettingsManagerProps {
     mode: 'admin' | 'owner';
@@ -42,6 +43,18 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
             type: 2, // 2: Co-working
         }
     });
+
+
+
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     const router = useRouter();
 
@@ -91,6 +104,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
             }
         } catch (error) {
             console.error('Failed to load settings:', error);
+            showToast('Failed to load settings', 'error');
         } finally {
             setLoading(false);
         }
@@ -124,13 +138,13 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
 
             const response = await tenantService.updateTenant(token, user.tenantId, updatePayload);
             if (response.success) {
-                alert('Settings updated successfully!');
+                showToast('Settings updated successfully!');
             } else {
-                alert(response.message || 'Failed to update settings');
+                showToast(response.message || 'Failed to update settings', 'error');
             }
         } catch (error) {
             console.error('Failed to save settings:', error);
-            alert('Error saving settings.');
+            showToast('Error saving settings.', 'error');
         } finally {
             setSaving(false);
         }
@@ -362,6 +376,12 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                     to { opacity: 1; transform: translateY(0); }
                 }
             `}</style>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

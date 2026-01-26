@@ -1,7 +1,7 @@
 /* Modern Admin UI - Responsive & Sleek */
 
 :root {
-    --admin-primary: #0f172a;
+    --admin-primary: #000000;
     --admin-accent: #0284c7;
     --admin-bg: #f8fafc;
     --admin-card-bg: #ffffff;
@@ -118,7 +118,7 @@ body {
 /* Table Styles */
 .table {
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 .table thead th {

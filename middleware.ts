@@ -117,6 +117,7 @@ export function middleware(request: NextRequest) {
   const protectedRoutes = [
     '/realestate-admin',
     '/realestate-owner-admin',
+    '/realestate-agent',
     '/user',
     '/cart',
     '/checkout',
@@ -160,6 +161,15 @@ export function middleware(request: NextRequest) {
     '/realestate-owner-admin',
   ];
 
+  // Agent-only routes
+  const agentRoutes = [
+    '/realestate-agent/dashboard',
+    '/realestate-agent/leads',
+    '/realestate-agent/commissions',
+    '/realestate-agent/profile',
+    '/realestate-agent',
+  ];
+
   // User-only routes
   const userRoutes = [
     '/user/dashboard',
@@ -195,6 +205,7 @@ export function middleware(request: NextRequest) {
     // Check role-based access (using numeric roles: 1=user, 2=admin, 3=owner)
     const isAdminPath = adminRoutes.some(route => pathname.startsWith(route));
     const isOwnerPath = ownerRoutes.some(route => pathname.startsWith(route));
+    const isAgentPath = agentRoutes.some(route => pathname.startsWith(route));
     const isUserPath = userRoutes.some(route => pathname.startsWith(route));
 
     // Role-specific check: If a route is strictly for a role, block others.
@@ -203,10 +214,11 @@ export function middleware(request: NextRequest) {
 
     if (isAdminPath && userRole === '2') authorized = true;
     else if (isOwnerPath && userRole === '3') authorized = true;
+    else if (isAgentPath && userRole === '4') authorized = true;
     else if (isUserPath && userRole === '1') authorized = true;
 
     // If route is in a role list but user didn't match any of their allowed roles
-    if ((isAdminPath || isOwnerPath || isUserPath) && !authorized) {
+    if ((isAdminPath || isOwnerPath || isAgentPath || isUserPath) && !authorized) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
 

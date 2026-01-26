@@ -8,6 +8,7 @@ import MainLayout from '@/components/MainLayout';
 import WidgetForm from './WidgetForm';
 import WidgetCard from './WidgetCard';
 import QRCodeGenerator from './QRCodeGenerator';
+import Toast from '@/components/common/Toast';
 
 interface WidgetManagerProps {
     mode?: 'admin' | 'owner';
@@ -76,6 +77,15 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
     const [properties, setProperties] = useState<any[]>([]);
     const [showQRModal, setShowQRModal] = useState(false);
     const [qrWidget, setQRWidget] = useState<any>(null);
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -118,6 +128,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
             }
         } catch (error) {
             console.error('Failed to load widgets:', error);
+            showToast('Failed to load widgets', 'error');
         } finally {
             setLoading(false);
         }
@@ -156,10 +167,13 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
                 setEditingWidget(null);
                 setFormData(INITIAL_FORM_DATA);
                 loadWidgets();
+                showToast(editingWidget ? 'Widget updated successfully' : 'Widget created successfully');
+            } else {
+                showToast(response.message || 'Failed to save widget', 'error');
             }
         } catch (error) {
             console.error('Failed to save widget:', error);
-            alert('Error saving widget. Make sure Unique ID is unique.');
+            showToast('Error saving widget. Make sure Unique ID is unique.', 'error');
         }
     };
 
@@ -172,9 +186,13 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
             const response = await widgetService.deleteWidget(token, id, currentTenantId);
             if (response.success) {
                 loadWidgets();
+                showToast('Widget deleted successfully');
+            } else {
+                showToast(response.message || 'Failed to delete widget', 'error');
             }
         } catch (error) {
             console.error('Failed to delete widget:', error);
+            showToast('Failed to delete widget', 'error');
         }
     };
 
@@ -184,14 +202,14 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         const code = `<!-- CoWorking Hub Widget -->\n<div id="cw-booking-portal" data-widget="${uniqueId}"></div>\n<script src="${loaderUrl}" async></script>`;
 
         navigator.clipboard.writeText(code);
-        alert('Universal JS Embed Code copied to clipboard!');
+        showToast('Universal JS Embed Code copied to clipboard!');
     };
 
     const copyShortLink = (uniqueId: string) => {
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
         const shortUrl = `${baseUrl}/go/${uniqueId}`;
         navigator.clipboard.writeText(shortUrl);
-        alert('Short Link copied to clipboard!');
+        showToast('Short Link copied to clipboard!');
     };
 
     const handleEdit = (widget: any) => {
@@ -289,6 +307,12 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
                     100% { opacity: 1; }
                 }
             `}</style>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

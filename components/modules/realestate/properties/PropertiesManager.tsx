@@ -8,6 +8,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import PropertiesList from './PropertiesList';
 import PropertyForm from './PropertyForm';
+import Toast from '@/components/common/Toast';
 import { Property, MediaItem } from '@/types';
 
 interface PropertiesManagerProps {
@@ -27,6 +28,15 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     const router = useRouter();
 
@@ -112,6 +122,7 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
 
         } catch (error) {
             console.error('Failed to load properties data:', error);
+            showToast('Failed to load data', 'error');
         } finally {
             setLoading(false);
         }
@@ -131,10 +142,11 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             const tenantId = (user as any)?.tenantId;
 
             await propertyService.deleteProperty(token, id, tenantId);
+            showToast('Property deleted successfully');
             setProperties(properties.filter(p => p.id !== id));
         } catch (error) {
             console.error('Failed to delete property:', error);
-            alert('Error deleting property.');
+            showToast('Error deleting property.', 'error');
         }
     };
 
@@ -175,23 +187,20 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
 
             if (editingProperty) {
                 await propertyService.updateProperty(token, editingProperty.id, payload, tenantId);
-                setSuccessMessage('Property updated successfully!');
+                showToast('Property updated successfully!');
             } else {
                 await propertyService.createProperty(token, payload, tenantId);
-                setSuccessMessage('Property registered successfully!');
+                showToast('Property registered successfully!');
             }
 
             await loadData(); // Reload to get fresh data
 
-            setTimeout(() => {
-                setIsSubmitting(false);
-                setSuccessMessage(null);
-                handleCloseModal();
-            }, 1000);
+            setIsSubmitting(false);
+            handleCloseModal();
 
         } catch (error) {
             console.error('Failed to save property:', error);
-            alert('Error saving property.');
+            showToast('Error saving property.', 'error');
             setIsSubmitting(false);
         }
     };
@@ -276,6 +285,12 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     amenities={amenities}
                 />
             )}
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
         </MainLayout>
     );
 }

@@ -7,6 +7,7 @@ import { bookingService, userService, unitService, propertyService, agentService
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import { Booking, User, Unit, Property } from '@/app/services/api';
+import Toast from '@/components/common/Toast';
 
 interface BookingsManagerProps {
     mode: 'admin' | 'owner';
@@ -47,6 +48,15 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     const [availabilityStatus, setAvailabilityStatus] = useState<{ loading: boolean; available?: boolean; conflicts?: any[]; price?: number }>({ loading: false });
     const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
     const [availabilityForm, setAvailabilityForm] = useState({ propertyId: '', unitId: '', startAt: '', endAt: '' });
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -99,6 +109,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
 
         } catch (error) {
             console.error('Failed to load bookings data:', error);
+            showToast('Failed to load bookings', 'error');
         } finally {
             setLoading(false);
         }
@@ -215,10 +226,13 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                 setShowModal(false);
                 setEditingBooking(null);
                 loadData();
+                showToast(editingBooking ? 'Booking updated successfully' : 'Booking created successfully');
+            } else {
+                showToast(response.message || 'Failed to save booking', 'error');
             }
         } catch (error) {
             console.error('Error saving booking:', error);
-            alert('Failed to save booking');
+            showToast('Error saving booking', 'error');
         }
     };
 
@@ -227,9 +241,15 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             const token = getAuthToken();
             if (!token) return;
             const response = await bookingService.updateBookingStatus(token, id, status);
-            if (response.success) loadData();
+            if (response.success) {
+                loadData();
+                showToast('Booking status updated');
+            } else {
+                showToast(response.message || 'Failed to update status', 'error');
+            }
         } catch (error) {
             console.error('Error updating status:', error);
+            showToast('Error updating status', 'error');
         }
     };
 
@@ -239,9 +259,15 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             const token = getAuthToken();
             if (!token) return;
             const response = await bookingService.deleteBooking(token, id);
-            if (response.success) loadData();
+            if (response.success) {
+                loadData();
+                showToast('Booking deleted successfully');
+            } else {
+                showToast(response.message || 'Failed to delete booking', 'error');
+            }
         } catch (error) {
             console.error('Error deleting booking:', error);
+            showToast('Error deleting booking', 'error');
         }
     };
 
@@ -277,6 +303,12 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
 
     return (
         <MainLayout activePage="bookings">
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
             <div className="container-fluid py-4">
                 {/* Header Section */}
                 <div className="d-flex justify-content-between align-items-center mb-4">

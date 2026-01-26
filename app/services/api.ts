@@ -80,6 +80,7 @@ export interface Property {
     userPropertyAccess: number;
   };
   units?: any[];
+  agentId?: string;
 }
 
 export interface Unit {
@@ -121,14 +122,14 @@ export interface Tenant {
 
 // Authentication service
 export const authService = {
-  login: async (credentials: { email: string; password: string; tenantId?: string }) => {
-    const { tenantId, email, password } = credentials;
+  login: async (credentials: { email?: string; phone?: string; password: string; tenantId?: string }) => {
+    const { tenantId, email, phone, password } = credentials;
     return await makeApiCall(authEndpoints.login(), {
       method: 'POST',
       headers: {
         ...(tenantId ? { 'x-tenant-domain': tenantId } : {})
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, phone, password }),
     });
   },
 
@@ -150,6 +151,16 @@ export const authService = {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(passwordData),
+    });
+  },
+
+  verifyEmail: async (token: string) => {
+    return await makeApiCall(authEndpoints.verifyEmail(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ token })
     });
   },
 };
@@ -320,8 +331,11 @@ export const bookingService = {
 // Properties service
 export const propertyService = {
   getProperties: async (token: string, params?: { page?: string; limit?: string; search?: string; tenantId?: string; ownerId?: string; industryType?: number | string }) => {
-    return await makeApiCall(adminEndpoints.getProperties(params), {
-      headers: { 'Authorization': `Bearer ${token}` },
+    return await makeApiCall(propertyEndpoints.getAll(params), {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...(params?.tenantId ? { 'x-tenant-domain': params.tenantId } : {})
+      },
     });
   },
 
@@ -481,7 +495,10 @@ export const leadService = {
     return await makeApiCall(leadEndpoints.update(leadId, tenantId), {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(leadData),
+      body: JSON.stringify({
+        ...leadData,
+        ...(tenantId ? { tenantId } : {})
+      }),
     });
   },
 
@@ -760,6 +777,70 @@ export const agentService = {
 
   getCommissions: async (token: string, id: string) => {
     return await makeApiCall(agentEndpoints.getCommissions(id), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  getMyLeads: async (token: string) => {
+    return await makeApiCall(agentEndpoints.getMyLeads(), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  getMyCommissions: async (token: string) => {
+    return await makeApiCall(agentEndpoints.getMyCommissions(), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  updateMyLeadStatus: async (token: string, id: string, status: number, notes?: string) => {
+    return await makeApiCall(agentEndpoints.updateMyLeadStatus(id), {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ status, notes }),
+    });
+  },
+
+  // Assignment methods
+  getAssignments: async (token: string, agentId: string) => {
+    return await makeApiCall(agentEndpoints.getAssignments(agentId), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  assignProperty: async (token: string, data: { agentId: string; propertyId: string; commissionRate?: number; isPrimary?: boolean; notes?: string }) => {
+    return await makeApiCall(agentEndpoints.assignProperty(), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+
+  unassignProperty: async (token: string, assignmentId: string) => {
+    return await makeApiCall(agentEndpoints.unassignProperty(assignmentId), {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  // Lead Assignment Methods
+  assignLead: async (token: string, data: { agentId: string; leadId: string; isPrimary?: boolean; notes?: string }) => {
+    return await makeApiCall(agentEndpoints.assignLead(), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+
+  getAgentLeads: async (token: string, agentId: string) => {
+    return await makeApiCall(agentEndpoints.getLeadAssignments(agentId), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  unassignLead: async (token: string, assignmentId: string) => {
+    return await makeApiCall(agentEndpoints.unassignLead(assignmentId), {
+      method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
     });
   },

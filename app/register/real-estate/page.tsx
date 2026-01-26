@@ -119,15 +119,18 @@ export default function RealEstateRegisterPage() {
                                 {success ? (
                                     <div className="text-center">
                                         <div className="d-inline-flex bg-success bg-opacity-10 p-4 rounded-circle mb-4">
-                                            <i className="bi bi-check-lg fs-1 text-success"></i>
+                                            <i className="bi bi-envelope-check-fill fs-1 text-success"></i>
                                         </div>
                                         <h3 className="fw-bold text-dark mb-3">Registration Successful!</h3>
                                         <p className="text-muted mb-4">
-                                            Your account has been created successfully. You can now log in to manage your properties.
+                                            We have sent an activation link to <strong>{formData.email}</strong>.<br />
+                                            Please check your email inbox to activate your account.
                                         </p>
-                                        <Link href="/login" className="btn btn-primary px-5 py-3 fw-bold shadow-sm">
-                                            Proceed to Login
-                                        </Link>
+                                        <div className="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                                            <Link href="/login" className="btn btn-outline-primary px-4 py-2 fw-semibold">
+                                                Back to Login
+                                            </Link>
+                                        </div>
                                     </div>
                                 ) : (
                                     <>
