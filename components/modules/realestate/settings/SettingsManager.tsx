@@ -41,6 +41,11 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
             name: '',
             domain: '',
             type: 2, // 2: Co-working
+        },
+        backup: {
+            autoBackup: false,
+            frequency: 'weekly',
+            lastBackup: null,
         }
     });
 
@@ -99,6 +104,11 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                         name: tenant.name || '',
                         domain: tenant.domain || '',
                         type: tenant.type || 2,
+                    },
+                    backup: {
+                        autoBackup: dbSettings.backup?.autoBackup || false,
+                        frequency: dbSettings.backup?.frequency || 'weekly',
+                        lastBackup: dbSettings.backup?.lastBackup || null,
                     }
                 });
             }
@@ -119,6 +129,72 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
         loadSettings();
     }, [user, isAuthenticated, mounted, authLoading, router]);
 
+    const handleExportBackup = () => {
+        const backupData = JSON.stringify(settings, null, 2);
+        const blob = new Blob([backupData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backup-${mode}-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Backup downloaded successfully!');
+    };
+
+    const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const importedSettings = JSON.parse(event.target?.result as string);
+                // Validate structure roughly
+                if (!importedSettings.general || !importedSettings.appearance) {
+                    throw new Error('Invalid backup file format');
+                }
+
+                await setSettings(importedSettings); // Update state
+
+                // Automatically save after import? Or let user click save.
+                // Let's autosave to persist
+
+                // We reuse the save logic but passing the new settings directly would be better
+                // For now, we update state and trigger save. 
+                // However, state update is async, so we should call update API directly here.
+
+                if (!user?.tenantId) return;
+                setSaving(true);
+
+                const { tenantService } = await import('@/app/services/api');
+                const token = getAuthToken();
+                if (!token) return;
+
+                const updatePayload = {
+                    name: importedSettings.general.siteName,
+                    address: importedSettings.general.address,
+                    settings: importedSettings
+                };
+
+                const response = await tenantService.updateTenant(token, user.tenantId, updatePayload);
+                if (response.success) {
+                    showToast('Backup restored successfully!');
+                } else {
+                    showToast('Restored settings locally but failed to save to server.', 'error');
+                }
+
+            } catch (err) {
+                console.error('Import error:', err);
+                showToast('Failed to import backup. Invalid file.', 'error');
+            } finally {
+                setSaving(false);
+            }
+        };
+        reader.readAsText(file);
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!user?.tenantId) return;
@@ -129,15 +205,25 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
+            // Update last backup date if saving backup settings
+            const timestamp = new Date().toISOString();
+            const newSettings = activeTab === 'backup' ? {
+                ...settings,
+                backup: { ...settings.backup, lastBackup: timestamp }
+            } : settings;
+
             // Prepare update payload
             const updatePayload = {
-                name: settings.general.siteName,
-                address: settings.general.address,
-                settings: settings // Entire settings object as a JSON blob
+                name: newSettings.general.siteName,
+                address: newSettings.general.address,
+                settings: newSettings // Entire settings object as a JSON blob
             };
 
             const response = await tenantService.updateTenant(token, user.tenantId, updatePayload);
             if (response.success) {
+                if (activeTab === 'backup') {
+                    setSettings(newSettings); // Update local state
+                }
                 showToast('Settings updated successfully!');
             } else {
                 showToast(response.message || 'Failed to update settings', 'error');
@@ -204,6 +290,13 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                 >
                                     <i className={`bi bi-bell-fill me-3 ${activeTab === 'notifications' ? '' : 'text-primary'}`}></i>
                                     <span>Notifications</span>
+                                </button>
+                                <button
+                                    className={`list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center py-3 ${activeTab === 'backup' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-muted'}`}
+                                    onClick={() => setActiveTab('backup')}
+                                >
+                                    <i className={`bi bi-database-fill-gear me-3 ${activeTab === 'backup' ? '' : 'text-primary'}`}></i>
+                                    <span>Data Backup</span>
                                 </button>
                             </div>
                         </div>
@@ -355,6 +448,84 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                                         <div className="form-check form-switch fs-4">
                                                             <input className="form-check-input" type="checkbox" checked={settings.notifications.whatsappAlerts} onChange={(e) => setSettings({ ...settings, notifications: { ...settings.notifications, whatsappAlerts: e.target.checked } })} />
                                                         </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {activeTab === 'backup' && (
+                                            <div className="fade-in">
+                                                <h4 className="fw-bold mb-4">Data Backup & Restore</h4>
+
+                                                <div className="card bg-light border-0 rounded-4 mb-4">
+                                                    <div className="card-body p-4">
+                                                        <div className="d-flex align-items-center mb-3">
+                                                            <div className="p-3 bg-white rounded-circle shadow-sm me-3">
+                                                                <i className="bi bi-cloud-download text-primary fs-4"></i>
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="fw-bold mb-1">Export Settings</h5>
+                                                                <p className="text-muted small mb-0">Download a JSON file of your current configuration.</p>
+                                                            </div>
+                                                            <div className="ms-auto">
+                                                                <button type="button" onClick={handleExportBackup} className="btn btn-primary rounded-pill px-4">
+                                                                    Download
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="card bg-light border-0 rounded-4 mb-4">
+                                                    <div className="card-body p-4">
+                                                        <div className="d-flex align-items-center mb-3">
+                                                            <div className="p-3 bg-white rounded-circle shadow-sm me-3">
+                                                                <i className="bi bi-cloud-upload text-success fs-4"></i>
+                                                            </div>
+                                                            <div>
+                                                                <h5 className="fw-bold mb-1">Import Settings</h5>
+                                                                <p className="text-muted small mb-0">Restore configuration from a backup file.</p>
+                                                            </div>
+                                                            <div className="ms-auto">
+                                                                <label className="btn btn-outline-success rounded-pill px-4 cursor-pointer">
+                                                                    Restore
+                                                                    <input type="file" accept=".json" onChange={handleImportBackup} hidden />
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <hr className="my-5" />
+
+                                                <h5 className="fw-bold mb-3">Automatic Backup</h5>
+                                                <div className="list-group list-group-flush rounded-4 overflow-hidden border">
+                                                    <div className="list-group-item p-4 d-flex justify-content-between align-items-center border-0 border-bottom">
+                                                        <div>
+                                                            <div className="fw-bold">Enable Auto-Backup</div>
+                                                            <div className="small text-muted">Automatically save settings snapshots.</div>
+                                                        </div>
+                                                        <div className="form-check form-switch fs-4">
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="checkbox"
+                                                                checked={settings.backup.autoBackup}
+                                                                onChange={(e) => setSettings({ ...settings, backup: { ...settings.backup, autoBackup: e.target.checked } })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="list-group-item p-4 border-0">
+                                                        <label className="form-label fw-bold mb-2">Backup Frequency</label>
+                                                        <select
+                                                            className="form-select bg-light border-0"
+                                                            value={settings.backup.frequency}
+                                                            onChange={(e) => setSettings({ ...settings, backup: { ...settings.backup, frequency: e.target.value } })}
+                                                            disabled={!settings.backup.autoBackup}
+                                                        >
+                                                            <option value="daily">Daily</option>
+                                                            <option value="weekly">Weekly</option>
+                                                            <option value="monthly">Monthly</option>
+                                                        </select>
                                                     </div>
                                                 </div>
                                             </div>

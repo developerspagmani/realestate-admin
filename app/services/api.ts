@@ -163,6 +163,20 @@ export const authService = {
       body: JSON.stringify({ token })
     });
   },
+
+  forgotPassword: async (email: string) => {
+    return await makeApiCall(authEndpoints.forgotPassword(), {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  resetPassword: async (data: any) => {
+    return await makeApiCall(authEndpoints.resetPassword(), {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 // Dashboard service

@@ -80,6 +80,8 @@ export const authEndpoints = {
   getMe: () => '/auth/me',
   updatePassword: () => '/auth/password',
   verifyEmail: () => '/auth/verify-email',
+  forgotPassword: () => '/auth/forgot-password',
+  resetPassword: () => '/auth/reset-password',
 };
 
 // User endpoints - Matches app/api/users/[[...path]]

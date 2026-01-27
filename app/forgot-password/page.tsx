@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { authService } from '@/app/services/api';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -29,14 +30,15 @@ export default function ForgotPasswordPage() {
     }
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // In a real app, this would call your backend API
-      // For demo purposes, we'll just show success
-      setSuccess(true);
-    } catch (err) {
-      setError('Failed to send reset email. Please try again.');
+      const response = await authService.forgotPassword(email);
+
+      if (response.success) {
+        setSuccess(true);
+      } else {
+        setError(response.message || 'Failed to send reset email. Please try again.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -52,15 +54,15 @@ export default function ForgotPasswordPage() {
             </div>
             <h2 className="card-title mb-3">Email Sent!</h2>
             <p className="card-text text-muted mb-4">
-              We've sent a password reset link to your email address. 
+              We've sent a password reset link to your email address.
               Please check your inbox and follow the instructions.
             </p>
             <div className="alert alert-info small">
               <i className="bi bi-info-circle me-2"></i>
-              If you don't receive the email within a few minutes, 
+              If you don't receive the email within a few minutes,
               please check your spam folder.
             </div>
-            <button 
+            <button
               className="btn btn-primary w-100"
               onClick={() => router.push('/login')}
             >
@@ -84,7 +86,7 @@ export default function ForgotPasswordPage() {
               Enter your email address and we'll send you a link to reset your password.
             </p>
           </div>
-          
+
           {error && (
             <div className="alert alert-danger" role="alert">
               <i className="bi bi-exclamation-triangle me-2"></i>
@@ -110,9 +112,9 @@ export default function ForgotPasswordPage() {
                 />
               </div>
             </div>
-            
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               className="btn btn-primary w-100"
               disabled={loading}
             >
@@ -132,8 +134,8 @@ export default function ForgotPasswordPage() {
 
           <div className="text-center mt-4">
             <small className="text-muted">
-              Remember your password? 
-              <button 
+              Remember your password?
+              <button
                 className="btn btn-link p-0 ms-1 text-primary	rext-decoration-none"
                 onClick={() => router.push('/login')}
               >
