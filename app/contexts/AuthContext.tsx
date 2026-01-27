@@ -144,6 +144,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (storedUser && storedToken) {
           try {
+            // Check if token is expired before initializing
+            const parts = storedToken.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              const now = Date.now() / 1000;
+              if (payload.exp && payload.exp < now) {
+                console.warn('Authentication token expired.');
+                localStorage.removeItem('user');
+                removeAuthToken();
+                return dispatch({ type: 'INITIALIZE', payload: { user: null, token: null, activeModules: [] } });
+              }
+            }
+
             const user = JSON.parse(storedUser);
             const storedModules = localStorage.getItem('activeModules');
             dispatch({
@@ -154,11 +167,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 activeModules: storedModules ? JSON.parse(storedModules) : []
               }
             });
-            // Re-fetch to ensure fresh data
+            // Re-fetch to ensure fresh data and verify with backend
             fetchModules(storedToken);
             return;
           } catch (error) {
-            console.error('Failed to parse stored user data:', error);
+            console.error('Failed to parse or validate stored auth data:', error);
             localStorage.removeItem('user');
             removeAuthToken();
           }

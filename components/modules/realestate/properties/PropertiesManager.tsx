@@ -99,9 +99,15 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     gallery: p.gallery || [],
                     price: p.price || 0,
                     area: p.area || p.sizeSqft || 0,
-                    floorPlanId: p.floorPlanId || '',
                     brochureId: p.brochureId || '',
                     amenities: p.propertyAmenities ? p.propertyAmenities.map((pa: any) => pa.amenity?.id || pa.amenityId) : [],
+                    yearBuilt: p.yearBuilt,
+                    neighborhood: p.neighborhood || '',
+                    parkingSpaces: p.parkingSpaces || 0,
+                    bedrooms: p.bedrooms || 0,
+                    bathrooms: p.bathrooms || 0,
+                    lotSize: p.lotSize || 0,
+                    listingType: (p.listingType?.toLowerCase() as any) || 'rent',
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt
                 }));
@@ -182,7 +188,14 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                 area: formData.area,
                 floorPlanId: formData.floorPlanId,
                 brochureId: formData.brochureId,
-                amenities: formData.amenities
+                amenities: formData.amenities,
+                yearBuilt: formData.yearBuilt,
+                neighborhood: formData.neighborhood,
+                parkingSpaces: formData.parkingSpaces,
+                bedrooms: formData.bedrooms,
+                bathrooms: formData.bathrooms,
+                lotSize: formData.lotSize,
+                listingType: formData.listingType
             };
 
             if (editingProperty) {

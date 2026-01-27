@@ -59,6 +59,20 @@ export async function makeApiCall(endpoint: string, options: RequestInit = {}) {
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        if (typeof window !== 'undefined' && !endpoint.includes('/auth/login')) {
+          localStorage.removeItem('user');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('activeModules');
+          document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+          document.cookie = 'user-role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+          document.cookie = 'user-id=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+          document.cookie = 'tenant-id=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+          window.location.href = '/login?error=session_expired';
+          return;
+        }
+      }
+
       const error = await response.json().catch(() => ({}));
       const errorMessage = error.errors && Array.isArray(error.errors)
         ? `${error.message}: ${error.errors.join(', ')}`
@@ -222,6 +236,48 @@ export const campaignEndpoints = {
   update: (id: string) => `/campaigns/${id}`,
   delete: (id: string) => `/campaigns/${id}`,
   launch: (id: string) => `/campaigns/${id}/launch`,
+};
+
+// Audience Group endpoints
+export const audienceEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/marketing/audience?${buildQueryString(params)}` : '/marketing/audience',
+  getById: (id: string) => `/marketing/audience/${id}`,
+  create: () => '/marketing/audience',
+  update: (id: string) => `/marketing/audience/${id}`,
+  delete: (id: string) => `/marketing/audience/${id}`,
+  addLead: (groupId: string) => `/marketing/audience/${groupId}/leads`,
+};
+
+// Email Template endpoints
+export const templateEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/marketing/templates?${buildQueryString(params)}` : '/marketing/templates',
+  getById: (id: string) => `/marketing/templates/${id}`,
+  create: () => '/marketing/templates',
+  update: (id: string) => `/marketing/templates/${id}`,
+  delete: (id: string) => `/marketing/templates/${id}`,
+};
+
+// Marketing Workflow endpoints
+export const workflowEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/marketing/workflows?${buildQueryString(params)}` : '/marketing/workflows',
+  getById: (id: string) => `/marketing/workflows/${id}`,
+  create: () => '/marketing/workflows',
+  update: (id: string) => `/marketing/workflows/${id}`,
+  delete: (id: string) => `/marketing/workflows/${id}`,
+  toggle: (id: string) => `/marketing/workflows/${id}/toggle`,
+};
+
+// Form Builder endpoints
+export const formBuilderEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/marketing/forms?${buildQueryString(params)}` : '/marketing/forms',
+  getById: (id: string) => `/marketing/forms/${id}`,
+  create: () => '/marketing/forms',
+  update: (id: string) => `/marketing/forms/${id}`,
+  delete: (id: string) => `/marketing/forms/${id}`,
 };
 
 // Media endpoints

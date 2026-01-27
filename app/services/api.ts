@@ -1,4 +1,4 @@
-import { makeApiCall, adminEndpoints, bookingEndpoints, userEndpoints, propertyEndpoints, tenantEndpoints, unitEndpoints, leadEndpoints, paymentEndpoints, settingsEndpoints, mediaEndpoints, authEndpoints, widgetEndpoints, moduleEndpoints, property3DEndpoints, discoveryEndpoints, amenityEndpoints, agentEndpoints } from '@/app/api/config/endpoints';
+import { makeApiCall, adminEndpoints, bookingEndpoints, userEndpoints, propertyEndpoints, tenantEndpoints, unitEndpoints, leadEndpoints, paymentEndpoints, settingsEndpoints, mediaEndpoints, authEndpoints, widgetEndpoints, moduleEndpoints, property3DEndpoints, discoveryEndpoints, amenityEndpoints, agentEndpoints, campaignEndpoints, audienceEndpoints, templateEndpoints, workflowEndpoints, formBuilderEndpoints } from '@/app/api/config/endpoints';
 
 // Types for API responses
 export interface ApiResponse<T = any> {
@@ -854,6 +854,160 @@ export const agentService = {
 
   unassignLead: async (token: string, assignmentId: string) => {
     return await makeApiCall(agentEndpoints.unassignLead(assignmentId), {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+};
+
+export const marketingService = {
+  // Campaigns
+  getCampaigns: async (token: string, params?: any) => {
+    return await makeApiCall(campaignEndpoints.getAll(params), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  getCampaignById: async (token: string, id: string) => {
+    return await makeApiCall(campaignEndpoints.getById(id), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  createCampaign: async (token: string, data: any) => {
+    return await makeApiCall(campaignEndpoints.create(), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  updateCampaign: async (token: string, id: string, data: any) => {
+    return await makeApiCall(campaignEndpoints.update(id), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  deleteCampaign: async (token: string, id: string) => {
+    return await makeApiCall(campaignEndpoints.delete(id), {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  launchCampaign: async (token: string, id: string) => {
+    return await makeApiCall(campaignEndpoints.launch(id), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  // Audience Groups
+  getAudienceGroups: async (token: string, params?: any) => {
+    return await makeApiCall(audienceEndpoints.getAll(params), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  createAudienceGroup: async (token: string, data: any) => {
+    return await makeApiCall(audienceEndpoints.create(), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  updateAudienceGroup: async (token: string, id: string, data: any) => {
+    return await makeApiCall(audienceEndpoints.update(id), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  deleteAudienceGroup: async (token: string, id: string) => {
+    return await makeApiCall(audienceEndpoints.delete(id), {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  // Content Templates
+  getTemplates: async (token: string, params?: any) => {
+    return await makeApiCall(templateEndpoints.getAll(params), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  createTemplate: async (token: string, data: any) => {
+    return await makeApiCall(templateEndpoints.create(), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  updateTemplate: async (token: string, id: string, data: any) => {
+    return await makeApiCall(templateEndpoints.update(id), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  deleteTemplate: async (token: string, id: string) => {
+    return await makeApiCall(templateEndpoints.delete(id), {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  // Workflows
+  getWorkflows: async (token: string, params?: any) => {
+    return await makeApiCall(workflowEndpoints.getAll(params), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  createWorkflow: async (token: string, data: any) => {
+    return await makeApiCall(workflowEndpoints.create(), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  updateWorkflow: async (token: string, id: string, data: any) => {
+    return await makeApiCall(workflowEndpoints.update(id), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  toggleWorkflow: async (token: string, id: string) => {
+    return await makeApiCall(workflowEndpoints.toggle(id), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  deleteWorkflow: async (token: string, id: string) => {
+    return await makeApiCall(workflowEndpoints.delete(id), {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  // Form Builder
+  getForms: async (token: string, params?: any) => {
+    return await makeApiCall(formBuilderEndpoints.getAll(params), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  createForm: async (token: string, data: any) => {
+    return await makeApiCall(formBuilderEndpoints.create(), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  updateForm: async (token: string, id: string, data: any) => {
+    return await makeApiCall(formBuilderEndpoints.update(id), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+  deleteForm: async (token: string, id: string) => {
+    return await makeApiCall(formBuilderEndpoints.delete(id), {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
     });

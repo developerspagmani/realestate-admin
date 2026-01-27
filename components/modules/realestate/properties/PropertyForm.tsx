@@ -40,7 +40,14 @@ export default function PropertyForm({
         mainImageId: '',
         gallery: [],
         amenities: [],
-        area: 0
+        area: 0,
+        yearBuilt: undefined,
+        neighborhood: '',
+        parkingSpaces: 0,
+        bedrooms: 0,
+        bathrooms: 0,
+        lotSize: 0,
+        listingType: 'rent'
     });
 
     const [showMediaModal, setShowMediaModal] = useState(false);
@@ -71,7 +78,14 @@ export default function PropertyForm({
                 gallery: initialData.gallery || [],
                 floorPlanId: initialData.floorPlanId || '',
                 brochureId: initialData.brochureId || '',
-                amenities: initialData.amenities || []
+                amenities: initialData.amenities || [],
+                yearBuilt: initialData.yearBuilt,
+                neighborhood: initialData.neighborhood || '',
+                parkingSpaces: initialData.parkingSpaces || 0,
+                bedrooms: initialData.bedrooms || 0,
+                bathrooms: initialData.bathrooms || 0,
+                lotSize: initialData.lotSize || 0,
+                listingType: initialData.listingType || 'rent'
             });
         }
     }, [initialData]);
@@ -214,6 +228,86 @@ export default function PropertyForm({
                                                     value={formData.price || ''}
                                                     onChange={(e) => setFormData({ ...formData, price: e.target.value ? parseFloat(e.target.value) : 0 })}
                                                     placeholder="0.00"
+                                                />
+                                            </div>
+
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">Listing Type</label>
+                                                <select
+                                                    className="form-select bg-light border-0"
+                                                    value={formData.listingType || 'rent'}
+                                                    onChange={(e) => setFormData({ ...formData, listingType: e.target.value as any })}
+                                                    required
+                                                >
+                                                    <option value="rent">Rent</option>
+                                                    <option value="sale">Sale</option>
+                                                    <option value="lease">Lease</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">Neighborhood</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control bg-light border-0"
+                                                    value={formData.neighborhood || ''}
+                                                    onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                                                    placeholder="e.g. Downtown"
+                                                />
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">Year Built</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control bg-light border-0"
+                                                    value={formData.yearBuilt || ''}
+                                                    onChange={(e) => setFormData({ ...formData, yearBuilt: e.target.value ? parseInt(e.target.value) : undefined })}
+                                                    placeholder="e.g. 2020"
+                                                />
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">Lot Size (Sqft)</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control bg-light border-0"
+                                                    value={formData.lotSize || ''}
+                                                    onChange={(e) => setFormData({ ...formData, lotSize: e.target.value ? parseInt(e.target.value) : 0 })}
+                                                    placeholder="e.g. 5000"
+                                                />
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">Bedrooms</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control bg-light border-0"
+                                                    value={formData.bedrooms || ''}
+                                                    onChange={(e) => setFormData({ ...formData, bedrooms: e.target.value ? parseInt(e.target.value) : 0 })}
+                                                    placeholder="0"
+                                                />
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">Bathrooms</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control bg-light border-0"
+                                                    value={formData.bathrooms || ''}
+                                                    onChange={(e) => setFormData({ ...formData, bathrooms: e.target.value ? parseInt(e.target.value) : 0 })}
+                                                    placeholder="0"
+                                                />
+                                            </div>
+
+                                            <div className="col-md-4">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">Parking Spaces</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-control bg-light border-0"
+                                                    value={formData.parkingSpaces || ''}
+                                                    onChange={(e) => setFormData({ ...formData, parkingSpaces: e.target.value ? parseInt(e.target.value) : 0 })}
+                                                    placeholder="0"
                                                 />
                                             </div>
                                         </div>

@@ -3,6 +3,7 @@
 import React from 'react';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
 import { widgetService } from '@/app/services/api';
+import ImageModal from './ImageModal';
 
 interface ListingViewProps {
     filteredData: any[];
@@ -25,6 +26,9 @@ const ListingView: React.FC<ListingViewProps> = ({
     onReset,
     onSelectProperty
 }) => {
+    const [showPopup, setShowPopup] = React.useState(false);
+    const [popupImageUrl, setPopupImageUrl] = React.useState('');
+
     // Dynamic Column Calculation
     const gridCols = widget.configuration?.display?.columns || 3;
     const colClass = propColClass || (
@@ -61,7 +65,19 @@ const ListingView: React.FC<ListingViewProps> = ({
                         >
                             <div className="position-relative" style={{ height: '220px' }}>
                                 {property.mainImage ? (
-                                    <img src={property.mainImage.url} alt={property.title} className="w-100 h-100 object-fit-cover" />
+                                    <>
+                                        <img src={property.mainImage.url} alt={property.title} className="w-100 h-100 object-fit-cover" />
+                                        <div
+                                            className="zoom-overlay"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPopupImageUrl(property.mainImage.url);
+                                                setShowPopup(true);
+                                            }}
+                                        >
+                                            <i className="bi bi-zoom-in"></i>
+                                        </div>
+                                    </>
                                 ) : (
                                     <div className="h-100 bg-light d-flex align-items-center justify-content-center">
                                         <i className="bi bi-building fs-1 text-muted opacity-25"></i>
@@ -132,6 +148,42 @@ const ListingView: React.FC<ListingViewProps> = ({
                     </div>
                 )}
             </div>
+
+            <ImageModal
+                show={showPopup}
+                imageUrl={popupImageUrl}
+                onClose={() => setShowPopup(false)}
+            />
+
+            <style jsx>{`
+                .zoom-overlay {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    background: rgba(255, 255, 255, 0.9);
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    transform: scale(0.8);
+                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    z-index: 10;
+                    color: #2563eb;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                }
+                .card:hover .zoom-overlay {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+                .zoom-overlay:hover {
+                    background: white;
+                    color: #1d4ed8;
+                    transform: scale(1.1);
+                }
+            `}</style>
         </div>
     );
 };

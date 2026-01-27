@@ -82,9 +82,10 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-admin/settings', label: 'Settings', icon: 'bi-gear-wide-connected', active: activePage === 'settings' }
           ]
         },
-        ...(hasModule('widget_creator') ? [{
+        ...(hasModule('marketing_hub') ? [{
           title: 'Marketing',
           items: [
+            { href: '/realestate-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
             { href: '/realestate-admin/widgets', label: 'Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
           ]
         }] : [])
@@ -128,9 +129,10 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-owner-admin/settings', label: 'Settings', icon: 'bi-gear', active: activePage === 'settings' }
           ]
         },
-        ...(hasModule('widget_creator') ? [{
+        ...(hasModule('marketing_hub') ? [{
           title: 'Marketing',
           items: [
+            { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
             { href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
           ]
         }] : [])

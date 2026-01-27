@@ -261,6 +261,8 @@ export default function PublicWidgetPage() {
     const isBuilderLayout = widget.configuration?.settings?.layout === 'builder' || widget.configuration?.pageBuilder?.enabled;
     const isBuilderActiveListing = currentView === 'LISTING' && isBuilderLayout;
 
+    const [chatExpanded, setChatExpanded] = useState(false);
+
     return (
         <div className="public-widget min-vh-100 bg-white" style={{ '--primary-color': theme.primaryColor } as any}>
             {/* Header: Show standard header ONLY if NOT in the builder landing page itself AND if builder logo isn't globally disabled */}
@@ -327,7 +329,10 @@ export default function PublicWidgetPage() {
                             right: '24px',
                             position: 'fixed'
                         }}
-                        onClick={() => setShowChat(!showChat)}
+                        onClick={() => {
+                            setShowChat(!showChat);
+                            if (showChat) setChatExpanded(false);
+                        }}
                         aria-label="Toggle chatbot"
                     >
                         <i className={`bi ${showChat ? 'bi-x' : 'bi-chat-dots'} text-white fs-4`}></i>
@@ -336,24 +341,30 @@ export default function PublicWidgetPage() {
                     {showChat && (
                         <div className="chatbot-window shadow-2xl animate-fade-in chat-responsive" style={{
                             position: 'fixed',
-                            bottom: '100px',
+                            bottom: chatExpanded ? '24px' : '100px',
                             right: '24px',
-                            width: '380px',
+                            width: chatExpanded ? '600px' : '380px',
                             maxWidth: 'calc(100vw - 48px)',
-                            maxHeight: '600px',
-                            height: '70vh',
-                            zIndex: 1000
+                            maxHeight: chatExpanded ? '85vh' : '600px',
+                            height: chatExpanded ? '85vh' : '70vh',
+                            zIndex: 1000,
+                            transition: 'all 0.3s ease'
                         }}>
                             <ChatbotWidget
                                 properties={data}
                                 onFilterResults={handleChatFilters}
                                 theme={theme}
-                                onClose={() => setShowChat(false)}
+                                onClose={() => {
+                                    setShowChat(false);
+                                    setChatExpanded(false);
+                                }}
+                                onExpandToggle={(exp) => setChatExpanded(exp)}
                                 onSelectProperty={(prop) => {
                                     setSelectedProperty(prop);
                                     setPropertyImageIndex(0);
                                     setCurrentView('PROPERTY_DETAIL');
                                     setShowChat(false);
+                                    setChatExpanded(false);
                                 }}
                                 onCreateLead={async (contact: string, name?: string) => {
                                     const leadPayload: any = {

@@ -302,12 +302,12 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             <div className="container-fluid py-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h1 className="h3 fw-bold mb-1">Workspaces & Units</h1>
-                        <p className="text-muted small mb-0">Manage desks, offices and meeting rooms</p>
+                        <h1 className="h3 fw-bold mb-1">Units</h1>
+                        <p className="text-muted small mb-0">Manage Units</p>
                     </div>
                     <button className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm" onClick={() => setShowModal(true)}>
                         <i className="bi bi-plus-circle-fill"></i>
-                        <span>Add Workspace</span>
+                        <span>Add Unit</span>
                     </button>
                 </div>
 
@@ -362,7 +362,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                 </thead>
                                 <tbody>
                                     {filteredUnits.length === 0 ? (
-                                        <tr><td colSpan={6} className="text-center py-5">No workspaces found</td></tr>
+                                        <tr><td colSpan={6} className="text-center py-5">No units found</td></tr>
                                     ) : filteredUnits.map(unit => (
                                         <tr key={unit.id}>
                                             <td className="px-4 py-3">

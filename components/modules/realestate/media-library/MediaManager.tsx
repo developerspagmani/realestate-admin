@@ -8,6 +8,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
+import ImageModal from '@/components/shared/ImageModal';
 
 interface MediaManagerProps {
     mode: 'admin' | 'owner';
@@ -24,6 +25,8 @@ export default function MediaManager({ mode }: MediaManagerProps) {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState('');
 
     // Search and filter states
     const [searchTerm, setSearchTerm] = useState('');
@@ -163,6 +166,11 @@ export default function MediaManager({ mode }: MediaManagerProps) {
         }
     };
 
+    const handleViewImage = (url: string) => {
+        setPreviewUrl(url);
+        setShowPreview(true);
+    };
+
     const handleDelete = async (id: string) => {
         if (!window.confirm('Delete this item?')) return;
 
@@ -251,7 +259,7 @@ export default function MediaManager({ mode }: MediaManagerProps) {
                                                 <i className={`bi ${item.type === 'video' ? 'bi-play-circle' : 'bi-file-earmark-text'} display-5 text-muted`}></i>
                                             )}
                                             <div className="media-overlay d-flex align-items-center justify-content-center gap-2">
-                                                <button className="btn btn-sm btn-light rounded-circle shadow-sm" onClick={() => window.open(item.url, '_blank')}><i className="bi bi-eye"></i></button>
+                                                <button className="btn btn-sm btn-light rounded-circle shadow-sm" onClick={() => handleViewImage(item.url)}><i className="bi bi-eye"></i></button>
                                                 <button className="btn btn-sm btn-danger rounded-circle shadow-sm" onClick={() => handleDelete(item.id)}><i className="bi bi-trash"></i></button>
                                             </div>
                                         </div>
@@ -291,7 +299,7 @@ export default function MediaManager({ mode }: MediaManagerProps) {
                                                         <td className="small text-muted">{formatFileSize(item.size)}</td>
                                                         <td className="small text-muted">{new Date(item.uploadedAt).toLocaleDateString()}</td>
                                                         <td className="px-4 py-2 text-end">
-                                                            <button className="btn btn-sm btn-icon btn-light rounded-circle me-1" onClick={() => window.open(item.url, '_blank')}><i className="bi bi-download"></i></button>
+                                                            <button className="btn btn-sm btn-icon btn-light rounded-circle me-1" onClick={() => handleViewImage(item.url)}><i className="bi bi-eye"></i></button>
                                                             <button className="btn btn-sm btn-icon btn-light text-danger rounded-circle" onClick={() => handleDelete(item.id)}><i className="bi bi-trash"></i></button>
                                                         </td>
                                                     </tr>
@@ -305,6 +313,12 @@ export default function MediaManager({ mode }: MediaManagerProps) {
                     </div>
                 )}
             </div>
+
+            <ImageModal
+                show={showPreview}
+                imageUrl={previewUrl}
+                onClose={() => setShowPreview(false)}
+            />
 
             {/* Upload Modal */}
             {showUploadModal && (

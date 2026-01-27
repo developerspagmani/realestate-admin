@@ -9,20 +9,21 @@ interface ChatbotProps {
     onClose: () => void;
     onSelectProperty: (property: any) => void;
     onCreateLead: (contact: string, name?: string) => Promise<void>;
+    onExpandToggle?: (expanded: boolean) => void;
 }
 
 type Step = 'IDLE' | 'LEAD_CAPTURE' | 'HI' | 'ASK_LOCATION' | 'ASK_CITY' | 'ASK_BUDGET' | 'RESULTS';
 
 const STORAGE_KEY = 'cw_chatbot_session';
 
-export default function ChatbotWidget({ theme, properties, onFilterResults, onClose, onSelectProperty, onCreateLead }: ChatbotProps) {
+export default function ChatbotWidget({ theme, properties, onFilterResults, onClose, onSelectProperty, onCreateLead, onExpandToggle }: ChatbotProps) {
     const [step, setStep] = useState<Step>('IDLE');
     const [answers, setAnswers] = useState({
         name: '',
         contact: '',
-        location: '',
-        city: '',
-        budget: ''
+        locations: [] as string[],
+        cities: [] as string[],
+        budgets: [] as string[]
     });
     const [messages, setMessages] = useState<{ role: 'bot' | 'user', text: string }[]>([]);
     const [filteredResults, setFilteredResults] = useState<any[]>([]);
@@ -36,7 +37,7 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
             try {
                 const session = JSON.parse(savedSession);
                 setStep(session.step || 'IDLE');
-                setAnswers(session.answers || { location: '', city: '', budget: '' });
+                setAnswers(session.answers || { locations: [] as string[], cities: [] as string[], budgets: [] as string[] });
                 setMessages(session.messages || []);
                 setFilteredResults(session.filteredResults || []);
 
@@ -71,7 +72,7 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
     const handleReset = () => {
         localStorage.removeItem(STORAGE_KEY);
         setStep('IDLE');
-        setAnswers({ name: '', contact: '', location: '', city: '', budget: '' });
+        setAnswers({ name: '', contact: '', locations: [], cities: [], budgets: [] });
         setMessages([]);
         setFilteredResults([]);
         onFilterResults(properties); // Restore all properties on main page
@@ -89,7 +90,7 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                 addMessage('bot', 'Hi there! I\'m your smart booking assistant. Need help finding the perfect space?');
                 setTimeout(() => {
                     setStep('ASK_LOCATION');
-                    addMessage('bot', 'First, what type of location are you looking for? (e.g. Creative, quiet, near transit)');
+                    addMessage('bot', 'First, which locations are you interested in?');
                 }, 800);
             }, 800);
         } catch (error) {
@@ -101,51 +102,59 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
     };
 
     const handleChatAgain = () => {
-        setAnswers(prev => ({ ...prev, location: '', city: '', budget: '' }));
+        setAnswers(prev => ({ ...prev, locations: [], cities: [], budgets: [] }));
         setFilteredResults([]);
         addMessage('bot', 'No problem! Let\'s start a new search. 🧐');
         setTimeout(() => {
             setStep('ASK_LOCATION');
-            addMessage('bot', 'What type of location are you looking for this time?');
+            addMessage('bot', 'Which locations are you interested in this time?');
         }, 600);
     };
 
-    const handleAnswer = (text: string) => {
-        addMessage('user', text);
+    const handleAnswer = (text: string | string[]) => {
+        const displayText = Array.isArray(text) ? text.join(', ') : text;
+        addMessage('user', displayText);
 
         if (step === 'ASK_LOCATION') {
-            setAnswers(prev => ({ ...prev, location: text }));
+            setAnswers(prev => ({ ...prev, locations: Array.isArray(text) ? text : [text] }));
             setStep('ASK_CITY');
-            setTimeout(() => addMessage('bot', 'Great! Which city are you interested in?'), 500);
+            setTimeout(() => addMessage('bot', 'Great! Which cities are you interested in?'), 500);
         } else if (step === 'ASK_CITY') {
-            setAnswers(prev => ({ ...prev, city: text }));
+            setAnswers(prev => ({ ...prev, cities: Array.isArray(text) ? text : [text] }));
             setStep('ASK_BUDGET');
-            setTimeout(() => addMessage('bot', 'Almost done! What is your maximum budget (e.g. 5000)?'), 500);
+            setTimeout(() => addMessage('bot', 'Almost done! What is your budget range?'), 500);
         } else if (step === 'ASK_BUDGET') {
-            const budgetVal = parseFloat(text) || 999;
-            setAnswers(prev => ({ ...prev, budget: text }));
+            const selectedBudgets = Array.isArray(text) ? text : [text];
+            setAnswers(prev => ({ ...prev, budgets: selectedBudgets }));
             setStep('RESULTS');
 
             const filtered = properties.filter(prop => {
-                const cityQuery = answers.city?.toLowerCase();
-                const locQuery = answers.location?.toLowerCase();
-                const budgetVal = parseFloat(text) || 999;
-
-                const hasCityMatch = cityQuery && prop.city.toLowerCase().includes(cityQuery);
-                const hasLocMatch = locQuery && (prop.description.toLowerCase().includes(locQuery) || prop.title.toLowerCase().includes(locQuery));
+                const cityMatch = answers.cities.length === 0 || answers.cities.some(c => prop.city?.toLowerCase().includes(c.toLowerCase()));
+                const locMatch = answers.locations.length === 0 || answers.locations.some(l =>
+                    prop.neighborhood?.toLowerCase().includes(l.toLowerCase()) ||
+                    prop.title?.toLowerCase().includes(l.toLowerCase()) ||
+                    prop.description?.toLowerCase().includes(l.toLowerCase())
+                );
 
                 const minPrice = prop.units?.reduce((min: number, unit: any) => {
-                    const price = unit.unitPricing?.[0]?.price || 1000000;
+                    const price = Number(unit.unitPricing?.[0]?.price) || 1000000;
                     return price < min ? price : min;
                 }, 1000000);
-                const hasBudgetMatch = budgetVal && minPrice <= (budgetVal * 1.1); // 10% tolerance
 
-                return hasCityMatch || hasLocMatch || hasBudgetMatch;
+                const budgetMatch = selectedBudgets.length === 0 || selectedBudgets.some(b => {
+                    if (b === 'Low (< $1k)') return minPrice < 1000;
+                    if (b === 'Mid ($1k - $5k)') return minPrice >= 1000 && minPrice <= 5000;
+                    if (b === 'High ($5k - $10k)') return minPrice > 5000 && minPrice <= 10000;
+                    if (b === 'Luxury (> $10k)') return minPrice > 10000;
+                    return false;
+                });
+
+                return cityMatch && locMatch && budgetMatch;
             });
 
             setTimeout(() => {
                 if (filtered.length > 0) {
-                    addMessage('bot', `I found some matches for you!`);
+                    addMessage('bot', `I found ${filtered.length} matches for you!`);
                 } else if (properties.length > 0) {
                     addMessage('bot', 'I couldn\'t find an exact match, but I have some suggestions! 💡');
                     setFilteredResults(properties.slice(0, 3));
@@ -162,6 +171,75 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
         }
     };
 
+    const getOptions = () => {
+        if (!properties || !Array.isArray(properties)) return [];
+
+        if (step === 'ASK_LOCATION') {
+            const neighborhoods = properties
+                .map(p => p.neighborhood)
+                .filter((v, i, a) => v && a.indexOf(v) === i);
+            if (neighborhoods.length === 0) return ['Downtown', 'Suburbs', 'Quiet Area', 'Near Transit'].map(v => ({ label: v, value: v }));
+            return neighborhoods.map(n => ({ label: n, value: n }));
+        }
+        if (step === 'ASK_CITY') {
+            const cities = properties
+                .map(p => p.city)
+                .filter((v, i, a) => v && a.indexOf(v) === i);
+            if (cities.length === 0) return ['Common City'].map(v => ({ label: v, value: v }));
+            return cities.map(c => ({ label: c, value: c }));
+        }
+        if (step === 'ASK_BUDGET') {
+            return [
+                { label: 'Low (< $1k)', value: 'Low (< $1k)' },
+                { label: 'Mid ($1k - $5k)', value: 'Mid ($1k - $5k)' },
+                { label: 'High ($5k - $10k)', value: 'High ($5k - $10k)' },
+                { label: 'Luxury (> $10k)', value: 'Luxury (> $10k)' }
+            ];
+        }
+        return [];
+    };
+
+    const CheckboxGroup = ({ options, onConfirm }: { options: { label: string, value: string }[], onConfirm: (vals: string[]) => void }) => {
+        const [selected, setSelected] = useState<string[]>([]);
+        return (
+            <div className="bg-white p-3 rounded-4 shadow-sm border border-light animate-fade-in mb-2">
+                <div className="d-flex flex-wrap gap-2 mb-3">
+                    {options.map(opt => (
+                        <div key={opt.value} className="form-check form-check-inline m-0">
+                            <input
+                                className="btn-check"
+                                type="checkbox"
+                                id={`check-${opt.value}`}
+                                checked={selected.includes(opt.value)}
+                                onChange={(e) => {
+                                    if (e.target.checked) setSelected(prev => [...prev, opt.value]);
+                                    else setSelected(prev => prev.filter(v => v !== opt.value));
+                                }}
+                            />
+                            <label
+                                className={`btn btn-sm rounded-pill px-3 border-0 transition-all ${selected.includes(opt.value) ? 'text-white' : 'bg-light text-muted'}`}
+                                style={{ backgroundColor: selected.includes(opt.value) ? theme.primaryColor : undefined }}
+                                htmlFor={`check-${opt.value}`}
+                            >
+                                {opt.label}
+                            </label>
+                        </div>
+                    ))}
+                </div>
+                <button
+                    className="btn btn-primary w-100 rounded-pill btn-sm fw-bold shadow-sm"
+                    style={{ backgroundColor: theme.primaryColor, border: 'none' }}
+                    onClick={() => {
+                        if (selected.length > 0) onConfirm(selected);
+                        else addMessage('bot', 'Please select at least one option to continue.');
+                    }}
+                >
+                    Confirm Selection
+                </button>
+            </div>
+        );
+    };
+
     return (
         <div className={`chatbot-window border-0 shadow-lg rounded-4 overflow-hidden animate-slide-up bg-white ${isExpanded ? 'expanded' : ''}`}>
 
@@ -176,7 +254,11 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                     </div>
                 </div>
                 <div className="d-flex gap-2">
-                    <button className="btn btn-sm text-white p-0 border-0" onClick={() => setIsExpanded(!isExpanded)} title="Expand">
+                    <button className="btn btn-sm text-white p-0 border-0" onClick={() => {
+                        const next = !isExpanded;
+                        setIsExpanded(next);
+                        if (onExpandToggle) onExpandToggle(next);
+                    }} title="Expand">
                         <i className={`bi ${isExpanded ? 'bi-fullscreen-exit' : 'bi-fullscreen'}`}></i>
                     </button>
                     <button className="btn btn-sm text-white p-0 border-0" onClick={handleReset} title="Reset Chat">
@@ -315,29 +397,11 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                         )}
 
                         {['ASK_LOCATION', 'ASK_CITY', 'ASK_BUDGET'].includes(step) && (
-                            <div className="input-area mt-2 border-top position-sticky bottom-0 bg-white shadow-sm rounded-pill">
-                                <form onSubmit={(e) => {
-                                    e.preventDefault();
-                                    const input = (e.target as any).message;
-                                    if (input.value) {
-                                        handleAnswer(input.value);
-                                        input.value = '';
-                                    }
-                                }}>
-                                    <div className="input-group">
-                                        <input
-                                            name="message"
-                                            type="text"
-                                            className="form-control form-control-sm border-0 bg-transparent px-3"
-                                            placeholder="Your answer..."
-                                            autoFocus
-                                            autoComplete="off"
-                                        />
-                                        <button className="btn btn-sm btn-link p-1 me-1" style={{ color: theme.primaryColor }}>
-                                            <i className="bi bi-arrow-up-circle-fill fs-5"></i>
-                                        </button>
-                                    </div>
-                                </form>
+                            <div className="animate-fade-in">
+                                <CheckboxGroup
+                                    options={getOptions()}
+                                    onConfirm={(vals) => handleAnswer(vals)}
+                                />
                             </div>
                         )}
                     </div>
@@ -364,17 +428,15 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
 
             <style jsx>{`
                 .chatbot-window {
-                    position: fixed;
-                    bottom: 80px;
-                    right: 20px;
-                    width: 320px;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
                     z-index: 1000;
                     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 }
                 .chatbot-window.expanded {
-                    width: 600px;
-                    top: 30px;
-                    bottom: 80px;
+                    /* Width and height controlled by parent container's classes */
                 }
                 .extra-small { font-size: 11px; }
                 .rounded-tl-0 { border-top-left-radius: 0 !important; }

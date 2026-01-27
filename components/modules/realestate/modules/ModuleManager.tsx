@@ -155,12 +155,29 @@ export default function ModuleManager() {
                                         <div className="row g-3">
                                             {allModules.map(module => {
                                                 const active = isModuleActive(module.id);
+                                                let icon = 'grid-fill';
+                                                let color = 'primary';
+
+                                                if (module.slug === 'marketing_hub') {
+                                                    icon = 'megaphone-fill';
+                                                    color = 'danger';
+                                                } else if (module.slug === 'widget_creator') {
+                                                    icon = 'code-slash';
+                                                    color = 'info';
+                                                } else if (module.slug === 'analytics_pro') {
+                                                    icon = 'bar-chart-fill';
+                                                    color = 'success';
+                                                } else if (module.slug === '3d_viewer') {
+                                                    icon = 'box';
+                                                    color = 'warning';
+                                                }
+
                                                 return (
                                                     <div key={module.id} className="col-md-6">
-                                                        <div className={`card border rounded-4 p-3 h-100 transition-all ${active ? 'border-primary bg-primary-soft' : 'bg-light opacity-75'}`}>
+                                                        <div className={`card border rounded-4 p-3 h-100 transition-all ${active ? `border-${color} bg-${color}-soft` : 'bg-light opacity-75'}`}>
                                                             <div className="d-flex justify-content-between align-items-start mb-2">
-                                                                <div className="bg-white rounded-3 p-2 shadow-xs mb-2">
-                                                                    <i className={`bi bi-${module.slug === 'widget_creator' ? 'code-slash' : 'grid-fill'} text-primary`}></i>
+                                                                <div className={`bg-white rounded-3 p-2 shadow-xs mb-2 text-${color}`}>
+                                                                    <i className={`bi bi-${icon}`}></i>
                                                                 </div>
                                                                 <div className="form-check form-switch border-0">
                                                                     <input
@@ -196,6 +213,10 @@ export default function ModuleManager() {
             </div>
             <style jsx>{`
                 .bg-primary-soft { background-color: rgba(99, 102, 241, 0.05); }
+                .bg-danger-soft { background-color: rgba(239, 68, 68, 0.05); }
+                .bg-info-soft { background-color: rgba(59, 130, 246, 0.05); }
+                .bg-success-soft { background-color: rgba(34, 197, 94, 0.05); }
+                .bg-warning-soft { background-color: rgba(245, 158, 11, 0.05); }
                 .extra-small { font-size: 11px; }
                 .transition-all { transition: all 0.2s ease; }
                 .bg-light.opacity-75 { border: 1px dashed #dee2e6; }

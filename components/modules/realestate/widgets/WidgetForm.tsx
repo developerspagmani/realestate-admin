@@ -52,7 +52,7 @@ export default function WidgetForm({
                             />
                         </div>
                         <div className="col-md-4">
-                            <label className="form-label small fw-bold">Select {tenantType === 1 ? 'Property' : 'Workspace'}</label>
+                            <label className="form-label small fw-bold">Select {tenantType === 1 ? 'Property' : 'Property'}</label>
                             <select
                                 className="form-select rounded-3"
                                 value={formData.propertyId}
