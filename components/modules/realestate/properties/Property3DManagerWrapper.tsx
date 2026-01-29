@@ -15,7 +15,7 @@ export default function Property3DManagerWrapper() {
     const router = useRouter();
     const propertyId = searchParams.get('propertyId');
     const propertyName = searchParams.get('propertyName') || 'Property';
-    const { activeTenantId, activeOwnerId } = useManagementContext();
+    const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
 
     const mode = searchParams.get('mode');
     const basePath = '/realestate-admin';
@@ -28,15 +28,17 @@ export default function Property3DManagerWrapper() {
         if (!propertyId) {
             loadProperties();
         }
-    }, [propertyId, activeTenantId, activeOwnerId]);
-
+    }, [propertyId, activeTenantId, activeOwnerId, tenantType]);
     const loadProperties = async () => {
         try {
             setLoading(true);
             const token = getAuthToken();
             if (token) {
+                const industryType = (!activeOwnerId && !activeTenantId) ? tenantType : undefined;
+
                 const response = await propertyService.getProperties(token, {
                     tenantId: activeTenantId || undefined,
+                    industryType,
                     ownerId: activeOwnerId || undefined,
                     limit: '100'
                 });

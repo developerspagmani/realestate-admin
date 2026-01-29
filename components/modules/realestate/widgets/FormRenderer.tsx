@@ -8,23 +8,62 @@ interface FormRendererProps {
         title: string;
         description: string;
         fields: any[];
+        useMarketingForm?: boolean;
+        marketingFormId?: string;
     };
-    onSubmit: (formData: any) => Promise<void>;
+    onSubmit: (formData: any, configUsed: any) => Promise<void>;
     primaryColor: string;
 }
+
+import { widgetService } from '@/app/services/api';
 
 export default function FormRenderer({ config, onSubmit, primaryColor }: FormRendererProps) {
     const [formData, setFormData] = useState<any>({});
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [localConfig, setLocalConfig] = useState<any>(config);
+    const [fetching, setFetching] = useState(false);
 
-    if (!config.enabled) return null;
+    React.useEffect(() => {
+        const fetchManagedForm = async () => {
+            if (config.useMarketingForm && config.marketingFormId) {
+                setFetching(true);
+                try {
+                    const res = await widgetService.getPublicForm(config.marketingFormId);
+                    if (res.success && res.data) {
+                        const managedForm = res.data;
+                        const managedConfig = typeof managedForm.configuration === 'string'
+                            ? JSON.parse(managedForm.configuration)
+                            : managedForm.configuration;
+
+                        setLocalConfig({
+                            ...config,
+                            title: managedConfig.title,
+                            description: managedConfig.description,
+                            fields: managedConfig.fields
+                        });
+                    }
+                } catch (e) {
+                    console.error('Failed to fetch marketing form:', e);
+                } finally {
+                    setFetching(false);
+                }
+            } else {
+                setLocalConfig(config);
+            }
+        };
+
+        fetchManagedForm();
+    }, [config.marketingFormId, config.useMarketingForm, config]);
+
+    if (!localConfig || !localConfig.enabled) return null;
+    if (fetching) return <div className="text-center p-4"><div className="spinner-border spinner-border-sm text-primary"></div></div>;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            await onSubmit(formData);
+            await onSubmit(formData, localConfig);
             setSubmitted(true);
         } catch (error) {
             console.error('Submission failed:', error);
@@ -62,12 +101,12 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
 
     return (
         <div className="inquiry-form-container bg-white p-4 rounded-4 shadow-sm border animate-fade-in">
-            <h5 className="fw-bold mb-1">{config.title || 'Inquiry Form'}</h5>
-            <p className="extra-small text-muted mb-4">{config.description}</p>
+            <h5 className="fw-bold mb-1">{localConfig.title || 'Inquiry Form'}</h5>
+            <p className="extra-small text-muted mb-4">{localConfig.description}</p>
 
             <form onSubmit={handleSubmit}>
                 <div className="row g-3">
-                    {config.fields.map((field) => (
+                    {localConfig.fields.map((field: any) => (
                         <div key={field.id} className="col-12 text-start">
                             <label className="extra-small fw-bold text-muted mb-1">
                                 {field.label} {field.required && <span className="text-danger">*</span>}

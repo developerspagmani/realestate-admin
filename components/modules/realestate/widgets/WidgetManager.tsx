@@ -75,6 +75,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
     const [editingWidget, setEditingWidget] = useState<any>(null);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
     const [properties, setProperties] = useState<any[]>([]);
+    const [marketingForms, setMarketingForms] = useState<any[]>([]);
     const [showQRModal, setShowQRModal] = useState(false);
     const [qrWidget, setQRWidget] = useState<any>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -91,8 +92,24 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         if (isAuthenticated) {
             loadWidgets();
             loadProperties();
+            loadMarketingForms();
         }
     }, [isAuthenticated, activeTenantId, activeOwnerId]);
+
+    const loadMarketingForms = async () => {
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const { marketingService } = await import('@/app/services/api');
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const response = await marketingService.getForms(token, { tenantId });
+            if (response.success) {
+                setMarketingForms(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to load marketing forms:', error);
+        }
+    };
 
     const loadProperties = async () => {
         try {
@@ -257,6 +274,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
                         editingWidget={editingWidget}
                         tenantType={tenantType}
                         properties={properties}
+                        marketingForms={marketingForms}
                     />
                 )}
 

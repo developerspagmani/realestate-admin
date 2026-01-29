@@ -61,7 +61,8 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             if (!token) return;
 
             const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            const industryType = mode === 'admin' ? tenantType : undefined;
+            // Only send industryType if we haven't selected a specific owner/tenant (Global View)
+            const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
             // Load Properties
             const propsRes = await propertyService.getProperties(token, {

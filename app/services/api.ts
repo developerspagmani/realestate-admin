@@ -661,6 +661,10 @@ export const widgetService = {
       body: JSON.stringify(leadData),
     });
   },
+
+  getPublicForm: async (formId: string) => {
+    return await makeApiCall(`/public/forms/${formId}`);
+  },
 };
 
 // Module service
@@ -1009,6 +1013,12 @@ export const marketingService = {
   deleteForm: async (token: string, id: string) => {
     return await makeApiCall(formBuilderEndpoints.delete(id), {
       method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  getMarketingStats: async (token: string, params?: any) => {
+    return await makeApiCall('/marketing/stats', {
       headers: { 'Authorization': `Bearer ${token}` },
     });
   },

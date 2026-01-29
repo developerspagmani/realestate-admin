@@ -31,6 +31,17 @@ export default function CampaignManager() {
         setToast({ show: true, message, type });
     };
 
+    const [marketingStats, setMarketingStats] = useState<any>(null);
+
+    const loadStats = async () => {
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.getMarketingStats(token);
+            if (res.success) setMarketingStats(res.data);
+        } catch (e) { console.error(e); }
+    };
+
     const loadCampaigns = async () => {
         setLoading(true);
         try {
@@ -49,13 +60,26 @@ export default function CampaignManager() {
 
     useEffect(() => {
         loadCampaigns();
+        loadStats();
     }, [activeTenantId]);
 
     const stats = [
-        { label: 'Total Sent', value: '45,280', icon: 'bi-send', color: 'primary' },
-        { label: 'Open Rate', value: '24.8%', icon: 'bi-envelope-open', color: 'success' },
-        { label: 'Click Rate', value: '3.2%', icon: 'bi-cursor', color: 'info' },
-        { label: 'Avg. ROI', value: '$12.4k', icon: 'bi-graph-up-arrow', color: 'warning' },
+        { label: 'Total Sent', value: marketingStats?.sentCampaigns?.toLocaleString() || '0', icon: 'bi-send', color: 'primary' },
+        {
+            label: 'Open Rate',
+            value: marketingStats?.totalDelivered > 0
+                ? `${((marketingStats.totalOpened / marketingStats.totalDelivered) * 100).toFixed(1)}%`
+                : '0%',
+            icon: 'bi-envelope-open', color: 'success'
+        },
+        {
+            label: 'Click Rate',
+            value: marketingStats?.totalOpened > 0
+                ? `${((marketingStats.totalClicked / marketingStats.totalOpened) * 100).toFixed(1)}%`
+                : '0%',
+            icon: 'bi-cursor', color: 'info'
+        },
+        { label: 'Total Clicks', value: marketingStats?.totalClicked?.toLocaleString() || '0', icon: 'bi-graph-up-arrow', color: 'warning' },
     ];
 
     const handleDelete = async (id: string, name: string) => {

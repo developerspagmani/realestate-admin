@@ -107,7 +107,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Inventory',
           items: [
             { href: '/realestate-owner-admin/properties', label: 'My Properties', icon: 'bi-building-add', active: activePage === 'properties' },
-            { href: '/realestate-owner-admin/units', label: 'Unit/Workspaces', icon: 'bi-unity', active: activePage === 'units' },
+            { href: '/realestate-owner-admin/units', label: 'Unit', icon: 'bi-unity', active: activePage === 'units' },
             { href: '/realestate-owner-admin/users', label: 'Users', icon: 'bi-people', active: activePage === 'users' }
           ]
         },

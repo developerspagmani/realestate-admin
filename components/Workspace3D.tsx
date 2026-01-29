@@ -16,6 +16,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [threeJSLoaded, setThreeJSLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [zoomValue, setZoomValue] = useState(25);
 
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<any>(null);
@@ -131,80 +132,111 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Lighting
-    const ambIntensity = config?.scene?.ambientLight || 0.6;
-    const ambientLight = new THREE.AmbientLight(0xffffff, ambIntensity);
-    scene.add(ambientLight);
+    // Lighting - Outdoor Atmosphere
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
 
     const dirIntensity = config?.scene?.directionalLight || 0.8;
     const directionalLight = new THREE.DirectionalLight(0xffffff, dirIntensity);
-    directionalLight.position.set(10, 20, 10);
+    directionalLight.position.set(20, 40, 20);
     directionalLight.castShadow = true;
-    directionalLight.shadow.camera.left = -20;
-    directionalLight.shadow.camera.right = 20;
-    directionalLight.shadow.camera.top = 20;
-    directionalLight.shadow.camera.bottom = -20;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.left = -50;
+    directionalLight.shadow.camera.right = 50;
+    directionalLight.shadow.camera.top = 50;
+    directionalLight.shadow.camera.bottom = -50;
     scene.add(directionalLight);
 
-    // Floor
-    const floorGeometry = new THREE.BoxGeometry(30, 0.5, 20);
-    const floorMaterial = new THREE.MeshLambertMaterial({ color: 0xe0e0e0 });
+    // Decorative Ground Plate (Grass/Land)
+    const baseSize = 80;
+    const floorGeometry = new THREE.CylinderGeometry(baseSize / 2, baseSize / 2, 0.4, 64);
+    const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x9ccc65 }); // Grass Green
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.position.y = -0.25;
+    floor.position.y = -0.2;
     floor.receiveShadow = true;
     scene.add(floor);
+
+    // Add a light blue sky-top circle or fog for depth
+    scene.fog = new THREE.FogExp2(0xe0f7fa, 0.015);
 
     // Create seats objects based on layout or defaults
     const workspaceObjects: { [key: string]: any } = {};
 
     if (layout && layout.length > 0) {
       layout.forEach((obj: any) => {
-        const geometry = new THREE.BoxGeometry(obj.dimensions?.w || 1, obj.dimensions?.h || 1, obj.dimensions?.d || 1);
-        const material = new THREE.MeshLambertMaterial({ color: obj.color || 0x7cff4d });
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(obj.position?.x || 0, obj.position?.y || 0.5, obj.position?.z || 0);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        mesh.userData = { type: obj.type, id: obj.unitId || obj.id };
-        scene.add(mesh);
-        workspaceObjects[obj.unitId || obj.id] = mesh;
+        let mesh: any;
+
+        if (obj.metadata?.polyPoints && ['road', 'river', 'lake', 'flat', 'villa', 'plot', 'house', 'apartment'].includes(obj.type)) {
+          // Handle Polygon Shapes as Flat Plots
+          const points = obj.metadata.polyPoints;
+          if (points && points.length > 0) {
+            const shape = new THREE.Shape();
+            shape.moveTo(points[0].x, points[0].z);
+            for (let i = 1; i < points.length; i++) {
+              shape.lineTo(points[i].x, points[i].z);
+            }
+            shape.lineTo(points[0].x, points[0].z);
+
+            const isWater = obj.type === 'river' || obj.type === 'lake';
+            const isPath = obj.type === 'road';
+            // Plots are very thin (0.05 height)
+            const depth = isWater ? 0.05 : (isPath ? 0.02 : 0.05);
+            const extrudeSettings = { depth, bevelEnabled: false };
+            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            const material = new THREE.MeshLambertMaterial({
+              color: obj.color || (isWater ? 0x2196f3 : (isPath ? 0x424242 : 0xffffff)),
+              transparent: isWater,
+              opacity: isWater ? 0.7 : 1.0
+            });
+            mesh = new THREE.Mesh(geometry, material);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.set(0, depth, 0);
+          }
+        } else if (obj.type === 'tree') {
+          // Keep Trees 3D
+          mesh = new THREE.Group();
+          const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.15, 0.2, 1.2),
+            new THREE.MeshLambertMaterial({ color: 0x4e342e })
+          );
+          trunk.position.y = 0.6;
+          const foliage = new THREE.Mesh(
+            new THREE.ConeGeometry(0.8, 2.5, 8),
+            new THREE.MeshLambertMaterial({ color: 0x1b5e20 })
+          );
+          foliage.position.y = 2.2;
+          mesh.add(trunk);
+          mesh.add(foliage);
+          mesh.position.set(obj.position?.x || 0, 0, obj.position?.z || 0);
+        } else if (obj.type === 'hills') {
+          // Keep Hills 3D
+          const geometry = new THREE.ConeGeometry(4, 5, 12);
+          const material = new THREE.MeshLambertMaterial({ color: 0x8d6e63 });
+          mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(obj.position?.x || 0, 2.5, obj.position?.z || 0);
+        } else {
+          // Rectangular Plots (flat boxes)
+          const geometry = new THREE.BoxGeometry(obj.dimensions?.w || 1, 0.05, obj.dimensions?.d || 1);
+          const material = new THREE.MeshLambertMaterial({ color: obj.color || 0xbbdefb });
+          mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(obj.position?.x || 0, 0.025, obj.position?.z || 0);
+        }
+
+        if (mesh) {
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          mesh.userData = { type: obj.type, id: obj.unitId || obj.id };
+          scene.add(mesh);
+          workspaceObjects[obj.unitId || obj.id] = mesh;
+        }
       });
     } else {
-      // Cabins (larger 3D boxes) - Original Demo Fallback
-      const cabinPositions = [
-        { x: -10, z: -6 }, { x: -5, z: -6 }, { x: 0, z: -6 },
-        { x: 5, z: -6 }, { x: 10, z: -6 }
-      ];
-
-      cabinPositions.forEach((pos, index) => {
-        const cabinGeometry = new THREE.BoxGeometry(3, 2, 2.5);
-        const cabinMaterial = new THREE.MeshLambertMaterial({ color: 0x3399ff });
-        const cabin = new THREE.Mesh(cabinGeometry, cabinMaterial);
-        cabin.position.set(pos.x, 1, pos.z);
-        cabin.castShadow = true;
-        cabin.receiveShadow = true;
-        cabin.userData = { type: 'cabin', id: `cabin-${String(index + 1).padStart(2, '0')}` };
-        scene.add(cabin);
-        workspaceObjects[`cabin-${String(index + 1).padStart(2, '0')}`] = cabin;
-      });
-
-      // Seats (smaller 3D boxes) - Original Demo Fallback
-      const seatPositions = [
-        { x: -10, z: 2 }, { x: -8, z: 2 }, { x: -6, z: 2 }, { x: -4, z: 2 }, { x: -2, z: 2 },
-        { x: -10, z: 4 }, { x: -8, z: 4 }, { x: -6, z: 4 }, { x: -4, z: 4 }, { x: -2, z: 4 }
-      ];
-
-      seatPositions.forEach((pos, index) => {
-        const seatGeometry = new THREE.BoxGeometry(1, 1, 1);
-        const seatMaterial = new THREE.MeshLambertMaterial({ color: 0x7cff4d });
-        const seat = new THREE.Mesh(seatGeometry, seatMaterial);
-        seat.position.set(pos.x, 0.5, pos.z);
-        seat.castShadow = true;
-        seat.receiveShadow = true;
-        seat.userData = { type: 'seat', id: `seat-${String(index + 1).padStart(2, '0')}` };
-        scene.add(seat);
-        workspaceObjects[`seat-${String(index + 1).padStart(2, '0')}`] = seat;
-      });
+      // Default Empty Plot state
+      const box = new THREE.Mesh(new THREE.BoxGeometry(5, 0.1, 5), new THREE.MeshLambertMaterial({ color: 0xeeeeee }));
+      box.position.y = 0.05;
+      scene.add(box);
     }
 
     // Update seats colors based on status
@@ -263,7 +295,9 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
     const onMouseWheel = (event: WheelEvent) => {
       event.preventDefault();
       const zoomSpeed = 0.1;
-      cameraDistance.current = Math.max(10, Math.min(50, cameraDistance.current + event.deltaY * zoomSpeed * 0.01));
+      const newZoom = Math.max(10, Math.min(50, cameraDistance.current + event.deltaY * zoomSpeed * 0.01));
+      cameraDistance.current = newZoom;
+      setZoomValue(newZoom);
     };
 
     // Mouse drag rotation
@@ -392,41 +426,75 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
         <div ref={mountRef} style={{ width: '100%', height: '700px' }} />
 
         {/* Legend */}
-        <div className="position-absolute top-0 start-0 m-3 bg-white p-3 rounded shadow">
-          <h6 className="mb-2">Availability</h6>
+        <div className="position-absolute top-0 start-0 m-3 bg-white bg-opacity-75 p-3 rounded-4 shadow-lg backdrop-blur" style={{ backdropFilter: 'blur(8px)' }}>
+          <h6 className="mb-2 fw-bold small text-uppercase">Property Status</h6>
           <div className="d-flex align-items-center mb-1">
-            <div className="me-2" style={{ width: '20px', height: '20px', backgroundColor: '#7cff4d' }}></div>
-            <small>Available</small>
+            <div className="me-2 rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#7cff4d' }}></div>
+            <small className="extra-small">Available</small>
           </div>
           <div className="d-flex align-items-center mb-1">
-            <div className="me-2" style={{ width: '20px', height: '20px', backgroundColor: '#ff4444' }}></div>
-            <small>Occupied</small>
+            <div className="me-2 rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#ff4444' }}></div>
+            <small className="extra-small">Sold Out</small>
           </div>
           <div className="d-flex align-items-center">
-            <div className="me-2" style={{ width: '20px', height: '20px', backgroundColor: '#ffaa00' }}></div>
-            <small>Maintenance</small>
+            <div className="me-2 rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#ffaa00' }}></div>
+            <small className="extra-small">Reserved</small>
           </div>
         </div>
 
-        {/* Selected seats info */}
+        {/* Selected Unit Info Card */}
         {selectedWorkspace && (
-          <div className="position-absolute top-0 end-0 m-3 bg-white p-3 rounded shadow">
-            <h6 className="mb-2">Unit Info</h6>
+          <div className="position-absolute top-0 end-0 m-3 bg-white bg-opacity-75 p-3 rounded-4 shadow-lg backdrop-blur border border-white border-opacity-50" style={{ backdropFilter: 'blur(8px)', minWidth: '220px' }}>
+            <h6 className="mb-2 fw-bold small text-uppercase text-primary border-bottom pb-2">Listing Overview</h6>
             <div className="small">
-              <strong>{selectedWorkspace.name}</strong><br />
-              Type: {selectedWorkspace.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}<br />
-              Status: {selectedWorkspace.status}<br />
-              Price: ${selectedWorkspace.hourlyRate}
+              <div className="d-flex justify-content-between mb-1">
+                <span className="text-muted">Unit:</span>
+                <span className="fw-bold">{selectedWorkspace.name}</span>
+              </div>
+              <div className="d-flex justify-content-between mb-1">
+                <span className="text-muted">Status:</span>
+                <span className={`badge px-2 py-1 ${selectedWorkspace.status === 'available' ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>{selectedWorkspace.status.toUpperCase()}</span>
+              </div>
+              <div className="d-flex justify-content-between">
+                <span className="text-muted">Price:</span>
+                <span className="fw-bold text-primary">${selectedWorkspace.monthlyRate || selectedWorkspace.price || selectedWorkspace.hourlyRate}</span>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Instructions */}
-        <div className="position-absolute bottom-0 start-0 m-3 bg-white p-2 rounded shadow">
-          <small className="text-muted">
-            <strong>Controls:</strong><br />
-            🖱️ Drag to rotate | 🎡 Scroll to zoom | 👆 Click to select
-          </small>
+        {/* Navigation Controls Overlay */}
+        <div className="position-absolute bottom-0 start-0 m-3 bg-white bg-opacity-75 p-3 rounded-4 shadow-sm backdrop-blur" style={{ backdropFilter: 'blur(8px)' }}>
+          <div className="d-flex align-items-center gap-3">
+            <div className="text-center"><i className="bi bi-mouse2 h5 d-block mb-1"></i><small className="extra-small text-muted">Rotate</small></div>
+            <div className="text-center"><i className="bi bi-mouse h5 d-block mb-1"></i><small className="extra-small text-muted">Zoom</small></div>
+            <div className="text-center"><i className="bi bi-cursor h5 d-block mb-1"></i><small className="extra-small text-muted">Select</small></div>
+          </div>
+        </div>
+
+        {/* Zoom Slider Overlay */}
+        <div className="position-absolute bottom-0 end-0 m-3 bg-white bg-opacity-75 p-3 rounded-4 shadow-sm backdrop-blur" style={{ backdropFilter: 'blur(8px)', width: '180px' }}>
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <small className="extra-small fw-bold text-uppercase text-muted">Zoom Level</small>
+            <span className="badge bg-primary extra-small">{Math.round(((50 - zoomValue) / 40) * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            className="form-range"
+            min="10"
+            max="50"
+            step="0.1"
+            value={zoomValue}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setZoomValue(val);
+              cameraDistance.current = val;
+            }}
+          />
+          <div className="d-flex justify-content-between mt-1">
+            <i className="bi bi-zoom-out extra-small text-muted"></i>
+            <i className="bi bi-zoom-in extra-small text-muted"></i>
+          </div>
         </div>
 
         {/* Seats Popup */}
@@ -462,29 +530,32 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
                 </span>
               </div>
 
-              <div className="mb-2">
-                <strong>Capacity:</strong> {selectedWorkspace.capacity} people
+              <div className="row g-2 mb-3">
+                <div className="col-6 bg-light p-2 rounded-3 text-center">
+                  <div className="extra-small text-muted text-uppercase mb-1">Bedrooms</div>
+                  <div className="fw-bold">{selectedWorkspace.bedrooms || '-'}</div>
+                </div>
+                <div className="col-6 bg-light p-2 rounded-3 text-center">
+                  <div className="extra-small text-muted text-uppercase mb-1">Size (Sqft)</div>
+                  <div className="fw-bold">{selectedWorkspace.sizeSqft || '-'}</div>
+                </div>
               </div>
 
-              <div className="mb-2">
-                <strong>Features:</strong>
-                <ul className="list-unstyled mt-1 mb-0">
-                  {selectedWorkspace.features.slice(0, 3).map(feature => (
-                    <li key={feature} className="small text-muted">
-                      <i className="bi bi-check-circle text-success me-1"></i>
+              <div className="mb-3">
+                <strong>Premium Features:</strong>
+                <div className="d-flex flex-wrap gap-1 mt-1">
+                  {selectedWorkspace.features.length > 0 ? selectedWorkspace.features.slice(0, 4).map(feature => (
+                    <span key={feature} className="badge bg-white text-dark border extra-small px-2 py-1">
                       {feature}
-                    </li>
-                  ))}
-                  {selectedWorkspace.features.length > 3 && (
-                    <li className="small text-muted">+{selectedWorkspace.features.length - 3} more</li>
-                  )}
-                </ul>
+                    </span>
+                  )) : <span className="text-muted extra-small">Standard Amenities Included</span>}
+                </div>
               </div>
 
-              <div className="d-flex justify-content-between align-items-center">
+              <div className="d-flex justify-content-between align-items-center pt-2 border-top">
                 <div>
-                  <strong>Price:</strong><br />
-                  <span className="text-primary">${selectedWorkspace.hourlyRate}</span>
+                  <span className="extra-small text-muted text-uppercase d-block">Asking Price</span>
+                  <span className="h5 fw-bold text-primary mb-0">${selectedWorkspace.monthlyRate || selectedWorkspace.price || selectedWorkspace.hourlyRate}</span>
                 </div>
                 <button
                   className="btn btn-sm btn-primary"

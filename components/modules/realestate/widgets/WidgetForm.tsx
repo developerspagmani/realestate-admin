@@ -11,6 +11,7 @@ interface WidgetFormProps {
     editingWidget: any;
     tenantType: number;
     properties: any[];
+    marketingForms: any[];
 }
 
 export default function WidgetForm({
@@ -20,7 +21,8 @@ export default function WidgetForm({
     setShowForm,
     editingWidget,
     tenantType,
-    properties
+    properties,
+    marketingForms
 }: WidgetFormProps) {
     return (
         <div className="card border-0 shadow-sm rounded-4 mb-4 animate-fade-in">
@@ -409,16 +411,70 @@ export default function WidgetForm({
                         </div>
 
                         <div className="col-12">
-                            <FormBuilder
-                                config={formData.configuration.inquiryForm || { enabled: false, title: '', description: '', fields: [] }}
-                                onChange={(formConfig) => setFormData({
-                                    ...formData,
-                                    configuration: {
-                                        ...formData.configuration,
-                                        inquiryForm: formConfig
-                                    }
-                                })}
-                            />
+                            <div className="card bg-light border-0 rounded-4 p-4 mb-3">
+                                <label className="form-label small fw-bold">Form Strategy</label>
+                                <div className="d-flex gap-3 mb-3">
+                                    <div className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all ${!formData.configuration.inquiryForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed text-muted'}`}
+                                        onClick={() => setFormData({
+                                            ...formData,
+                                            configuration: {
+                                                ...formData.configuration,
+                                                inquiryForm: { ...formData.configuration.inquiryForm, useMarketingForm: false }
+                                            }
+                                        })}>
+                                        <div className="fw-bold small mb-1">Custom Builder</div>
+                                        <div className="extra-small opacity-75">Build a unique form for this widget</div>
+                                    </div>
+                                    <div className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all ${formData.configuration.inquiryForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed text-muted'}`}
+                                        onClick={() => setFormData({
+                                            ...formData,
+                                            configuration: {
+                                                ...formData.configuration,
+                                                inquiryForm: { ...formData.configuration.inquiryForm, useMarketingForm: true }
+                                            }
+                                        })}>
+                                        <div className="fw-bold small mb-1">Marketing Hub Form</div>
+                                        <div className="extra-small opacity-75">Sync with centrally managed forms</div>
+                                    </div>
+                                </div>
+
+                                {formData.configuration.inquiryForm?.useMarketingForm ? (
+                                    <div className="animate-fade-in">
+                                        <label className="form-label extra-small fw-bold text-muted text-uppercase">Select Managed Form</label>
+                                        <select
+                                            className="form-select border-0 shadow-none py-2"
+                                            value={formData.configuration.inquiryForm?.marketingFormId || ''}
+                                            onChange={(e) => setFormData({
+                                                ...formData,
+                                                configuration: {
+                                                    ...formData.configuration,
+                                                    inquiryForm: { ...formData.configuration.inquiryForm, marketingFormId: e.target.value }
+                                                }
+                                            })}
+                                        >
+                                            <option value="">-- Choose a Marketing Form --</option>
+                                            {marketingForms.map(f => (
+                                                <option key={f.id} value={f.id}>{f.name}</option>
+                                            ))}
+                                        </select>
+                                        <p className="extra-small text-info mt-2 mb-0">
+                                            <i className="bi bi-info-circle me-1"></i>
+                                            This widget will automatically use the fields and target groups defined in the Marketing Hub.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <FormBuilder
+                                        config={formData.configuration.inquiryForm || { enabled: false, title: '', description: '', fields: [] }}
+                                        onChange={(formConfig) => setFormData({
+                                            ...formData,
+                                            configuration: {
+                                                ...formData.configuration,
+                                                inquiryForm: formConfig
+                                            }
+                                        })}
+                                    />
+                                )}
+                            </div>
                         </div>
 
                         <div className="col-md-12 text-end mt-4 border-top pt-3">

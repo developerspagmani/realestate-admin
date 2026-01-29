@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, MouseEvent } from 'react';
 interface Marker {
     unitId: string;
     unitCode: string;
-    type: 'seat' | 'cabin' | 'flat' | 'villa';
+    type: 'seat' | 'cabin' | 'flat' | 'villa' | 'road' | 'tree' | 'drainage' | 'hills' | 'river' | 'lake';
     x: number; // pixel x
     y: number; // pixel y
     width?: number; // for rect
@@ -13,6 +13,15 @@ interface Marker {
     points?: { x: number; y: number }[]; // for polygon
     color?: string;
 }
+
+const SCENARIO_TYPES = [
+    { id: 'road', name: 'Road', color: '#555555', icon: 'bi-signpost-split' },
+    { id: 'tree', name: 'Tree', color: '#2d572c', icon: 'bi-tree-fill' },
+    { id: 'drainage', name: 'Drainage', color: '#4a69bd', icon: 'bi-droplet-fill' },
+    { id: 'hills', name: 'Hills', color: '#8d6e63', icon: 'bi-mountain' },
+    { id: 'river', name: 'River', color: '#00bcd4', icon: 'bi-water' },
+    { id: 'lake', name: 'Lake', color: '#03a9f4', icon: 'bi-tsunami' },
+];
 
 interface VisualEditorProps {
     units: any[];
@@ -32,6 +41,7 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState<{ x: number, y: number } | null>(null);
     const [dragItemStartPos, setDragItemStartPos] = useState<{ x: number, y: number } | null>(null);
+    const [draggingCornerIndex, setDraggingCornerIndex] = useState<number | null>(null);
 
     // New Features State
     const [showJson, setShowJson] = useState(false);
@@ -126,12 +136,30 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
         const y = e.clientY - rect.top;
 
         if (drawMode === 'pointer') {
+            // Check for corner handles first
+            if (selectedUnitId) {
+                const item = layout.find(l => l.unitId === selectedUnitId);
+                if (item && item.metadata?.polyPoints) {
+                    const handles = item.metadata.polyPoints;
+                    const handleIndex = handles.findIndex((p: any) => {
+                        const px = getPixel({ x: p.x, z: p.z });
+                        return Math.abs(x - px.x) < 10 && Math.abs(y - px.y) < 10;
+                    });
+                    if (handleIndex !== -1) {
+                        setDraggingCornerIndex(handleIndex);
+                        setIsDragging(true);
+                        setDragStart({ x, y });
+                        return;
+                    }
+                }
+            }
+
             // Find item clicked
             const clickedItem = layout.slice().reverse().find(item => {
                 const px = getPixel({ x: item.position.x, z: item.position.z });
                 const size = (item.dimensions?.w || 1) * scale;
                 // Simple hit test
-                return Math.abs(x - px.x) < (size / 2 + 5) && Math.abs(y - px.y) < (size / 2 + 5);
+                return Math.abs(x - px.x) < (size / 2 + 10) && Math.abs(y - px.y) < (size / 2 + 10);
             });
 
             if (clickedItem) {
@@ -164,8 +192,17 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
         }
     };
 
+    // Local Layout for smooth dragging
+    const [localLayout, setLocalLayout] = useState(layout);
+
+    useEffect(() => {
+        if (!isDragging) {
+            setLocalLayout(layout);
+        }
+    }, [layout, isDragging]);
+
     const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
-        if (!isDragging || !dragStart || !selectedUnitId || !dragItemStartPos) return;
+        if (!isDragging || !dragStart || !selectedUnitId) return;
         if (!imgRef.current) return;
 
         const rect = imgRef.current.getBoundingClientRect();
@@ -176,31 +213,78 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
         const dx = x - dragStart.x;
         const dy = y - dragStart.y;
 
-        // Delta in world
+        // Delta in world space
+        // Apply a small smoothing factor (0.95 or similar) if needed, but usually 1:1 is best once lag is gone
         const dwX = dx / scale;
         const dwZ = dy / scale;
 
-        const newX = dragItemStartPos.x + dwX;
-        const newZ = dragItemStartPos.y + dwZ;
+        if (draggingCornerIndex !== null) {
+            // Dragging a polygon/corner point
+            const updatedLayout = localLayout.map(item => {
+                if (item.unitId === selectedUnitId && item.metadata?.polyPoints) {
+                    const newPoints = [...item.metadata.polyPoints];
+                    const originalPoint = newPoints[draggingCornerIndex];
 
-        // Update layout locally (fast update)
-        const updatedLayout = layout.map(item => {
-            if (item.unitId === selectedUnitId) {
-                return { ...item, position: { ...item.position, x: newX, z: newZ } };
-            }
-            return item;
-        });
+                    newPoints[draggingCornerIndex] = {
+                        x: originalPoint.x + dwX,
+                        z: originalPoint.z + dwZ
+                    };
 
-        onLayoutChange(updatedLayout);
+                    // Recalculate centroid for position
+                    const newCentroidX = newPoints.reduce((sum: number, p: any) => sum + p.x, 0) / newPoints.length;
+                    const newCentroidZ = newPoints.reduce((sum: number, p: any) => sum + p.z, 0) / newPoints.length;
+
+                    return {
+                        ...item,
+                        position: { x: newCentroidX, y: 0.5, z: newCentroidZ },
+                        metadata: { ...item.metadata, polyPoints: newPoints }
+                    };
+                }
+                return item;
+            });
+            setLocalLayout(updatedLayout);
+            onLayoutChange(updatedLayout); // Keep parent in sync but locally updated first
+            setDragStart({ x, y });
+        } else if (dragItemStartPos) {
+            // Dragging entire item
+            const newX = dragItemStartPos.x + dwX;
+            const newZ = dragItemStartPos.y + dwZ;
+
+            const updatedLayout = localLayout.map(item => {
+                if (item.unitId === selectedUnitId) {
+                    const metadata = { ...item.metadata };
+                    if (metadata.polyPoints) {
+                        metadata.polyPoints = metadata.polyPoints.map((p: any) => ({
+                            x: p.x + dwX,
+                            z: p.z + dwZ
+                        }));
+                    }
+                    return { ...item, position: { ...item.position, x: newX, z: newZ }, metadata };
+                }
+                return item;
+            });
+
+            setLocalLayout(updatedLayout);
+            onLayoutChange(updatedLayout);
+            // Updating dragStart here because we need it for the next dx calculation
+            // since we are using relative movement for polyPoints but absolute for position?
+            // Wait, if we use newX = startPos + totalDelta, we shouldn't update dragStart.
+            // But polyPoints move relatively (p.x + dwX).
+            // Let's make it consistent: update dragStart and move everything relatively.
+            setDragStart({ x, y });
+            setDragItemStartPos({ x: newX, y: newZ });
+        }
     };
 
     const handleMouseUp = () => {
         if (isDragging) {
             setIsDragging(false);
-            addToHistory(layout); // Commit the Drag
+            setDraggingCornerIndex(null);
+            setDragStart(null);
+            setDragItemStartPos(null);
+            addToHistory(localLayout); // Commit the Drag with final local state
         }
     };
-
     // Legacy Click wrapper for new modes (handled in MouseDown mostly now for Pointer)
     const handleCanvasClick = (e: MouseEvent<HTMLDivElement>) => {
         if (drawMode === 'pointer') return; // Handled in Down
@@ -213,16 +297,18 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
 
         if (drawMode === 'point' || drawMode === 'rect') {
             const unit = units.find(u => u.id === selectedUnitId);
-            if (unit) {
+            const scenario = SCENARIO_TYPES.find(s => s.id === selectedUnitId);
+
+            if (unit || scenario) {
                 addOrUpdateMarker({
-                    unitId: unit.id,
-                    unitCode: unit.unitCode,
-                    type: drawMode === 'point' ? 'seat' : 'cabin',
+                    unitId: unit?.id || (selectedUnitId + '_' + Date.now()),
+                    unitCode: unit?.unitCode || scenario?.name || 'Item',
+                    type: scenario ? (scenario.id as any) : (drawMode === 'point' ? 'seat' : 'cabin'),
                     x,
                     y,
-                    width: drawMode === 'rect' ? 100 : undefined,
-                    height: drawMode === 'rect' ? 100 : undefined,
-                    color: drawMode === 'point' ? '#7cff4d' : '#ffa500'
+                    width: drawMode === 'rect' ? 80 : (scenario?.id === 'road' ? 120 : undefined),
+                    height: drawMode === 'rect' ? 80 : (scenario?.id === 'road' ? 40 : undefined),
+                    color: scenario?.color || (drawMode === 'point' ? '#7cff4d' : '#ffa500')
                 });
             }
         } else if (drawMode === 'poly') {
@@ -234,19 +320,25 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
     const finishPoly = () => {
         if (!selectedUnitId || tempPolyPoints.length < 3) return;
         const unit = units.find(u => u.id === selectedUnitId);
-        if (!unit) return;
+        const scenario = SCENARIO_TYPES.find(s => s.id === selectedUnitId);
 
         const centroidX = tempPolyPoints.reduce((sum, p) => sum + p.x, 0) / tempPolyPoints.length;
         const centroidY = tempPolyPoints.reduce((sum, p) => sum + p.y, 0) / tempPolyPoints.length;
 
+        // Convert all points to world space
+        const worldPoints = tempPolyPoints.map(p => {
+            const world = getWorld(p.x, p.y);
+            return { x: world.x, z: world.z };
+        });
+
         addOrUpdateMarker({
-            unitId: unit.id,
-            unitCode: unit.unitCode,
-            type: 'flat',
+            unitId: unit?.id || (selectedUnitId + '_' + Date.now()),
+            unitCode: unit?.unitCode || scenario?.name || 'Polygon',
+            type: scenario ? (scenario.id as any) : 'flat',
             x: centroidX,
             y: centroidY,
-            points: tempPolyPoints,
-            color: '#00d2ff'
+            points: worldPoints as any,
+            color: scenario?.color || '#00d2ff'
         });
         setTempPolyPoints([]);
     };
@@ -254,13 +346,26 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
     // ... (keep addOrUpdateMarker)
     const addOrUpdateMarker = (marker: Marker) => {
         if (!imgRef.current) return;
-        const imgWidth = imgRef.current.naturalWidth || imgRef.current.width;
 
         const centerX = imgRef.current.width / 2;
         const centerY = imgRef.current.height / 2;
 
         const worldX = (marker.x - centerX) / scale;
         const worldZ = (marker.y - centerY) / scale;
+
+        // If it's a rect/point and we want corner adjustment, it should ideally use polyPoints too
+        let polyPoints = marker.points;
+        if (!polyPoints && marker.width && marker.height) {
+            // Generate 4 corners for rect
+            const w2 = (marker.width / scale) / 2;
+            const h2 = (marker.height / scale) / 2;
+            polyPoints = [
+                { x: worldX - w2, z: worldZ - h2 },
+                { x: worldX + w2, z: worldZ - h2 },
+                { x: worldX + w2, z: worldZ + h2 },
+                { x: worldX - w2, z: worldZ + h2 },
+            ] as any;
+        }
 
         const newItem = {
             unitId: marker.unitId,
@@ -271,7 +376,7 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
             dimensions: marker.width ? { w: marker.width / scale, h: 1, d: marker.height! / scale } : { w: 1, h: 1, d: 1 },
             color: marker.color,
             metadata: {
-                polyPoints: marker.points
+                polyPoints: polyPoints
             }
         };
 
@@ -289,7 +394,7 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
     // Property Editing Handler
     const handlePropertyChange = (field: string, value: any) => {
         if (!selectedUnitId) return;
-        const updatedLayout = layout.map(item => {
+        const updatedLayout = localLayout.map(item => {
             if (item.unitId === selectedUnitId) {
                 if (field === 'width') {
                     return { ...item, dimensions: { ...item.dimensions, w: Number(value) } };
@@ -303,31 +408,29 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
             }
             return item;
         });
-        // We'll commit to history only on blur or create a debounce, but for now direct update
-        // To prevent spamming history, maybe direct update layout and manual commit? 
-        // For simplicity, just update layout directly, history on blur/enter?
-        // Let's just update and users can undo.
+        setLocalLayout(updatedLayout);
         addToHistory(updatedLayout);
     };
 
     const handleDelete = () => {
         if (!selectedUnitId) return;
         if (confirm("Delete this item?")) {
-            const newLayout = layout.filter(l => l.unitId !== selectedUnitId);
+            const newLayout = localLayout.filter(l => l.unitId !== selectedUnitId);
+            setLocalLayout(newLayout);
             addToHistory(newLayout);
             setSelectedUnitId(null);
         }
     };
 
     // Get Selected Item Dimensions for UI
-    const selectedItem = layout.find(l => l.unitId === selectedUnitId);
+    const selectedItem = localLayout.find(l => l.unitId === selectedUnitId);
 
 
     return (
         <div className="row h-100 relative">
             {/* Toolbar / Sidebar */}
             {!previewMode && (
-                <div className="col-md-3 border-end bg-light p-0 d-flex flex-column" style={{ maxHeight: '700px' }}>
+                <div className="col-md-3 border-end bg-light p-0 d-flex flex-column" style={{ minHeight: '700px' }}>
                     <div className="p-3 border-bottom bg-white">
                         <div className="d-flex justify-content-between mb-3">
                             <h6 className="fw-bold mb-0">Tools</h6>
@@ -390,7 +493,23 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
                     </div>
                     {/* List Group Area */}
                     <div className="p-3 flex-grow-1 overflow-auto">
-                        <h6 className="fw-bold mb-2">Unassigned Units</h6>
+                        <h6 className="fw-bold mb-2 small text-muted text-uppercase">Environment Scenario</h6>
+                        <div className="row g-2 mb-4">
+                            {SCENARIO_TYPES.map(s => (
+                                <div className="col-4" key={s.id}>
+                                    <button
+                                        className={`btn btn-xs w-100 d-flex flex-column align-items-center justify-content-center p-2 rounded-3 border ${selectedUnitId === s.id ? 'btn-primary border-primary' : 'btn-white'}`}
+                                        onClick={() => { setSelectedUnitId(s.id); setDrawMode(s.id === 'road' || s.id === 'river' ? 'poly' : 'point'); }}
+                                        title={s.name}
+                                    >
+                                        <i className={`bi ${s.icon} mb-1 fs-6`}></i>
+                                        <span style={{ fontSize: '9px' }}>{s.name}</span>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <h6 className="fw-bold mb-2 small text-muted text-uppercase">Unassigned Units</h6>
                         <div className="list-group">
                             {units.map(unit => {
                                 const isPlaced = layout.some(l => l.unitId === unit.id);
@@ -398,7 +517,7 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
                                     <button
                                         key={unit.id}
                                         type="button"
-                                        className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${selectedUnitId === unit.id ? 'active' : ''}`}
+                                        className={`list-group-item list-group-item-action border-0 mb-1 rounded-3 d-flex justify-content-between align-items-center ${selectedUnitId === unit.id ? 'active' : 'bg-white'}`}
                                         onClick={() => { setSelectedUnitId(unit.id); setDrawMode(drawMode === 'rect' ? 'rect' : 'point'); }}
                                     >
                                         <div className="text-truncate" style={{ maxWidth: '120px' }}><small>{unit.unitCode}</small></div>
@@ -431,26 +550,51 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
 
                         {/* SVG Overlay */}
                         <svg className="position-absolute top-0 start-0 w-100 h-100" style={{ pointerEvents: 'none' }}>
-                            {layout.map((item, idx) => {
+                            {localLayout.map((item, idx) => {
                                 const px = getPixel({ x: item.position.x, z: item.position.z });
                                 const w = (item.dimensions?.w || 1) * scale;
                                 const h = (item.dimensions?.d || 1) * scale;
                                 const isSelected = selectedUnitId === item.unitId;
 
                                 return (
-                                    <g key={idx} transform={`rotate(${item.rotation?.y || 0}, ${px.x}, ${px.y})`} style={{ transition: isDragging ? 'none' : 'all 0.1s' }}>
-                                        {item.dimensions?.w > 1.5 || item.type === 'cabin' ? (
-                                            <rect
-                                                x={px.x - w / 2} y={px.y - h / 2} width={w} height={h}
-                                                fill={item.color || 'orange'} fillOpacity="0.5"
-                                                stroke={isSelected ? 'red' : 'black'} strokeWidth={isSelected ? 2 : 1}
+                                    <g key={idx} transform={item.metadata?.polyPoints ? "" : `rotate(${item.rotation?.y || 0}, ${px.x}, ${px.y})`} style={{ transition: isDragging ? 'none' : 'all 0.1s' }}>
+                                        {item.metadata?.polyPoints ? (
+                                            <polygon
+                                                points={item.metadata.polyPoints.map((p: any) => {
+                                                    const pp = getPixel({ x: p.x, z: p.z });
+                                                    return `${pp.x},${pp.y}`;
+                                                }).join(' ')}
+                                                fill={item.color || '#00d2ff'}
+                                                fillOpacity="0.4"
+                                                stroke={isSelected ? '#ff4d4d' : (item.color || '#333')}
+                                                strokeWidth={isSelected ? 3 : 1.5}
                                             />
                                         ) : (
-                                            <circle cx={px.x} cy={px.y} r="6" fill={item.color || 'green'} stroke={isSelected ? 'red' : 'white'} strokeWidth={isSelected ? 2 : 2} />
+                                            item.dimensions?.w > 1.5 || item.type === 'cabin' ? (
+                                                <rect
+                                                    x={px.x - w / 2} y={px.y - h / 2} width={w} height={h}
+                                                    fill={item.color || 'orange'} fillOpacity="0.5"
+                                                    stroke={isSelected ? 'red' : 'black'} strokeWidth={isSelected ? 2 : 1}
+                                                />
+                                            ) : (
+                                                <circle cx={px.x} cy={px.y} r="6" fill={item.color || 'green'} stroke={isSelected ? 'red' : 'white'} strokeWidth={isSelected ? 2 : 2} />
+                                            )
                                         )}
                                         <text x={px.x} y={px.y} dy=".3em" textAnchor="middle" fill="black" fontSize="10" fontWeight="bold" style={{ textShadow: '0 0 2px white', pointerEvents: 'none' }}>
                                             {item.unitCode}
                                         </text>
+
+                                        {/* Corner Handles for selected item */}
+                                        {isSelected && item.metadata?.polyPoints && item.metadata.polyPoints.map((p: any, pIdx: number) => {
+                                            const pp = getPixel({ x: p.x, z: p.z });
+                                            return (
+                                                <circle
+                                                    key={pIdx} cx={pp.x} cy={pp.y} r="5"
+                                                    fill="white" stroke="#ff4d4d" strokeWidth="2"
+                                                    style={{ cursor: 'move', pointerEvents: 'auto' }}
+                                                />
+                                            );
+                                        })}
                                     </g>
                                 );
                             })}

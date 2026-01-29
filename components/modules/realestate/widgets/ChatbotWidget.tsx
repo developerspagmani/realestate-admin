@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface ChatbotProps {
     theme: any;
@@ -15,6 +15,47 @@ interface ChatbotProps {
 type Step = 'IDLE' | 'LEAD_CAPTURE' | 'HI' | 'ASK_LOCATION' | 'ASK_CITY' | 'ASK_BUDGET' | 'RESULTS';
 
 const STORAGE_KEY = 'cw_chatbot_session';
+
+const CheckboxGroup = ({ options, onConfirm, theme, onMessage }: { options: { label: string, value: string }[], onConfirm: (vals: string[]) => void, theme: any, onMessage: (msg: string) => void }) => {
+    const [selected, setSelected] = useState<string[]>([]);
+    return (
+        <div className="bg-white p-3 rounded-4 shadow-sm border border-light animate-fade-in mb-2">
+            <div className="d-flex flex-wrap gap-2 mb-3">
+                {options.map(opt => (
+                    <div key={opt.value} className="form-check form-check-inline m-0">
+                        <input
+                            className="btn-check"
+                            type="checkbox"
+                            id={`check-${opt.value}`}
+                            checked={selected.includes(opt.value)}
+                            onChange={(e) => {
+                                if (e.target.checked) setSelected(prev => [...prev, opt.value]);
+                                else setSelected(prev => prev.filter(v => v !== opt.value));
+                            }}
+                        />
+                        <label
+                            className={`btn btn-sm rounded-pill px-3 border-0 transition-all ${selected.includes(opt.value) ? 'text-white' : 'bg-light text-muted'}`}
+                            style={{ backgroundColor: selected.includes(opt.value) ? theme.primaryColor : undefined }}
+                            htmlFor={`check-${opt.value}`}
+                        >
+                            {opt.label}
+                        </label>
+                    </div>
+                ))}
+            </div>
+            <button
+                className="btn btn-primary w-100 rounded-pill btn-sm fw-bold shadow-sm"
+                style={{ backgroundColor: theme.primaryColor, border: 'none' }}
+                onClick={() => {
+                    if (selected.length > 0) onConfirm(selected);
+                    else onMessage('Please select at least one option to continue.');
+                }}
+            >
+                Confirm Selection
+            </button>
+        </div>
+    );
+};
 
 export default function ChatbotWidget({ theme, properties, onFilterResults, onClose, onSelectProperty, onCreateLead, onExpandToggle }: ChatbotProps) {
     const [step, setStep] = useState<Step>('IDLE');
@@ -199,49 +240,9 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
         return [];
     };
 
-    const CheckboxGroup = ({ options, onConfirm }: { options: { label: string, value: string }[], onConfirm: (vals: string[]) => void }) => {
-        const [selected, setSelected] = useState<string[]>([]);
-        return (
-            <div className="bg-white p-3 rounded-4 shadow-sm border border-light animate-fade-in mb-2">
-                <div className="d-flex flex-wrap gap-2 mb-3">
-                    {options.map(opt => (
-                        <div key={opt.value} className="form-check form-check-inline m-0">
-                            <input
-                                className="btn-check"
-                                type="checkbox"
-                                id={`check-${opt.value}`}
-                                checked={selected.includes(opt.value)}
-                                onChange={(e) => {
-                                    if (e.target.checked) setSelected(prev => [...prev, opt.value]);
-                                    else setSelected(prev => prev.filter(v => v !== opt.value));
-                                }}
-                            />
-                            <label
-                                className={`btn btn-sm rounded-pill px-3 border-0 transition-all ${selected.includes(opt.value) ? 'text-white' : 'bg-light text-muted'}`}
-                                style={{ backgroundColor: selected.includes(opt.value) ? theme.primaryColor : undefined }}
-                                htmlFor={`check-${opt.value}`}
-                            >
-                                {opt.label}
-                            </label>
-                        </div>
-                    ))}
-                </div>
-                <button
-                    className="btn btn-primary w-100 rounded-pill btn-sm fw-bold shadow-sm"
-                    style={{ backgroundColor: theme.primaryColor, border: 'none' }}
-                    onClick={() => {
-                        if (selected.length > 0) onConfirm(selected);
-                        else addMessage('bot', 'Please select at least one option to continue.');
-                    }}
-                >
-                    Confirm Selection
-                </button>
-            </div>
-        );
-    };
 
     return (
-        <div className={`chatbot-window border-0 shadow-lg rounded-4 overflow-hidden animate-slide-up bg-white ${isExpanded ? 'expanded' : ''}`}>
+        <div className={`chatbot-container border-0 shadow-lg rounded-4 overflow-hidden animate-slide-up bg-white ${isExpanded ? 'expanded' : ''}`}>
 
             <div className="chat-header p-3 text-white d-flex justify-content-between align-items-center" style={{ backgroundColor: theme.primaryColor }}>
                 <div className="d-flex align-items-center gap-2">
@@ -268,7 +269,7 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                 </div>
             </div>
 
-            <div className="chat-body p-3 overflow-auto" style={{ height: isExpanded ? '450px' : '300px', backgroundColor: '#f9fafb' }} ref={chatBodyRef}>
+            <div className="chat-body p-3 overflow-auto" style={{ height: isExpanded ? '650px' : '420px', backgroundColor: '#f9fafb' }} ref={chatBodyRef}>
                 {step === 'IDLE' ? (
                     <div className="text-center py-5">
                         <div className="bounce-container mb-3">
@@ -400,7 +401,9 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                             <div className="animate-fade-in">
                                 <CheckboxGroup
                                     options={getOptions()}
+                                    theme={theme}
                                     onConfirm={(vals) => handleAnswer(vals)}
+                                    onMessage={(msg) => addMessage('bot', msg)}
                                 />
                             </div>
                         )}
@@ -427,7 +430,7 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
             </div>
 
             <style jsx>{`
-                .chatbot-window {
+                .chatbot-container {
                     width: 100%;
                     height: 100%;
                     display: flex;
@@ -435,7 +438,7 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                     z-index: 1000;
                     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 }
-                .chatbot-window.expanded {
+                .chatbot-container.expanded {
                     /* Width and height controlled by parent container's classes */
                 }
                 .extra-small { font-size: 11px; }

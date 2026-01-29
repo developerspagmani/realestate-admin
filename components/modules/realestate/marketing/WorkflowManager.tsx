@@ -12,6 +12,9 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [agents, setAgents] = useState<any[]>([]);
 
     const [currentWorkflow, setCurrentWorkflow] = useState<any>({
         name: '',
@@ -38,8 +41,19 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
         }
     };
 
+    const loadResources = async () => {
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const tRes = await marketingService.getTemplates(token, { tenantId });
+            if (tRes.success) setTemplates(tRes.data);
+            setAgents([{ id: 'auto', name: 'Auto-Assign' }, { id: 'agent-1', name: 'John Doe' }, { id: 'agent-2', name: 'Jane Smith' }]);
+        } catch (e) { console.error(e); }
+    };
+
     useEffect(() => {
         loadWorkflows();
+        loadResources();
     }, [tenantId]);
 
     const handleSave = async () => {
@@ -109,7 +123,15 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
         setCurrentWorkflow({ ...currentWorkflow, steps: [...currentWorkflow.steps, newStep] });
     };
 
+    const updateStep = (id: string, updates: any) => {
+        setCurrentWorkflow({
+            ...currentWorkflow,
+            steps: currentWorkflow.steps.map((s: any) => s.id === id ? { ...s, ...updates } : s)
+        });
+    };
+
     const removeStep = (id: string) => {
+        if (selectedStepId === id) setSelectedStepId(null);
         setCurrentWorkflow({ ...currentWorkflow, steps: currentWorkflow.steps.filter((s: any) => s.id !== id) });
     };
 
@@ -160,17 +182,17 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                         <div className="card border-0 shadow-sm rounded-4 p-4 mb-4">
                             <h6 className="fw-bold mb-3">Workflow Details</h6>
                             <div className="mb-3">
-                                <label className="form-label small fw-bold text-muted text-uppercase">Workflow Name</label>
+                                <label className="form-label extra-small fw-bold text-muted text-uppercase">Workflow Name</label>
                                 <input type="text" className="form-control bg-light border-0" placeholder="e.g. High Value Lead Nurture"
                                     value={currentWorkflow.name} onChange={e => setCurrentWorkflow({ ...currentWorkflow, name: e.target.value })} />
                             </div>
                             <div className="mb-3">
-                                <label className="form-label small fw-bold text-muted text-uppercase">Description</label>
-                                <textarea className="form-control bg-light border-0" rows={3} placeholder="Describe the goal of this automation..."
+                                <label className="form-label extra-small fw-bold text-muted text-uppercase">Description</label>
+                                <textarea className="form-control bg-light border-0" rows={2} placeholder="Describe the goal..."
                                     value={currentWorkflow.description} onChange={e => setCurrentWorkflow({ ...currentWorkflow, description: e.target.value })}></textarea>
                             </div>
                             <div className="mb-0">
-                                <label className="form-label small fw-bold text-muted text-uppercase">Initial Trigger</label>
+                                <label className="form-label extra-small fw-bold text-muted text-uppercase">Initial Trigger</label>
                                 <select className="form-select bg-light border-0" value={currentWorkflow.trigger?.type}
                                     onChange={e => setCurrentWorkflow({ ...currentWorkflow, trigger: { ...currentWorkflow.trigger, type: e.target.value } })}>
                                     <option value="LEAD_CREATED">New Lead Created</option>
@@ -181,10 +203,101 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                             </div>
                         </div>
 
+                        {/* Step Property Editor */}
+                        {selectedStepId && (
+                            <div className="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white animate-fade-in border-start border-primary border-4">
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 className="fw-bold mb-0">Step Configuration</h6>
+                                    <button className="btn btn-sm btn-light rounded-circle" onClick={() => setSelectedStepId(null)}><i className="bi bi-x"></i></button>
+                                </div>
+
+                                {(() => {
+                                    const step = currentWorkflow.steps.find((s: any) => s.id === selectedStepId);
+                                    if (!step) return null;
+
+                                    return (
+                                        <div className="step-options">
+                                            {step.type === 'DELAY' && (
+                                                <div className="row g-2">
+                                                    <div className="col-8">
+                                                        <label className="extra-small text-muted mb-1">Duration</label>
+                                                        <input type="number" className="form-control form-control-sm border-0 bg-light" value={step.duration} onChange={e => updateStep(step.id, { duration: parseInt(e.target.value) })} />
+                                                    </div>
+                                                    <div className="col-4">
+                                                        <label className="extra-small text-muted mb-1">Unit</label>
+                                                        <select className="form-select form-select-sm border-0 bg-light" value={step.unit} onChange={e => updateStep(step.id, { unit: e.target.value })}>
+                                                            <option value="minutes">Mins</option>
+                                                            <option value="hours">Hours</option>
+                                                            <option value="days">Days</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {step.type === 'EMAIL' && (
+                                                <div className="mb-0">
+                                                    <label className="extra-small text-muted mb-1">Select Email Template</label>
+                                                    <select className="form-select form-select-sm border-0 bg-light mb-2" value={step.templateId} onChange={e => updateStep(step.id, { templateId: e.target.value })}>
+                                                        <option value="">Choose a template...</option>
+                                                        {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                                    </select>
+                                                    <div className="extra-small text-primary"><i className="bi bi-info-circle me-1"></i> Personalized tags will be auto-filled.</div>
+                                                </div>
+                                            )}
+
+                                            {step.type === 'CONDITION' && (
+                                                <div className="mb-0 text-start">
+                                                    <label className="extra-small text-muted mb-1">Field to evaluate</label>
+                                                    <select className="form-select form-select-sm border-0 bg-light mb-2" value={step.field} onChange={e => updateStep(step.id, { field: e.target.value })}>
+                                                        <option value="budget">Lead Budget</option>
+                                                        <option value="type">Property Type</option>
+                                                        <option value="source">Lead Source</option>
+                                                        <option value="score">Lead Score</option>
+                                                    </select>
+                                                    <div className="row g-2">
+                                                        <div className="col-6">
+                                                            <select className="form-select form-select-sm border-0 bg-light" value={step.operator} onChange={e => updateStep(step.id, { operator: e.target.value })}>
+                                                                <option value="equals">Equals</option>
+                                                                <option value="greater_than">Greater Than</option>
+                                                                <option value="contains">Contains</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-6">
+                                                            <input type="text" className="form-control form-control-sm border-0 bg-light" placeholder="Value..." value={step.value} onChange={e => updateStep(step.id, { value: e.target.value })} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {step.type === 'TAG' && (
+                                                <div className="mb-0 text-start">
+                                                    <label className="extra-small text-muted mb-1">Tag Operation</label>
+                                                    <div className="btn-group btn-group-sm w-100 mb-2 shadow-none">
+                                                        <button className={`btn ${step.action === 'add' ? 'btn-primary' : 'btn-light border'} extra-small`} onClick={() => updateStep(step.id, { action: 'add' })}>Add</button>
+                                                        <button className={`btn ${step.action === 'remove' ? 'btn-danger' : 'btn-light border'} extra-small`} onClick={() => updateStep(step.id, { action: 'remove' })}>Remove</button>
+                                                    </div>
+                                                    <input type="text" className="form-control form-control-sm border-0 bg-light" placeholder="Enter tag name..." value={step.tag} onChange={e => updateStep(step.id, { tag: e.target.value })} />
+                                                </div>
+                                            )}
+
+                                            {step.type === 'ASSIGN' && (
+                                                <div className="mb-0 text-start">
+                                                    <label className="extra-small text-muted mb-1">Assign To Owner/Agent</label>
+                                                    <select className="form-select form-select-sm border-0 bg-light" value={step.agentId} onChange={e => updateStep(step.id, { agentId: e.target.value })}>
+                                                        {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                                    </select>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        )}
+
                         <div className="card border-0 shadow-sm rounded-4 p-4 bg-primary text-white">
-                            <h6 className="fw-bold mb-2"><i className="bi bi-stars me-2"></i>Advanced Tips</h6>
+                            <h6 className="fw-bold mb-2 small"><i className="bi bi-lightbulb me-2"></i>Automation Logic</h6>
                             <p className="extra-small opacity-75 mb-0">
-                                Workflows run automatically in the background. Use "Delay" steps to avoid overwhelming leads with instant messages. Branching logic allows you to send different content based on budget or interest.
+                                Select any step on the canvas to configure the specific logic, such as wait times or email templates.
                             </p>
                         </div>
                     </div>
@@ -210,34 +323,41 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                             {/* Sequential Steps */}
                             {currentWorkflow.steps.map((step: any, index: number) => (
                                 <div key={step.id}>
-                                    <div className="workflow-node mx-auto bg-white shadow-sm rounded-4 p-3 mb-3 position-relative" style={{ maxWidth: '400px' }}>
+                                    <div
+                                        onClick={() => setSelectedStepId(step.id)}
+                                        className={`workflow-node mx-auto bg-white shadow-sm rounded-4 p-3 mb-3 position-relative cursor-pointer transition-all border-2 ${selectedStepId === step.id ? 'border-primary' : 'border-white'}`}
+                                        style={{ maxWidth: '400px' }}
+                                    >
                                         <div className="d-flex align-items-center justify-content-between text-start">
                                             <div className="d-flex align-items-center gap-3">
                                                 <div className={`p-2 rounded-circle bg-opacity-10 ${step.type === 'DELAY' ? 'bg-warning text-warning' :
-                                                        step.type === 'EMAIL' ? 'bg-info text-info' :
-                                                            step.type === 'CONDITION' ? 'bg-success text-success' :
-                                                                'bg-secondary text-secondary'
+                                                    step.type === 'EMAIL' ? 'bg-info text-info' :
+                                                        step.type === 'CONDITION' ? 'bg-success text-success' :
+                                                            'bg-secondary text-secondary'
                                                     }`}>
                                                     <i className={`bi ${step.type === 'DELAY' ? 'bi-clock-history' :
-                                                            step.type === 'EMAIL' ? 'bi-envelope' :
-                                                                step.type === 'CONDITION' ? 'bi-shuffle' :
-                                                                    'bi-gear'
+                                                        step.type === 'EMAIL' ? 'bi-envelope' :
+                                                            step.type === 'CONDITION' ? 'bi-shuffle' :
+                                                                'bi-gear'
                                                         } fs-6`}></i>
                                                 </div>
                                                 <div>
                                                     <div className="extra-small text-muted fw-bold text-uppercase">Step {index + 1}: {step.type}</div>
                                                     <div className="fw-bold small">
                                                         {step.type === 'DELAY' ? `Wait for ${step.duration} ${step.unit}` :
-                                                            step.type === 'EMAIL' ? 'Send Personalized Email' :
+                                                            step.type === 'EMAIL' ? `Email: ${templates.find(t => t.id === step.templateId)?.name || 'Needs Setup'}` :
                                                                 step.type === 'CONDITION' ? `IF ${step.field} ${step.operator} ${step.value}` :
                                                                     step.type === 'TAG' ? `${step.action === 'add' ? 'Add' : 'Remove'} Tag: ${step.tag}` :
                                                                         'Assign Team Member'}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <button className="btn btn-link text-danger p-0" onClick={() => removeStep(step.id)}>
-                                                <i className="bi bi-x-circle"></i>
-                                            </button>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <i className="bi bi-sliders text-muted small"></i>
+                                                <button className="btn btn-link text-danger p-0" onClick={(e) => { e.stopPropagation(); removeStep(step.id); }}>
+                                                    <i className="bi bi-trash small"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     {index < currentWorkflow.steps.length - 1 && (

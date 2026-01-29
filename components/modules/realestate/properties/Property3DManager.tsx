@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { property3DService, getAuthToken, unitService } from '@/app/services/api';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
+import Workspace3D from '@/components/Workspace3D';
 
 import VisualEditor from './VisualEditor';
 
@@ -13,10 +15,11 @@ interface Property3DManagerProps {
 }
 
 export default function Property3DManager({ propertyId, propertyName, initialMode = 'json', onClose }: Property3DManagerProps) {
+    const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
     const displayPropertyName = propertyName && propertyName !== 'undefined' ? propertyName : 'Property';
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [viewMode, setViewMode] = useState<'json' | 'visual'>(initialMode);
+    const [viewMode, setViewMode] = useState<'json' | 'visual' | '3d'>(initialMode as any);
     const [units, setUnits] = useState<any[]>([]);
     const [config, setConfig] = useState<any>({
         scene: {
@@ -34,16 +37,22 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
 
     useEffect(() => {
         loadData();
-    }, [propertyId]);
+    }, [propertyId, activeTenantId, activeOwnerId, tenantType]);
 
     const loadData = async () => {
         try {
             setLoading(true);
             const token = getAuthToken();
             if (!token) return;
+            const industryType = (!activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
             // Load Units for reference
-            const unitsRes = await unitService.getUnits(token, { propertyId });
+            const unitsRes = await unitService.getUnits(token, {
+                propertyId,
+                tenantId: activeTenantId || undefined,
+                ownerId: activeOwnerId || undefined,
+                industryType
+            });
             let loadedUnits = [];
             if (unitsRes.success) {
                 loadedUnits = unitsRes.data?.units || unitsRes.data || [];
@@ -139,6 +148,18 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                         <label className="btn btn-outline-primary btn-sm px-3" htmlFor="viewVisual">
                             <i className="bi bi-map me-2"></i>Visual Map Editor
                         </label>
+                        <input
+                            type="radio"
+                            className="btn-check"
+                            name="viewMode"
+                            id="view3d"
+                            autoComplete="off"
+                            checked={viewMode === '3d'}
+                            onChange={() => setViewMode('3d')}
+                        />
+                        <label className="btn btn-outline-info btn-sm px-3" htmlFor="view3d">
+                            <i className="bi bi-box me-2"></i>3D Preview
+                        </label>
                     </div>
 
                     <div>
@@ -191,14 +212,34 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                             </div>
                         </div>
                     </>
-                ) : (
-                    <div style={{ height: '650px', border: '1px solid #dee2e6', borderRadius: '8px' }}>
+                ) : viewMode === 'visual' ? (
+                    <div style={{ height: '1200px', border: '1px solid #dee2e6', borderRadius: '8px' }}>
                         <VisualEditor
                             units={units}
                             layout={layout}
                             config={config}
                             onLayoutChange={setLayout}
                             onConfigChange={setConfig}
+                        />
+                    </div>
+                ) : (
+                    <div style={{ height: '650px', border: '1px solid #dee2e6', borderRadius: '8px', overflow: 'hidden' }}>
+                        <Workspace3D
+                            workspaces={units.map(u => ({
+                                id: u.id,
+                                name: u.unitCode,
+                                slug: u.slug || u.id,
+                                type: (u.coworkingDetails?.seatType === 2 ? 'villa' : 'office') as any, // Map to valid Seats types
+                                status: (u.status === 1 ? 'available' : (u.status === 2 ? 'occupied' : 'maintenance')) as any,
+                                hourlyRate: parseFloat(u.unitPricing?.[0]?.price || '0'),
+                                capacity: u.capacity || 1,
+                                features: [],
+                                spaceId: propertyId,
+                                createdAt: u.createdAt,
+                                updatedAt: u.updatedAt
+                            }))}
+                            layout={layout}
+                            config={config}
                         />
                     </div>
                 )}

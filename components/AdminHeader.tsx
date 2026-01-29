@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { tenantService, userService, getAuthToken } from '@/app/services/api';
@@ -22,8 +22,27 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
     const [owners, setOwners] = useState<any[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const pathname = usePathname();
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+        document.body.addEventListener('mousedown', handleClickOutside);
+        return () => document.body.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filteredOwners = owners.filter(o =>
+        o.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -39,20 +58,19 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            // Fetch owners (role 3) filtered by industry type on backend
+            // Fetch all owners (role 3)
             const userRes = await userService.getOwners(token, {
-                limit: '1000',
-                industryType: tenantType
+                limit: '1000'
             });
 
             if (userRes.success) {
                 const ownersList = userRes.data.users || userRes.data || [];
-                console.log(`Owners found for type ${tenantType}:`, ownersList.length);
+                console.log(`Global owners found:`, ownersList.length);
                 setOwners(ownersList);
             }
         };
         fetchOwners();
-    }, [tenantType, isAdmin]);
+    }, [isAdmin]);
 
     const handleOwnerChange = (ownerId: string | null) => {
         if (!ownerId) {
@@ -63,6 +81,10 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         const selectedOwner = owners.find(o => o.id === ownerId);
         if (selectedOwner) {
             setActiveOwnerAndTenant(ownerId, selectedOwner.tenantId);
+            // If the owner's tenant has a specific industry type, switch to it
+            if (selectedOwner.tenant?.type) {
+                setTenantType(selectedOwner.tenant.type);
+            }
         }
     };
 
@@ -102,32 +124,87 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                         />
                     </div>
 
-                    {/* Command Center for Admins - Hidden in Owner Portal */}
+                    {/* Searchable Company Selector for Admins */}
                     {isAdmin && !pathname.includes('/realestate-owner-admin') && (
-                        <div className="d-flex align-items-center gap-2 bg-light p-1 rounded-3 ms-2 border border-info-subtle">
-                            <i className="bi bi-layers-half text-info ms-2"></i>
-                            <select
-                                className="form-select form-select-sm border-0 bg-transparent fw-bold text-info"
-                                style={{ width: 'auto' }}
-                                value={tenantType}
-                                onChange={(e) => setTenantType(parseInt(e.target.value))}
+                        <div className="company-selector-wrapper ms-2" ref={dropdownRef}>
+                            <div
+                                className="d-flex align-items-center gap-2 bg-light p-2 rounded-3 border border-primary-subtle cursor-pointer transition-all hover-shadow-sm"
+                                style={{ minWidth: '240px' }}
+                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                             >
-                                <option value={1}>🏠 Real Estate</option>
-                                <option value={2}>🏢 Coworking</option>
-                            </select>
-                            <select
-                                className="form-select form-select-sm border-0 bg-transparent"
-                                style={{ width: 'auto', maxWidth: '200px' }}
-                                value={activeOwnerId || ''}
-                                onChange={(e) => handleOwnerChange(e.target.value || null)}
-                            >
-                                <option value="">Select Property Owner</option>
-                                {owners.map(o => (
-                                    <option key={o.id} value={o.id}>
-                                        {o.name}
-                                    </option>
-                                ))}
-                            </select>
+                                <i className="bi bi-building-fill text-primary ms-1"></i>
+                                <div className="flex-grow-1">
+                                    <div className="extra-small text-muted text-uppercase fw-bold line-height-1" style={{ fontSize: '9px' }}>Property Company</div>
+                                    <div className="fw-bold text-dark fs-14 line-height-1">
+                                        {owners.find(o => o.id === activeOwnerId)?.name || 'Select Company'}
+                                    </div>
+                                </div>
+                                <i className={`bi bi-chevron-${isDropdownOpen ? 'up' : 'down'} text-muted extra-small me-1`}></i>
+                            </div>
+
+                            {isDropdownOpen && (
+                                <div className="dropdown-menu show border-0 shadow-lg mt-2 p-0 rounded-4 overflow-hidden animate-fade-in" style={{ width: '300px', position: 'absolute', zIndex: 1050 }}>
+                                    <div className="p-3 bg-light border-bottom">
+                                        <div className="input-group input-group-sm">
+                                            <span className="input-group-text bg-white border-end-0">
+                                                <i className="bi bi-search text-muted small"></i>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                className="form-control border-start-0 ps-0"
+                                                placeholder="Search company or email..."
+                                                autoFocus
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="owners-list overflow-auto" style={{ maxHeight: '350px' }}>
+                                        <button
+                                            className={`dropdown-item py-2 px-3 border-bottom d-flex align-items-center gap-3 ${!activeOwnerId ? 'bg-primary-subtle' : ''}`}
+                                            onClick={() => {
+                                                handleOwnerChange(null);
+                                                setIsDropdownOpen(false);
+                                                setSearchTerm('');
+                                            }}
+                                        >
+                                            <i className="bi bi-slash-circle text-muted"></i>
+                                            <div>
+                                                <div className="fw-bold small">Clear Selection</div>
+                                                <div className="extra-small text-muted">View all platform data</div>
+                                            </div>
+                                        </button>
+
+                                        {filteredOwners.length > 0 ? (
+                                            filteredOwners.map(o => (
+                                                <button
+                                                    key={o.id}
+                                                    className={`dropdown-item py-2 px-3 border-bottom d-flex align-items-center gap-3 ${activeOwnerId === o.id ? 'bg-primary-subtle' : ''}`}
+                                                    onClick={() => {
+                                                        handleOwnerChange(o.id);
+                                                        setIsDropdownOpen(false);
+                                                        setSearchTerm('');
+                                                    }}
+                                                >
+                                                    <div className="avatar avatar-sm bg-primary-light text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '32px', height: '32px', fontSize: '12px' }}>
+                                                        {o.name?.[0]?.toUpperCase() || '?'}
+                                                    </div>
+                                                    <div className="overflow-hidden">
+                                                        <div className="fw-bold text-dark text-truncate small">{o.name || 'Unnamed Company'}</div>
+                                                        <div className="extra-small text-muted text-truncate">{o.email || 'No email provided'}</div>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="p-4 text-center text-muted">
+                                                <i className="bi bi-building-exclamation fs-3 mb-2 d-block"></i>
+                                                <div className="small">No companies found</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -223,6 +300,15 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 .hover-bg-light:hover { background: rgba(0,0,0,0.04); }
                 .dropdown-item { transition: all 0.2s; border-radius: 8px; margin: 0 8px; width: calc(100% - 16px); }
                 .dropdown-item:hover { background-color: rgba(13, 110, 253, 0.08); color: #0d6efd; }
+                .cursor-pointer { cursor: pointer; }
+                .hover-shadow-sm:hover { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border-color: #0d6efd !important; }
+                .bg-primary-light { background-color: rgba(13, 110, 253, 0.1); }
+                .avatar-sm { flex-shrink: 0; }
+                .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
             `}</style>
         </header>
     );

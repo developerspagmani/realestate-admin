@@ -36,6 +36,16 @@ export default function PublicWidgetPage() {
     // Gallery State
     const [propertyImageIndex, setPropertyImageIndex] = useState(0);
     const [unitImageIndex, setUnitImageIndex] = useState(0);
+    const [chatExpanded, setChatExpanded] = useState(false);
+
+    const handleChatFilters = useCallback((filteredResults: any[]) => {
+        setFilteredData(filteredResults);
+        setIsFiltered(true);
+        setCurrentView('LISTING');
+        // Scroll to results
+        const container = document.querySelector('.widget-container');
+        if (container) container.scrollIntoView({ behavior: 'smooth' });
+    }, []);
 
     const loadWidgetData = useCallback(async () => {
         if (!widgetId) return;
@@ -114,14 +124,6 @@ export default function PublicWidgetPage() {
     const gridCols = widget.configuration?.display?.columns || (data.length === 1 ? 1 : data.length === 2 ? 2 : 3);
     const colClass = gridCols === 1 ? 'col-12' : gridCols === 2 ? 'col-md-6' : 'col-md-6 col-lg-4';
 
-    const handleChatFilters = (filteredResults: any[]) => {
-        setFilteredData(filteredResults);
-        setIsFiltered(true);
-        setCurrentView('LISTING');
-        // Scroll to results
-        const container = document.querySelector('.widget-container');
-        if (container) container.scrollIntoView({ behavior: 'smooth' });
-    };
 
     const mapUnitsToSeats = (units: any[]): Seats[] => {
         return units.map(u => ({
@@ -257,11 +259,11 @@ export default function PublicWidgetPage() {
         }
     };
 
-    const config = widget.configuration.builder || widget.configuration.pageBuilder || {};
-    const isBuilderLayout = widget.configuration?.settings?.layout === 'builder' || widget.configuration?.pageBuilder?.enabled;
+    const config = widget?.configuration?.builder || widget?.configuration?.pageBuilder || {};
+    const isBuilderLayout = widget?.configuration?.settings?.layout === 'builder' || widget?.configuration?.pageBuilder?.enabled;
+
     const isBuilderActiveListing = currentView === 'LISTING' && isBuilderLayout;
 
-    const [chatExpanded, setChatExpanded] = useState(false);
 
     return (
         <div className="public-widget min-vh-100 bg-white" style={{ '--primary-color': theme.primaryColor } as any}>
@@ -317,7 +319,7 @@ export default function PublicWidgetPage() {
             </main>
 
             {/* Chatbot Integration */}
-            {widget.configuration.chatbot?.enabled && (
+            {widget?.configuration?.chatbot?.enabled && (
                 <>
                     <button
                         className="btn rounded-circle shadow-lg floating-chat-btn d-flex align-items-center justify-content-center animate-bounce"
@@ -343,10 +345,10 @@ export default function PublicWidgetPage() {
                             position: 'fixed',
                             bottom: chatExpanded ? '24px' : '100px',
                             right: '24px',
-                            width: chatExpanded ? '600px' : '380px',
+                            width: chatExpanded ? '600px' : '350px',
                             maxWidth: 'calc(100vw - 48px)',
-                            maxHeight: chatExpanded ? '85vh' : '600px',
-                            height: chatExpanded ? '85vh' : '70vh',
+                            maxHeight: chatExpanded ? '85vh' : '500px',
+                            height: chatExpanded ? '85vh' : '500px',
                             zIndex: 1000,
                             transition: 'all 0.3s ease'
                         }}>
