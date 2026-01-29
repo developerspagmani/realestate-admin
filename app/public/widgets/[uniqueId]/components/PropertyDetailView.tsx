@@ -17,6 +17,8 @@ interface PropertyDetailViewProps {
     setSelectedUnit: (unit: any) => void;
     setUnitImageIndex: (i: number) => void;
     getFormattedPrice: (unit: any) => string;
+    trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
+    identifyLead?: (id: string, email?: string) => void;
 }
 
 const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
@@ -30,7 +32,9 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
     setCurrentView,
     setSelectedUnit,
     setUnitImageIndex,
-    getFormattedPrice
+    getFormattedPrice,
+    trackAction,
+    identifyLead
 }) => {
     const images = [
         ...(selectedProperty.mainImage ? [selectedProperty.mainImage] : []),
@@ -222,6 +226,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                             setSelectedUnit(unit);
                                             setUnitImageIndex(0);
                                             setCurrentView('UNIT_DETAIL');
+                                            if (trackAction) trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
                                         }}
                                     >
                                         <div className="bg-light" style={{ height: '120px' }}>
@@ -280,7 +285,12 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         });
 
                                         if (!leadPayload.name) leadPayload.name = 'Property Interest';
-                                        await widgetService.createPublicLead(widgetId, leadPayload);
+                                        const res = await widgetService.createPublicLead(widgetId, leadPayload);
+
+                                        if (res.success && res.data?.id) {
+                                            const identity = { id: res.data.id, email: res.data.email };
+                                            if (identifyLead) identifyLead(identity.id, identity.email);
+                                        }
                                     }}
                                 />
                             </div>

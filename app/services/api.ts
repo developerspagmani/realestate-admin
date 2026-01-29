@@ -1022,6 +1022,47 @@ export const marketingService = {
       headers: { 'Authorization': `Bearer ${token}` },
     });
   },
+
+  // Interaction Tracking
+  trackInteraction: async (data: { leadId?: string, email?: string, type: string, metadata?: any }) => {
+    return await makeApiCall('/public/track', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  getLeadInteractions: async (token: string, leadId: string) => {
+    return await makeApiCall(`/marketing/interactions/${leadId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  // Workflow Execution
+  processWorkflows: async (token: string) => {
+    return await makeApiCall('/marketing/workflows/process', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  getWorkflowEnrollments: async (token: string, workflowId: string) => {
+    return await makeApiCall(`/marketing/workflows/${workflowId}/enrollments`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  getRecommendations: async (token: string, leadId: string) => {
+    return await makeApiCall(`/marketing/recommendations/${leadId}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  sendRecommendations: async (token: string, leadId: string) => {
+    return await makeApiCall(`/marketing/recommendations/${leadId}/send`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
 };
 
 // Utility function to get auth token from localStorage

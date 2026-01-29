@@ -3,7 +3,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import AdminHeader from './AdminHeader';
-// import '@/app/realestate-admin/modern-admin.css';
+import '@/app/realestate-admin/modern-admin.css';
 
 interface MainLayoutProps {
   children: ReactNode;

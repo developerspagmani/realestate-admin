@@ -14,6 +14,8 @@ interface ListingViewProps {
     widgetId: string;
     onReset: () => void;
     onSelectProperty: (property: any) => void;
+    trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
+    identifyLead?: (id: string, email?: string) => void;
 }
 
 const ListingView: React.FC<ListingViewProps> = ({
@@ -24,7 +26,9 @@ const ListingView: React.FC<ListingViewProps> = ({
     widget,
     widgetId,
     onReset,
-    onSelectProperty
+    onSelectProperty,
+    trackAction,
+    identifyLead
 }) => {
     const [showPopup, setShowPopup] = React.useState(false);
     const [popupImageUrl, setPopupImageUrl] = React.useState('');
@@ -141,7 +145,12 @@ const ListingView: React.FC<ListingViewProps> = ({
                                     });
 
                                     if (!leadPayload.name) leadPayload.name = 'Web Inquiry';
-                                    await widgetService.createPublicLead(widgetId, leadPayload);
+                                    const res = await widgetService.createPublicLead(widgetId, leadPayload);
+
+                                    if (res.success && res.data?.id) {
+                                        const identity = { id: res.data.id, email: res.data.email };
+                                        if (identifyLead) identifyLead(identity.id, identity.email);
+                                    }
                                 }}
                             />
                         </div>

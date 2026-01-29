@@ -8,6 +8,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import { Agent } from '@/types';
+import LeadEngagementInsights from './LeadEngagementInsights';
 
 interface Lead {
     id: string;
@@ -23,6 +24,7 @@ interface Lead {
     assignedTo: string;
     assignedAgent?: { id: string; user?: { name?: string } };
     priority?: number;
+    leadScore: number;
     createdAt: string;
     updatedAt: string;
     lastContacted: string | null;
@@ -64,6 +66,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         message: '',
         type: 'success'
     });
+    const [selectedLeadForInsights, setSelectedLeadForInsights] = useState<Lead | null>(null);
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -111,6 +114,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     assignedTo: l.assignedTo || '',
                     assignedAgent: l.agent, // Map agent relation
                     priority: l.priority || 2,
+                    leadScore: l.leadScore || 0,
                     createdAt: l.createdAt,
                     updatedAt: l.updatedAt || l.createdAt,
                     lastContacted: l.lastContacted || null
@@ -330,6 +334,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                 <tr>
                                     <th className="px-4 py-3 text-uppercase small fw-bold text-muted">Lead Name</th>
                                     <th className="py-3 text-uppercase small fw-bold text-muted">Agent</th>
+                                    <th className="py-3 text-uppercase small fw-bold text-muted">Score</th>
                                     <th className="py-3 text-uppercase small fw-bold text-muted">Priority</th>
                                     <th className="py-3 text-uppercase small fw-bold text-muted">Contact Info</th>
                                     <th className="py-3 text-uppercase small fw-bold text-muted">Source</th>
@@ -348,9 +353,14 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                                 <div className="avatar-xs bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '36px', height: '36px' }}>
                                                     {lead.name.charAt(0)}
                                                 </div>
-                                                <div>
-                                                    <div className="fw-bold text-dark">{lead.name}</div>
-                                                    <div className="small text-muted">{lead.company || 'No Company'}</div>
+                                                <div className="cursor-pointer d-flex align-items-center gap-2" onClick={() => setSelectedLeadForInsights(lead)}>
+                                                    <div>
+                                                        <div className="fw-bold text-dark d-flex align-items-center gap-2">
+                                                            {lead.name}
+                                                            <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
+                                                        </div>
+                                                        <div className="small text-muted">{lead.company || 'No Company'}</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -363,6 +373,13 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                             ) : (
                                                 <span className="badge bg-light text-muted border">Unassigned</span>
                                             )}
+                                        </td>
+                                        <td className="py-3">
+                                            <div className="d-flex align-items-center gap-2">
+                                                <span className={`badge rounded-pill px-2 py-1 ${lead.leadScore > 50 ? 'bg-danger' : lead.leadScore > 20 ? 'bg-warning text-dark' : 'bg-success'}`}>
+                                                    {lead.leadScore}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="py-3">
                                             {lead.priority === 3 ? (
@@ -520,13 +537,28 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
             .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
             .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
-       `}</style>
+            .pulse-ai { animation: pulse-purple 2s infinite; cursor: pointer; }
+            @keyframes pulse-purple {
+                0% { transform: scale(0.9); opacity: 0.6; }
+                50% { transform: scale(1.2); opacity: 1; }
+                100% { transform: scale(0.9); opacity: 0.6; }
+            }
+        `}</style>
             <Toast
                 show={toast.show}
                 message={toast.message}
                 type={toast.type}
                 onClose={() => setToast({ ...toast, show: false })}
             />
+
+            {selectedLeadForInsights && (
+                <LeadEngagementInsights
+                    leadId={selectedLeadForInsights.id}
+                    leadName={selectedLeadForInsights.name}
+                    leadScore={selectedLeadForInsights.leadScore}
+                    onClose={() => setSelectedLeadForInsights(null)}
+                />
+            )}
         </MainLayout>
     );
 }

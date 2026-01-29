@@ -16,6 +16,7 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
     // Data lists
     const [templates, setTemplates] = useState<any[]>([]);
     const [groups, setGroups] = useState<any[]>([]);
+    const [marketingStats, setMarketingStats] = useState<any>(null);
 
     // Selection state
     const [campaignData, setCampaignData] = useState({
@@ -30,12 +31,14 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
             try {
                 const token = getAuthToken();
                 if (!token) return;
-                const [tRes, gRes] = await Promise.all([
+                const [tRes, gRes, sRes] = await Promise.all([
                     marketingService.getTemplates(token, { tenantId }),
-                    marketingService.getAudienceGroups(token, { tenantId })
+                    marketingService.getAudienceGroups(token, { tenantId }),
+                    marketingService.getMarketingStats(token)
                 ]);
                 if (tRes.success) setTemplates(tRes.data);
                 if (gRes.success) setGroups(gRes.data);
+                if (sRes.success) setMarketingStats(sRes.data);
             } catch (err) {
                 console.error(err);
             }
@@ -88,7 +91,15 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
                 <div className="col-lg-6">
                     {step === 1 && (
                         <div className="animate-fade-up">
-                            <h4 className="fw-bold mb-3">{initialData?.id ? 'Edit Blast Details' : 'Launch a New Blast'}</h4>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h4 className="fw-bold mb-0">{initialData?.id ? 'Edit Blast Details' : 'Launch a New Blast'}</h4>
+                                {marketingStats && (
+                                    <div className="badge bg-white text-primary border px-3 py-2 rounded-pill fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
+                                        <i className="bi bi-file-earmark-check"></i>
+                                        {marketingStats.totalSubmissions || 0} Submissions
+                                    </div>
+                                )}
+                            </div>
                             <p className="text-muted small mb-4">Give your campaign a name and set a schedule (optional).</p>
                             <div className="card border-0 shadow-sm rounded-4 p-4 mb-4">
                                 <div className="mb-3">

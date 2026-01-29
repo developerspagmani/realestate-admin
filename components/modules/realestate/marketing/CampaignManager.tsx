@@ -79,7 +79,8 @@ export default function CampaignManager() {
                 : '0%',
             icon: 'bi-cursor', color: 'info'
         },
-        { label: 'Total Clicks', value: marketingStats?.totalClicked?.toLocaleString() || '0', icon: 'bi-graph-up-arrow', color: 'warning' },
+        { label: 'Form Submissions', value: marketingStats?.totalSubmissions?.toLocaleString() || '0', icon: 'bi-file-earmark-check', color: 'warning' },
+        { label: 'Total Clicks', value: marketingStats?.totalClicked?.toLocaleString() || '0', icon: 'bi-graph-up-arrow', color: 'secondary' },
     ];
 
     const handleDelete = async (id: string, name: string) => {
@@ -105,7 +106,7 @@ export default function CampaignManager() {
     return (
         <MainLayout activePage="marketing">
             <div className="container-fluid py-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-2">
                     <div>
                         <h1 className="fw-bold h2 mb-1">Marketing Hub</h1>
                         <p className="text-muted small mb-0">Manage your email campaigns, audience growth and automations</p>
@@ -144,7 +145,7 @@ export default function CampaignManager() {
                             ].map((tab) => (
                                 <li className="nav-item" key={tab.id}>
                                     <button
-                                        className={`nav-link border-0 px-0 py-3 fw-bold d-flex align-items-center gap-2 position-relative ${activeTab === tab.id ? 'active text-primary' : 'text-muted'}`}
+                                        className={`nav-link border-0 px-4 py-3 fw-bold d-flex align-items-center gap-2 position-relative ${activeTab === tab.id ? 'active text-primary' : 'text-muted'}`}
                                         onClick={() => setActiveTab(tab.id as any)}
                                     >
                                         <i className={`bi ${tab.icon}`}></i>
@@ -158,7 +159,7 @@ export default function CampaignManager() {
                 </div>
 
                 {/* Content Area based on Tab */}
-                <div className="marketing-content animate-fade-in">
+                <div className="marketing-content">
                     {activeTab === 'campaigns' && (
                         showDesigner ? (
                             <CampaignDesigner

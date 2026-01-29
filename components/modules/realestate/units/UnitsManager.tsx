@@ -582,7 +582,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                     {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                                 </select>
                             </div>
-                            <div className="col-md-1 d-flex align-items-center justify-content-end gap-2">
+                            <div className="col-md-12 d-flex align-items-center justify-content-end gap-2">
                                 {selectedUnits.length > 0 && (
                                     <button className="btn btn-sm btn-outline-danger border-0 hvr-danger" onClick={() => handleDelete(selectedUnits)} title="Delete Selected">
                                         <i className="bi bi-trash-fill"></i>

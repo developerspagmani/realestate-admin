@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { widgetService } from '@/app/services/api';
+import { widgetService, marketingService } from '@/app/services/api';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
 import { Seats } from '@/types';
 import './widget.css';
@@ -37,6 +37,44 @@ export default function PublicWidgetPage() {
     const [propertyImageIndex, setPropertyImageIndex] = useState(0);
     const [unitImageIndex, setUnitImageIndex] = useState(0);
     const [chatExpanded, setChatExpanded] = useState(false);
+    const [leadIdentity, setLeadIdentity] = useState<{ id?: string, email?: string } | null>(null);
+
+    // Initial load: check for stored identity
+    useEffect(() => {
+        const stored = localStorage.getItem(`widget_lead_${widgetId}`);
+        if (stored) {
+            try {
+                setLeadIdentity(JSON.parse(stored));
+            } catch (e) {
+                console.error('Failed to parse lead identity');
+            }
+        }
+    }, [widgetId]);
+
+    const identifyLead = (id: string, email?: string) => {
+        const identity = { id, email };
+        setLeadIdentity(identity);
+        localStorage.setItem(`widget_lead_${widgetId}`, JSON.stringify(identity));
+    };
+
+    const trackAction = async (type: string, metadata: any = {}, identityOverride?: { id?: string, email?: string }) => {
+        const identity = identityOverride || leadIdentity;
+        if (!identity) return;
+
+        try {
+            await marketingService.trackInteraction({
+                leadId: identity.id,
+                email: identity.email,
+                type,
+                metadata: {
+                    widgetId,
+                    ...metadata
+                }
+            });
+        } catch (err) {
+            console.error('Tracking failed:', err);
+        }
+    };
 
     const handleChatFilters = useCallback((filteredResults: any[]) => {
         setFilteredData(filteredResults);
@@ -171,6 +209,7 @@ export default function PublicWidgetPage() {
                                 setSelectedProperty(property);
                                 setPropertyImageIndex(0);
                                 setCurrentView('PROPERTY_DETAIL');
+                                trackAction('PROPERTY_VIEW', { propertyId: property.id });
                             }}
                         />
                     );
@@ -191,7 +230,10 @@ export default function PublicWidgetPage() {
                             setSelectedProperty(property);
                             setPropertyImageIndex(0);
                             setCurrentView('PROPERTY_DETAIL');
+                            trackAction('PROPERTY_VIEW', { propertyId: property.id });
                         }}
+                        trackAction={trackAction}
+                        identifyLead={identifyLead}
                     />
                 );
             case 'PROPERTY_DETAIL':
@@ -208,6 +250,8 @@ export default function PublicWidgetPage() {
                         setSelectedUnit={setSelectedUnit}
                         setUnitImageIndex={setUnitImageIndex}
                         getFormattedPrice={getFormattedPrice}
+                        trackAction={trackAction}
+                        identifyLead={identifyLead}
                     />
                 );
             case 'UNIT_DETAIL':
@@ -222,6 +266,8 @@ export default function PublicWidgetPage() {
                         widgetId={widgetId as string}
                         setCurrentView={setCurrentView}
                         getFormattedPrice={getFormattedPrice}
+                        trackAction={trackAction}
+                        identifyLead={identifyLead}
                     />
                 );
             case 'THREE_D':
@@ -377,7 +423,10 @@ export default function PublicWidgetPage() {
                                     if (contact.includes('@')) leadPayload.email = contact;
                                     else leadPayload.phone = contact;
 
-                                    await widgetService.createPublicLead(widgetId as string, leadPayload);
+                                    const res = await widgetService.createPublicLead(widgetId as string, leadPayload);
+                                    if (res.success && res.data?.id) {
+                                        identifyLead(res.data.id, res.data.email);
+                                    }
                                 }}
                             />
                         </div>

@@ -15,6 +15,8 @@ interface UnitDetailViewProps {
     widgetId: string;
     setCurrentView: (view: any) => void;
     getFormattedPrice: (unit: any) => string;
+    trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
+    identifyLead?: (id: string, email?: string) => void;
 }
 
 const UnitDetailView: React.FC<UnitDetailViewProps> = ({
@@ -26,7 +28,9 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
     widget,
     widgetId,
     setCurrentView,
-    getFormattedPrice
+    getFormattedPrice,
+    trackAction,
+    identifyLead
 }) => {
     const uImages = [
         ...(selectedUnit.mainImage ? [selectedUnit.mainImage] : []),
@@ -193,7 +197,12 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                             });
 
                                             if (!leadPayload.name) leadPayload.name = 'Direct Unit Inquiry';
-                                            await widgetService.createPublicLead(widgetId, leadPayload);
+                                            const res = await widgetService.createPublicLead(widgetId, leadPayload);
+
+                                            if (res.success && res.data?.id) {
+                                                const identity = { id: res.data.id, email: res.data.email };
+                                                if (identifyLead) identifyLead(identity.id, identity.email);
+                                            }
                                         }}
                                     />
                                 </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { marketingService, getAuthToken } from '@/app/services/api';
+import WorkflowEnrollmentList from './WorkflowEnrollmentList';
 
 interface WorkflowManagerProps {
     tenantId: string;
@@ -15,6 +16,24 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
     const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
     const [templates, setTemplates] = useState<any[]>([]);
     const [agents, setAgents] = useState<any[]>([]);
+    const [selectedWorkflowForEnrollments, setSelectedWorkflowForEnrollments] = useState<any>(null);
+    const [processing, setProcessing] = useState(false);
+
+    const handleProcessWorkflows = async () => {
+        setProcessing(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.processWorkflows(token);
+            if (res.success) {
+                alert('Workflow engine triggered successfully. Active enrollments have been processed.');
+            }
+        } catch (error) {
+            console.error('Failed to process workflows:', error);
+        } finally {
+            setProcessing(false);
+        }
+    };
 
     const [currentWorkflow, setCurrentWorkflow] = useState<any>({
         name: '',
@@ -392,9 +411,15 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
         <div className="workflow-list">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h5 className="fw-bold mb-0">Automated Marketing Flows</h5>
-                <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm" onClick={openCreate}>
-                    <i className="bi bi-magic me-1"></i> Create Workflow
-                </button>
+                <div className="d-flex gap-2">
+                    <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold border" onClick={handleProcessWorkflows} disabled={processing}>
+                        <i className={`bi ${processing ? 'spinner-border spinner-border-sm' : 'bi-cpu'} me-1`}></i>
+                        {processing ? 'Processing...' : 'Run Engine Now'}
+                    </button>
+                    <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm" onClick={openCreate}>
+                        <i className="bi bi-magic me-1"></i> Create Workflow
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -447,14 +472,27 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                                             {Array.isArray(wf.steps) ? wf.steps.length : (wf.steps ? JSON.parse(wf.steps).length : 0)} Steps
                                         </span>
                                     </div>
-                                    <button className="btn btn-link btn-sm text-primary text-decoration-none fw-bold p-0 extra-small" onClick={() => openEdit(wf)}>
-                                        Open Canvas <i className="bi bi-arrow-right-short"></i>
-                                    </button>
+                                    <div className="d-flex gap-2">
+                                        <button className="btn btn-link btn-sm text-primary text-decoration-none fw-bold p-0 extra-small" onClick={() => setSelectedWorkflowForEnrollments(wf)}>
+                                            <i className="bi bi-people me-1"></i> Active Leads
+                                        </button>
+                                        <button className="btn btn-link btn-sm text-primary text-decoration-none fw-bold p-0 extra-small" onClick={() => openEdit(wf)}>
+                                            Open Canvas <i className="bi bi-arrow-right-short"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
+            )}
+
+            {selectedWorkflowForEnrollments && (
+                <WorkflowEnrollmentList
+                    workflowId={selectedWorkflowForEnrollments.id}
+                    workflowName={selectedWorkflowForEnrollments.name}
+                    onClose={() => setSelectedWorkflowForEnrollments(null)}
+                />
             )}
 
             <style jsx>{`
