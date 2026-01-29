@@ -14,6 +14,8 @@
     --p-warning: #f59e0b;
     --p-danger: #ef4444;
     --p-info: #000000;
+    --p-brand: #db0b0b;
+    --p-brand-soft: rgba(219, 11, 11, 0.1);
 
     /* Surface Colors */
     --p-bg: #f8fafc;
@@ -159,7 +161,6 @@ h6 {
 .sidebar {
     background-color: var(--p-sidebar) !important;
     border-right: 1px solid var(--p-border) !important;
-    padding: 1.5rem 1rem !important;
 }
 
 .sidebar .nav-link {
@@ -177,12 +178,13 @@ h6 {
 
 .sidebar .nav-link i {
     font-size: 1.1rem;
-    transition: transform 0.2s;
+    color: var(--p-brand);
+    transition: all 0.2s;
 }
 
 .sidebar .nav-link:hover {
-    background-color: var(--p-bg) !important;
-    color: var(--p-primary) !important;
+    background-color: var(--p-brand-soft) !important;
+    color: var(--p-brand) !important;
     transform: translateX(4px);
 }
 
@@ -284,6 +286,12 @@ h6 {
     border-radius: var(--p-radius-pill);
     font-size: 0.7rem;
     letter-spacing: 0.02em;
+    border: 1px solid transparent;
+}
+
+.badge-soft-brand {
+    background: var(--p-brand-soft);
+    color: var(--p-brand);
 }
 
 .badge-soft-primary {

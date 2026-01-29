@@ -107,7 +107,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Inventory',
           items: [
             { href: '/realestate-owner-admin/properties', label: 'My Properties', icon: 'bi-building-add', active: activePage === 'properties' },
-            { href: '/realestate-owner-admin/units', label: 'Unit', icon: 'bi-unity', active: activePage === 'units' },
+            { href: '/realestate-owner-admin/units', label: 'Units', icon: 'bi-unity', active: activePage === 'units' },
             { href: '/realestate-owner-admin/users', label: 'Users', icon: 'bi-people', active: activePage === 'users' }
           ]
         },
@@ -267,7 +267,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                 </div>
               )}
               {section.items.map((item: any) => (
-                <div key={item.href} className="px-2 mb-1">
+                <div key={item.href} className="mb-1">
                   <a
                     href={item.href}
                     className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all ${item.active
