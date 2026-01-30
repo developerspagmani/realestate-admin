@@ -9,6 +9,7 @@ interface LeadsKanbanProps {
     onEdit: (lead: Lead) => void;
     onDelete: (id: string) => void;
     onViewInsights: (lead: Lead) => void;
+    isStale: (lead: Lead) => boolean;
 }
 
 const COLUMNS: { id: Lead['status']; title: string; color: string }[] = [
@@ -19,7 +20,7 @@ const COLUMNS: { id: Lead['status']; title: string; color: string }[] = [
     { id: 'lost', title: 'Lost', color: '#dc3545' }
 ];
 
-export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, onViewInsights }: LeadsKanbanProps) {
+export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, onViewInsights, isStale }: LeadsKanbanProps) {
     const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
     const [activeDropColumn, setActiveDropColumn] = useState<Lead['status'] | null>(null);
     const [animationLead, setAnimationLead] = useState<{ id: string, type: 'blast' | 'shake' } | null>(null);
@@ -170,7 +171,12 @@ export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, o
                                                         </div>
                                                     </div>
 
-                                                    <h6 className="fw-bold mb-1 text-dark text-truncate">{lead.name}</h6>
+                                                    <h6 className="fw-bold mb-1 text-dark text-truncate d-flex align-items-center gap-2">
+                                                        {lead.name}
+                                                        {isStale(lead) && (
+                                                            <div className="pulse-danger" title="Stale lead: No activity for 3+ days"></div>
+                                                        )}
+                                                    </h6>
                                                     <p className="small text-muted mb-3 text-truncate">{lead.company || 'Private Lead'}</p>
 
                                                     <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
@@ -308,6 +314,21 @@ export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, o
                 @keyframes particles {
                     0% { transform: scale(0); opacity: 1; }
                     100% { transform: scale(2); opacity: 0; }
+                }
+
+                .pulse-danger {
+                    width: 8px;
+                    height: 8px;
+                    background-color: #dc3545;
+                    border-radius: 50%;
+                    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+                    animation: pulse-red 2s infinite;
+                }
+
+                @keyframes pulse-red {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
                 }
             `}</style>
         </div>

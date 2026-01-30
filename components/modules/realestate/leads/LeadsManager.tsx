@@ -284,6 +284,19 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
 
     if (!mounted || !isAuthenticated) return null;
 
+    const stats = {
+        total: leads.length,
+        pipeline: leads.filter(l => ['new', 'contacted', 'qualified'].includes(l.status)).reduce((sum, l) => sum + (l.budget || 0), 0),
+        conversionRate: leads.length ? Math.round((leads.filter(l => l.status === 'converted').length / leads.length) * 100) : 0,
+        avgScore: leads.length ? Math.round(leads.reduce((sum, l) => sum + l.leadScore, 0) / leads.length) : 0
+    };
+
+    const isStale = (lead: Lead) => {
+        const lastActivity = lead.lastContacted ? new Date(lead.lastContacted) : new Date(lead.createdAt);
+        const diffDays = Math.floor((new Date().getTime() - lastActivity.getTime()) / (1000 * 3600 * 24));
+        return diffDays >= 3 && !['converted', 'lost'].includes(lead.status);
+    };
+
     return (
         <MainLayout activePage="leads">
             <div className="container-fluid py-4">
@@ -381,7 +394,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                     {filteredLeads.length === 0 ? (
                                         <tr><td colSpan={9} className="text-center py-5 text-muted">No leads found</td></tr>
                                     ) : filteredLeads.map(lead => (
-                                        <tr key={lead.id}>
+                                        <tr key={lead.id} className={isStale(lead) ? 'bg-stale' : ''}>
                                             <td className="px-4 py-3">
                                                 <div className="d-flex align-items-center gap-3">
                                                     <div className="avatar-xs bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '36px', height: '36px' }}>
@@ -391,6 +404,9 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                                         <div>
                                                             <div className="fw-bold text-dark d-flex align-items-center gap-2">
                                                                 {lead.name}
+                                                                {isStale(lead) && (
+                                                                    <span className="badge bg-danger rounded-pill extra-small-badge" title="No activity for 3+ days">REQUIRES ATTENTION</span>
+                                                                )}
                                                                 <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
                                                             </div>
                                                             <div className="small text-muted">{lead.company || 'No Company'}</div>
@@ -475,6 +491,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                         }}
                         onDelete={handleDelete}
                         onViewInsights={(lead) => setSelectedLeadForInsights(lead)}
+                        isStale={isStale}
                     />
                 )}
             </div>
@@ -590,6 +607,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             .pulse-ai { animation: pulse-purple 2s infinite; cursor: pointer; }
             .btn-white { background-color: #fff; border: 1px solid #dee2e6; }
             .btn-white:hover { background-color: #f8f9fa; }
+            .extra-small-badge { font-size: 0.6rem; padding: 0.2rem 0.5rem; letter-spacing: 0.5px; }
+            .bg-stale { background-color: rgba(220, 53, 69, 0.02); }
             @keyframes pulse-purple {
                 0% { transform: scale(0.9); opacity: 0.6; }
                 50% { transform: scale(1.2); opacity: 1; }
