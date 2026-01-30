@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Property3DManager from '@/components/modules/realestate/properties/Property3DManager';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
@@ -17,8 +17,10 @@ export default function Property3DManagerWrapper() {
     const propertyName = searchParams.get('propertyName') || 'Property';
     const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
 
+    const pathname = usePathname();
     const mode = searchParams.get('mode');
-    const basePath = '/realestate-admin';
+    const isOwner = pathname.includes('/realestate-owner-admin');
+    const basePath = isOwner ? '/realestate-owner-admin' : '/realestate-admin';
     const activePage = mode === 'builder' ? 'property-3d-builder' : 'property-3d';
 
     const [properties, setProperties] = useState<any[]>([]);
@@ -96,7 +98,7 @@ export default function Property3DManagerWrapper() {
                                                                 <i className="bi bi-building text-primary h5 mb-0"></i>
                                                             </div>
                                                             <div>
-                                                                <div className="fw-bold text-dark">{property.name}</div>
+                                                                <div className="fw-bold text-dark">{property.title}</div>
                                                                 <div className="text-muted small text-truncate" style={{ maxWidth: '300px' }}>{property.description}</div>
                                                             </div>
                                                         </div>
@@ -106,7 +108,7 @@ export default function Property3DManagerWrapper() {
                                                     </td>
                                                     <td className="py-3 text-end px-4">
                                                         <Link
-                                                            href={`/realestate-admin/property-3d?propertyId=${property.id}&propertyName=${encodeURIComponent(property.name)}`}
+                                                            href={`${basePath}/property-3d?propertyId=${property.id}&propertyName=${encodeURIComponent(property.slug)}`}
                                                             className="btn btn-sm btn-primary rounded-pill px-4"
                                                         >
                                                             <i className="bi bi-box-fill me-2"></i>Launch Architect
@@ -132,9 +134,9 @@ export default function Property3DManagerWrapper() {
     }
 
     return (
-        <MainLayout activePage={activePage}>
-            <div className="container-fluid p-4">
-                <div className="mb-4">
+        <MainLayout activePage={activePage} hideSidebar={true}>
+            <div className="container-fluid p-0">
+                <div className="px-4 pt-4">
                     <nav aria-label="breadcrumb">
                         <ol className="breadcrumb">
                             <li className="breadcrumb-item"><Link href={`${basePath}/properties`} className="text-decoration-none">Properties</Link></li>
@@ -142,12 +144,14 @@ export default function Property3DManagerWrapper() {
                         </ol>
                     </nav>
                 </div>
-                <Property3DManager
-                    propertyId={propertyId}
-                    propertyName={propertyName}
-                    initialMode={mode === 'builder' ? 'visual' : 'json'}
-                    onClose={() => router.push(`${basePath}/properties`)}
-                />
+                <div className="w-100">
+                    <Property3DManager
+                        propertyId={propertyId}
+                        propertyName={propertyName}
+                        initialMode={mode === 'builder' ? 'visual' : 'json'}
+                        onClose={() => router.push(`${basePath}/${isOwner ? 'property-3d' : 'properties'}`)}
+                    />
+                </div>
             </div>
         </MainLayout>
     );

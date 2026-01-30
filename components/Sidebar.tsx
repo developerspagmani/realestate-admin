@@ -132,6 +132,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
         ...(hasModule('marketing_hub') ? [{
           title: 'Marketing',
           items: [
+            { href: '/realestate-owner-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' },
             { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
             { href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
           ]

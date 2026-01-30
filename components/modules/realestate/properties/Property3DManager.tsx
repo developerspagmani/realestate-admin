@@ -116,13 +116,13 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
     if (loading) return <div className="p-5 text-center"><div className="spinner-border text-primary"></div></div>;
 
     return (
-        <div className="card border-0 shadow-lg rounded-4 overflow-hidden">
+        <div className="card border-0 shadow-none rounded-0 overflow-hidden">
             <div className="card-header bg-primary text-white p-4 d-flex justify-content-between align-items-center">
                 <h5 className="mb-0 fw-bold">3D Workspace Architect: {displayPropertyName}</h5>
                 <button className="btn-close btn-close-white" onClick={onClose}></button>
             </div>
-            <div className="card-body p-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
+            <div className="card-body p-0">
+                <div className="d-flex justify-content-between align-items-center p-4">
                     <div className="btn-group" role="group">
                         <input
                             type="radio"
@@ -213,7 +213,7 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                         </div>
                     </>
                 ) : viewMode === 'visual' ? (
-                    <div style={{ height: '1200px', border: '1px solid #dee2e6', borderRadius: '8px' }}>
+                    <div style={{ height: 'calc(100vh - 165px)', borderTop: '1px solid #dee2e6' }}>
                         <VisualEditor
                             units={units}
                             layout={layout}

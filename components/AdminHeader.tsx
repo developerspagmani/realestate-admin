@@ -80,11 +80,17 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
         const selectedOwner = owners.find(o => o.id === ownerId);
         if (selectedOwner) {
+            console.log('AdminHeader: Switching to owner:', selectedOwner.name, 'Tenant ID:', selectedOwner.tenantId);
             setActiveOwnerAndTenant(ownerId, selectedOwner.tenantId);
             // If the owner's tenant has a specific industry type, switch to it
+            // Based on API: selectedOwner might have tenant nested
             if (selectedOwner.tenant?.type) {
-                setTenantType(selectedOwner.tenant.type);
+                setTenantType(Number(selectedOwner.tenant.type));
+            } else if (selectedOwner.tenantType) {
+                setTenantType(Number(selectedOwner.tenantType));
             }
+        } else {
+            console.warn('AdminHeader: Owner not found in list:', ownerId);
         }
     };
 

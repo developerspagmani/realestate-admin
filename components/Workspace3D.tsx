@@ -29,6 +29,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
   const cameraDistance = useRef(25);
   const cameraAngleX = useRef(0);
   const cameraAngleY = useRef(0.5);
+  const cameraTarget = useRef({ x: 0, y: 0, z: 0 });
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
 
@@ -113,20 +114,24 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
     scene.background = new THREE.Color(bgColor);
     sceneRef.current = scene;
 
-    // Camera setup
+    // Camera setup - Start even closer and more focused
+    const initialDist = 12;
+    cameraDistance.current = initialDist;
+    setZoomValue(initialDist);
+
     const camera = new THREE.PerspectiveCamera(
-      75,
+      45, // Narrower FOV for less distortion
       mountRef.current.clientWidth / mountRef.current.clientHeight,
       0.1,
-      1000
+      2000
     );
-    camera.position.set(0, 15, 20);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 8, 10);
     cameraRef.current = camera;
 
     // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     mountRef.current.appendChild(renderer.domElement);
@@ -149,17 +154,32 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
     directionalLight.shadow.camera.bottom = -50;
     scene.add(directionalLight);
 
-    // Decorative Ground Plate (Grass/Land)
-    const baseSize = 80;
-    const floorGeometry = new THREE.CylinderGeometry(baseSize / 2, baseSize / 2, 0.4, 64);
-    const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x9ccc65 }); // Grass Green
+    // Dynamic floor size based on layout
+    let minX = -40, maxX = 40, minZ = -40, maxZ = 40;
+    if (layout && layout.length > 0) {
+      layout.forEach(obj => {
+        const x = obj.position?.x || 0;
+        const z = obj.position?.z || 0;
+        minX = Math.min(minX, x - 20);
+        maxX = Math.max(maxX, x + 20);
+        minZ = Math.min(minZ, z - 20);
+        maxZ = Math.max(maxZ, z + 20);
+      });
+    }
+    const centerX = (minX + maxX) / 2;
+    const centerZ = (minZ + maxZ) / 2;
+    // Invert Z target to match flipped mapping
+    cameraTarget.current = { x: centerX, y: 0, z: -centerZ };
+
+    const baseSize = Math.max(maxX - minX, maxZ - minZ, 150);
+    const floorGeometry = new THREE.PlaneGeometry(baseSize, baseSize);
+    const floorMaterial = new THREE.MeshLambertMaterial({ color: 0x9ccc65, side: THREE.DoubleSide });
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.position.y = -0.2;
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(centerX, -0.01, centerZ);
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Add a light blue sky-top circle or fog for depth
-    scene.fog = new THREE.FogExp2(0xe0f7fa, 0.015);
 
     // Create seats objects based on layout or defaults
     const workspaceObjects: { [key: string]: any } = {};
@@ -168,32 +188,37 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
       layout.forEach((obj: any) => {
         let mesh: any;
 
-        if (obj.metadata?.polyPoints && ['road', 'river', 'lake', 'flat', 'villa', 'plot', 'house', 'apartment'].includes(obj.type)) {
-          // Handle Polygon Shapes as Flat Plots
-          const points = obj.metadata.polyPoints;
-          if (points && points.length > 0) {
-            const shape = new THREE.Shape();
-            shape.moveTo(points[0].x, points[0].z);
-            for (let i = 1; i < points.length; i++) {
-              shape.lineTo(points[i].x, points[i].z);
-            }
-            shape.lineTo(points[0].x, points[0].z);
+        const points = obj.metadata.polyPoints;
+        const isBuilding = ['cabin', 'villa', 'house', 'apartment', 'office', 'flat', 'unit'].includes(obj.type) || obj.unitId?.includes('shape');
+        const isWater = obj.type === 'river' || obj.type === 'lake';
+        const isPath = obj.type === 'road' || obj.type === 'drainage';
 
-            const isWater = obj.type === 'river' || obj.type === 'lake';
-            const isPath = obj.type === 'road';
-            // Plots are very thin (0.05 height)
-            const depth = isWater ? 0.05 : (isPath ? 0.02 : 0.05);
-            const extrudeSettings = { depth, bevelEnabled: false };
-            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            const material = new THREE.MeshLambertMaterial({
-              color: obj.color || (isWater ? 0x2196f3 : (isPath ? 0x424242 : 0xffffff)),
-              transparent: isWater,
-              opacity: isWater ? 0.7 : 1.0
-            });
-            mesh = new THREE.Mesh(geometry, material);
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.position.set(0, depth, 0);
+        if (points && points.length > 0) {
+          // Handle Polygon Shapes
+          const shape = new THREE.Shape();
+          // Invert Z here to fix 'flipped' view: Designers think Y increasing is "down" 
+          // but Three.js sees Z increasing as "front". Negating Z maps Design Down to 3D Front.
+          shape.moveTo(points[0].x, -points[0].z);
+          for (let i = 1; i < points.length; i++) {
+            shape.lineTo(points[i].x, -points[i].z);
           }
+          shape.lineTo(points[0].x, -points[0].z);
+
+          let h = obj.dimensions?.h || (isBuilding ? 3.0 : (isWater ? 0.05 : (isPath ? 0.02 : 0.5)));
+
+          const extrudeSettings = { depth: h, bevelEnabled: false };
+          const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+          const material = new THREE.MeshLambertMaterial({
+            color: obj.color || (isWater ? 0x2196f3 : (isPath ? 0x424242 : 0xffffff)),
+            transparent: isWater,
+            opacity: isWater ? 0.7 : 1.0,
+            side: THREE.DoubleSide
+          });
+          mesh = new THREE.Mesh(geometry, material);
+          mesh.rotation.x = -Math.PI / 2;
+          // Position at ground level - Points are absolute world coordinates
+          // After rotation, depth h goes down, so we lift it by h to sit on ground
+          mesh.position.set(0, h, 0);
         } else if (obj.type === 'tree') {
           // Keep Trees 3D
           mesh = new THREE.Group();
@@ -209,19 +234,27 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
           foliage.position.y = 2.2;
           mesh.add(trunk);
           mesh.add(foliage);
-          mesh.position.set(obj.position?.x || 0, 0, obj.position?.z || 0);
+          mesh.position.set(obj.position?.x || 0, 0, -(obj.position?.z || 0));
         } else if (obj.type === 'hills') {
           // Keep Hills 3D
           const geometry = new THREE.ConeGeometry(4, 5, 12);
           const material = new THREE.MeshLambertMaterial({ color: 0x8d6e63 });
           mesh = new THREE.Mesh(geometry, material);
-          mesh.position.set(obj.position?.x || 0, 2.5, obj.position?.z || 0);
+          mesh.position.set(obj.position?.x || 0, 2.5, -(obj.position?.z || 0));
         } else {
-          // Rectangular Plots (flat boxes)
-          const geometry = new THREE.BoxGeometry(obj.dimensions?.w || 1, 0.05, obj.dimensions?.d || 1);
-          const material = new THREE.MeshLambertMaterial({ color: obj.color || 0xbbdefb });
+          // Rectangular Plots (flat boxes or building blocks)
+          let h = obj.dimensions?.h || 0.5;
+          if (['cabin', 'villa', 'house', 'apartment', 'office'].includes(obj.type)) {
+            h = obj.dimensions?.h || 3.0; // Standard room height
+          }
+          const geometry = new THREE.BoxGeometry(obj.dimensions?.w || 1, h, obj.dimensions?.d || 1);
+          const material = new THREE.MeshLambertMaterial({ color: obj.color || 0x3182ce });
           mesh = new THREE.Mesh(geometry, material);
-          mesh.position.set(obj.position?.x || 0, 0.025, obj.position?.z || 0);
+
+          if (obj.rotation?.y) {
+            mesh.rotation.y = -(obj.rotation.y * Math.PI) / 180;
+          }
+          mesh.position.set(obj.position?.x || 0, h / 2, -(obj.position?.z || 0));
         }
 
         if (mesh) {
@@ -240,10 +273,17 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
     }
 
     // Update seats colors based on status
-    const updateWorkspaceColors = () => {
+    const updatePlotColors = () => {
       workspaces.forEach((seats) => {
         const mesh = workspaceObjects[seats.id];
         if (mesh) {
+          // If the object has a custom design color, don't override it with green
+          const layoutObj = layout?.find(l => (l.unitId || l.id) === seats.id);
+          if (layoutObj && layoutObj.color) {
+            // Only override if status is critical (sold/maintenance) or if no design color
+            if (seats.status === 'available') return;
+          }
+
           let color: number;
           switch (seats.status) {
             case 'available':
@@ -263,7 +303,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
       });
     };
 
-    updateWorkspaceColors();
+    updatePlotColors();
 
     // Mouse interaction
     const raycaster = new THREE.Raycaster();
@@ -295,7 +335,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
     const onMouseWheel = (event: WheelEvent) => {
       event.preventDefault();
       const zoomSpeed = 0.1;
-      const newZoom = Math.max(10, Math.min(50, cameraDistance.current + event.deltaY * zoomSpeed * 0.01));
+      const newZoom = Math.max(10, Math.min(50, cameraDistance.current + event.deltaY * zoomSpeed * 0.10));
       cameraDistance.current = newZoom;
       setZoomValue(newZoom);
     };
@@ -313,7 +353,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
       const deltaY = event.clientY - previousMousePosition.current.y;
 
       cameraAngleX.current += deltaX * 0.01;
-      cameraAngleY.current = Math.max(0.1, Math.min(1.5, cameraAngleY.current - deltaY * 0.01));
+      cameraAngleY.current = Math.max(0.1, Math.min(1.5, cameraAngleY.current - deltaY * 0.10));
 
       previousMousePosition.current = { x: event.clientX, y: event.clientY };
     };
@@ -361,10 +401,11 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
       frameRef.current = requestAnimationFrame(animate);
 
       // Update camera position based on user controls
-      camera.position.x = cameraDistance.current * Math.sin(cameraAngleX.current) * Math.cos(cameraAngleY.current);
-      camera.position.y = cameraDistance.current * Math.sin(cameraAngleY.current);
-      camera.position.z = cameraDistance.current * Math.cos(cameraAngleX.current) * Math.cos(cameraAngleY.current);
-      camera.lookAt(0, 0, 0);
+      const target = cameraTarget.current;
+      camera.position.x = target.x + cameraDistance.current * Math.sin(cameraAngleX.current) * Math.cos(cameraAngleY.current);
+      camera.position.y = target.y + cameraDistance.current * Math.sin(cameraAngleY.current);
+      camera.position.z = target.z + cameraDistance.current * Math.cos(cameraAngleX.current) * Math.cos(cameraAngleY.current);
+      camera.lookAt(target.x, target.y, target.z);
 
       renderer.render(scene, camera);
     };

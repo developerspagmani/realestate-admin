@@ -8,9 +8,11 @@ import '@/app/realestate-admin/modern-admin.css';
 interface MainLayoutProps {
   children: ReactNode;
   activePage?: string;
+  hideSidebar?: boolean;
+  hideHeader?: boolean;
 }
 
-export default function MainLayout({ children, activePage }: MainLayoutProps) {
+export default function MainLayout({ children, activePage, hideSidebar = false, hideHeader = false }: MainLayoutProps) {
   const [sidebarWidth, setSidebarWidth] = useState('250px');
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
@@ -36,12 +38,14 @@ export default function MainLayout({ children, activePage }: MainLayoutProps) {
 
   return (
     <div className="admin-wrapper overflow-hidden min-vh-100">
-      <Sidebar
-        activePage={activePage}
-        onSidebarCollapse={handleSidebarCollapse}
-        showMobile={showMobileSidebar}
-        onMobileClose={() => setShowMobileSidebar(false)}
-      />
+      {!hideSidebar && (
+        <Sidebar
+          activePage={activePage}
+          onSidebarCollapse={handleSidebarCollapse}
+          showMobile={showMobileSidebar}
+          onMobileClose={() => setShowMobileSidebar(false)}
+        />
+      )}
 
       {/* Mobile Overlay */}
       {isMobile && showMobileSidebar && (
@@ -53,13 +57,13 @@ export default function MainLayout({ children, activePage }: MainLayoutProps) {
       )}
 
       <main className="main-content flex-grow-1" style={{
-        marginLeft: isMobile ? '0' : sidebarWidth,
+        marginLeft: isMobile || hideSidebar ? '0' : sidebarWidth,
         minHeight: '100vh',
         backgroundColor: 'var(--admin-bg)',
         transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}>
-        <AdminHeader onMenuClick={toggleMobileSidebar} />
-        <div className="container-fluid p-3 p-md-4">
+        {!hideHeader && <AdminHeader onMenuClick={toggleMobileSidebar} />}
+        <div className={`container-fluid ${hideSidebar || hideHeader ? 'p-0' : 'p-3 p-md-4'}`}>
           {children}
         </div>
       </main>

@@ -64,6 +64,8 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             // Only send industryType if we haven't selected a specific owner/tenant (Global View)
             const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
+            console.log('PropertiesManager: Loading data with:', { tenantId, industryType, activeOwnerId, mode });
+
             // Load Properties
             const propsRes = await propertyService.getProperties(token, {
                 tenantId: tenantId || undefined,
@@ -163,8 +165,16 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            if (!tenantId) return;
+            // Priority: selected company tenant (activeTenantId) -> user's own tenant
+            const tenantId = (mode === 'admin' && activeTenantId) ? activeTenantId : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
+
+            console.log('PropertiesManager: Submitting with tenantId:', tenantId);
+
+            if (!tenantId) {
+                showToast('Error: Tenant ID is required. Please select a company first.', 'error');
+                setIsSubmitting(false);
+                return;
+            }
 
             // Map back to API format
             const payload = {
