@@ -9,8 +9,9 @@ import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import { Agent } from '@/types';
 import LeadEngagementInsights from './LeadEngagementInsights';
+import LeadsKanban from './LeadsKanban';
 
-interface Lead {
+export interface Lead {
     id: string;
     name: string;
     email: string;
@@ -67,6 +68,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         type: 'success'
     });
     const [selectedLeadForInsights, setSelectedLeadForInsights] = useState<Lead | null>(null);
+    const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
+    const [isLoading, setIsLoading] = useState(true);
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -79,8 +82,12 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
 
     const loadLeads = async () => {
         try {
+            setIsLoading(true);
             const token = getAuthToken();
-            if (!token) return;
+            if (!token) {
+                setIsLoading(false);
+                return;
+            }
 
             const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
             const industryType = mode === 'admin' ? tenantType : undefined;
@@ -124,6 +131,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         } catch (error) {
             console.error('Failed to load leads:', error);
             setLeads([]);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -150,7 +159,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         loadAgents();
     }, [user, isAuthenticated, mounted, router, activeTenantId, activeOwnerId, tenantType]);
 
-    const filteredLeads = leads.filter(lead => {
+    const filteredLeads = leads.filter((lead: Lead) => {
         const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             lead.company?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -283,10 +292,27 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                         <h1 className="h3 fw-bold mb-1">CRM & Leads</h1>
                         <p className="text-muted small mb-0">Track and manage your potential customers</p>
                     </div>
-                    <button className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm" onClick={() => setShowModal(true)}>
-                        <i className="bi bi-person-plus-fill"></i>
-                        <span>Add New Lead</span>
-                    </button>
+                    <div className="d-flex align-items-center gap-3">
+                        <div className="btn-group p-1 bg-light rounded-3 shadow-sm" style={{ border: '1px solid #eee' }}>
+
+                            <button
+                                className={`btn btn-sm px-3 rounded-2 ${viewMode === 'kanban' ? 'btn-white shadow-sm fw-bold' : 'btn-light border-0 text-muted'}`}
+                                onClick={() => setViewMode('kanban')}
+                            >
+                                <i className="bi bi-kanban me-2"></i>Kanban
+                            </button>
+                            <button
+                                className={`btn btn-sm px-3 rounded-2 ${viewMode === 'table' ? 'btn-white shadow-sm fw-bold' : 'btn-light border-0 text-muted'}`}
+                                onClick={() => setViewMode('table')}
+                            >
+                                <i className="bi bi-table me-2"></i>Table
+                            </button>
+                        </div>
+                        <button className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm" onClick={() => setShowModal(true)}>
+                            <i className="bi bi-person-plus-fill"></i>
+                            <span>Add New Lead</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div className="card border-0 shadow-sm mb-4 rounded-4">
@@ -327,106 +353,130 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     </div>
                 </div>
 
-                <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                    <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="bg-light">
-                                <tr>
-                                    <th className="px-4 py-3 text-uppercase small fw-bold text-muted">Lead Name</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Agent</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Score</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Priority</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Contact Info</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Source</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Status</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Created</th>
-                                    <th className="px-4 py-3 text-uppercase small fw-bold text-muted text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredLeads.length === 0 ? (
-                                    <tr><td colSpan={7} className="text-center py-5 text-muted">No leads found</td></tr>
-                                ) : filteredLeads.map(lead => (
-                                    <tr key={lead.id}>
-                                        <td className="px-4 py-3">
-                                            <div className="d-flex align-items-center gap-3">
-                                                <div className="avatar-xs bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '36px', height: '36px' }}>
-                                                    {lead.name.charAt(0)}
-                                                </div>
-                                                <div className="cursor-pointer d-flex align-items-center gap-2" onClick={() => setSelectedLeadForInsights(lead)}>
-                                                    <div>
-                                                        <div className="fw-bold text-dark d-flex align-items-center gap-2">
-                                                            {lead.name}
-                                                            <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
+                {isLoading ? (
+                    <div className="d-flex flex-column align-items-center justify-content-center py-5 my-5">
+                        <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                        <h5 className="text-muted fw-light">Fetching your leads...</h5>
+                    </div>
+                ) : viewMode === 'table' ? (
+                    <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div className="table-responsive">
+                            <table className="table table-hover align-middle mb-0">
+                                <thead className="bg-light">
+                                    <tr>
+                                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted">Lead Name</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Agent</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Score</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Priority</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Contact Info</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Source</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Status</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Created</th>
+                                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredLeads.length === 0 ? (
+                                        <tr><td colSpan={9} className="text-center py-5 text-muted">No leads found</td></tr>
+                                    ) : filteredLeads.map(lead => (
+                                        <tr key={lead.id}>
+                                            <td className="px-4 py-3">
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="avatar-xs bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '36px', height: '36px' }}>
+                                                        {lead.name.charAt(0)}
+                                                    </div>
+                                                    <div className="cursor-pointer d-flex align-items-center gap-2" onClick={() => setSelectedLeadForInsights(lead)}>
+                                                        <div>
+                                                            <div className="fw-bold text-dark d-flex align-items-center gap-2">
+                                                                {lead.name}
+                                                                <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
+                                                            </div>
+                                                            <div className="small text-muted">{lead.company || 'No Company'}</div>
                                                         </div>
-                                                        <div className="small text-muted">{lead.company || 'No Company'}</div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-3">
-                                            {lead.assignedAgent ? (
-                                                <div className="d-flex align-items-center">
-                                                    <i className="bi bi-person-check text-success me-2"></i>
-                                                    <span className="small fw-medium">{lead.assignedAgent.user?.name || 'Unknown Agent'}</span>
+                                            </td>
+                                            <td className="py-3">
+                                                {lead.assignedAgent ? (
+                                                    <div className="d-flex align-items-center">
+                                                        <i className="bi bi-person-check text-success me-2"></i>
+                                                        <span className="small fw-medium">{lead.assignedAgent.user?.name || 'Unknown Agent'}</span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="badge bg-light text-muted border">Unassigned</span>
+                                                )}
+                                            </td>
+                                            <td className="py-3">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <span className={`badge rounded-pill px-2 py-1 ${lead.leadScore > 50 ? 'bg-danger' : lead.leadScore > 20 ? 'bg-warning text-dark' : 'bg-success'}`}>
+                                                        {lead.leadScore}
+                                                    </span>
                                                 </div>
-                                            ) : (
-                                                <span className="badge bg-light text-muted border">Unassigned</span>
-                                            )}
-                                        </td>
-                                        <td className="py-3">
-                                            <div className="d-flex align-items-center gap-2">
-                                                <span className={`badge rounded-pill px-2 py-1 ${lead.leadScore > 50 ? 'bg-danger' : lead.leadScore > 20 ? 'bg-warning text-dark' : 'bg-success'}`}>
-                                                    {lead.leadScore}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="py-3">
-                                            {lead.priority === 3 ? (
-                                                <span className="badge bg-danger-soft text-danger px-2">High</span>
-                                            ) : lead.priority === 2 ? (
-                                                <span className="badge bg-warning-soft text-warning px-2">Medium</span>
-                                            ) : (
-                                                <span className="badge bg-info-soft text-info px-2">Low</span>
-                                            )}
-                                        </td>
-                                        <td className="py-3">
-                                            <div className="small text-dark fw-medium">{lead.email}</div>
-                                            <div className="small text-muted">{lead.phone}</div>
-                                        </td>
-                                        <td className="py-3">
-                                            <span className="badge bg-light text-dark border fw-normal text-capitalize">{lead.source}</span>
-                                        </td>
-                                        <td className="py-3">{getStatusBadge(lead.status)}</td>
-                                        <td className="py-3 small text-muted">{new Date(lead.createdAt).toLocaleDateString()}</td>
-                                        <td className="px-4 py-3 text-end">
-                                            <div className="btn-group">
-                                                <button className="btn btn-sm btn-light border" onClick={() => {
-                                                    setEditingLead(lead);
-                                                    setFormData({
-                                                        ...lead,
-                                                        agentId: lead.assignedAgent?.id || ''
-                                                    } as any);
-                                                    setShowModal(true);
-                                                }}><i className="bi bi-pencil"></i></button>
-                                                <button className="btn btn-sm btn-light border dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
-                                                <ul className="dropdown-menu dropdown-menu-end shadow border-0">
-                                                    <li><h6 className="dropdown-header small text-uppercase">Change Status</h6></li>
-                                                    <li><button className="dropdown-item" onClick={() => handleStatusChange(lead.id, 'contacted')}>Mark as Contacted</button></li>
-                                                    <li><button className="dropdown-item" onClick={() => handleStatusChange(lead.id, 'qualified')}>Mark as Qualified</button></li>
-                                                    <li><button className="dropdown-item text-success" onClick={() => handleStatusChange(lead.id, 'converted')}>Converted</button></li>
-                                                    <li><button className="dropdown-item text-danger" onClick={() => handleStatusChange(lead.id, 'lost')}>Lost</button></li>
-                                                    <li><hr className="dropdown-divider" /></li>
-                                                    <li><button className="dropdown-item text-danger" onClick={() => handleDelete(lead.id)}><i className="bi bi-trash me-2"></i>Delete</button></li>
-                                                </ul>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                            </td>
+                                            <td className="py-3">
+                                                {lead.priority === 3 ? (
+                                                    <span className="badge bg-danger-soft text-danger px-2">High</span>
+                                                ) : lead.priority === 2 ? (
+                                                    <span className="badge bg-warning-soft text-warning px-2">Medium</span>
+                                                ) : (
+                                                    <span className="badge bg-info-soft text-info px-2">Low</span>
+                                                )}
+                                            </td>
+                                            <td className="py-3">
+                                                <div className="small text-dark fw-medium">{lead.email}</div>
+                                                <div className="small text-muted">{lead.phone}</div>
+                                            </td>
+                                            <td className="py-3">
+                                                <span className="badge bg-light text-dark border fw-normal text-capitalize">{lead.source}</span>
+                                            </td>
+                                            <td className="py-3">{getStatusBadge(lead.status)}</td>
+                                            <td className="py-3 small text-muted">{new Date(lead.createdAt).toLocaleDateString()}</td>
+                                            <td className="px-4 py-3 text-end">
+                                                <div className="btn-group">
+                                                    <button className="btn btn-sm btn-light border" onClick={() => {
+                                                        setEditingLead(lead);
+                                                        setFormData({
+                                                            ...lead,
+                                                            agentId: lead.assignedAgent?.id || ''
+                                                        } as any);
+                                                        setShowModal(true);
+                                                    }}><i className="bi bi-pencil"></i></button>
+                                                    <button className="btn btn-sm btn-light border dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown"></button>
+                                                    <ul className="dropdown-menu dropdown-menu-end shadow border-0">
+                                                        <li><h6 className="dropdown-header small text-uppercase">Change Status</h6></li>
+                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(lead.id, 'contacted')}>Mark as Contacted</button></li>
+                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(lead.id, 'qualified')}>Mark as Qualified</button></li>
+                                                        <li><button className="dropdown-item text-success" onClick={() => handleStatusChange(lead.id, 'converted')}>Converted</button></li>
+                                                        <li><button className="dropdown-item text-danger" onClick={() => handleStatusChange(lead.id, 'lost')}>Lost</button></li>
+                                                        <li><hr className="dropdown-divider" /></li>
+                                                        <li><button className="dropdown-item text-danger" onClick={() => handleDelete(lead.id)}><i className="bi bi-trash me-2"></i>Delete</button></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <LeadsKanban
+                        leads={filteredLeads}
+                        onStatusChange={handleStatusChange}
+                        onEdit={(lead) => {
+                            setEditingLead(lead);
+                            setFormData({
+                                ...lead,
+                                agentId: lead.assignedAgent?.id || ''
+                            } as any);
+                            setShowModal(true);
+                        }}
+                        onDelete={handleDelete}
+                        onViewInsights={(lead) => setSelectedLeadForInsights(lead)}
+                    />
+                )}
             </div>
 
             {/* Lead Modal */}
@@ -538,6 +588,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
             .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
             .pulse-ai { animation: pulse-purple 2s infinite; cursor: pointer; }
+            .btn-white { background-color: #fff; border: 1px solid #dee2e6; }
+            .btn-white:hover { background-color: #f8f9fa; }
             @keyframes pulse-purple {
                 0% { transform: scale(0.9); opacity: 0.6; }
                 50% { transform: scale(1.2); opacity: 1; }
