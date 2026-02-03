@@ -19,6 +19,7 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
     const [tenantType, setTenantTypeState] = useState<number>(2); // Default to Coworking
     const [activeTenantId, setActiveTenantIdState] = useState<string | null>(null);
     const [activeOwnerId, setActiveOwnerIdState] = useState<string | null>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     // Initialize from localStorage on mount
     useEffect(() => {
@@ -26,9 +27,12 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
         const savedTenantId = localStorage.getItem('mgmt_tenant_id');
         const savedOwnerId = localStorage.getItem('mgmt_owner_id');
 
+
+
         if (savedType) setTenantTypeState(parseInt(savedType));
         if (savedTenantId) setActiveTenantIdState(savedTenantId);
         if (savedOwnerId) setActiveOwnerIdState(savedOwnerId);
+        setIsInitialized(true);
     }, []);
 
     const setTenantType = (type: number) => {
@@ -54,6 +58,7 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
     };
 
     const setActiveOwnerAndTenant = (ownerId: string | null, tenantId: string | null) => {
+
         setActiveOwnerIdState(ownerId);
         setActiveTenantIdState(tenantId);
 

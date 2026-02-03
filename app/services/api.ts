@@ -202,6 +202,20 @@ export const userService = {
     });
   },
 
+  getProfile: async (token: string) => {
+    return await makeApiCall(userEndpoints.getProfile(), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  updateProfile: async (token: string, profileData: any) => {
+    return await makeApiCall(userEndpoints.updateProfile(), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(profileData),
+    });
+  },
+
   getOwners: async (token: string, params?: { page?: string; limit?: string; search?: string; tenantId?: string; industryType?: number | string }) => {
     return await makeApiCall(adminEndpoints.getPropertyOwners(params), {
       headers: { 'Authorization': `Bearer ${token}` },
@@ -909,6 +923,11 @@ export const marketingService = {
       headers: { 'Authorization': `Bearer ${token}` },
     });
   },
+  getAudienceGroupById: async (token: string, id: string) => {
+    return await makeApiCall(audienceEndpoints.getById(id), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
   createAudienceGroup: async (token: string, data: any) => {
     return await makeApiCall(audienceEndpoints.create(), {
       method: 'POST',
@@ -954,6 +973,13 @@ export const marketingService = {
     return await makeApiCall(templateEndpoints.delete(id), {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+  sendTestTemplateEmail: async (token: string, data: { templateId?: string; email: string; subject?: string; content?: string }) => {
+    return await makeApiCall('/marketing/templates/test', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
     });
   },
 
@@ -1018,7 +1044,8 @@ export const marketingService = {
   },
 
   getMarketingStats: async (token: string, params?: any) => {
-    return await makeApiCall('/marketing/stats', {
+    const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+    return await makeApiCall(`/marketing/stats${query}`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
   },

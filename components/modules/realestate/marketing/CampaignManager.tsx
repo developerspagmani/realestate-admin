@@ -12,14 +12,19 @@ import WorkflowManager from './WorkflowManager';
 import CampaignDesigner from './CampaignDesigner';
 import { marketingService, getAuthToken } from '@/app/services/api';
 
-export default function CampaignManager() {
+interface CampaignManagerProps {
+    mode?: 'admin' | 'owner';
+}
+
+export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
-    const { tenantType, activeTenantId } = useManagementContext();
+    const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
     const [loading, setLoading] = useState(true);
     const [campaigns, setCampaigns] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'campaigns' | 'audience' | 'templates' | 'automation' | 'forms'>('campaigns');
     const [showDesigner, setShowDesigner] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<any>(null);
+    const [launching, setLaunching] = useState<string | null>(null);
 
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
@@ -37,7 +42,14 @@ export default function CampaignManager() {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const res = await marketingService.getMarketingStats(token);
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const industryType = mode === 'admin' ? tenantType : undefined;
+
+            const res = await marketingService.getMarketingStats(token, {
+                tenantId: tenantId || undefined,
+                industryType,
+                ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
+            });
             if (res.success) setMarketingStats(res.data);
         } catch (e) { console.error(e); }
     };
@@ -47,7 +59,8 @@ export default function CampaignManager() {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const res = await marketingService.getCampaigns(token, { tenantId: activeTenantId });
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const res = await marketingService.getCampaigns(token, { tenantId: tenantId || undefined });
             if (res.success) {
                 setCampaigns(res.data);
             }
@@ -61,26 +74,49 @@ export default function CampaignManager() {
     useEffect(() => {
         loadCampaigns();
         loadStats();
-    }, [activeTenantId]);
+    }, [activeTenantId, activeOwnerId, tenantType, mode, user]);
 
     const stats = [
-        { label: 'Total Sent', value: marketingStats?.sentCampaigns?.toLocaleString() || '0', icon: 'bi-send', color: 'primary' },
+        {
+            label: 'Campaigns',
+            value: marketingStats?.sentCampaigns || '0',
+            icon: 'bi-megaphone',
+            color: 'primary'
+        },
+        {
+            label: 'Total Sent',
+            value: marketingStats?.totalDelivered?.toLocaleString() || '0',
+            icon: 'bi-send',
+            color: 'primary'
+        },
+        {
+            label: 'Total Opens',
+            value: marketingStats?.totalOpened?.toLocaleString() || '0',
+            icon: 'bi-eye',
+            color: 'success'
+        },
         {
             label: 'Open Rate',
-            value: marketingStats?.totalDelivered > 0
+            value: (marketingStats?.totalDelivered > 0)
                 ? `${((marketingStats.totalOpened / marketingStats.totalDelivered) * 100).toFixed(1)}%`
                 : '0%',
-            icon: 'bi-envelope-open', color: 'success'
+            icon: 'bi-envelope-open',
+            color: 'success'
         },
         {
             label: 'Click Rate',
-            value: marketingStats?.totalOpened > 0
-                ? `${((marketingStats.totalClicked / marketingStats.totalOpened) * 100).toFixed(1)}%`
+            value: (marketingStats?.totalDelivered > 0)
+                ? `${((marketingStats.totalClicked / marketingStats.totalDelivered) * 100).toFixed(1)}%`
                 : '0%',
-            icon: 'bi-cursor', color: 'info'
+            icon: 'bi-cursor',
+            color: 'info'
         },
-        { label: 'Form Submissions', value: marketingStats?.totalSubmissions?.toLocaleString() || '0', icon: 'bi-file-earmark-check', color: 'warning' },
-        { label: 'Total Clicks', value: marketingStats?.totalClicked?.toLocaleString() || '0', icon: 'bi-graph-up-arrow', color: 'secondary' },
+        {
+            label: 'Total Clicks',
+            value: marketingStats?.totalClicked?.toLocaleString() || '0',
+            icon: 'bi-graph-up-arrow',
+            color: 'secondary'
+        },
     ];
 
     const handleDelete = async (id: string, name: string) => {
@@ -103,12 +139,45 @@ export default function CampaignManager() {
         setShowDesigner(true);
     };
 
+    const handleLaunch = async (campaign: any) => {
+        if (!campaign.groupId) {
+            showToast('Please select a target group before launching.', 'error');
+            return;
+        }
+        if (!campaign.templateId) {
+            showToast('Please select a template before launching.', 'error');
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to launch "${campaign.name}"? This will send emails to all leads in the "${campaign.group?.name}" group immediately.`)) return;
+
+        setLaunching(campaign.id);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.launchCampaign(token, campaign.id);
+            if (res.success) {
+                showToast(res.message || 'Campaign launched successfully!');
+                loadCampaigns();
+                loadStats();
+            } else {
+                showToast(res.message || 'Failed to launch campaign', 'error');
+            }
+        } catch (err) {
+            showToast('Error launching campaign', 'error');
+        } finally {
+            setLaunching(null);
+        }
+    };
+
     return (
         <MainLayout activePage="marketing">
             <div className="container-fluid py-4">
                 <div className="d-flex justify-content-between align-items-center mb-2">
                     <div>
-                        <h1 className="fw-bold h2 mb-1">Marketing Hub</h1>
+                        <h1 className="fw-bold h2 mb-1">
+                            {mode === 'admin' ? 'Marketing Hub' : 'My Marketing Hub'}
+                        </h1>
                         <p className="text-muted small mb-0">Manage your email campaigns, audience growth and automations</p>
                     </div>
                 </div>
@@ -163,7 +232,7 @@ export default function CampaignManager() {
                     {activeTab === 'campaigns' && (
                         showDesigner ? (
                             <CampaignDesigner
-                                tenantId={activeTenantId || ''}
+                                tenantId={(mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || ''}
                                 initialData={editingCampaign}
                                 onClose={() => {
                                     setShowDesigner(false);
@@ -229,6 +298,21 @@ export default function CampaignManager() {
                                                                 <div className="dropdown">
                                                                     <button className="btn btn-link btn-sm p-0 text-muted" data-bs-toggle="dropdown"><i className="bi bi-three-dots-vertical"></i></button>
                                                                     <ul className="dropdown-menu dropdown-menu-end border-0 shadow rounded-3">
+                                                                        {campaign.status !== 4 && (
+                                                                            <>
+                                                                                <li>
+                                                                                    <button
+                                                                                        className="dropdown-item small d-flex align-items-center gap-2 text-primary fw-bold"
+                                                                                        onClick={() => handleLaunch(campaign)}
+                                                                                        disabled={launching === campaign.id}
+                                                                                    >
+                                                                                        {launching === campaign.id ? <span className="spinner-border spinner-border-sm"></span> : <i className="bi bi-rocket-takeoff"></i>}
+                                                                                        Launch Now
+                                                                                    </button>
+                                                                                </li>
+                                                                                <li><hr className="dropdown-divider" /></li>
+                                                                            </>
+                                                                        )}
                                                                         <li><button className="dropdown-item small d-flex align-items-center gap-2" onClick={() => handleEdit(campaign)}><i className="bi bi-pencil"></i> Edit Details</button></li>
                                                                         <li><hr className="dropdown-divider" /></li>
                                                                         <li><button className="dropdown-item small text-danger d-flex align-items-center gap-2" onClick={() => handleDelete(campaign.id, campaign.name)}><i className="bi bi-trash"></i> Delete Campaign</button></li>
@@ -247,19 +331,19 @@ export default function CampaignManager() {
                     )}
 
                     {activeTab === 'audience' && (
-                        <AudienceManager tenantId={activeTenantId || ''} />
+                        <AudienceManager tenantId={(mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || ''} />
                     )}
 
                     {activeTab === 'templates' && (
-                        <TemplateManager tenantId={activeTenantId || ''} />
+                        <TemplateManager tenantId={(mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || ''} />
                     )}
 
                     {activeTab === 'automation' && (
-                        <WorkflowManager tenantId={activeTenantId || ''} />
+                        <WorkflowManager tenantId={(mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || ''} />
                     )}
 
                     {activeTab === 'forms' && (
-                        <MarketingFormBuilder tenantId={activeTenantId || ''} />
+                        <MarketingFormBuilder tenantId={(mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || ''} />
                     )}
                 </div>
             </div>

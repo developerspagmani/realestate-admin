@@ -138,6 +138,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState<'editor' | 'designer'>('designer');
     const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
     const [templateData, setTemplateData] = useState({
         name: '',
         subject: '',
@@ -158,6 +159,10 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
         instagram: '',
         linkedin: ''
     });
+
+    const [testEmail, setTestEmail] = useState('');
+    const [sendingTest, setSendingTest] = useState(false);
+    const [showTestInput, setShowTestInput] = useState(false);
     const loadTemplates = async () => {
         setLoading(true);
         try {
@@ -179,12 +184,25 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
     }, [tenantId]);
 
     const handleSave = async () => {
+        if (!templateData.name) return;
+        setSaving(true);
         try {
             const token = getAuthToken();
             if (!token) return;
 
             let finalContent = templateData.content;
             if (activeTab === 'designer') {
+                // Quick protection: If content already looks like a finished email, don't re-theme it
+                const isAlreadyThemed = templateData.content.includes('<div style="background-color:') || templateData.content.includes('<!DOCTYPE');
+
+                if (isAlreadyThemed) {
+                    const proceed = window.confirm("This template appears to already have a design applied. Re-applying a theme may cause layout issues. Continue anyway?");
+                    if (!proceed) {
+                        setSaving(false);
+                        return;
+                    }
+                }
+
                 const theme = DEFAULT_THEMES.find(t => t.id === design.theme) || DEFAULT_THEMES[0];
                 finalContent = theme.render(design, templateData.content);
             }
@@ -197,12 +215,56 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
             }
 
             if (res.success) {
+                alert('Template saved successfully!');
                 setShowModal(false);
                 loadTemplates();
                 resetForm();
+            } else {
+                alert(res.message || 'Failed to save template');
             }
         } catch (error) {
             console.error('Failed to save template:', error);
+            alert('Error saving template. Please check your connection.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSendTest = async () => {
+        if (!testEmail) {
+            alert('Please enter a test email address');
+            return;
+        }
+
+        setSendingTest(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+
+            let finalContent = templateData.content;
+            if (activeTab === 'designer') {
+                const theme = DEFAULT_THEMES.find(t => t.id === design.theme) || DEFAULT_THEMES[0];
+                finalContent = theme.render(design, templateData.content);
+            }
+
+            const res = await marketingService.sendTestTemplateEmail(token, {
+                templateId: currentTemplateId || undefined,
+                email: testEmail,
+                subject: templateData.subject || 'Test Email',
+                content: finalContent
+            });
+
+            if (res.success) {
+                alert('Test email sent successfully!');
+                setShowTestInput(false);
+            } else {
+                alert(res.message || 'Failed to send test email');
+            }
+        } catch (error) {
+            console.error('Failed to send test email:', error);
+            alert('Error sending test email');
+        } finally {
+            setSendingTest(false);
         }
     };
 
@@ -241,6 +303,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
             subject: tpl.subject,
             content: tpl.content
         });
+        setActiveTab('designer');
         setShowGallery(false);
         setShowModal(true);
     };
@@ -249,6 +312,20 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
         setTemplateData({ name: '', subject: '', content: '', type: 'email' });
         setIsEditing(false);
         setCurrentTemplateId(null);
+        setDesign({
+            theme: 'modern',
+            primaryColor: '#007bff',
+            secondaryColor: '#6c757d',
+            backgroundColor: '#f8f9fa',
+            textColor: '#333333',
+            headerText: '',
+            footerText: '',
+            facebook: '',
+            twitter: '',
+            instagram: '',
+            linkedin: ''
+        });
+        setActiveTab('designer');
     };
 
     const previewHtml = () => {
@@ -469,11 +546,39 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                     </div>
                                 </div>
                             </div>
-                            <div className="modal-footer border-0 p-4 bg-light bg-opacity-50">
-                                <button className="btn btn-link link-dark fw-bold text-decoration-none px-4" onClick={() => setShowModal(false)}>Discard</button>
-                                <button className="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" onClick={handleSave} disabled={!templateData.name}>
-                                    {isEditing ? 'Save Changes' : 'Finalize & Save'}
-                                </button>
+                            <div className="modal-footer border-0 p-4 bg-light bg-opacity-50 justify-content-between">
+                                <div className="d-flex align-items-center gap-2">
+                                    {showTestInput ? (
+                                        <div className="input-group input-group-sm" style={{ width: '300px' }}>
+                                            <input
+                                                type="email"
+                                                className="form-control rounded-start-pill ps-3"
+                                                placeholder="Enter test email..."
+                                                value={testEmail}
+                                                onChange={e => setTestEmail(e.target.value)}
+                                            />
+                                            <button
+                                                className="btn btn-dark rounded-end-pill px-3"
+                                                onClick={handleSendTest}
+                                                disabled={sendingTest}
+                                            >
+                                                {sendingTest ? <span className="spinner-border spinner-border-sm"></span> : 'Send'}
+                                            </button>
+                                            <button className="btn btn-link link-muted btn-sm ms-1" onClick={() => setShowTestInput(false)}>Cancel</button>
+                                        </div>
+                                    ) : (
+                                        <button className="btn btn-outline-dark rounded-pill px-4 btn-sm" onClick={() => setShowTestInput(true)}>
+                                            <i className="bi bi-send me-2"></i> Send Test
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="d-flex gap-2">
+                                    <button className="btn btn-link link-dark fw-bold text-decoration-none px-4" onClick={() => setShowModal(false)}>Discard</button>
+                                    <button className="btn btn-primary rounded-pill px-5 fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleSave} disabled={!templateData.name || saving}>
+                                        {saving && <span className="spinner-border spinner-border-sm"></span>}
+                                        {isEditing ? 'Save Changes' : 'Finalize & Save'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

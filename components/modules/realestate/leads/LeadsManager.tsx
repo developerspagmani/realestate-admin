@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { leadService, agentService, getAuthToken } from '@/app/services/api';
+import { leadService, agentService, marketingService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
@@ -60,6 +60,9 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterSource, setFilterSource] = useState<string>('all');
+    const [filterBudget, setFilterBudget] = useState<number | ''>('');
+    const [showGroupModal, setShowGroupModal] = useState(false);
+    const [groupName, setGroupName] = useState('');
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -165,8 +168,36 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             lead.company?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
         const matchesSource = filterSource === 'all' || lead.source === filterSource;
-        return matchesSearch && matchesStatus && matchesSource;
+        const matchesBudget = filterBudget === '' || lead.budget <= Number(filterBudget);
+        return matchesSearch && matchesStatus && matchesSource && matchesBudget;
     });
+
+    const handleSaveAsGroup = async () => {
+        if (!groupName) return;
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+
+            // Create the Audience Group
+            const res = await marketingService.createAudienceGroup(token, {
+                name: groupName,
+                description: `Created from Leads Manager filter: Budget <= ${filterBudget || 'Any'}`,
+                tenantId,
+                isDynamic: filterBudget !== '', // If budget filter is active, it's a dynamic intent
+                leadIds: filteredLeads.map(l => l.id) // Send existing leads
+            });
+
+            if (res.success) {
+                showToast(`Audience group "${groupName}" created with ${filteredLeads.length} leads.`);
+                setShowGroupModal(false);
+                setGroupName('');
+            }
+        } catch (error) {
+            console.error('Group creation failed:', error);
+            showToast('Failed to create audience group', 'error');
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -321,23 +352,31 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                 <i className="bi bi-table me-2"></i>Table
                             </button>
                         </div>
-                        <button className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm" onClick={() => setShowModal(true)}>
-                            <i className="bi bi-person-plus-fill"></i>
-                            <span>Add New Lead</span>
-                        </button>
+                        <div className="d-flex align-items-center gap-2">
+                            {(filterBudget !== '' || filterStatus !== 'all' || filterSource !== 'all') && (
+                                <button className="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" onClick={() => setShowGroupModal(true)}>
+                                    <i className="bi bi-people-fill"></i>
+                                    <span>Save as Group</span>
+                                </button>
+                            )}
+                            <button className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm" onClick={() => setShowModal(true)}>
+                                <i className="bi bi-person-plus-fill"></i>
+                                <span>Add New Lead</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <div className="card border-0 shadow-sm mb-4 rounded-4">
                     <div className="card-body p-3">
                         <div className="row g-3">
-                            <div className="col-md-5">
+                            <div className="col-md-4">
                                 <div className="input-group">
                                     <span className="input-group-text bg-light border-0"><i className="bi bi-search text-muted"></i></span>
-                                    <input type="text" className="form-control bg-light border-0" placeholder="Search by name, email or company..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                    <input type="text" className="form-control bg-light border-0" placeholder="Search leads..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                 </div>
                             </div>
-                            <div className="col-md-3">
+                            <div className="col-md-2">
                                 <select className="form-select bg-light border-0" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                                     <option value="all">Status: All</option>
                                     <option value="new">New</option>
@@ -347,7 +386,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                     <option value="lost">Lost</option>
                                 </select>
                             </div>
-                            <div className="col-md-3">
+                            <div className="col-md-2">
                                 <select className="form-select bg-light border-0" value={filterSource} onChange={(e) => setFilterSource(e.target.value)}>
                                     <option value="all">Source: All</option>
                                     <option value="website">Website</option>
@@ -359,7 +398,33 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                     <option value="other">Other</option>
                                 </select>
                             </div>
-                            <div className="col-md-1 d-flex align-items-center justify-content-end">
+                            <div className="col-md-3">
+                                <div className="px-2">
+                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                        <label className="form-label extra-small text-muted fw-bold text-uppercase mb-0">Budget Limit</label>
+                                        <div className="input-group input-group-sm rounded-3 shadow-none border" style={{ width: '140px' }}>
+                                            <span className="input-group-text bg-transparent border-0 pe-1 text-muted small"><i className="bi bi-currency-dollar"></i></span>
+                                            <input
+                                                type="number"
+                                                className="form-control border-0 bg-transparent p-1 small"
+                                                placeholder="Any"
+                                                value={filterBudget}
+                                                onChange={(e) => setFilterBudget(e.target.value ? Number(e.target.value) : '')}
+                                            />
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        className="form-range"
+                                        min="0"
+                                        max="1000000"
+                                        step="100"
+                                        value={filterBudget === '' ? 1000000 : filterBudget}
+                                        onChange={(e) => setFilterBudget(e.target.value === '1000000' ? '' : Number(e.target.value))}
+                                    />
+                                </div>
+                            </div>
+                            <div className="col-md-1 d-flex align-items-center justify-content-end px-4">
                                 <span className="fw-bold text-primary">{filteredLeads.length}</span>
                             </div>
                         </div>
@@ -629,6 +694,43 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     leadScore={selectedLeadForInsights.leadScore}
                     onClose={() => setSelectedLeadForInsights(null)}
                 />
+            )}
+
+            {showGroupModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                            <div className="modal-header border-0 p-4 pb-0">
+                                <h5 className="fw-bold mb-0">Save as Marketing Group</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowGroupModal(false)}></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                <p className="text-muted small mb-4">You are creating an audience group with <strong>{filteredLeads.length} leads</strong> based on your current filters.</p>
+                                <div className="mb-3">
+                                    <label className="form-label small fw-bold text-muted">Audience Group Name</label>
+                                    <input
+                                        type="text"
+                                        className="form-control bg-light border-0 py-2"
+                                        placeholder="e.g. Low Budget Prospects"
+                                        value={groupName}
+                                        onChange={(e) => setGroupName(e.target.value)}
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-10">
+                                    <div className="extra-small text-primary fw-bold mb-1"><i className="bi bi-info-circle me-1"></i>Marketing Hub Shared</div>
+                                    <div className="extra-small text-muted">This group will be immediately available in the Marketing Hub for email campaigns and automated workflows.</div>
+                                </div>
+                            </div>
+                            <div className="modal-footer border-0 p-4 pt-0">
+                                <button type="button" className="btn btn-light rounded-pill px-4 fw-bold" onClick={() => setShowGroupModal(false)}>Cancel</button>
+                                <button type="button" className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onClick={handleSaveAsGroup} disabled={!groupName}>
+                                    Create Group
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </MainLayout>
     );

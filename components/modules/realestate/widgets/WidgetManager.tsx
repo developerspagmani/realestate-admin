@@ -33,7 +33,8 @@ const INITIAL_FORM_DATA = {
         },
         settings: {
             startView: 'listing',
-            propertyId: ''
+            propertyId: '',
+            layout: 'grid'
         },
         chatbot: {
             enabled: false
@@ -51,10 +52,14 @@ const INITIAL_FORM_DATA = {
             pageTitle: '',
             showHero: true,
             showFooter: true,
-            showLogo: true
+            showLogo: true,
+            showListing: true,
+            showInquiry: true
         },
         inquiryForm: {
             enabled: false,
+            useMarketingForm: false,
+            marketingFormId: '',
             title: 'Inquiry Form',
             description: 'Please fill out the form below to get in touch with us.',
             fields: [

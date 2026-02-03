@@ -5,23 +5,29 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Property3DManager from '@/components/modules/realestate/properties/Property3DManager';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
+import { useAuthContext } from '@/app/contexts/AuthContext';
 import MainLayout from '@/components/MainLayout';
 import { getAuthToken } from '@/app/services/api';
 import { propertyService } from '@/app/services/api';
 
-// Role-specific logic removed as this is now Admin-only
-export default function Property3DManagerWrapper() {
+interface Property3DManagerWrapperProps {
+    mode?: 'admin' | 'owner';
+}
+
+// Role-specific logic updated to accept mode
+export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DManagerWrapperProps) {
     const searchParams = useSearchParams();
     const router = useRouter();
     const propertyId = searchParams.get('propertyId');
     const propertyName = searchParams.get('propertyName') || 'Property';
     const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
+    const { user } = useAuthContext();
 
     const pathname = usePathname();
-    const mode = searchParams.get('mode');
-    const isOwner = pathname.includes('/realestate-owner-admin');
+    const architectMode = searchParams.get('mode');
+    const isOwner = mode === 'owner' || pathname.includes('/realestate-owner-admin');
     const basePath = isOwner ? '/realestate-owner-admin' : '/realestate-admin';
-    const activePage = mode === 'builder' ? 'property-3d-builder' : 'property-3d';
+    const activePage = architectMode === 'builder' ? 'property-3d-builder' : 'property-3d';
 
     const [properties, setProperties] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -30,18 +36,19 @@ export default function Property3DManagerWrapper() {
         if (!propertyId) {
             loadProperties();
         }
-    }, [propertyId, activeTenantId, activeOwnerId, tenantType]);
+    }, [propertyId, activeTenantId, activeOwnerId, tenantType, mode, user]);
     const loadProperties = async () => {
         try {
             setLoading(true);
             const token = getAuthToken();
             if (token) {
-                const industryType = (!activeOwnerId && !activeTenantId) ? tenantType : undefined;
+                const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+                const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
                 const response = await propertyService.getProperties(token, {
-                    tenantId: activeTenantId || undefined,
+                    tenantId: tenantId || undefined,
                     industryType,
-                    ownerId: activeOwnerId || undefined,
+                    ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId }),
                     limit: '100'
                 });
                 if (response.success) {
@@ -148,7 +155,7 @@ export default function Property3DManagerWrapper() {
                     <Property3DManager
                         propertyId={propertyId}
                         propertyName={propertyName}
-                        initialMode={mode === 'builder' ? 'visual' : 'json'}
+                        initialMode={architectMode === 'builder' ? 'visual' : 'json'}
                         onClose={() => router.push(`${basePath}/${isOwner ? 'property-3d' : 'properties'}`)}
                     />
                 </div>
