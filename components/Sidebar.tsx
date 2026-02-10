@@ -61,9 +61,11 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Management',
           items: [
             { href: '/realestate-admin/properties', label: labels.properties, icon: 'bi-building', active: activePage === 'properties' },
+            { href: '/realestate-admin/plot-map', label: 'Plot Map Manager', icon: 'bi-map-fill', active: activePage === 'plot-map' },
             { href: '/realestate-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' },
             { href: '/realestate-admin/units', label: labels.units, icon: 'bi-laptop', active: activePage === 'units' },
             { href: '/realestate-admin/amenities', label: 'Amenities', icon: 'bi-grid', active: activePage === 'amenities' },
+            { href: '/realestate-admin/categories', label: 'Categories', icon: 'bi-collection', active: activePage === 'categories' },
             { href: '/realestate-admin/agents', label: 'Agents', icon: 'bi-briefcase', active: activePage === 'agents' },
             { href: '/realestate-admin/owners', label: 'Owners', icon: 'bi-person-badge', active: activePage === 'owners' },
             { href: '/realestate-admin/users', label: 'Users', icon: 'bi-people', active: activePage === 'users' },
@@ -107,6 +109,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Inventory',
           items: [
             { href: '/realestate-owner-admin/properties', label: 'My Properties', icon: 'bi-building-add', active: activePage === 'properties' },
+            { href: '/realestate-owner-admin/plot-map', label: 'Plot Map Manager', icon: 'bi-map-fill', active: activePage === 'plot-map' },
             { href: '/realestate-owner-admin/units', label: 'Units', icon: 'bi-unity', active: activePage === 'units' },
             { href: '/realestate-owner-admin/users', label: 'Users', icon: 'bi-people', active: activePage === 'users' }
           ]
@@ -115,6 +118,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Resources',
           items: [
             { href: '/realestate-owner-admin/amenities', label: 'Amenities', icon: 'bi-grid', active: activePage === 'amenities' },
+            { href: '/realestate-owner-admin/categories', label: 'Categories', icon: 'bi-collection', active: activePage === 'categories' },
           ]
         },
         {
@@ -133,6 +137,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Marketing',
           items: [
             { href: '/realestate-owner-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' },
+            { href: '/realestate-owner-admin/chatbot-config', label: 'Chatbot Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
             { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
             { href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
           ]

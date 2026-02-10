@@ -10,13 +10,6 @@ export interface User {
   role: number; // 1: user, 2: admin, 3: owner
 }
 
-export interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  loading: boolean;
-  error: string | null;
-}
-
 // Cart Item Types
 export interface CartItem {
   id: string;
@@ -69,44 +62,6 @@ export interface BookingState {
   loading: boolean;
   error: string | null;
 }
-
-// Auth Slice
-const authSlice = createSlice({
-  name: 'auth',
-  initialState: {
-    user: null,
-    isAuthenticated: false,
-    loading: false,
-    error: null,
-  },
-  reducers: {
-    loginStart: (state) => {
-      state.loading = true;
-      state.error = null;
-    },
-    loginSuccess: (state, action) => {
-      state.loading = false;
-      state.user = action.payload;
-      state.isAuthenticated = true;
-      state.error = null;
-    },
-    loginFailure: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
-    logout: (state) => {
-      state.user = null;
-      state.isAuthenticated = false;
-      state.loading = false;
-      state.error = null;
-    },
-    clearError: (state) => {
-      state.error = null;
-    },
-  },
-});
-
-export const { loginStart, loginSuccess, loginFailure, logout, clearError } = authSlice.actions;
 
 // Cart Slice
 const cartSlice = createSlice({
@@ -225,16 +180,9 @@ export const {
 
 // Types
 export type RootState = {
-  auth: AuthState;
   cart: CartState;
   booking: BookingState;
 };
-
-// Selectors
-export const selectAuth = (state: RootState) => state.auth;
-export const selectUser = (state: RootState) => state.auth.user;
-export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
-export const selectUserRole = (state: RootState) => state.auth.user?.role || null;
 
 // Cart Selectors
 export const selectCart = (state: RootState) => state.cart;
@@ -245,15 +193,10 @@ export const selectCartItemCount = (state: RootState) => state.cart.items.reduce
 // Booking Selectors
 export const selectBooking = (state: RootState) => state.booking;
 export const selectBookings = (state: RootState) => state.booking.bookings;
-export const selectUserBookings = (state: RootState) => {
-  const user = selectUser(state);
-  return user ? state.booking.bookings.filter(booking => booking.userId === user.id) : [];
-};
 
 // Store
 export const store = configureStore({
   reducer: {
-    auth: authSlice.reducer,
     cart: cartSlice.reducer,
     booking: bookingSlice.reducer,
   },
@@ -262,3 +205,4 @@ export const store = configureStore({
 // Typed hooks
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 export const useAppDispatch = () => useDispatch();
+

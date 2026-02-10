@@ -6,11 +6,12 @@ import { Seats } from '@/types';
 interface Workspace3DProps {
   workspaces: Seats[];
   onWorkspaceClick?: (seats: Seats) => void;
+  onShowDemoPlans?: (seats: Seats) => void;
   layout?: any[];
   config?: any;
 }
 
-export default function Workspace3D({ workspaces, onWorkspaceClick, layout, config }: Workspace3DProps) {
+export default function Workspace3D({ workspaces, onWorkspaceClick, onShowDemoPlans, layout, config }: Workspace3DProps) {
   const [selectedWorkspace, setSelectedWorkspace] = useState<Seats | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
@@ -137,21 +138,21 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Lighting - Outdoor Atmosphere
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
-    hemiLight.position.set(0, 20, 0);
+    // Lighting - Outdoor Atmosphere (Boosted for realism)
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d6e63, 0.9);
+    hemiLight.position.set(0, 50, 0);
     scene.add(hemiLight);
 
-    const dirIntensity = config?.scene?.directionalLight || 0.8;
-    const directionalLight = new THREE.DirectionalLight(0xffffff, dirIntensity);
-    directionalLight.position.set(20, 40, 20);
+    const dirIntensity = config?.scene?.directionalLight || 1.2;
+    const directionalLight = new THREE.DirectionalLight(0xfff5e6, dirIntensity); // Warm sunlight
+    directionalLight.position.set(50, 100, 50);
     directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    directionalLight.shadow.camera.left = -50;
-    directionalLight.shadow.camera.right = 50;
-    directionalLight.shadow.camera.top = 50;
-    directionalLight.shadow.camera.bottom = -50;
+    directionalLight.shadow.mapSize.width = 4096; // High res shadows
+    directionalLight.shadow.mapSize.height = 4096;
+    directionalLight.shadow.camera.left = -150;
+    directionalLight.shadow.camera.right = 150;
+    directionalLight.shadow.camera.top = 150;
+    directionalLight.shadow.camera.bottom = -150;
     scene.add(directionalLight);
 
     // Dynamic floor size based on layout
@@ -188,7 +189,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
       layout.forEach((obj: any) => {
         let mesh: any;
 
-        const points = obj.metadata.polyPoints;
+        const points = obj.metadata?.polyPoints;
         const isBuilding = ['cabin', 'villa', 'house', 'apartment', 'office', 'flat', 'unit'].includes(obj.type) || obj.unitId?.includes('shape');
         const isWater = obj.type === 'river' || obj.type === 'lake';
         const isPath = obj.type === 'road' || obj.type === 'drainage';
@@ -241,20 +242,91 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
           const material = new THREE.MeshLambertMaterial({ color: 0x8d6e63 });
           mesh = new THREE.Mesh(geometry, material);
           mesh.position.set(obj.position?.x || 0, 2.5, -(obj.position?.z || 0));
-        } else {
-          // Rectangular Plots (flat boxes or building blocks)
-          let h = obj.dimensions?.h || 0.5;
-          if (['cabin', 'villa', 'house', 'apartment', 'office'].includes(obj.type)) {
-            h = obj.dimensions?.h || 3.0; // Standard room height
-          }
-          const geometry = new THREE.BoxGeometry(obj.dimensions?.w || 1, h, obj.dimensions?.d || 1);
-          const material = new THREE.MeshLambertMaterial({ color: obj.color || 0x3182ce });
+        } else if (obj.type === 'court') {
+          // Sports Court (Tennis/Basketball)
+          const geometry = new THREE.BoxGeometry(obj.dimensions?.w || 12, 0.1, obj.dimensions?.d || 20);
+          const material = new THREE.MeshLambertMaterial({ color: 0x4caf50 }); // Professional Green
           mesh = new THREE.Mesh(geometry, material);
+
+          // Add white lines for the court
+          const lineGeo = new THREE.PlaneGeometry((obj.dimensions?.w || 12) * 0.9, (obj.dimensions?.d || 20) * 0.9);
+          const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+          const lines = new THREE.Mesh(lineGeo, lineMat);
+          lines.rotation.x = -Math.PI / 2;
+          lines.position.y = 0.06;
+          mesh.add(lines);
+
+          mesh.position.set(obj.position?.x || 0, 0.05, -(obj.position?.z || 0));
+        } else if (obj.type === 'pond') {
+          // Lily Pond / Water
+          const geometry = new THREE.CylinderGeometry(obj.dimensions?.w || 5, obj.dimensions?.w || 5, 0.2, 32);
+          const material = new THREE.MeshPhongMaterial({
+            color: 0x03a9f4,
+            transparent: true,
+            opacity: 0.7,
+            shininess: 100
+          });
+          mesh = new THREE.Mesh(geometry, material);
+          mesh.position.set(obj.position?.x || 0, 0.1, -(obj.position?.z || 0));
+        } else if (obj.type === 'arch') {
+          // Entrance Arch
+          mesh = new THREE.Group();
+          const pillar1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 4, 1), new THREE.MeshLambertMaterial({ color: 0x8d6e63 }));
+          pillar1.position.set(-2, 2, 0);
+          const pillar2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 4, 1), new THREE.MeshLambertMaterial({ color: 0x8d6e63 }));
+          pillar2.position.set(2, 2, 0);
+          const top = new THREE.Mesh(new THREE.BoxGeometry(5, 0.5, 1.2), new THREE.MeshLambertMaterial({ color: 0x8d6e63 }));
+          top.position.set(0, 4, 0);
+          mesh.add(pillar1);
+          mesh.add(pillar2);
+          mesh.add(top);
+          mesh.position.set(obj.position?.x || 0, 0, -(obj.position?.z || 0));
+        } else {
+          // Modern Architecture - Rectangular Plots / Villas / Clubhouse
+          let h = obj.dimensions?.h || 0.5;
+          const isComplex = ['villa', 'clubhouse', 'house'].includes(obj.type);
+
+          if (isComplex) {
+            h = obj.dimensions?.h || 4.5;
+            mesh = new THREE.Group();
+
+            // Main Body
+            const body = new THREE.Mesh(
+              new THREE.BoxGeometry(obj.dimensions?.w || 4, h, obj.dimensions?.d || 6),
+              new THREE.MeshLambertMaterial({ color: obj.color || 0xffffff })
+            );
+            body.position.y = h / 2;
+            mesh.add(body);
+
+            // Flat Roof with overhang
+            const roof = new THREE.Mesh(
+              new THREE.BoxGeometry((obj.dimensions?.w || 4) + 0.5, 0.2, (obj.dimensions?.d || 6) + 0.5),
+              new THREE.MeshLambertMaterial({ color: 0x424242 })
+            );
+            roof.position.y = h;
+            mesh.add(roof);
+
+            // Balcony/Protrusion
+            const balcony = new THREE.Mesh(
+              new THREE.BoxGeometry((obj.dimensions?.w || 4) + 0.2, h * 0.4, 1.5),
+              new THREE.MeshLambertMaterial({ color: 0xffffff })
+            );
+            balcony.position.set(0, h * 0.7, (obj.dimensions?.d || 6) / 2);
+            mesh.add(balcony);
+
+          } else {
+            const geometry = new THREE.BoxGeometry(obj.dimensions?.w || 1, h, obj.dimensions?.d || 1);
+            const material = new THREE.MeshLambertMaterial({ color: obj.color || 0x3182ce });
+            mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(obj.position?.x || 0, h / 2, -(obj.position?.z || 0));
+          }
 
           if (obj.rotation?.y) {
             mesh.rotation.y = -(obj.rotation.y * Math.PI) / 180;
           }
-          mesh.position.set(obj.position?.x || 0, h / 2, -(obj.position?.z || 0));
+          if (isComplex) {
+            mesh.position.set(obj.position?.x || 0, 0, -(obj.position?.z || 0));
+          }
         }
 
         if (mesh) {
@@ -608,10 +680,20 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, layout, conf
                   Select
                 </button>
               </div>
+
+              {onShowDemoPlans && (
+                <button
+                  className="btn btn-sm btn-outline-info w-100 mt-2 rounded-pill fw-bold"
+                  onClick={() => onShowDemoPlans(selectedWorkspace)}
+                >
+                  <i className="bi bi-house-door me-2"></i>
+                  Demo House Plan
+                </button>
+              )}
             </div>
           </div>
         )}
-      </div>
+      </div >
     );
   }
 

@@ -12,6 +12,7 @@ interface PropertyFormProps {
     isSubmitting: boolean;
     mediaItems: MediaItem[]; // We pass media items down to avoid re-fetching
     amenities: any[];
+    categories: any[]; // Property categories
 }
 
 export default function PropertyForm({
@@ -20,7 +21,8 @@ export default function PropertyForm({
     onCancel,
     isSubmitting,
     mediaItems,
-    amenities
+    amenities,
+    categories
 }: PropertyFormProps) {
     const [formData, setFormData] = useState<Partial<Property>>({
         name: '',
@@ -47,7 +49,9 @@ export default function PropertyForm({
         bedrooms: 0,
         bathrooms: 0,
         lotSize: 0,
-        listingType: 'rent'
+        listingType: 'rent',
+        categoryId: '',
+        videoUrl: ''
     });
 
     const [showMediaModal, setShowMediaModal] = useState(false);
@@ -85,7 +89,9 @@ export default function PropertyForm({
                 bedrooms: initialData.bedrooms || 0,
                 bathrooms: initialData.bathrooms || 0,
                 lotSize: initialData.lotSize || 0,
-                listingType: initialData.listingType || 'rent'
+                listingType: initialData.listingType || 'rent',
+                categoryId: (initialData as any).categoryId || '',
+                videoUrl: (initialData as any).videoUrl || ''
             });
         }
     }, [initialData]);
@@ -115,7 +121,7 @@ export default function PropertyForm({
                 <div className="modal-dialog modal-dialog-centered modal-xl">
                     <div className="modal-content border-0 shadow-lg rounded-4">
                         <div className="modal-header bg-primary text-white border-0 p-4">
-                            <h5 className="modal-title fw-bold">
+                            <h5 className="modal-title fw-bold text-white">
                                 {initialData ? 'Edit Property Details' : 'Register New Property'}
                             </h5>
                             <button
@@ -196,6 +202,20 @@ export default function PropertyForm({
                                             </div>
 
                                             <div className="col-md-4">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">Category</label>
+                                                <select
+                                                    className="form-select bg-light border-0"
+                                                    value={(formData as any).categoryId || ''}
+                                                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value } as any)}
+                                                >
+                                                    <option value="">No Category</option>
+                                                    {categories.filter(c => c.status === 1).map(cat => (
+                                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            <div className="col-md-4">
                                                 <label className="form-label fw-bold small text-uppercase text-muted">Status</label>
                                                 <select
                                                     className="form-select bg-light border-0"
@@ -207,6 +227,21 @@ export default function PropertyForm({
                                                     <option value="inactive">Inactive</option>
                                                     <option value="maintenance">Maintenance</option>
                                                 </select>
+                                            </div>
+
+                                            <div className="col-md-12">
+                                                <label className="form-label fw-bold small text-uppercase text-muted">
+                                                    <i className="bi bi-youtube text-danger me-1"></i>
+                                                    YouTube Video URL
+                                                </label>
+                                                <input
+                                                    type="url"
+                                                    className="form-control bg-light border-0"
+                                                    value={(formData as any).videoUrl || ''}
+                                                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value } as any)}
+                                                    placeholder="https://www.youtube.com/watch?v=..."
+                                                />
+                                                <div className="form-text small">Add a YouTube video tour or walkthrough of the property</div>
                                             </div>
 
                                             <div className="col-md-4">

@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect, MouseEvent, useCallback } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { DEMO_HOUSE_PLANS } from '@/app/constants/demoPlans';
 
 interface Marker {
     unitId: string;
     unitCode: string;
-    type: 'seat' | 'cabin' | 'flat' | 'villa' | 'road' | 'tree' | 'drainage' | 'hills' | 'river' | 'lake';
+    type: 'seat' | 'cabin' | 'flat' | 'villa' | 'road' | 'tree' | 'drainage' | 'hills' | 'river' | 'lake' | 'garden' | 'park' | 'pond' | 'court' | 'clubhouse' | 'arch';
     x: number; // pixel x
     y: number; // pixel y
     width?: number; // for rect
@@ -16,12 +17,15 @@ interface Marker {
 }
 
 const SCENARIO_TYPES = [
-    { id: 'road', name: 'Road', color: '#555555', icon: 'bi-signpost-split' },
-    { id: 'tree', name: 'Tree', color: '#2d572c', icon: 'bi-tree-fill' },
-    { id: 'drainage', name: 'Drainage', color: '#4a69bd', icon: 'bi-droplet-fill' },
-    { id: 'hills', name: 'Hills', color: '#8d6e63', icon: 'bi-mountain' },
-    { id: 'river', name: 'River', color: '#00bcd4', icon: 'bi-water' },
-    { id: 'lake', name: 'Lake', color: '#03a9f4', icon: 'bi-tsunami' },
+    { id: 'road', name: 'Road/Path', color: '#555555', icon: 'bi-signpost-split' },
+    { id: 'tree', name: 'Tree/Plant', color: '#2d572c', icon: 'bi-tree-fill' },
+    { id: 'garden', name: 'Garden/Greenery', color: '#81c784', icon: 'bi-flower1' },
+    { id: 'park', name: 'Sculpture/Activity Park', color: '#4caf50', icon: 'bi-emoji-smile' },
+    { id: 'pond', name: 'Lily Pond/Water', color: '#4fc3f7', icon: 'bi-water' },
+    { id: 'court', name: 'Sports Court', color: '#64b5f6', icon: 'bi-grid-3x3-gap' },
+    { id: 'clubhouse', name: 'Clubhouse/Amenity', color: '#9575cd', icon: 'bi-house-heart' },
+    { id: 'arch', name: 'Entrance Arch', color: '#a1887f', icon: 'bi-door-open-fill' },
+    { id: 'hills', name: 'Hills/Terrain', color: '#8d6e63', icon: 'bi-mountain' },
 ];
 
 interface VisualEditorProps {
@@ -801,6 +805,9 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
                 if (field === 'posZ') {
                     return { ...item, position: { ...item.position, z: Number(value) } };
                 }
+                if (field === 'preferredPlanId') {
+                    return { ...item, metadata: { ...item.metadata, preferredPlanId: value } };
+                }
             }
             return item;
         });
@@ -1500,6 +1507,20 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
                                                     <span>{Math.round(selectedItem.rotation?.y || 0)}°</span>
                                                 </label>
                                                 <input type="range" className="form-range" min="0" max="360" value={selectedItem.rotation?.y || 0} onChange={(e) => handlePropertyChange('rotation', e.target.value)} />
+                                            </div>
+                                            <div className="col-12 mt-3">
+                                                <label className="form-label extra-small mb-1 text-muted fw-bold text-uppercase">Preferred Demo Plan</label>
+                                                <select
+                                                    className="form-select form-select-sm"
+                                                    value={selectedItem.metadata?.preferredPlanId || ''}
+                                                    onChange={(e) => handlePropertyChange('preferredPlanId', e.target.value)}
+                                                >
+                                                    <option value="">-- Automatic (Based on size) --</option>
+                                                    {DEMO_HOUSE_PLANS.map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name} ({p.tier})</option>
+                                                    ))}
+                                                </select>
+                                                <p className="extra-small text-muted mt-1"><i className="bi bi-info-circle me-1"></i>Pre-assign a specific design for this plot.</p>
                                             </div>
                                         </div>
 

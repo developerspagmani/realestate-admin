@@ -85,7 +85,7 @@ function LoginContent() {
               <div className="mb-4">
                 <i className="bi bi-grid-1x2-fill display-4 text-white opacity-25"></i>
               </div>
-              <h2 className="fw-extrabold mb-3">Welcome Back</h2>
+              <h2 className="fw-extrabold mb-3 text-white">Welcome Back</h2>
               <p className="small opacity-75 mb-5">Access your property management workspace and leverage AI insights to grow your business.</p>
 
               <div className="mt-auto">

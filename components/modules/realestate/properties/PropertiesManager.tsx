@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { propertyService, mediaService, amenityService, getAuthToken } from '@/app/services/api';
+import { propertyService, mediaService, amenityService, categoryService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import PropertiesList from './PropertiesList';
@@ -22,6 +22,7 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
     const [properties, setProperties] = useState<Property[]>([]);
     const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [amenities, setAmenities] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingProperty, setEditingProperty] = useState<Property | null>(null);
@@ -111,6 +112,8 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     bathrooms: p.bathrooms || 0,
                     lotSize: p.lotSize || 0,
                     listingType: (p.listingType?.toLowerCase() as any) || 'rent',
+                    categoryId: p.categoryId || '',
+                    videoUrl: p.videoUrl || '',
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt
                 }));
@@ -127,6 +130,12 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             const amenRes = await amenityService.getAmenities(token);
             if (amenRes.success) {
                 setAmenities(amenRes.data.amenities || []);
+            }
+
+            // Load Categories
+            const catRes = await categoryService.getCategories(token);
+            if (catRes.success) {
+                setCategories(catRes.data.categories || []);
             }
 
         } catch (error) {
@@ -206,7 +215,9 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                 bedrooms: formData.bedrooms,
                 bathrooms: formData.bathrooms,
                 lotSize: formData.lotSize,
-                listingType: formData.listingType
+                listingType: formData.listingType,
+                categoryId: (formData as any).categoryId || null,
+                videoUrl: (formData as any).videoUrl || null
             };
 
             if (editingProperty) {
@@ -307,6 +318,7 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     isSubmitting={isSubmitting}
                     mediaItems={mediaItems}
                     amenities={amenities}
+                    categories={categories}
                 />
             )}
             <Toast

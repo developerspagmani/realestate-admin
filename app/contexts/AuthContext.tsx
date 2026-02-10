@@ -212,7 +212,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         localStorage.setItem('user', JSON.stringify(user));
 
         // Set cookies for middleware
-        const cookieOptions = 'path=/; max-age=86400; SameSite=Strict';
+        // FUNC-F08 fix: Added Secure flag to prevent cookies being sent over HTTP
+        const cookieOptions = 'path=/; max-age=86400; SameSite=Strict; Secure';
         document.cookie = `auth-token=${token}; ${cookieOptions}`;
         document.cookie = `user-role=${user.role}; ${cookieOptions}`;
         document.cookie = `user-id=${user.id}; ${cookieOptions}`;

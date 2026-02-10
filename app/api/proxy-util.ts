@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001/api';
 
 
 export async function proxyRequest(request: NextRequest, endpoint: string) {
@@ -49,17 +49,14 @@ export async function proxyRequest(request: NextRequest, endpoint: string) {
 
         return proxiedResponse;
     } catch (error: any) {
-        console.error(`Proxy error for ${method} ${endpoint}:`, error);
+        // SEC-F04 fix: Log details server-side only, don't expose to client
+        console.error(`Proxy error for ${method} ${endpoint}:`, error.message);
         return NextResponse.json(
             {
                 success: false,
-                message: 'Internal Server Error in Proxy',
-                error: error.message,
-                endpoint,
-                url,
-                method
+                message: 'Service temporarily unavailable. Please try again.',
             },
-            { status: 500 }
+            { status: 502 }
         );
     }
 }

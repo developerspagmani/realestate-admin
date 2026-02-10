@@ -1,9 +1,12 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
   --bs-primary: #000;
   --bs-primary-rgb: 0, 0, 0;
 }
+
 
 @theme inline {
   --color-background: var(--background);

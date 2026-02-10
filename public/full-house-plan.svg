@@ -1,0 +1,34 @@
+<svg width="1200" height="1000" viewBox="0 0 1200 1000" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer Boundary -->
+  <rect x="0" y="0" width="1200" height="1000" fill="none" stroke="black" stroke-width="5" />
+  
+  <!-- Living Room -->
+  <rect x="0" y="500" width="400" height="500" fill="#fff9eb" stroke="black" stroke-width="2" />
+  <text x="150" y="750" font-family="Arial" font-size="30">Living</text>
+  
+  <!-- Bedroom 1 -->
+  <rect x="0" y="0" width="400" height="500" fill="#ebf5ff" stroke="black" stroke-width="2" />
+  <text x="130" y="250" font-family="Arial" font-size="30">Bedroom 1</text>
+  
+  <!-- Hallway -->
+  <rect x="400" y="0" width="200" height="1000" fill="#f5f5f5" stroke="black" stroke-width="2" />
+  <text x="460" y="100" font-family="Arial" font-size="25" transform="rotate(90, 460, 100)">Hallway</text>
+  
+  <!-- Staircase (Inside Hall) -->
+  <line x1="400" y1="200" x2="600" y2="200" stroke="black" stroke-width="2" />
+  <line x1="400" y1="250" x2="600" y2="250" stroke="black" stroke-width="2" />
+  <line x1="400" y1="300" x2="600" y2="300" stroke="black" stroke-width="2" />
+  <line x1="400" y1="350" x2="600" y2="350" stroke="black" stroke-width="2" />
+  
+  <!-- Dining -->
+  <rect x="600" y="500" width="300" height="500" fill="#f0fff0" stroke="black" stroke-width="2" />
+  <text x="680" y="750" font-family="Arial" font-size="30">Dining</text>
+  
+  <!-- Kitchen -->
+  <rect x="900" y="500" width="300" height="500" fill="#fff0f0" stroke="black" stroke-width="2" />
+  <text x="980" y="750" font-family="Arial" font-size="30">Kitchen</text>
+  
+  <!-- Bedroom 2 -->
+  <rect x="600" y="0" width="600" height="500" fill="#ebf5ff" stroke="black" stroke-width="2" />
+  <text x="830" y="250" font-family="Arial" font-size="30">Bedroom 2</text>
+</svg>

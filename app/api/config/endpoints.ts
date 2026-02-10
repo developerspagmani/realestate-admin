@@ -373,6 +373,16 @@ export const agentEndpoints = {
   updateMyLeadStatus: (id: string) => `/agents/my/leads/${id}/status`,
 };
 
+// Category endpoints
+export const categoryEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/categories?${buildQueryString(params)}` : '/categories',
+  getById: (id: string) => `/categories/${id}`,
+  create: () => '/categories',
+  update: (id: string) => `/categories/${id}`,
+  delete: (id: string) => `/categories/${id}`,
+};
+
 // Property 3D endpoints
 export const property3DEndpoints = {
   getByPropertyId: (propertyId: string) => `/property-3d/${propertyId}`,

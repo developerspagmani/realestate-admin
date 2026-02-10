@@ -10,9 +10,17 @@ interface ChatbotProps {
     onSelectProperty: (property: any) => void;
     onCreateLead: (contact: string, name?: string) => Promise<void>;
     onExpandToggle?: (expanded: boolean) => void;
+    customWelcomeTitle?: string;
+    customWelcomeSubtext?: string;
+    leadCaptureMode?: 'email' | 'mobile' | 'both';
+    flow?: string[];
+    upsellEnabled?: boolean;
+    crossSellEnabled?: boolean;
+    recommendationLogic?: 'price-match' | 'newest' | 'featured';
+    previewMode?: boolean;
 }
 
-type Step = 'IDLE' | 'LEAD_CAPTURE' | 'HI' | 'ASK_LOCATION' | 'ASK_CITY' | 'ASK_BUDGET' | 'RESULTS';
+type Step = 'IDLE' | 'LEAD_CAPTURE' | 'HI' | 'DYNAMIC_FLOW' | 'RESULTS';
 
 const STORAGE_KEY = 'cw_chatbot_session';
 
@@ -57,14 +65,25 @@ const CheckboxGroup = ({ options, onConfirm, theme, onMessage }: { options: { la
     );
 };
 
-export default function ChatbotWidget({ theme, properties, onFilterResults, onClose, onSelectProperty, onCreateLead, onExpandToggle }: ChatbotProps) {
+export default function ChatbotWidget({
+    theme, properties, onFilterResults, onClose, onSelectProperty, onCreateLead, onExpandToggle,
+    customWelcomeTitle, customWelcomeSubtext, leadCaptureMode = 'both',
+    flow = ['LOCATION', 'CITY', 'BUDGET'],
+    upsellEnabled = true,
+    crossSellEnabled = true,
+    recommendationLogic = 'price-match',
+    previewMode = false
+}: ChatbotProps) {
     const [step, setStep] = useState<Step>('IDLE');
-    const [answers, setAnswers] = useState({
+    const [flowIndex, setFlowIndex] = useState(0);
+    const [answers, setAnswers] = useState<any>({
         name: '',
         contact: '',
-        locations: [] as string[],
-        cities: [] as string[],
-        budgets: [] as string[]
+        LOCATION: [] as string[],
+        CITY: [] as string[],
+        BUDGET: [] as string[],
+        BEDROOMS: [] as string[],
+        TYPE: [] as string[]
     });
     const [messages, setMessages] = useState<{ role: 'bot' | 'user', text: string }[]>([]);
     const [filteredResults, setFilteredResults] = useState<any[]>([]);
@@ -73,16 +92,16 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
     const chatBodyRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        if (previewMode) return;
         const savedSession = localStorage.getItem(STORAGE_KEY);
         if (savedSession) {
             try {
                 const session = JSON.parse(savedSession);
                 setStep(session.step || 'IDLE');
-                setAnswers(session.answers || { locations: [] as string[], cities: [] as string[], budgets: [] as string[] });
+                setAnswers(session.answers || { LOCATION: [], CITY: [], BUDGET: [], BEDROOMS: [], TYPE: [] });
                 setMessages(session.messages || []);
                 setFilteredResults(session.filteredResults || []);
 
-                // Use a ref-like check or just run once to avoid loops
                 if (session.step === 'RESULTS' && session.filteredResults) {
                     onFilterResults(session.filteredResults);
                 }
@@ -90,15 +109,15 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                 console.error('Failed to restore chatbot session', e);
             }
         }
-    }, [onFilterResults]); // Memoized onFilterResults will prevent loops
+    }, [onFilterResults, previewMode]);
 
     // PERSISTENCE: Save session to localStorage on state changes
     useEffect(() => {
-        if (step !== 'IDLE') {
+        if (step !== 'IDLE' && !previewMode) {
             const session = { step, answers, messages, filteredResults };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
         }
-    }, [step, answers, messages, filteredResults]);
+    }, [step, answers, messages, filteredResults, previewMode]);
 
     useEffect(() => {
         if (chatBodyRef.current) {
@@ -113,7 +132,7 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
     const handleReset = () => {
         localStorage.removeItem(STORAGE_KEY);
         setStep('IDLE');
-        setAnswers({ name: '', contact: '', locations: [], cities: [], budgets: [] });
+        setAnswers({ name: '', contact: '', LOCATION: [], CITY: [], BUDGET: [], BEDROOMS: [], TYPE: [] });
         setMessages([]);
         setFilteredResults([]);
         onFilterResults(properties); // Restore all properties on main page
@@ -130,8 +149,14 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
             setTimeout(() => {
                 addMessage('bot', 'Hi there! I\'m your smart booking assistant. Need help finding the perfect space?');
                 setTimeout(() => {
-                    setStep('ASK_LOCATION');
-                    addMessage('bot', 'First, which locations are you interested in?');
+                    if (flow && flow.length > 0) {
+                        setStep('DYNAMIC_FLOW');
+                        setFlowIndex(0);
+                        askFlowQuestion(flow[0]);
+                    } else {
+                        setStep('RESULTS');
+                        calculateResults();
+                    }
                 }, 800);
             }, 800);
         } catch (error) {
@@ -143,98 +168,168 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
     };
 
     const handleChatAgain = () => {
-        setAnswers(prev => ({ ...prev, locations: [], cities: [], budgets: [] }));
+        setAnswers((prev: any) => ({ ...prev, LOCATION: [], CITY: [], BUDGET: [], BEDROOMS: [], TYPE: [] }));
         setFilteredResults([]);
         addMessage('bot', 'No problem! Let\'s start a new search. 🧐');
         setTimeout(() => {
-            setStep('ASK_LOCATION');
-            addMessage('bot', 'Which locations are you interested in this time?');
+            if (flow && flow.length > 0) {
+                setStep('DYNAMIC_FLOW');
+                setFlowIndex(0);
+                askFlowQuestion(flow[0]);
+            } else {
+                setStep('RESULTS');
+                calculateResults();
+            }
         }, 600);
+    };
+
+    const askFlowQuestion = (stepKey: string) => {
+        const questions: Record<string, string> = {
+            LOCATION: 'Which locations are you interested in?',
+            CITY: 'Great! Which cities are you interested in?',
+            BUDGET: 'Almost done! What is your budget range?',
+            BEDROOMS: 'How many bedrooms do you need?',
+            TYPE: 'What type of property are you looking for?'
+        };
+        addMessage('bot', questions[stepKey] || 'Can you tell me more about what you want?');
+    };
+
+    const calculateResults = (finalAnswers?: any) => {
+        const currentAnswers = finalAnswers || answers;
+        const filtered = properties.filter(prop => {
+            const cityMatch = !currentAnswers.CITY?.length || currentAnswers.CITY.some((c: string) => prop.city?.toLowerCase().includes(c.toLowerCase()));
+            const locMatch = !currentAnswers.LOCATION?.length || currentAnswers.LOCATION.some((l: string) =>
+                prop.neighborhood?.toLowerCase().includes(l.toLowerCase()) ||
+                prop.title?.toLowerCase().includes(l.toLowerCase())
+            );
+
+            const minPrice = (prop.units || []).reduce((min: number, unit: any) => {
+                const price = Number(unit.unitPricing?.[0]?.price) || 1000000;
+                return price < min ? price : min;
+            }, 1000000);
+
+            const budgetMatch = !currentAnswers.BUDGET?.length || currentAnswers.BUDGET.some((b: string) => {
+                if (b === 'Low (< $1k)') return minPrice < 1000;
+                if (b === 'Mid ($1k - $5k)') return minPrice >= 1000 && minPrice <= 5000;
+                if (b === 'High ($5k - $10k)') return minPrice > 5000 && minPrice <= 10000;
+                if (b === 'Luxury (> $10k)') return minPrice > 10000;
+                return false;
+            });
+
+            const bedMatch = !currentAnswers.BEDROOMS?.length || currentAnswers.BEDROOMS.some((b: string) => {
+                const count = parseInt(b);
+                return prop.bedrooms === count;
+            });
+
+            return cityMatch && locMatch && budgetMatch && bedMatch;
+        });
+
+        // Apply Recommendation Logic
+        let sorted = [...filtered];
+        if (recommendationLogic === 'price-match') {
+            sorted.sort((a, b) => {
+                const getP = (p: any) => (p.units || []).reduce((m: number, u: any) => Math.min(m, Number(u.unitPricing?.[0]?.price) || 1000000), 1000000);
+                return getP(a) - getP(b);
+            });
+        } else if (recommendationLogic === 'newest') {
+            sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        } else if (recommendationLogic === 'featured') {
+            sorted.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
+        }
+
+        if (sorted.length > 0) {
+            addMessage('bot', `I found ${sorted.length} matches for you!`);
+
+            // Upsell Logic: Suggest one slightly more premium property if available
+            if (upsellEnabled && properties.length > sorted.length) {
+                const premium = properties.find(p => !sorted.find(s => s.id === p.id) && (p.bedrooms || 0) >= (parseInt(currentAnswers.BEDROOMS?.[0]) || 0));
+                if (premium) {
+                    addMessage('bot', `I also found a premium option that might interest you: ${premium.title}. ✨`);
+                }
+            }
+
+            setFilteredResults(sorted);
+            onFilterResults(sorted);
+
+            // Cross-sell Logic
+            if (crossSellEnabled) {
+                setTimeout(() => {
+                    addMessage('bot', 'Need help with financing, legal advice, or maintenance for your new home? Just let me know! 🏠');
+                }, 1000);
+            }
+        } else if (properties.length > 0) {
+            addMessage('bot', 'I couldn\'t find an exact match, but I have some suggestions! 💡');
+            const suggestions = properties.slice(0, 3);
+            setFilteredResults(suggestions);
+            onFilterResults(suggestions);
+        } else {
+            addMessage('bot', 'I couldn\'t find any matching spaces. 😔');
+            onFilterResults([]);
+        }
     };
 
     const handleAnswer = (text: string | string[]) => {
         const displayText = Array.isArray(text) ? text.join(', ') : text;
         addMessage('user', displayText);
 
-        if (step === 'ASK_LOCATION') {
-            setAnswers(prev => ({ ...prev, locations: Array.isArray(text) ? text : [text] }));
-            setStep('ASK_CITY');
-            setTimeout(() => addMessage('bot', 'Great! Which cities are you interested in?'), 500);
-        } else if (step === 'ASK_CITY') {
-            setAnswers(prev => ({ ...prev, cities: Array.isArray(text) ? text : [text] }));
-            setStep('ASK_BUDGET');
-            setTimeout(() => addMessage('bot', 'Almost done! What is your budget range?'), 500);
-        } else if (step === 'ASK_BUDGET') {
-            const selectedBudgets = Array.isArray(text) ? text : [text];
-            setAnswers(prev => ({ ...prev, budgets: selectedBudgets }));
+        const currentStepKey = flow[flowIndex] || 'UNKNOWN';
+        const updatedAnswers = {
+            ...answers,
+            [currentStepKey]: Array.isArray(text) ? text : [text]
+        };
+        setAnswers(updatedAnswers);
+
+        if (flowIndex < flow.length - 1) {
+            const nextIndex = flowIndex + 1;
+            setFlowIndex(nextIndex);
+            setTimeout(() => askFlowQuestion(flow[nextIndex]), 500);
+        } else {
             setStep('RESULTS');
-
-            const filtered = properties.filter(prop => {
-                const cityMatch = answers.cities.length === 0 || answers.cities.some(c => prop.city?.toLowerCase().includes(c.toLowerCase()));
-                const locMatch = answers.locations.length === 0 || answers.locations.some(l =>
-                    prop.neighborhood?.toLowerCase().includes(l.toLowerCase()) ||
-                    prop.title?.toLowerCase().includes(l.toLowerCase()) ||
-                    prop.description?.toLowerCase().includes(l.toLowerCase())
-                );
-
-                const minPrice = prop.units?.reduce((min: number, unit: any) => {
-                    const price = Number(unit.unitPricing?.[0]?.price) || 1000000;
-                    return price < min ? price : min;
-                }, 1000000);
-
-                const budgetMatch = selectedBudgets.length === 0 || selectedBudgets.some(b => {
-                    if (b === 'Low (< $1k)') return minPrice < 1000;
-                    if (b === 'Mid ($1k - $5k)') return minPrice >= 1000 && minPrice <= 5000;
-                    if (b === 'High ($5k - $10k)') return minPrice > 5000 && minPrice <= 10000;
-                    if (b === 'Luxury (> $10k)') return minPrice > 10000;
-                    return false;
-                });
-
-                return cityMatch && locMatch && budgetMatch;
-            });
-
-            setTimeout(() => {
-                if (filtered.length > 0) {
-                    addMessage('bot', `I found ${filtered.length} matches for you!`);
-                } else if (properties.length > 0) {
-                    addMessage('bot', 'I couldn\'t find an exact match, but I have some suggestions! 💡');
-                    setFilteredResults(properties.slice(0, 3));
-                } else {
-                    addMessage('bot', 'I couldn\'t find any matching spaces. 😔');
-                }
-
-                if (filtered.length > 0) {
-                    setFilteredResults(filtered);
-                }
-
-                onFilterResults(filtered.length > 0 ? filtered : (properties.length > 0 ? properties.slice(0, 3) : []));
-            }, 500);
+            setTimeout(() => calculateResults(updatedAnswers), 500);
         }
     };
 
     const getOptions = () => {
         if (!properties || !Array.isArray(properties)) return [];
+        const currentStepKey = flow[flowIndex];
 
-        if (step === 'ASK_LOCATION') {
+        if (currentStepKey === 'LOCATION') {
             const neighborhoods = properties
                 .map(p => p.neighborhood)
                 .filter((v, i, a) => v && a.indexOf(v) === i);
             if (neighborhoods.length === 0) return ['Downtown', 'Suburbs', 'Quiet Area', 'Near Transit'].map(v => ({ label: v, value: v }));
             return neighborhoods.map(n => ({ label: n, value: n }));
         }
-        if (step === 'ASK_CITY') {
+        if (currentStepKey === 'CITY') {
             const cities = properties
                 .map(p => p.city)
                 .filter((v, i, a) => v && a.indexOf(v) === i);
             if (cities.length === 0) return ['Common City'].map(v => ({ label: v, value: v }));
             return cities.map(c => ({ label: c, value: c }));
         }
-        if (step === 'ASK_BUDGET') {
+        if (currentStepKey === 'BUDGET') {
             return [
                 { label: 'Low (< $1k)', value: 'Low (< $1k)' },
                 { label: 'Mid ($1k - $5k)', value: 'Mid ($1k - $5k)' },
                 { label: 'High ($5k - $10k)', value: 'High ($5k - $10k)' },
                 { label: 'Luxury (> $10k)', value: 'Luxury (> $10k)' }
+            ];
+        }
+        if (currentStepKey === 'BEDROOMS') {
+            return [
+                { label: 'Studio', value: '0' },
+                { label: '1 BHK', value: '1' },
+                { label: '2 BHK', value: '2' },
+                { label: '3 BHK', value: '3' },
+                { label: '4+ BHK', value: '4' }
+            ];
+        }
+        if (currentStepKey === 'TYPE') {
+            return [
+                { label: 'Apartment', value: 'Apartment' },
+                { label: 'Villa', value: 'Villa' },
+                { label: 'Office Space', value: 'Office' },
+                { label: 'Studio', value: 'Studio' }
             ];
         }
         return [];
@@ -275,8 +370,8 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                         <div className="bounce-container mb-3">
                             <i className="bi bi-chat-heart display-5 text-primary opacity-50" style={{ color: theme.primaryColor }}></i>
                         </div>
-                        <h6 className="fw-bold">Looking for a new home?</h6>
-                        <p className="extra-small text-muted px-4">I can find the perfect properties in seconds based on your specific requirements.</p>
+                        <h6 className="fw-bold">{customWelcomeTitle || 'Looking for a new home?'}</h6>
+                        <p className="extra-small text-muted px-4">{customWelcomeSubtext || 'I can find the perfect properties in seconds based on your specific requirements.'}</p>
                         <button
                             className="btn btn-primary rounded-pill px-4 mt-2 shadow-sm fw-bold small"
                             style={{ backgroundColor: theme.primaryColor, border: 'none' }}
@@ -298,9 +393,13 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                         <form onSubmit={(e) => {
                             e.preventDefault();
                             const formData = new FormData(e.target as HTMLFormElement);
+                            const contact = leadCaptureMode === 'both'
+                                ? `${formData.get('email')} / ${formData.get('mobile')}`
+                                : (formData.get('contact') as string);
+
                             handleLeadSubmit({
                                 name: formData.get('name') as string,
-                                contact: formData.get('contact') as string
+                                contact: contact
                             });
                         }}>
                             <div className="mb-2">
@@ -314,17 +413,47 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                                     disabled={isSubmittingLead}
                                 />
                             </div>
-                            <div className="mb-3">
-                                <label className="extra-small text-muted mb-1 ps-2">WhatsApp / Email</label>
-                                <input
-                                    name="contact"
-                                    type="text"
-                                    className="form-control rounded-pill border-0 shadow-sm px-3 small"
-                                    placeholder="yourname@email.com or +123..."
-                                    required
-                                    disabled={isSubmittingLead}
-                                />
-                            </div>
+
+                            {leadCaptureMode === 'both' ? (
+                                <>
+                                    <div className="mb-2">
+                                        <label className="extra-small text-muted mb-1 ps-2">Email Address</label>
+                                        <input
+                                            name="email"
+                                            type="email"
+                                            className="form-control rounded-pill border-0 shadow-sm px-3 small"
+                                            placeholder="your@email.com"
+                                            required
+                                            disabled={isSubmittingLead}
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="extra-small text-muted mb-1 ps-2">Mobile Number</label>
+                                        <input
+                                            name="mobile"
+                                            type="tel"
+                                            className="form-control rounded-pill border-0 shadow-sm px-3 small"
+                                            placeholder="+1 234..."
+                                            required
+                                            disabled={isSubmittingLead}
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="mb-3">
+                                    <label className="extra-small text-muted mb-1 ps-2">
+                                        {leadCaptureMode === 'email' ? 'Email Address' : 'Mobile Number'}
+                                    </label>
+                                    <input
+                                        name="contact"
+                                        type={leadCaptureMode === 'email' ? 'email' : 'tel'}
+                                        className="form-control rounded-pill border-0 shadow-sm px-3 small"
+                                        placeholder={leadCaptureMode === 'email' ? 'your@email.com' : '+1 234...'}
+                                        required
+                                        disabled={isSubmittingLead}
+                                    />
+                                </div>
+                            )}
 
                             <div className="p-3 rounded-4 bg-light mb-3 border">
                                 <p className="extra-small text-muted mb-0 lh-base">
@@ -397,7 +526,7 @@ export default function ChatbotWidget({ theme, properties, onFilterResults, onCl
                             </div>
                         )}
 
-                        {['ASK_LOCATION', 'ASK_CITY', 'ASK_BUDGET'].includes(step) && (
+                        {step === 'DYNAMIC_FLOW' && (
                             <div className="animate-fade-in">
                                 <CheckboxGroup
                                     options={getOptions()}

@@ -16,7 +16,7 @@ interface ManagementContextType {
 const ManagementContext = createContext<ManagementContextType | undefined>(undefined);
 
 export function ManagementProvider({ children }: { children: ReactNode }) {
-    const [tenantType, setTenantTypeState] = useState<number>(2); // Default to Coworking
+    const [tenantType, setTenantTypeState] = useState<number>(1); // Default to Real Estate (FUNC-F06 fix)
     const [activeTenantId, setActiveTenantIdState] = useState<string | null>(null);
     const [activeOwnerId, setActiveOwnerIdState] = useState<string | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);

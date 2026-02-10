@@ -428,6 +428,39 @@ export default function PublicWidgetPage() {
                                         identifyLead(res.data.id, res.data.email);
                                     }
                                 }}
+                                // Advanced configuration from property metadata or global tenant settings
+                                customWelcomeTitle={
+                                    widget?.configuration?.chatbot?.welcomeMessage ||
+                                    (data?.[0]?.metadata?.chatbotConfig?.welcomeMessage) ||
+                                    (widget?.tenant?.settings?.chatbotConfig?.welcomeMessage)
+                                }
+                                customWelcomeSubtext={
+                                    widget?.configuration?.chatbot?.welcomeSubtext ||
+                                    (data?.[0]?.metadata?.chatbotConfig?.welcomeSubtext) ||
+                                    (widget?.tenant?.settings?.chatbotConfig?.welcomeSubtext)
+                                }
+                                leadCaptureMode={
+                                    data?.[0]?.metadata?.chatbotConfig?.leadCaptureMode ||
+                                    widget?.tenant?.settings?.chatbotConfig?.leadCaptureMode
+                                }
+                                flow={
+                                    data?.[0]?.metadata?.chatbotConfig?.flow ||
+                                    widget?.tenant?.settings?.chatbotConfig?.flow
+                                }
+                                upsellEnabled={
+                                    data?.[0]?.metadata?.chatbotConfig?.upsellEnabled !== undefined ?
+                                        data?.[0]?.metadata?.chatbotConfig?.upsellEnabled :
+                                        widget?.tenant?.settings?.chatbotConfig?.upsellEnabled
+                                }
+                                crossSellEnabled={
+                                    data?.[0]?.metadata?.chatbotConfig?.crossSellEnabled !== undefined ?
+                                        data?.[0]?.metadata?.chatbotConfig?.crossSellEnabled :
+                                        widget?.tenant?.settings?.chatbotConfig?.crossSellEnabled
+                                }
+                                recommendationLogic={
+                                    data?.[0]?.metadata?.chatbotConfig?.recommendationLogic ||
+                                    widget?.tenant?.settings?.chatbotConfig?.recommendationLogic
+                                }
                             />
                         </div>
                     )}

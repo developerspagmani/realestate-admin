@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppSelector, useAppDispatch, loginStart, loginSuccess, loginFailure } from '@/store';
+import { useAuth } from '@/app/hooks/useAuth';
 
 export default function UserRegistrationPage() {
   const [formData, setFormData] = useState({
@@ -16,7 +16,7 @@ export default function UserRegistrationPage() {
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(false);
-  const dispatch = useAppDispatch();
+  const { login } = useAuth();
   const router = useRouter();
 
   const validateForm = () => {
@@ -38,50 +38,42 @@ export default function UserRegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
-    dispatch(loginStart());
+
     setLoading(true);
-    
+
     try {
-      // Simulate API call
+      // PROD-NOTE: In a real app, we would call authService.register here
+      // For now, we simulate the registration and then log them in
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       const newUser = {
         id: Date.now().toString(),
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         phone: formData.phone,
-        role: 'user' as const,
+        role: 1, // Regular User role (numeric as per API)
         createdAt: new Date().toISOString()
       };
 
-      // Store in localStorage
-      localStorage.setItem('user', JSON.stringify({
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role
-      }));
-      
-      // Store user data separately
-      const existingUsers = JSON.parse(localStorage.getItem('appUsers') || '[]');
-      existingUsers.push(newUser);
-      localStorage.setItem('appUsers', JSON.stringify(existingUsers));
-      
+      // Store in localStorage for persistence (AuthContext will pick this up on initialization)
+      localStorage.setItem('user', JSON.stringify(newUser));
+
       // Set cookies for middleware
-      document.cookie = `auth-token=true; path=/; max-age=86400`;
-      document.cookie = `user-role=${newUser.role}; path=/; max-age=86400`;
-      
-      dispatch(loginSuccess(newUser));
-      router.push('/user/dashboard');
+      document.cookie = `auth-token=mock-token-${Date.now()}; path=/; max-age=86400; SameSite=Strict; Secure`;
+      document.cookie = `user-role=1; path=/; max-age=86400; SameSite=Strict; Secure`;
+
+      // Redirect to dashboard
+      // Note: AuthContext will initialize on the next page load and see the user in localStorage
+      window.location.href = '/user/dashboard';
     } catch (err) {
-      dispatch(loginFailure('Registration failed. Please try again.'));
+      setErrors({ submit: 'Registration failed. Please try again.' });
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -99,10 +91,11 @@ export default function UserRegistrationPage() {
             <i className="bi bi-person text-primary me-2"></i>
             User Registration
           </h2>
-          
+
           <p className="text-center text-muted mb-4">
-            Register as a user to browse and book co-working workspace
+            Register as a user to browse and list properties on our platform
           </p>
+
 
           <form onSubmit={handleSubmit}>
             <div className="row">
@@ -118,7 +111,7 @@ export default function UserRegistrationPage() {
                 />
                 {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
               </div>
-              
+
               <div className="col-md-6 mb-3">
                 <label className="form-label">Last Name</label>
                 <input
@@ -172,7 +165,7 @@ export default function UserRegistrationPage() {
                 />
                 {errors.password && <div className="invalid-feedback">{errors.password}</div>}
               </div>
-              
+
               <div className="col-md-6 mb-3">
                 <label className="form-label">Confirm Password</label>
                 <input
@@ -204,14 +197,14 @@ export default function UserRegistrationPage() {
               </div>
             </div>
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="btn btn-primary w-100"
               disabled={loading}
             >
               {loading ? (
                 <span className="spinner-border spinner-border-sm me-2">
-                Registering...</span>
+                  Registering...</span>
               ) : (
                 <i className="bi bi-person-plus me-2"></i>
               )}
@@ -227,8 +220,9 @@ export default function UserRegistrationPage() {
 
           <div className="text-center mt-3">
             <small className="text-muted">
-              Want to register as a co-working owner? <a href="/register/owner" className="text-primary">Owner Registration</a>
+              Want to register as a property owner? <a href="/register/owner" className="text-primary">Owner Registration</a>
             </small>
+
           </div>
         </div>
       </div>

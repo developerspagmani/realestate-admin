@@ -2,18 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAppSelector, useAppDispatch } from '@/store';
-import { selectUser, selectIsAuthenticated, logout } from '@/store';
+import { useAuth } from '@/app/hooks/useAuth';
 
 export default function Header() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
-
-  const user = useAppSelector(selectUser);
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const { user, isAuthenticated, logout, isAdmin, isOwner } = useAuth();
 
   const handleLogout = () => {
-    dispatch(logout());
+    logout();
     router.push('/login');
   };
 
@@ -22,7 +18,8 @@ export default function Header() {
       <div className="container">
         {/* Brand */}
         <Link className="navbar-brand fw-bold" href="/">
-          CoWorking Hub Public
+          <i className="bi bi-building-fill me-2"></i>
+          Virpanix Real Estate
         </Link>
 
         {/* Mobile Toggle */}
@@ -39,9 +36,8 @@ export default function Header() {
         </button>
 
         {/* Nav Items */}
-        <div className="navbar-nav" id="">
+        <div className="navbar-nav w-100" id="navbarNav">
           <ul className="navbar-nav me-auto">
-
             {/* Public */}
             <li className="nav-item">
               <Link className="nav-link" href="/">
@@ -51,34 +47,24 @@ export default function Header() {
             </li>
 
             <li className="nav-item">
-              <Link className="nav-link" href="/workspace">
+              <Link className="nav-link" href="/properties">
                 <i className="bi bi-building me-1" />
-                WorkSpace
-              </Link>
-            </li>
-
-            <li className="nav-item">
-              <Link className="nav-link" href="/seats">
-                <i className="bi bi-building me-1" />
-                Seats
+                Properties
               </Link>
             </li>
 
             {/* Authenticated User */}
             {isAuthenticated && (
-              <>
-                <li className="nav-item">
-                  <Link className="nav-link" href="/cart">
-                    <i className="bi bi-cart3 me-1" />
-                    Cart
-                  </Link>
-                </li>
-              </>
+              <li className="nav-item">
+                <Link className="nav-link" href="/cart">
+                  <i className="bi bi-cart3 me-1" />
+                  Cart
+                </Link>
+              </li>
             )}
 
-
-            {/* Admin */}
-            {isAuthenticated && user?.role === 2 && (
+            {/* Admin (role 2) */}
+            {isAuthenticated && isAdmin && (
               <li className="nav-item dropdown">
                 <button
                   className="nav-link dropdown-toggle btn btn-link text-white"
@@ -89,30 +75,28 @@ export default function Header() {
                 </button>
                 <ul className="dropdown-menu">
                   <li><Link className="dropdown-item" href="/realestate-admin/dashboard">Dashboard</Link></li>
-                  <li><Link className="dropdown-item" href="/realestate-admin/workspace">Spaces</Link></li>
-                  <li><Link className="dropdown-item" href="/realestate-admin/workspaces">Workspaces</Link></li>
+                  <li><Link className="dropdown-item" href="/realestate-admin/properties">Properties</Link></li>
+                  <li><Link className="dropdown-item" href="/realestate-admin/units">Units</Link></li>
                   <li><Link className="dropdown-item" href="/realestate-admin/users">Users</Link></li>
-                  <li><Link className="dropdown-item" href="/realestate-admin/bookings">Bookings</Link></li>
-                  <li><Link className="dropdown-item" href="/realestate-admin/owners">Owners</Link></li>
+                  <li><Link className="dropdown-item" href="/realestate-admin/leads">Leads</Link></li>
                 </ul>
               </li>
             )}
 
-            {/* Owner */}
-            {isAuthenticated && user?.role === 1 && (
+            {/* Owner (role 3) */}
+            {isAuthenticated && isOwner && (
               <li className="nav-item dropdown">
                 <button
                   className="nav-link dropdown-toggle btn btn-link text-white"
                   data-bs-toggle="dropdown"
                   type="button"
                 >
-                  Owner
+                  Owner Panel
                 </button>
                 <ul className="dropdown-menu">
-                  <li><Link className="dropdown-item" href="/owner-admin/dashboard">Dashboard</Link></li>
-                  <li><Link className="dropdown-item" href="/owner-admin/workspace">Spaces</Link></li>
-                  <li><Link className="dropdown-item" href="/owner-admin/workspaces">Workspaces</Link></li>
-                  <li><Link className="dropdown-item" href="/owner-admin/bookings">Bookings</Link></li>
+                  <li><Link className="dropdown-item" href="/realestate-owner-admin/dashboard">Dashboard</Link></li>
+                  <li><Link className="dropdown-item" href="/realestate-owner-admin/properties">My Properties</Link></li>
+                  <li><Link className="dropdown-item" href="/realestate-owner-admin/leads">Leads</Link></li>
                 </ul>
               </li>
             )}
@@ -139,9 +123,10 @@ export default function Header() {
                   data-bs-toggle="dropdown"
                   type="button"
                 >
-                  {user?.name}
+                  <i className="bi bi-person-circle me-1"></i>
+                  {user?.name || 'My Account'}
                 </button>
-                <ul className="dropdown-menu dropdown-menu-end">
+                <ul className="dropdown-menu dropdown-menu-end shadow border-0">
                   <li>
                     <Link className="dropdown-item" href="/user/profile">
                       <i className="bi bi-person me-2" />
@@ -156,14 +141,14 @@ export default function Header() {
                   </li>
                   <li>
                     <Link className="dropdown-item" href="/user/my-bookings">
-                      <i className="bi bi-calendar me-2" />
+                      <i className="bi bi-calendar-check me-2" />
                       My Bookings
                     </Link>
                   </li>
                   <li><hr className="dropdown-divider" /></li>
                   <li>
                     <button
-                      className="dropdown-item"
+                      className="dropdown-item text-danger"
                       type="button"
                       onClick={handleLogout}
                     >
@@ -180,3 +165,4 @@ export default function Header() {
     </nav>
   );
 }
+

@@ -85,6 +85,9 @@ export interface Property extends BaseListing {
   brochureId?: string;
   brochure?: MediaItem;
   agentId?: string;
+  metadata?: any;
+  categoryId?: string;
+  videoUrl?: string;
 }
 
 export interface Unit {

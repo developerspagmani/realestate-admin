@@ -1,4 +1,4 @@
-import { makeApiCall, adminEndpoints, bookingEndpoints, userEndpoints, propertyEndpoints, tenantEndpoints, unitEndpoints, leadEndpoints, paymentEndpoints, settingsEndpoints, mediaEndpoints, authEndpoints, widgetEndpoints, moduleEndpoints, property3DEndpoints, discoveryEndpoints, amenityEndpoints, agentEndpoints, campaignEndpoints, audienceEndpoints, templateEndpoints, workflowEndpoints, formBuilderEndpoints } from '@/app/api/config/endpoints';
+import { makeApiCall, adminEndpoints, bookingEndpoints, userEndpoints, propertyEndpoints, tenantEndpoints, unitEndpoints, leadEndpoints, paymentEndpoints, settingsEndpoints, mediaEndpoints, authEndpoints, widgetEndpoints, moduleEndpoints, property3DEndpoints, discoveryEndpoints, amenityEndpoints, agentEndpoints, campaignEndpoints, audienceEndpoints, templateEndpoints, workflowEndpoints, formBuilderEndpoints, categoryEndpoints } from '@/app/api/config/endpoints';
 
 // Types for API responses
 export interface ApiResponse<T = any> {
@@ -81,6 +81,7 @@ export interface Property {
   };
   units?: any[];
   agentId?: string;
+  metadata?: any;
 }
 
 export interface Unit {
@@ -102,7 +103,6 @@ export interface Unit {
     currency: string;
     pricingModel: number;
   }>;
-  coworkingDetails?: any;
 }
 
 export interface Tenant {
@@ -369,7 +369,10 @@ export const propertyService = {
 
   getPropertyById: async (token: string, propertyId: string, tenantId?: string) => {
     return await makeApiCall(propertyEndpoints.getById(propertyId, tenantId), {
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...(tenantId ? { 'x-tenant-domain': tenantId } : {})
+      },
     });
   },
 
@@ -443,7 +446,10 @@ export const tenantService = {
 export const unitService = {
   getUnits: async (token: string, params?: { page?: string; limit?: string; propertyId?: string; unitCategory?: string; status?: string; tenantId?: string; ownerId?: string; industryType?: number | string }) => {
     return await makeApiCall(unitEndpoints.getAll(params), {
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        ...(params?.tenantId ? { 'x-tenant-domain': params.tenantId } : {})
+      },
     });
   },
 
@@ -770,6 +776,44 @@ export const amenityService = {
 
   deleteAmenity: async (token: string, id: string) => {
     return await makeApiCall(amenityEndpoints.delete(id), {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+};
+
+// Categories service
+export const categoryService = {
+  getCategories: async (token: string, params?: Record<string, any>) => {
+    return await makeApiCall(categoryEndpoints.getAll(params), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  getCategoryById: async (token: string, id: string) => {
+    return await makeApiCall(categoryEndpoints.getById(id), {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  },
+
+  createCategory: async (token: string, data: any) => {
+    return await makeApiCall(categoryEndpoints.create(), {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateCategory: async (token: string, id: string, data: any) => {
+    return await makeApiCall(categoryEndpoints.update(id), {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteCategory: async (token: string, id: string) => {
+    return await makeApiCall(categoryEndpoints.delete(id), {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` },
     });

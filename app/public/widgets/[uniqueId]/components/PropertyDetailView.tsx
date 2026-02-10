@@ -1,9 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import GallerySlider from './GallerySlider';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
 import { widgetService } from '@/app/services/api';
+import PlotMapViewer from '@/components/modules/realestate/properties/PlotMapViewer';
+import Plot3DViewer from './Plot3DViewer';
+import { Seats } from '@/types';
 
 interface PropertyDetailViewProps {
     selectedProperty: any;
@@ -36,6 +39,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
     trackAction,
     identifyLead
 }) => {
+    const [show3DPlotView, setShow3DPlotView] = useState(false);
+
     const images = [
         ...(selectedProperty.mainImage ? [selectedProperty.mainImage] : []),
         ...(selectedProperty.gallery || []).filter((g: any) => g.id !== selectedProperty.mainImage?.id && g.url !== selectedProperty.mainImage?.url)
@@ -215,6 +220,99 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                         </div>
                     </div>
 
+                    {selectedProperty.metadata?.interactiveSvg && (
+                        <div className="col-12 mt-5">
+                            <div className="glass-panel p-4 rounded-4 shadow-sm">
+                                <h5 className="fw-bold mb-4 d-flex align-items-center justify-content-between">
+                                    <span>
+                                        <i className="bi bi-map-fill me-2 text-primary" style={{ color: theme.primaryColor }}></i>
+                                        Interactive Property Plot Layout
+                                    </span>
+                                    <button
+                                        className="btn btn-dark btn-sm rounded-pill px-3 d-flex align-items-center gap-2"
+                                        onClick={() => setShow3DPlotView(true)}
+                                    >
+                                        <i className="bi bi-box-seam"></i>
+                                        View in 3D
+                                    </button>
+                                </h5>
+                                <div style={{ height: '800px', width: '100%' }}>
+                                    <PlotMapViewer
+                                        units={selectedProperty.units?.map((u: any) => {
+                                            // Enhanced status transformation with better fallback logic
+                                            let statusStr = 'available';
+
+                                            // Debug: Log actual status values
+                                            console.log('Unit Status Debug:', {
+                                                unitId: u.id,
+                                                unitName: u.name || u.unitCode,
+                                                statusRaw: u.status,
+                                                statusType: typeof u.status
+                                            });
+
+                                            // Check if status is already a string
+                                            if (typeof u.status === 'string' && u.status.length > 0) {
+                                                statusStr = u.status.toLowerCase().trim();
+                                            }
+                                            // Otherwise convert from number
+                                            else {
+                                                const statusNum = Number(u.status);
+                                                if (statusNum === 1) statusStr = 'available';
+                                                else if (statusNum === 2) statusStr = 'occupied';
+                                                else if (statusNum === 3) statusStr = 'maintenance';
+                                                else if (statusNum === 4) statusStr = 'sold';
+                                            }
+
+                                            console.log('Unit Status Transformed:', {
+                                                unitId: u.id,
+                                                finalStatus: statusStr
+                                            });
+
+                                            return {
+                                                id: u.id,
+                                                unitCode: u.unitCode,
+                                                name: u.unitCode || u.name || `Unit ${u.id.substring(0, 4)}`,
+                                                status: statusStr,
+                                                price: u.unitPricing?.[0]?.price || 0,
+                                                sizeSqft: u.sizeSqft || 0
+                                            } as any;
+                                        })}
+                                        svgContent={selectedProperty.metadata.interactiveSvg}
+                                        mapping={selectedProperty.metadata.svgMapping || {}}
+                                        themeColor={theme.primaryColor}
+                                        onUnitSelect={(id) => {
+                                            const unit = selectedProperty.units.find((u: any) => u.id === id);
+                                            if (unit) {
+                                                setSelectedUnit(unit);
+                                                setUnitImageIndex(0);
+                                                setCurrentView('UNIT_DETAIL');
+                                                if (trackAction) trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <div className="mt-4 d-flex gap-4 justify-content-center p-3 bg-light rounded-4 border">
+                                    <div className="d-flex align-items-center gap-2">
+                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#4ade80', border: '2px solid #16a34a' }}></div>
+                                        <span className="small fw-bold text-dark">Available</span>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#fb7185', border: '2px solid #e11d48' }}></div>
+                                        <span className="small fw-bold text-dark">Reserved</span>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#f43f5e', border: '2px solid #9f1239' }}></div>
+                                        <span className="small fw-bold text-dark">Sold Out</span>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#94a3b8', border: '2px solid #475569' }}></div>
+                                        <span className="small fw-bold text-dark">Maintenance</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="col-12 mt-4">
                         <h4 className="fw-bold mb-4">Unit Availability</h4>
                         <div className="row g-3">
@@ -298,6 +396,39 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* 3D Plot Viewer Modal */}
+            {show3DPlotView && selectedProperty.metadata?.interactiveSvg && (
+                <Plot3DViewer
+                    svgContent={selectedProperty.metadata.interactiveSvg}
+                    mapping={selectedProperty.metadata.svgMapping || {}}
+                    units={selectedProperty.units?.map((u: any) => {
+                        // Same status transformation as PlotMapViewer
+                        let statusStr = 'available';
+
+                        if (typeof u.status === 'string' && u.status.length > 0) {
+                            statusStr = u.status.toLowerCase().trim();
+                        } else {
+                            const statusNum = Number(u.status);
+                            if (statusNum === 1) statusStr = 'available';
+                            else if (statusNum === 2) statusStr = 'occupied';
+                            else if (statusNum === 3) statusStr = 'maintenance';
+                            else if (statusNum === 4) statusStr = 'sold';
+                        }
+
+                        return {
+                            id: u.id,
+                            unitCode: u.unitCode,
+                            name: u.unitCode || u.name || `Unit ${u.id.substring(0, 4)}`,
+                            status: statusStr,
+                            price: u.unitPricing?.[0]?.price || 0,
+                            sizeSqft: u.sizeSqft || 0
+                        };
+                    })}
+                    theme={theme}
+                    onClose={() => setShow3DPlotView(false)}
+                />
+            )}
         </div>
     );
 };

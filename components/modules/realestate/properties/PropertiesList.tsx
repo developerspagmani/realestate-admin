@@ -106,6 +106,14 @@ export default function PropertiesList({
                                                 >
                                                     <i className="bi bi-eye-fill"></i>
                                                 </Link>
+                                                <Link
+                                                    href={`${userRole === 3 ? '/realestate-owner-admin' : '/realestate-admin'}/plot-map-editor?propertyId=${property.id}&propertyName=${encodeURIComponent(property.name)}`}
+                                                    className="btn btn-sm btn-outline-warning rounded-circle p-0 d-flex align-items-center justify-content-center"
+                                                    style={{ width: '32px', height: '32px' }}
+                                                    title="SVG Plot Map Editor"
+                                                >
+                                                    <i className="bi bi-map"></i>
+                                                </Link>
                                                 <button
                                                     className="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center"
                                                     style={{ width: '32px', height: '32px' }}

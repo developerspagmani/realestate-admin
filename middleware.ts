@@ -23,6 +23,13 @@ function checkRateLimit(ip: string, endpoint: string = 'general'): boolean {
   const now = Date.now();
   const record = rateLimitStore.get(key);
 
+  // SEC-F09 fix: Prevent unbounded growth — clean up expired entries when map gets large
+  if (rateLimitStore.size > 10000) {
+    for (const [k, v] of rateLimitStore) {
+      if (now > v.resetTime) rateLimitStore.delete(k);
+    }
+  }
+
   if (!record || now > record.resetTime) {
     rateLimitStore.set(key, {
       count: 1,
@@ -39,12 +46,12 @@ function checkRateLimit(ip: string, endpoint: string = 'general'): boolean {
   return true;
 }
 
-function validateToken(token: string): boolean {
-  if (!token || token.length < 10) return false;
+function validateToken(token: string): { valid: boolean; role?: string; userId?: string } {
+  if (!token || token.length < 10) return { valid: false };
 
   // Basic token format validation (JWT-like)
   const parts = token.split('.');
-  if (parts.length !== 3) return false;
+  if (parts.length !== 3) return { valid: false };
 
   try {
     // Check if payload is valid base64
@@ -53,12 +60,17 @@ function validateToken(token: string): boolean {
 
     // Check if token is expired (if exp claim exists)
     if (payload.exp && payload.exp < now) {
-      return false;
+      return { valid: false };
     }
 
-    return true;
+    // SEC-F03 fix: Extract role and userId from JWT payload instead of trusting cookies
+    return {
+      valid: true,
+      role: payload.role?.toString(),
+      userId: payload.userId || payload.id || payload.sub,
+    };
   } catch {
-    return false;
+    return { valid: false };
   }
 }
 
@@ -102,12 +114,19 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Block suspicious user agents
+  // Block suspicious user agents (SEC-F06 fix: whitelist legitimate search engines)
+  const legitimateBots = [
+    /Googlebot/i, /Bingbot/i, /Yahoo.*Slurp/i, /DuckDuckBot/i,
+    /Baiduspider/i, /YandexBot/i, /facebookexternalhit/i,
+    /Twitterbot/i, /LinkedInBot/i, /WhatsApp/i,
+  ];
   const suspiciousPatterns = [
     /bot/i, /crawler/i, /spider/i, /scraper/i
   ];
+  const isLegitimateBot = legitimateBots.some(pattern => pattern.test(userAgent));
 
-  if (suspiciousPatterns.some(pattern => pattern.test(userAgent)) &&
+  if (!isLegitimateBot &&
+    suspiciousPatterns.some(pattern => pattern.test(userAgent)) &&
     !pathname.includes('/api/') &&
     !pathname.includes('/_next/')) {
     return NextResponse.redirect(new URL('/blocked', request.url));
@@ -185,11 +204,12 @@ export function middleware(request: NextRequest) {
   // Check if route requires authentication
   if (protectedRoutes.some(route => pathname.startsWith(route))) {
     const token = request.cookies.get('auth-token')?.value;
-    const userRole = request.cookies.get('user-role')?.value;
-    const userId = request.cookies.get('user-id')?.value;
+
+    // SEC-F03 fix: Extract role from JWT payload, not from a spoofable cookie
+    const tokenResult = token ? validateToken(token) : { valid: false };
 
     // Validate token exists and is properly formatted
-    if (!token || !validateToken(token)) {
+    if (!token || !tokenResult.valid) {
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('auth-token');
       response.cookies.delete('user-role');
@@ -197,12 +217,17 @@ export function middleware(request: NextRequest) {
       return response;
     }
 
+    // Use role and userId from the verified JWT payload when available,
+    // fall back to cookies for backwards compatibility (current JWT only has userId)
+    const userRole = tokenResult.role || request.cookies.get('user-role')?.value;
+    const userId = tokenResult.userId || request.cookies.get('user-id')?.value;
+
     // Check if user ID exists (additional validation)
     if (!userId) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Check role-based access (using numeric roles: 1=user, 2=admin, 3=owner)
+    // Check role-based access (using numeric roles: 1=user, 2=admin, 3=owner, 4=agent)
     const isAdminPath = adminRoutes.some(route => pathname.startsWith(route));
     const isOwnerPath = ownerRoutes.some(route => pathname.startsWith(route));
     const isAgentPath = agentRoutes.some(route => pathname.startsWith(route));

@@ -1,5 +1,5 @@
 {
-  "name": "coworking-booking",
+  "name": "realestate-admin",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,6 +14,7 @@
     "@reduxjs/toolkit": "^2.0.1",
     "@types/three": "^0.182.0",
     "bootstrap": "^5.3.0",
+    "bootstrap-icons": "^1.13.1",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
