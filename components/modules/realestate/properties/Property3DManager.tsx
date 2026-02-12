@@ -11,7 +11,7 @@ import { DEMO_HOUSE_PLANS } from '@/app/constants/demoPlans';
 interface Property3DManagerProps {
     propertyId: string;
     propertyName: string;
-    initialMode?: 'visual';
+    initialMode?: 'visual' | 'json' | '3d' | 'floorplans';
     onClose: () => void;
 }
 
@@ -20,7 +20,7 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
     const displayPropertyName = propertyName && propertyName !== 'undefined' ? propertyName : 'Property';
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [viewMode, setViewMode] = useState<'visual' | 'json' | '3d' | 'floorplans'>(initialMode as any);
+    const [viewMode, setViewMode] = useState<'visual' | 'json' | '3d' | 'floorplans'>(initialMode);
     const [units, setUnits] = useState<any[]>([]);
     const [config, setConfig] = useState<any>({
         scene: {
