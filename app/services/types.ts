@@ -105,8 +105,14 @@ export interface Unit {
 export interface Tenant {
     id: string;
     name: string;
-    type: string;
-    status: string;
+    type: string | number;
+    status: string | number;
+    address?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+    domain?: string;
     createdAt: string;
     updatedAt: string;
     _count?: {
@@ -115,4 +121,5 @@ export interface Tenant {
         units: number;
         bookings: number;
     };
+    settings?: any;
 }
