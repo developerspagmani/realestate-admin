@@ -1,4 +1,4 @@
-'use client';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 interface DashboardStatsProps {
     mode: 'admin' | 'owner';
@@ -18,6 +18,7 @@ interface DashboardStatsProps {
 }
 
 export default function DashboardStats({ mode, stats, loading }: DashboardStatsProps) {
+    const { currencySymbol } = useManagementContext();
 
     const StatCard = ({ label, value, subLabel, icon, color, bgClass }: any) => (
         <div className="card border-0 shadow-sm h-100 rounded-4 overflow-hidden hvr-float">
@@ -38,7 +39,7 @@ export default function DashboardStats({ mode, stats, loading }: DashboardStatsP
                             )
                         )}
                     </div>
-                    <div className={`rounded-circle p-3 ${bgClass ? 'bg-white bg-opacity-25' : `bg-${color}-soft`}`}>
+                    <div className={`rounded-circle px-4 py-3 ${bgClass ? 'bg-white bg-opacity-25' : `bg-${color}-soft`}`}>
                         <i className={`bi ${icon} fs-3 ${bgClass ? 'text-white' : `text-${color}`}`}></i>
                     </div>
                 </div>
@@ -91,7 +92,7 @@ export default function DashboardStats({ mode, stats, loading }: DashboardStatsP
                         <StatCard label="Occupied" value={stats.occupiedUnits} icon="bi-dash-circle" color="danger" />
                     </div>
                     <div className="col-md-3">
-                        <StatCard label="Total Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} icon="bi-currency-dollar" color="dark" bgClass="bg-dark text-white" />
+                        <StatCard label="Total Revenue" value={`${currencySymbol}${stats.totalRevenue.toLocaleString()}`} icon="bi-currency-dollar" color="dark" bgClass="bg-dark text-white" />
                     </div>
                 </div>
 
@@ -137,7 +138,7 @@ export default function DashboardStats({ mode, stats, loading }: DashboardStatsP
                 <StatCard label="Total Bookings" value={stats.totalBookings} icon="bi-calendar-check" color="info" />
             </div>
             <div className="col-md-3">
-                <StatCard label="Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} icon="bi-currency-dollar" color="warning" />
+                <StatCard label="Revenue" value={`${currencySymbol}${stats.totalRevenue.toLocaleString()}`} icon="bi-currency-dollar" color="warning" />
             </div>
         </div>
     );

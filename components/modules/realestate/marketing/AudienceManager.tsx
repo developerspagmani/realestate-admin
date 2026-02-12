@@ -260,8 +260,8 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                             </div>
                         </div>
 
-                        <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                            <div className="table-responsive">
+                        <div className="card border-0 shadow-sm rounded-4 overflow-visible">
+                            <div className="vi-table-responsive">
                                 <table className="table table-hover align-middle mb-0">
                                     <thead className="bg-light">
                                         <tr>
@@ -309,22 +309,22 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
     return (
         <div className="audience-manager">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <div className="btn-group bg-light p-1 rounded-pill shadow-sm">
+                <div className="btn-group bg-light p-1 rounded-4 shadow-sm">
                     <button
-                        className={`btn btn-sm rounded-pill px-4 fw-bold ${activeAudienceTab === 'groups' ? 'btn-white shadow-sm' : 'border-0 text-muted'}`}
+                        className={`btn btn-sm rounded-4 px-4 fw-bold ${activeAudienceTab === 'groups' ? 'btn-white shadow-sm' : 'border-0 text-muted'}`}
                         onClick={() => setActiveAudienceTab('groups')}
                     >
                         Groups ({groups.length})
                     </button>
                     <button
-                        className={`btn btn-sm rounded-pill px-4 fw-bold ${activeAudienceTab === 'contacts' ? 'btn-white shadow-sm' : 'border-0 text-muted'}`}
+                        className={`btn btn-sm rounded-4 px-4 fw-bold ${activeAudienceTab === 'contacts' ? 'btn-white shadow-sm' : 'border-0 text-muted'}`}
                         onClick={() => setActiveAudienceTab('contacts')}
                     >
                         All Contacts ({leads.length})
                     </button>
                 </div>
                 {activeAudienceTab === 'groups' ? (
-                    <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onClick={() => { resetForm(); setShowModal(true); }}>
+                    <button className="btn btn-primary btn-sm rounded-4 px-3 fw-bold" onClick={() => { resetForm(); setShowModal(true); }}>
                         <i className="bi bi-person-plus me-1"></i> New Group
                     </button>
                 ) : (
@@ -395,8 +395,8 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                     </div>
                 )
             ) : (
-                <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                    <div className="table-responsive">
+                <div className="card border-0 shadow-sm rounded-4 overflow-visible">
+                    <div className="vi-table-responsive">
                         <table className="table table-hover align-middle mb-0">
                             <thead className="bg-light bg-opacity-50">
                                 <tr>
@@ -415,7 +415,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                     <tr key={lead.id}>
                                         <td className="px-4 py-3">
                                             <div className="d-flex align-items-center gap-3">
-                                                <div className="avatar bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '32px', height: '32px', fontSize: '11px' }}>
+                                                <div className="avatar bg-primary bg-opacity-1 rounded-circle d-flex align-items-center justify-content-center fw-bold text-white" style={{ width: '32px', height: '32px', fontSize: '11px', color: 'white' }}>
                                                     {(lead.name || 'A').charAt(0)}
                                                 </div>
                                                 <div>
@@ -430,8 +430,8 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                             </span>
                                         </td>
                                         <td>
-                                            <span className={`badge rounded-pill extra-small px-2 ${lead.status === 1 ? 'bg-primary bg-opacity-10 text-primary' :
-                                                lead.status === 4 ? 'bg-success bg-opacity-10 text-success' :
+                                            <span className={`badge rounded-4 extra-small px-2 ${lead.status === 1 ? 'bg-primary bg-opacity-10 text-white' :
+                                                lead.status === 4 ? 'bg-success bg-opacity-10 text-white' :
                                                     'bg-light text-muted'
                                                 }`}>
                                                 {lead.status === 1 ? 'New' : lead.status === 4 ? 'Converted' : 'Active'}
@@ -440,8 +440,16 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                         <td className="extra-small text-muted">
                                             {new Date(lead.createdAt).toLocaleDateString()}
                                         </td>
+                                        <td>
+                                            <span className={`badge rounded-4 extra-small px-2 ${lead.score >= 70 ? 'bg-success bg-opacity-10 text-white' :
+                                                lead.score >= 40 ? 'bg-warning bg-opacity-10 text-white' :
+                                                    'bg-light text-muted'
+                                                }`}>
+                                                {lead.score}
+                                            </span>
+                                        </td>
                                         <td className="px-4 py-3 text-end">
-                                            <button className="btn btn-outline-primary btn-xs rounded-pill" onClick={() => { resetForm(); setGroupData(d => ({ ...d, leadIds: [lead.id] })); setShowModal(true); }}>
+                                            <button className="btn btn-outline-primary btn-xs rounded-4" onClick={() => { resetForm(); setGroupData(d => ({ ...d, leadIds: [lead.id] })); setShowModal(true); }}>
                                                 Add to Group
                                             </button>
                                         </td>
@@ -525,8 +533,8 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                 )}
                             </div>
                             <div className="modal-footer border-0 p-4 pt-0">
-                                <button className="btn btn-light rounded-pill px-4 fw-bold" onClick={() => setShowModal(false)} disabled={isSaving}>Cancel</button>
-                                <button className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleSave} disabled={!groupData.name || isSaving}>
+                                <button className="btn btn-light rounded-4 px-4 fw-bold" onClick={() => setShowModal(false)} disabled={isSaving}>Cancel</button>
+                                <button className="btn btn-primary rounded-4 px-4 fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleSave} disabled={!groupData.name || isSaving}>
                                     {isSaving ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>

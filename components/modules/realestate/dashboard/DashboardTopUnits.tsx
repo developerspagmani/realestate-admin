@@ -1,4 +1,4 @@
-'use client';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 interface DashboardTopUnitsProps {
     units: any[];
@@ -7,6 +7,8 @@ interface DashboardTopUnitsProps {
 }
 
 export default function DashboardTopUnits({ units, loading, totalBookings }: DashboardTopUnitsProps) {
+    const { currencySymbol } = useManagementContext();
+
     return (
         <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
             <div className="card-header bg-white border-0 p-4">
@@ -20,7 +22,7 @@ export default function DashboardTopUnits({ units, loading, totalBookings }: Das
                                 <div className="w-50"><div className="skeleton h-1rem w-100 mb-1"></div><div className="skeleton h-1rem w-50"></div></div>
                                 <div className="w-25"><div className="skeleton h-1rem w-100"></div></div>
                             </div>
-                            <div className="skeleton h-6px w-100 rounded-pill"></div>
+                            <div className="skeleton h-6px w-100 rounded-4"></div>
                         </div>
                     ))
                 ) : units.length === 0 ? (
@@ -45,14 +47,14 @@ export default function DashboardTopUnits({ units, loading, totalBookings }: Das
                                 </span>
                                 {unit.totalRevenue && (
                                     <span className="extra-small text-muted">
-                                        ${unit.totalRevenue.toLocaleString()}
+                                        {currencySymbol}{unit.totalRevenue.toLocaleString()}
                                     </span>
                                 )}
                             </div>
                         </div>
-                        <div className="progress rounded-pill" style={{ height: '6px' }}>
+                        <div className="progress rounded-4" style={{ height: '6px' }}>
                             <div
-                                className={`progress-bar rounded-pill transition-all ${index === 0 ? 'bg-primary' : 'bg-secondary'}`}
+                                className={`progress-bar rounded-4 transition-all ${index === 0 ? 'bg-primary' : 'bg-secondary'}`}
                                 style={{ width: `${Math.min(100, (unit.bookingCount / (totalBookings || 1)) * 100)}%` }}
                             ></div>
                         </div>

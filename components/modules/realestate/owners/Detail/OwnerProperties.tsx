@@ -31,7 +31,7 @@ export default function OwnerProperties() {
 
     return (
         <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-            <div className="table-responsive">
+            <div className="vi-table-responsive">
                 <table className="table table-hover align-middle mb-0">
                     <thead className="bg-light">
                         <tr>
@@ -56,12 +56,12 @@ export default function OwnerProperties() {
                                     <span className="small text-muted">{prop.addressLine1}, {prop.city}, {prop.state}</span>
                                 </td>
                                 <td className="py-3 text-center">
-                                    <span className="badge bg-primary-soft text-primary px-3 py-2 rounded-pill fw-bold">
+                                    <span className="badge bg-primary-soft text-primary px-3 py-2 rounded-4 fw-bold">
                                         {prop._count?.units || 0}
                                     </span>
                                 </td>
                                 <td className="py-3">
-                                    <span className={`badge rounded-pill px-3 py-2 ${prop.status === 1 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}`}>
+                                    <span className={`badge rounded-4 px-3 py-2 ${prop.status === 1 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}`}>
                                         {prop.status === 1 ? 'Active' : 'Draft'}
                                     </span>
                                 </td>

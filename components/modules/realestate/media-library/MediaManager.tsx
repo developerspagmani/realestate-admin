@@ -272,8 +272,8 @@ export default function MediaManager({ mode }: MediaManagerProps) {
                             ))
                         ) : (
                             <div className="col-12">
-                                <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                                    <div className="table-responsive">
+                                <div className="card border-0 shadow-sm rounded-4 overflow-visible">
+                                    <div className="vi-table-responsive">
                                         <table className="table table-hover align-middle mb-0">
                                             <thead className="bg-light">
                                                 <tr>
@@ -356,7 +356,7 @@ export default function MediaManager({ mode }: MediaManagerProps) {
                                 </div>
                                 {isUploading && (
                                     <div className="mb-3">
-                                        <div className="progress rounded-pill" style={{ height: '8px' }}>
+                                        <div className="progress rounded-4" style={{ height: '8px' }}>
                                             <div className="progress-bar progress-bar-striped progress-bar-animated" style={{ width: `${uploadProgress}%` }}></div>
                                         </div>
                                     </div>

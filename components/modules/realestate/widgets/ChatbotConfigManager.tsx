@@ -119,7 +119,7 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
                             </div>
                             <div className="d-flex gap-2">
                                 <button
-                                    className="btn btn-primary rounded-pill px-4 shadow-sm"
+                                    className="btn btn-primary rounded-4 px-4 shadow-sm"
                                     onClick={handleSave}
                                     disabled={saving}
                                 >
@@ -317,7 +317,7 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
             <div className="col-lg-5">
                 <div className="position-sticky" style={{ top: '24px' }}>
                     <div className="d-flex align-items-center gap-2 mb-3">
-                        <span className="badge bg-primary-soft text-primary rounded-pill px-3 py-2 extra-small fw-bold">MASTER PREVIEW</span>
+                        <span className="badge bg-primary-soft text-primary rounded-4 px-3 py-2 extra-small fw-bold">MASTER PREVIEW</span>
                         <span className="extra-small text-muted">Global configuration simulator</span>
                     </div>
 

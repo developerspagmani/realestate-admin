@@ -36,6 +36,8 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
       logout();
     }
   };
+  
+  const settingsPath = isAdmin ? '/realestate-admin/settings' : isOwner ? '/realestate-owner-admin/settings' : '/user/settings';
 
   const getMenuItems = (isAdmin: boolean, isOwner: boolean, isUser: boolean, isAgent: boolean, tenantType: number, hasModule: (m: string) => boolean, activePage?: string, user?: any) => {
     if (!user) return [];
@@ -80,10 +82,12 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
         {
           title: 'System',
           items: [
+            { href: '/realestate-admin/subscriptions', label: 'Subscriptions', icon: 'bi-credit-card-2-front', active: activePage === 'subscriptions' },
             { href: '/realestate-admin/modules', label: 'Modules', icon: 'bi-grid-3x3-gap-fill', active: activePage === 'modules' },
             { href: '/realestate-admin/settings', label: 'Settings', icon: 'bi-gear-wide-connected', active: activePage === 'settings' }
           ]
         },
+
         ...(hasModule('marketing_hub') ? [{
           title: 'Marketing',
           items: [
@@ -133,13 +137,15 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-owner-admin/settings', label: 'Settings', icon: 'bi-gear', active: activePage === 'settings' }
           ]
         },
-        ...(hasModule('marketing_hub') ? [{
-          title: 'Marketing',
+        ...(hasModule('marketing_hub') || hasModule('widget_creator') || hasModule('3d_viewer') ? [{
+          title: 'Premium Features',
           items: [
-            { href: '/realestate-owner-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' },
-            { href: '/realestate-owner-admin/chatbot-config', label: 'Chatbot Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
-            { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
-            { href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
+            ...(hasModule('3d_viewer') || hasModule('marketing_hub') ? [{ href: '/realestate-owner-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' }] : []),
+            ...(hasModule('marketing_hub') ? [
+              { href: '/realestate-owner-admin/chatbot-config', label: 'Chatbot Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
+              { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' }
+            ] : []),
+            ...(hasModule('widget_creator') || hasModule('marketing_hub') ? [{ href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }] : [])
           ]
         }] : [])
       ];
@@ -326,7 +332,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
                   <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Account</h6></li>
-                  <li><a className="dropdown-item d-flex align-items-center gap-2" href="#"><i className="bi bi-person"></i> Profile</a></li>
+                  <li><a className="dropdown-item d-flex align-items-center gap-2" href={settingsPath}><i className="bi bi-person"></i> Profile</a></li>
                   <li><hr className="dropdown-divider" /></li>
                   <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={handleLogout}><i className="bi bi-box-arrow-right"></i> Logout</button></li>
                 </ul>

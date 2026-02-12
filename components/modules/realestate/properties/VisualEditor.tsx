@@ -1095,10 +1095,10 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
                 )}
 
                 {/* ZOOM CONTROLS */}
-                <div className="position-absolute bottom-0 start-50 translate-middle-x mb-4 d-flex gap-2 p-2 bg-white rounded-pill shadow-lg border border-primary border-opacity-10" style={{ zIndex: 1020 }}>
+                <div className="position-absolute bottom-0 start-50 translate-middle-x mb-4 d-flex gap-2 p-2 bg-white rounded-4 shadow-lg border border-primary border-opacity-10" style={{ zIndex: 1020 }}>
                     <button className="btn btn-light btn-sm rounded-circle shadow-none" onClick={() => transformRef.current?.zoomOut()} title="Zoom Out (-)"><i className="bi bi-dash-lg"></i></button>
                     <div className="vr mx-1"></div>
-                    <button className="btn btn-light btn-sm px-3 rounded-pill fw-bold extra-small text-primary shadow-none" onClick={() => transformRef.current?.resetTransform()} title="Reset View (Scale 1:1)">
+                    <button className="btn btn-light btn-sm px-3 rounded-4 fw-bold extra-small text-primary shadow-none" onClick={() => transformRef.current?.resetTransform()} title="Reset View (Scale 1:1)">
                         {Math.round((transformRef.current?.state?.scale || 1) * 100)}%
                     </button>
                     <div className="vr mx-1"></div>

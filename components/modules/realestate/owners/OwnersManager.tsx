@@ -16,6 +16,11 @@ interface Owner {
     phone: string;
     status: number;
     createdAt: string;
+    tenantId: string;
+    tenant?: {
+        subscriptionStatus: number;
+        subscriptionExpiresAt: string | null;
+    };
     _count?: {
         properties: number;
     };
@@ -46,6 +51,11 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
         message: '',
         type: 'success'
     });
+
+    const [showExtendModal, setShowExtendModal] = useState(false);
+    const [extendingOwner, setExtendingOwner] = useState<Owner | null>(null);
+    const [extendDays, setExtendDays] = useState('15');
+    const [extending, setExtending] = useState(false);
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -179,6 +189,32 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
         }
     };
 
+    const handleExtendTrial = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!extendingOwner || !extendingOwner.tenantId) return;
+
+        setExtending(true);
+        try {
+            const { adminService } = await import('@/app/services/admin');
+            const token = getAuthToken();
+            if (!token) return;
+
+            const response = await adminService.extendTrial(token, extendingOwner.tenantId, parseInt(extendDays));
+            if (response.success) {
+                showToast(`Trial extended for ${extendingOwner.name}`);
+                setShowExtendModal(false);
+                loadOwners();
+            } else {
+                showToast(response.message || 'Failed to extend trial', 'error');
+            }
+        } catch (error) {
+            console.error('Extension error:', error);
+            showToast('Error extending trial', 'error');
+        } finally {
+            setExtending(false);
+        }
+    };
+
     const resetForm = () => {
         setFormData({ name: '', email: '', phone: '', status: 1, password: '' });
         setEditingOwner(null);
@@ -251,7 +287,7 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                         </div>
                     </div>
 
-                    <div className="table-responsive">
+                    <div className="vi-table-responsive">
                         <table className="table table-hover align-middle mb-0">
                             <thead className="bg-light">
                                 <tr>
@@ -295,12 +331,12 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                                             </div>
                                         </td>
                                         <td className="py-3 text-center">
-                                            <span className="badge bg-info-soft text-info rounded-pill px-3 py-2 fw-bold">
+                                            <span className="badge bg-info-soft text-info rounded-4 px-3 py-2 fw-bold">
                                                 {owner._count?.properties || 0} Properties
                                             </span>
                                         </td>
                                         <td className="py-3">
-                                            <span className={`badge rounded-pill px-3 py-2 ${owner.status === 1 ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
+                                            <span className={`badge rounded-4 px-3 py-2 ${owner.status === 1 ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
                                                 {owner.status === 1 ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
@@ -327,6 +363,18 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                                                 >
                                                     <i className="bi bi-trash"></i>
                                                 </button>
+                                                {owner.tenant?.subscriptionStatus === 3 && (
+                                                    <button
+                                                        className="btn btn-icon btn-light-warning rounded-circle hvr-float border-warning"
+                                                        onClick={() => {
+                                                            setExtendingOwner(owner);
+                                                            setShowExtendModal(true);
+                                                        }}
+                                                        title="Extend Trial"
+                                                    >
+                                                        <i className="bi bi-calendar-plus text-warning"></i>
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -432,6 +480,57 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                 .transition-all { transition: all 0.2s ease; }
                 .table-hover tbody tr:hover { background-color: rgba(0,0,0,0.01); }
             `}</style>
+
+            {showExtendModal && extendingOwner && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                            <div className="modal-header bg-warning border-0 p-4">
+                                <h4 className="fw-bold mb-0 text-dark"><i className="bi bi-calendar-plus me-2"></i>Extend Trial Period</h4>
+                                <button type="button" className="btn-close" onClick={() => setShowExtendModal(false)}></button>
+                            </div>
+                            <form onSubmit={handleExtendTrial}>
+                                <div className="modal-body p-4">
+                                    <div className="d-flex align-items-center gap-3 mb-4 p-3 bg-light rounded-3">
+                                        <div className="p-2 bg-white rounded-circle shadow-sm">
+                                            <i className="bi bi-person text-secondary"></i>
+                                        </div>
+                                        <div>
+                                            <div className="fw-bold">{extendingOwner.name}</div>
+                                            <div className="text-muted small">Current Expiry: {extendingOwner.tenant?.subscriptionExpiresAt ? new Date(extendingOwner.tenant.subscriptionExpiresAt).toLocaleDateString() : 'None'}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold text-muted">Days to Extend</label>
+                                        <div className="input-group input-group-lg">
+                                            <input
+                                                type="number"
+                                                className="form-control bg-light border-0"
+                                                value={extendDays}
+                                                onChange={(e) => setExtendDays(e.target.value)}
+                                                min="1"
+                                                max="120"
+                                                required
+                                            />
+                                            <span className="input-group-text bg-light border-0 text-muted">Days</span>
+                                        </div>
+                                        <div className="form-text mt-2 small text-muted">
+                                            New expiry will be set to (current expiry + days).
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="modal-footer border-0 p-4 pt-0">
+                                    <button type="button" className="btn btn-light px-4" onClick={() => setShowExtendModal(false)}>Cancel</button>
+                                    <button type="submit" className="btn btn-warning px-4 fw-bold shadow-sm" disabled={extending}>
+                                        {extending ? <span className="spinner-border spinner-border-sm me-2"></span> : 'Extend License Now'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
             <Toast
                 show={toast.show}
                 message={toast.message}

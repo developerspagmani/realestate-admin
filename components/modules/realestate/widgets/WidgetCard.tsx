@@ -65,10 +65,10 @@ export default function WidgetCard({
                         <div className="d-flex justify-content-between small mb-1">
                             <span className="text-muted">Status</span>
                             <div className="d-flex gap-2">
-                                <span className={`badge rounded-pill ${widget.configuration.chatbot?.enabled ? 'bg-success-subtle text-success' : 'bg-light text-muted'}`}>
+                                <span className={`badge rounded-4 ${widget.configuration.chatbot?.enabled ? 'bg-success-subtle text-success' : 'bg-light text-muted'}`}>
                                     Chatbot: {widget.configuration.chatbot?.enabled ? 'ON' : 'OFF'}
                                 </span>
-                                <span className={`badge rounded-pill ${widget.configuration.inquiryForm?.enabled ? 'bg-info-subtle text-info' : 'bg-light text-muted'}`}>
+                                <span className={`badge rounded-4 ${widget.configuration.inquiryForm?.enabled ? 'bg-info-subtle text-info' : 'bg-light text-muted'}`}>
                                     Form: {widget.configuration.inquiryForm?.enabled ? 'ON' : 'OFF'}
                                 </span>
                             </div>
@@ -84,7 +84,7 @@ export default function WidgetCard({
 
                     <div className="d-flex gap-2">
                         <button
-                            className="btn btn-outline-primary flex-fill rounded-pill extra-small py-2"
+                            className="btn btn-outline-primary flex-fill rounded-4 extra-small py-2"
                             onClick={() => onCopyShortLink(widget.uniqueId)}
                             title="Copy Short Link"
                         >
@@ -92,7 +92,7 @@ export default function WidgetCard({
                             Short Link
                         </button>
                         <button
-                            className="btn btn-outline-secondary flex-fill rounded-pill extra-small py-2"
+                            className="btn btn-outline-secondary flex-fill rounded-4 extra-small py-2"
                             onClick={() => onCopyEmbed(widget.uniqueId)}
                             title="Copy Embed Code"
                         >

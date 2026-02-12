@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
+import SubscriptionSubTab from './SubscriptionSubTab';
+import SystemConfigSubTab from './SystemConfigSubTab';
 
 interface SettingsManagerProps {
     mode: 'admin' | 'owner';
@@ -13,6 +16,7 @@ interface SettingsManagerProps {
 
 export default function SettingsManager({ mode }: SettingsManagerProps) {
     const { user, isAuthenticated, loading: authLoading, isAdmin, isOwner } = useAuthContext();
+    const { activeTenantId } = useManagementContext();
     const [mounted, setMounted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -52,6 +56,12 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
             autoBackup: false,
             frequency: 'weekly',
             lastBackup: null,
+        },
+        privacy: {
+            gdprConsent: false,
+            cookieNotice: true,
+            privacyLink: '',
+            termsLink: '',
         }
     });
 
@@ -97,54 +107,67 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
     }, []);
 
     const loadSettings = async () => {
-        if (!user || !user.tenantId) return;
+        if (!user) return;
         setLoading(true);
         try {
             const { tenantService, userService } = await import('@/app/services/api');
             const token = getAuthToken();
-            if (!token) return;
+            if (!token) {
+                setLoading(false);
+                return;
+            }
 
-            // Load Tenant Settings
-            const tenantRes = await tenantService.getTenantById(token, user.tenantId);
-            if (tenantRes.success && tenantRes.data) {
-                const tenant = tenantRes.data;
-                const dbSettings = tenant.settings || {};
+            const effectiveTenantId = mode === 'admin' ? activeTenantId : (user?.tenantId || null);
 
-                setSettings({
-                    general: {
-                        siteName: tenant.name || '',
-                        supportEmail: dbSettings.general?.supportEmail || '',
-                        contactPhone: dbSettings.general?.contactPhone || '',
-                        address: tenant.address || '',
-                        city: tenant.city || '',
-                        state: tenant.state || '',
-                        country: tenant.country || '',
-                        postalCode: tenant.postalCode || '',
-                        currency: dbSettings.general?.currency || 'USD',
-                        timezone: dbSettings.general?.timezone || 'UTC',
-                    },
-                    appearance: {
-                        primaryColor: dbSettings.appearance?.primaryColor || '#6366f1',
-                        logoUrl: dbSettings.appearance?.logoUrl || '',
-                        darkMode: dbSettings.appearance?.darkMode || false,
-                    },
-                    notifications: {
-                        emailBookings: dbSettings.notifications?.emailBookings ?? true,
-                        emailLeads: dbSettings.notifications?.emailLeads ?? true,
-                        emailUpdates: dbSettings.notifications?.emailUpdates ?? false,
-                        whatsappAlerts: dbSettings.notifications?.whatsappAlerts ?? true,
-                    },
-                    tenant: {
-                        name: tenant.name || '',
-                        domain: tenant.domain || '',
-                        type: tenant.type || (mode === 'owner' ? 1 : 2),
-                    },
-                    backup: {
-                        autoBackup: dbSettings.backup?.autoBackup || false,
-                        frequency: dbSettings.backup?.frequency || 'weekly',
-                        lastBackup: dbSettings.backup?.lastBackup || null,
-                    }
-                });
+            // Load Tenant Settings if tenantId exists
+            if (effectiveTenantId) {
+                const tenantRes = await tenantService.getTenantById(token, effectiveTenantId);
+                if (tenantRes.success && tenantRes.data) {
+                    const tenant = tenantRes.data;
+                    const dbSettings = tenant.settings || {};
+
+                    setSettings({
+                        general: {
+                            siteName: tenant.name || '',
+                            supportEmail: dbSettings.general?.supportEmail || '',
+                            contactPhone: dbSettings.general?.contactPhone || '',
+                            address: tenant.address || '',
+                            city: tenant.city || '',
+                            state: tenant.state || '',
+                            country: tenant.country || '',
+                            postalCode: tenant.postalCode || '',
+                            currency: dbSettings.general?.currency || 'USD',
+                            timezone: dbSettings.general?.timezone || 'UTC',
+                        },
+                        appearance: {
+                            primaryColor: dbSettings.appearance?.primaryColor || '#6366f1',
+                            logoUrl: dbSettings.appearance?.logoUrl || '',
+                            darkMode: dbSettings.appearance?.darkMode || false,
+                        },
+                        notifications: {
+                            emailBookings: dbSettings.notifications?.emailBookings ?? true,
+                            emailLeads: dbSettings.notifications?.emailLeads ?? true,
+                            emailUpdates: dbSettings.notifications?.emailUpdates ?? false,
+                            whatsappAlerts: dbSettings.notifications?.whatsappAlerts ?? true,
+                        },
+                        tenant: {
+                            name: tenant.name || '',
+                            domain: tenant.domain || '',
+                            type: tenant.type || (mode === 'owner' ? 1 : 2),
+                        },
+                        backup: {
+                            autoBackup: dbSettings.backup?.autoBackup || false,
+                            frequency: dbSettings.backup?.frequency || 'weekly',
+                            lastBackup: dbSettings.backup?.lastBackup || null,
+                        },
+                        privacy: {
+                            gdprConsent: dbSettings.privacy?.gdprConsent ?? false,
+                            cookieNotice: dbSettings.privacy?.cookieNotice ?? true,
+                            privacyLink: dbSettings.privacy?.privacyLink || '',
+                            termsLink: dbSettings.privacy?.termsLink || '',
+                        }
+                    });
+                }
             }
 
             // Load User Profile
@@ -194,13 +217,19 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
 
     const handleSaveSettings = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!user?.tenantId) return;
+        const token = getAuthToken();
+        if (!token) return;
+
+        const effectiveTenantId = mode === 'admin' ? activeTenantId : (user?.tenantId || null);
+        if (!effectiveTenantId) {
+            showToast('No tenant context found to save settings', 'error');
+            setSaving(false);
+            return;
+        }
 
         setSaving(true);
         try {
             const { tenantService } = await import('@/app/services/api');
-            const token = getAuthToken();
-            if (!token) return;
 
             const timestamp = new Date().toISOString();
             const newSettings = activeTab === 'backup' ? {
@@ -218,7 +247,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                 settings: newSettings
             };
 
-            const response = await tenantService.updateTenant(token, user.tenantId, updatePayload);
+            const response = await tenantService.updateTenant(token, effectiveTenantId, updatePayload);
             if (response.success) {
                 if (activeTab === 'backup') {
                     setSettings(newSettings);
@@ -344,9 +373,10 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                 }
 
                 await setSettings(importedSettings);
-                if (!user?.tenantId) return;
-                setSaving(true);
+                const effectiveTenantId = mode === 'admin' ? activeTenantId : (user?.tenantId || null);
+                if (!effectiveTenantId) return;
 
+                setSaving(true);
                 const { tenantService } = await import('@/app/services/api');
                 const token = getAuthToken();
                 if (!token) return;
@@ -354,10 +384,14 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                 const updatePayload = {
                     name: importedSettings.general.siteName,
                     address: importedSettings.general.address,
+                    city: importedSettings.general.city,
+                    state: importedSettings.general.state,
+                    country: importedSettings.general.country,
+                    postalCode: importedSettings.general.postalCode,
                     settings: importedSettings
                 };
 
-                const response = await tenantService.updateTenant(token, user.tenantId, updatePayload);
+                const response = await tenantService.updateTenant(token, effectiveTenantId, updatePayload);
                 if (response.success) {
                     showToast('Backup restored successfully!');
                 } else {
@@ -426,12 +460,37 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                     <span>Data Backup</span>
                                 </button>
                                 <button
+                                    className={`list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center py-3 ${activeTab === 'privacy' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-muted'}`}
+                                    onClick={() => setActiveTab('privacy')}
+                                >
+                                    <i className={`bi bi-shield-check me-3 ${activeTab === 'privacy' ? '' : 'text-primary'}`}></i>
+                                    <span>Privacy & GDPR</span>
+                                </button>
+                                {mode === 'owner' && (
+                                    <button
+                                        className={`list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center py-3 ${activeTab === 'subscription' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-muted'}`}
+                                        onClick={() => setActiveTab('subscription')}
+                                    >
+                                        <i className={`bi bi-gem me-3 ${activeTab === 'subscription' ? '' : 'text-primary'}`}></i>
+                                        <span>Subscription</span>
+                                    </button>
+                                )}
+                                <button
                                     className={`list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center py-3 ${activeTab === 'security' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-muted'}`}
                                     onClick={() => setActiveTab('security')}
                                 >
                                     <i className={`bi bi-shield-lock-fill me-3 ${activeTab === 'security' ? '' : 'text-primary'}`}></i>
                                     <span>Security</span>
                                 </button>
+                                {mode === 'admin' && (
+                                    <button
+                                        className={`list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center py-3 ${activeTab === 'system' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-muted'}`}
+                                        onClick={() => setActiveTab('system')}
+                                    >
+                                        <i className={`bi bi-gear-wide-connected me-3 ${activeTab === 'system' ? '' : 'text-primary'}`}></i>
+                                        <span>System Config</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -451,7 +510,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                                     <h4 className="fw-bold mb-0">Owner Profile</h4>
                                                     <button
-                                                        className="btn btn-primary rounded-pill px-4"
+                                                        className="btn btn-primary rounded-4 px-4"
                                                         onClick={handleSaveProfile}
                                                         disabled={profileSaving}
                                                     >
@@ -514,7 +573,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                                     <h4 className="fw-bold mb-0">Platform Preferences</h4>
                                                     <button
-                                                        className="btn btn-outline-primary rounded-pill px-4"
+                                                        className="btn btn-outline-primary rounded-4 px-4"
                                                         onClick={() => handleSaveSettings()}
                                                         disabled={saving}
                                                     >
@@ -557,7 +616,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                             <div>
                                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                                     <h4 className="fw-bold mb-0">Organization Profile</h4>
-                                                    <button className="btn btn-primary rounded-pill px-4" onClick={() => handleSaveSettings()} disabled={saving}>
+                                                    <button className="btn btn-primary rounded-4 px-4" onClick={() => handleSaveSettings()} disabled={saving}>
                                                         {saving ? <span className="spinner-border spinner-border-sm me-2"></span> : 'Update Org Info'}
                                                     </button>
                                                 </div>
@@ -614,7 +673,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                             <div>
                                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                                     <h4 className="fw-bold mb-0">Platform Appearance</h4>
-                                                    <button className="btn btn-primary rounded-pill px-4" onClick={() => handleSaveSettings()} disabled={saving}>Save Preferences</button>
+                                                    <button className="btn btn-primary rounded-4 px-4" onClick={() => handleSaveSettings()} disabled={saving}>Save Preferences</button>
                                                 </div>
                                                 <div className="row g-4">
                                                     <div className="col-12">
@@ -645,7 +704,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                             <div>
                                                 <div className="d-flex justify-content-between align-items-center mb-4">
                                                     <h4 className="fw-bold mb-0">Notifications</h4>
-                                                    <button className="btn btn-primary rounded-pill px-4" onClick={() => handleSaveSettings()} disabled={saving}>Save Changes</button>
+                                                    <button className="btn btn-primary rounded-4 px-4" onClick={() => handleSaveSettings()} disabled={saving}>Save Changes</button>
                                                 </div>
                                                 <div className="list-group list-group-flush rounded-4 overflow-hidden border">
                                                     <div className="list-group-item p-4 d-flex justify-content-between align-items-center border-0 border-bottom">
@@ -688,6 +747,65 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                             </div>
                                         )}
 
+                                        {activeTab === 'privacy' && (
+                                            <div>
+                                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                                    <h4 className="fw-bold mb-0">Privacy & GDPR Compliance</h4>
+                                                    <button className="btn btn-primary rounded-4 px-4" onClick={() => handleSaveSettings()} disabled={saving}>Save Privacy Settings</button>
+                                                </div>
+                                                <div className="card bg-light border-0 rounded-4 mb-4">
+                                                    <div className="card-body p-4">
+                                                        <div className="form-check form-switch d-flex justify-content-between align-items-center mb-4 p-0">
+                                                            <div className="ps-0">
+                                                                <label className="form-check-label fw-bold h5 mb-1 d-block">Cookie Consent Banner</label>
+                                                                <p className="text-muted small mb-0">Display a GDPR-compliant cookie consent popup to your visitors.</p>
+                                                            </div>
+                                                            <input
+                                                                className="form-check-input ms-0 fs-3"
+                                                                type="checkbox"
+                                                                checked={settings.privacy.cookieNotice}
+                                                                onChange={(e) => setSettings({ ...settings, privacy: { ...settings.privacy, cookieNotice: e.target.checked } })}
+                                                            />
+                                                        </div>
+                                                        <div className="form-check form-switch d-flex justify-content-between align-items-center mb-4 p-0">
+                                                            <div className="ps-0">
+                                                                <label className="form-check-label fw-bold h5 mb-1 d-block">Strictly GDPR Compliant</label>
+                                                                <p className="text-muted small mb-0">Force users to accept cookies before tracking any analytical data.</p>
+                                                            </div>
+                                                            <input
+                                                                className="form-check-input ms-0 fs-3"
+                                                                type="checkbox"
+                                                                checked={settings.privacy.gdprConsent}
+                                                                onChange={(e) => setSettings({ ...settings, privacy: { ...settings.privacy, gdprConsent: e.target.checked } })}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="row g-4 mt-2">
+                                                    <h5 className="fw-bold mb-0">Legal Links</h5>
+                                                    <div className="col-md-6">
+                                                        <label className="form-label small fw-bold text-muted">Privacy Policy URL</label>
+                                                        <input
+                                                            type="url"
+                                                            className="form-control bg-light border-0"
+                                                            placeholder="https://example.com/privacy"
+                                                            value={settings.privacy.privacyLink}
+                                                            onChange={(e) => setSettings({ ...settings, privacy: { ...settings.privacy, privacyLink: e.target.value } })}
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6">
+                                                        <label className="form-label small fw-bold text-muted">Terms of Service URL</label>
+                                                        <input
+                                                            type="url"
+                                                            className="form-control bg-light border-0"
+                                                            placeholder="https://example.com/terms"
+                                                            value={settings.privacy.termsLink}
+                                                            onChange={(e) => setSettings({ ...settings, privacy: { ...settings.privacy, termsLink: e.target.value } })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                         {activeTab === 'backup' && (
                                             <div>
                                                 <h4 className="fw-bold mb-4">Data Backup & Restore</h4>
@@ -702,7 +820,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                                                 <p className="text-muted small mb-0">Download a JSON file of your current configuration.</p>
                                                             </div>
                                                         </div>
-                                                        <button type="button" onClick={handleExportBackup} className="btn btn-primary rounded-pill px-4">Download</button>
+                                                        <button type="button" onClick={handleExportBackup} className="btn btn-primary rounded-4 px-4">Download</button>
                                                     </div>
                                                 </div>
                                                 <div className="card bg-light border-0 rounded-4 mb-4">
@@ -716,7 +834,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                                                 <p className="text-muted small mb-0">Restore configuration from a backup file.</p>
                                                             </div>
                                                         </div>
-                                                        <label className="btn btn-outline-success rounded-pill px-4 cursor-pointer mb-0">
+                                                        <label className="btn btn-outline-success rounded-4 px-4 cursor-pointer mb-0">
                                                             Restore
                                                             <input type="file" accept=".json" onChange={handleImportBackup} hidden />
                                                         </label>
@@ -750,6 +868,14 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                             </div>
                                         )}
 
+                                        {activeTab === 'subscription' && mode === 'owner' && (
+                                            <SubscriptionSubTab showToast={showToast} />
+                                        )}
+
+                                        {activeTab === 'system' && mode === 'admin' && (
+                                            <SystemConfigSubTab showToast={showToast} />
+                                        )}
+
                                         {activeTab === 'security' && (
                                             <div>
                                                 <h4 className="fw-bold mb-4">Security & Password</h4>
@@ -770,7 +896,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                                                     <label className="form-label small fw-bold text-muted">Confirm New Password</label>
                                                                     <input type="password" className="form-control bg-white border-0" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} />
                                                                 </div>
-                                                                <button type="button" className="btn btn-primary rounded-pill px-4" disabled={passwordLoading || !passwordData.currentPassword || !passwordData.newPassword} onClick={handleUpdatePassword}>
+                                                                <button type="button" className="btn btn-primary rounded-4 px-4" disabled={passwordLoading || !passwordData.currentPassword || !passwordData.newPassword} onClick={handleUpdatePassword}>
                                                                     {passwordLoading ? <span className="spinner-border spinner-border-sm me-2"></span> : 'Update Password'}
                                                                 </button>
                                                             </div>
@@ -778,12 +904,12 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                                     </div>
                                                     <div className="col-lg-5">
                                                         <div className="card border p-4 rounded-4 h-100">
-                                                            <div className="p-3 bg-primary bg-opacity-10 text-primary rounded-circle d-inline-block mb-3" style={{ width: 'fit-content' }}>
+                                                            <div className="px-3 py-2 bg-primary bg-opacity-10 text-white rounded-circle d-inline-block mb-3" style={{ width: 'fit-content' }}>
                                                                 <i className="bi bi-envelope-check fs-4"></i>
                                                             </div>
                                                             <h5 className="fw-bold mb-2">Password Reset Link</h5>
                                                             <p className="text-muted small mb-4">Prefer a secure reset link? We can send one to your registered email address <strong>{profile.email}</strong>.</p>
-                                                            <button type="button" className="btn btn-outline-primary rounded-pill px-4 mt-auto" onClick={handleSendResetEmail} disabled={resetLoading}>
+                                                            <button type="button" className="btn btn-outline-primary rounded-4 px-4 mt-auto" onClick={handleSendResetEmail} disabled={resetLoading}>
                                                                 {resetLoading ? <span className="spinner-border spinner-border-sm me-2"></span> : 'Send Reset Email'}
                                                             </button>
                                                         </div>

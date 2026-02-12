@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+import { tenantService, getAuthToken } from '@/app/services/api';
+import { getCurrencyConfig } from '@/app/utils/currencyUtils';
+
 interface ManagementContextType {
     tenantType: number; // 1: Real Estate, 2: Coworking, 3: Mixed
     setTenantType: (type: number) => void;
@@ -10,15 +13,21 @@ interface ManagementContextType {
     activeOwnerId: string | null;
     setActiveOwnerId: (id: string | null) => void;
     setActiveOwnerAndTenant: (ownerId: string | null, tenantId: string | null) => void;
+    activeTenant: any | null;
+    currencySymbol: string;
+    currencyCode: string;
     isCommandCenterActive: boolean;
 }
 
 const ManagementContext = createContext<ManagementContextType | undefined>(undefined);
 
 export function ManagementProvider({ children }: { children: ReactNode }) {
-    const [tenantType, setTenantTypeState] = useState<number>(1); // Default to Real Estate (FUNC-F06 fix)
+    const [tenantType, setTenantTypeState] = useState<number>(1);
     const [activeTenantId, setActiveTenantIdState] = useState<string | null>(null);
     const [activeOwnerId, setActiveOwnerIdState] = useState<string | null>(null);
+    const [activeTenant, setActiveTenant] = useState<any | null>(null);
+    const [currencySymbol, setCurrencySymbol] = useState('$');
+    const [currencyCode, setCurrencyCode] = useState('USD');
     const [isInitialized, setIsInitialized] = useState(false);
 
     // Initialize from localStorage on mount
@@ -27,18 +36,43 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
         const savedTenantId = localStorage.getItem('mgmt_tenant_id');
         const savedOwnerId = localStorage.getItem('mgmt_owner_id');
 
-
-
         if (savedType) setTenantTypeState(parseInt(savedType));
         if (savedTenantId) setActiveTenantIdState(savedTenantId);
         if (savedOwnerId) setActiveOwnerIdState(savedOwnerId);
         setIsInitialized(true);
     }, []);
 
+    // Fetch tenant details when activeTenantId changes
+    useEffect(() => {
+        if (!activeTenantId) {
+            setActiveTenant(null);
+            setCurrencySymbol('$');
+            setCurrencyCode('USD');
+            return;
+        }
+
+        const fetchTenant = async () => {
+            const token = getAuthToken();
+            if (!token) return;
+            try {
+                const res = await tenantService.getTenantById(token, activeTenantId);
+                if (res.success) {
+                    setActiveTenant(res.data);
+                    const config = getCurrencyConfig(res.data.country);
+                    setCurrencySymbol(config.symbol);
+                    setCurrencyCode(config.code);
+                }
+            } catch (error) {
+                console.error('Failed to fetch tenant details:', error);
+            }
+        };
+
+        fetchTenant();
+    }, [activeTenantId]);
+
     const setTenantType = (type: number) => {
         setTenantTypeState(type);
         localStorage.setItem('mgmt_tenant_type', type.toString());
-        // Reset sub-selections when type changes
         setActiveTenantId(null);
         setActiveOwnerId(null);
     };
@@ -47,7 +81,6 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
         setActiveTenantIdState(id);
         if (id) localStorage.setItem('mgmt_tenant_id', id);
         else localStorage.removeItem('mgmt_tenant_id');
-        // Reset owner when tenant changes
         setActiveOwnerId(null);
     };
 
@@ -58,7 +91,6 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
     };
 
     const setActiveOwnerAndTenant = (ownerId: string | null, tenantId: string | null) => {
-
         setActiveOwnerIdState(ownerId);
         setActiveTenantIdState(tenantId);
 
@@ -78,6 +110,9 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
             activeOwnerId,
             setActiveOwnerId,
             setActiveOwnerAndTenant,
+            activeTenant,
+            currencySymbol,
+            currencyCode,
             isCommandCenterActive: true
         }}>
             {children}

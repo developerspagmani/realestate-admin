@@ -37,7 +37,7 @@ interface LeadsManagerProps {
 
 export default function LeadsManager({ mode }: LeadsManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
-    const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
+    const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
     const [mounted, setMounted] = useState(false);
     const [leads, setLeads] = useState<Lead[]>([]);
     const [agents, setAgents] = useState<Agent[]>([]);
@@ -310,7 +310,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             lost: { class: 'bg-danger-soft text-danger', text: 'Lost' }
         };
         const c = config[status] || config.new;
-        return <span className={`badge rounded-pill px-3 py-2 ${c.class}`}>{c.text}</span>;
+        return <span className={`badge rounded-4 px-3 py-2 ${c.class}`}>{c.text}</span>;
     };
 
     if (!mounted || !isAuthenticated) return null;
@@ -354,7 +354,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                         </div>
                         <div className="d-flex align-items-center gap-2">
                             {(filterBudget !== '' || filterStatus !== 'all' || filterSource !== 'all') && (
-                                <button className="btn btn-outline-primary btn-sm rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" onClick={() => setShowGroupModal(true)}>
+                                <button className="btn btn-outline-primary btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center gap-2" onClick={() => setShowGroupModal(true)}>
                                     <i className="bi bi-people-fill"></i>
                                     <span>Save as Group</span>
                                 </button>
@@ -439,8 +439,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                         <h5 className="text-muted fw-light">Fetching your leads...</h5>
                     </div>
                 ) : viewMode === 'table' ? (
-                    <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                        <div className="table-responsive">
+                    <div className="card border-0 shadow-sm rounded-4 overflow-visible">
+                        <div className="vi-table-responsive">
                             <table className="table table-hover align-middle mb-0">
                                 <thead className="bg-light">
                                     <tr>
@@ -470,7 +470,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                                             <div className="fw-bold text-dark d-flex align-items-center gap-2">
                                                                 {lead.name}
                                                                 {isStale(lead) && (
-                                                                    <span className="badge bg-danger rounded-pill extra-small-badge" title="No activity for 3+ days">REQUIRES ATTENTION</span>
+                                                                    <span className="badge bg-danger rounded-4 extra-small-badge" title="No activity for 3+ days">REQUIRES ATTENTION</span>
                                                                 )}
                                                                 <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
                                                             </div>
@@ -491,7 +491,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                             </td>
                                             <td className="py-3">
                                                 <div className="d-flex align-items-center gap-2">
-                                                    <span className={`badge rounded-pill px-2 py-1 ${lead.leadScore > 50 ? 'bg-danger' : lead.leadScore > 20 ? 'bg-warning text-dark' : 'bg-success'}`}>
+                                                    <span className={`badge rounded-4 px-2 py-1 ${lead.leadScore > 50 ? 'bg-danger' : lead.leadScore > 20 ? 'bg-warning text-dark' : 'bg-success'}`}>
                                                         {lead.leadScore}
                                                     </span>
                                                 </div>
@@ -607,7 +607,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                         <div className="col-md-6">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Budget</label>
                                             <div className="input-group">
-                                                <span className="input-group-text bg-light border-0">$</span>
+                                                <span className="input-group-text bg-light border-0">{currencySymbol}</span>
                                                 <input type="number" className="form-control bg-light border-0" value={formData.budget} onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })} placeholder="0.00" />
                                             </div>
                                         </div>
@@ -723,8 +723,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                 </div>
                             </div>
                             <div className="modal-footer border-0 p-4 pt-0">
-                                <button type="button" className="btn btn-light rounded-pill px-4 fw-bold" onClick={() => setShowGroupModal(false)}>Cancel</button>
-                                <button type="button" className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onClick={handleSaveAsGroup} disabled={!groupName}>
+                                <button type="button" className="btn btn-light rounded-4 px-4 fw-bold" onClick={() => setShowGroupModal(false)}>Cancel</button>
+                                <button type="button" className="btn btn-primary rounded-4 px-4 fw-bold shadow-sm" onClick={handleSaveAsGroup} disabled={!groupName}>
                                     Create Group
                                 </button>
                             </div>

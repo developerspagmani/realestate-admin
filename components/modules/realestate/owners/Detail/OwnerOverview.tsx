@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { userService, getAuthToken } from '@/app/services/api';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 export default function OwnerOverview() {
     const { id } = useParams();
+    const { currencySymbol } = useManagementContext();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ export default function OwnerOverview() {
         { label: 'Units', value: stats?.unitCount || 0, icon: 'bi-grid-3x3-gap', color: 'success' },
         { label: 'Bookings', value: stats?.bookingCount || 0, icon: 'bi-calendar-check', color: 'info' },
         { label: 'Sub-Users', value: stats?.userCount || 0, icon: 'bi-people', color: 'warning' },
-        { label: 'Total Revenue', value: `$${(stats?.totalRevenue || 0).toLocaleString()}`, icon: 'bi-currency-dollar', color: 'danger' },
+        { label: 'Total Revenue', value: `${currencySymbol}${(stats?.totalRevenue || 0).toLocaleString()}`, icon: 'bi-currency-dollar', color: 'danger' },
     ];
 
     return (

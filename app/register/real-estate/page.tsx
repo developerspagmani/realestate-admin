@@ -41,7 +41,42 @@ export default function RealEstateRegisterPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [countrySearch, setCountrySearch] = useState('India');
+    const [showCountryDropdown, setShowCountryDropdown] = useState(false);
     const router = useRouter();
+
+    const countries = [
+        "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+        "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
+        "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+        "Denmark", "Djibouti", "Dominica", "Dominican Republic",
+        "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia",
+        "Fiji", "Finland", "France",
+        "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana",
+        "Haiti", "Honduras", "Hungary",
+        "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy",
+        "Jamaica", "Japan", "Jordan",
+        "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan",
+        "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
+        "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
+        "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway",
+        "Oman",
+        "Pakistan", "Palau", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
+        "Qatar",
+        "Romania", "Russia", "Rwanda",
+        "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+        "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu",
+        "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Uruguay", "Uzbekistan",
+        "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
+        "Yemen",
+        "Zambia", "Zimbabwe"
+    ];
+
+    const filteredCountries = countries.filter(c =>
+        c.toLowerCase().includes(countrySearch.toLowerCase())
+    );
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -137,7 +172,7 @@ export default function RealEstateRegisterPage() {
                                     </div>
                                     <h3 className="fw-extrabold text-dark mb-3">Portfolio Registered!</h3>
                                     <p className="text-muted small mb-4">Verification link sent to <strong>{formData.email}</strong>.<br />Please authorize your account to continue.</p>
-                                    <Link href="/login" className="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm">
+                                    <Link href="/login" className="btn btn-primary rounded-4 px-5 py-3 fw-bold shadow-sm">
                                         Go to Login
                                     </Link>
                                 </div>
@@ -148,7 +183,7 @@ export default function RealEstateRegisterPage() {
                                             <h2 className="fw-extrabold text-dark mb-1">Real Estate Registration</h2>
                                             <p className="text-muted small">Establish your property agency workspace</p>
                                         </div>
-                                        <div className="badge bg-primary-soft text-primary rounded-pill px-3 py-2 small">Agent/Owner</div>
+                                        <div className="badge bg-dark text-white rounded-4 px-3 py-2 small">Property Owner</div>
                                     </div>
 
                                     {error && (
@@ -178,7 +213,7 @@ export default function RealEstateRegisterPage() {
                                             </div>
                                         </div>
 
-                                        <div className="section-label small-caps mb-3 border-top pt-4">Agency Information</div>
+                                        <div className="section-label small-caps mb-3 border-top py-2">Agency Information</div>
                                         <div className="row g-3 mb-4">
                                             <div className="col-md-12">
                                                 <label className="form-label extra-small fw-bold text-uppercase text-muted">Company / Agency Name</label>
@@ -200,25 +235,93 @@ export default function RealEstateRegisterPage() {
                                                 <label className="form-label extra-small fw-bold text-uppercase text-muted">Postal Code</label>
                                                 <input type="text" name="zipCode" className="form-control" value={formData.zipCode} onChange={handleChange} required />
                                             </div>
-                                            <div className="col-md-6">
+                                            <div className="col-md-6 position-relative">
                                                 <label className="form-label extra-small fw-bold text-uppercase text-muted">Country</label>
-                                                <input type="text" name="country" className="form-control" value={formData.country} onChange={handleChange} required />
+                                                <div className="input-group">
+                                                    <span className="input-group-text bg-light border-end-0 rounded-start-3"><i className="bi bi-geo-alt text-muted"></i></span>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control bg-light border-start-0 ps-0"
+                                                        placeholder="Search country..."
+                                                        value={countrySearch}
+                                                        onChange={(e) => {
+                                                            setCountrySearch(e.target.value);
+                                                            setShowCountryDropdown(true);
+                                                        }}
+                                                        onFocus={() => setShowCountryDropdown(true)}
+                                                        onBlur={() => setTimeout(() => setShowCountryDropdown(false), 200)}
+                                                        required
+                                                    />
+                                                </div>
+                                                {showCountryDropdown && (
+                                                    <div className="country-dropdown shadow-lg rounded-3 mt-1 position-absolute w-100 bg-white border overflow-auto" style={{ maxHeight: '200px', zIndex: 100, left: 0 }}>
+                                                        {filteredCountries.length > 0 ? (
+                                                            filteredCountries.map(c => (
+                                                                <div
+                                                                    key={c}
+                                                                    className="dropdown-item px-3 py-2 cursor-pointer hover-bg-light"
+                                                                    onClick={() => {
+                                                                        setFormData({ ...formData, country: c });
+                                                                        setCountrySearch(c);
+                                                                        setShowCountryDropdown(false);
+                                                                    }}
+                                                                >
+                                                                    {c}
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div className="px-3 py-2 text-muted small">No countries found</div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
-                                        <div className="section-label small-caps mb-3 border-top pt-4">Security</div>
+                                        <div className="section-label small-caps mb-3 border-top py-2">Security</div>
                                         <div className="row g-3 mb-4">
                                             <div className="col-md-6">
                                                 <label className="form-label extra-small fw-bold text-uppercase text-muted">Password</label>
-                                                <input type="password" name="password" className="form-control" value={formData.password} onChange={handleChange} required />
+                                                <div className="input-group">
+                                                    <input
+                                                        type={showPassword ? 'text' : 'password'}
+                                                        name="password"
+                                                        className="form-control rounded-start-3"
+                                                        value={formData.password}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-light border-light-subtle text-muted"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                    >
+                                                        <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="col-md-6">
                                                 <label className="form-label extra-small fw-bold text-uppercase text-muted">Confirm Password</label>
-                                                <input type="password" name="confirmPassword" className="form-control" value={formData.confirmPassword} onChange={handleChange} required />
+                                                <div className="input-group">
+                                                    <input
+                                                        type={showConfirmPassword ? 'text' : 'password'}
+                                                        name="confirmPassword"
+                                                        className="form-control rounded-start-3"
+                                                        value={formData.confirmPassword}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-light border-light-subtle text-muted"
+                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    >
+                                                        <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <button type="submit" className="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-lg mt-3" disabled={loading}>
+                                        <button type="submit" className="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-lg mt-3" disabled={loading}>
                                             {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-lightning-charge-fill me-2"></i>}
                                             {loading ? 'Creating Agency...' : 'Register Agency'}
                                         </button>
@@ -245,6 +348,12 @@ export default function RealEstateRegisterPage() {
                 .form-control:focus { background-color: #fff; border-color: #000; box-shadow: 0 0 0 4px rgba(0,0,0,0.05); }
                 .btn-primary { background-color: #000; border: none; }
                 .btn-primary:hover { background-color: #222; transform: translateY(-1px); }
+                .cursor-pointer { cursor: pointer; }
+                .hover-bg-light:hover { background-color: #f8fafc; }
+                .country-dropdown { z-index: 1000; border: 1px solid #e2e8f0; }
+                .dropdown-item { font-size: 0.875rem; color: #334155; }
+                .dropdown-item:hover { color: #000; }
+                .input-group-text { border: 1px solid #e2e8f0; border-radius: 12px 0 0 12px; }
             `}</style>
             </div>
         </div>

@@ -139,7 +139,7 @@ function LoginContent() {
                 <div className="mb-4">
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <label className="form-label small-caps mb-0">Password</label>
-                    <Link href="/reset-password" style={{ fontSize: '0.7rem' }} className="text-dark fw-bold text-decoration-none">Forgot?</Link>
+                    <Link href="/forgot-password" style={{ fontSize: '0.7rem' }} className="text-dark fw-bold text-decoration-none">Forgot?</Link>
                   </div>
                   <div className="input-group">
                     <span className="input-group-text bg-light border-end-0 rounded-start-3"><i className="bi bi-lock text-muted"></i></span>
@@ -164,7 +164,7 @@ function LoginContent() {
 
                 <button
                   type="submit"
-                  className="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
+                  className="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
                   disabled={localLoading}
                 >
                   {localLoading ? (

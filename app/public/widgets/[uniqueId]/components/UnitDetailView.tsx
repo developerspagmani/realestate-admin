@@ -53,7 +53,7 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                         <div className="glass-panel p-4 rounded-4 h-100 d-flex flex-column justify-content-between">
                             <div>
                                 <div className="d-flex justify-content-between align-items-start mb-3">
-                                    <span className="badge bg-dark rounded-pill px-3 py-2">Unit {selectedUnit.unitCode}</span>
+                                    <span className="badge bg-dark rounded-4 px-3 py-2">Unit {selectedUnit.unitCode}</span>
                                     <div className="text-end">
                                         <span className="d-block extra-small text-muted">Asking Price</span>
                                         <span className="text-primary fw-extrabold fs-3" style={{ color: theme.primaryColor }}>{getFormattedPrice(selectedUnit)}</span>
@@ -95,7 +95,7 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
 
                             <div className="mt-4 pt-4 border-top">
                                 <button
-                                    className="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
+                                    className="btn btn-primary w-100 rounded-4 py-3 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
                                     style={{ backgroundColor: theme.primaryColor, border: 'none' }}
                                     onClick={() => {
                                         const formElement = document.querySelector('.unit-inquiry-form');

@@ -258,7 +258,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
                         <p className="text-muted small">Create and manage embeddable booking widgets for your websites.</p>
                     </div>
                     <button
-                        className="btn btn-primary shadow-sm px-4 rounded-pill"
+                        className="btn btn-primary shadow-sm px-4 rounded-4"
                         onClick={() => {
                             setEditingWidget(null);
                             setFormData(INITIAL_FORM_DATA);

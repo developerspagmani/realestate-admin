@@ -178,7 +178,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                         </button>
                         <h5 className="fw-bold d-inline-block">{currentForm.id ? 'Edit' : 'Build'} Lead Form</h5>
                     </div>
-                    <button className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2"
+                    <button className="btn btn-primary rounded-4 px-4 fw-bold shadow-sm d-flex align-items-center gap-2"
                         onClick={handleSave} disabled={saving}>
                         {saving && <span className="spinner-border spinner-border-sm"></span>}
                         {currentForm.id ? 'Update Form' : 'Save & Publish'}
@@ -226,7 +226,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
 
                             <h6 className="fw-bold mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center mt-4">
                                 Form Fields
-                                <button className="btn btn-primary btn-xs rounded-pill px-3" onClick={addField}>
+                                <button className="btn btn-primary btn-xs rounded-4 px-3" onClick={addField}>
                                     <i className="bi bi-plus-lg"></i> Add Field
                                 </button>
                             </h6>
@@ -287,7 +287,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                         <div className="card border-0 shadow-sm rounded-4 p-5 d-flex align-items-center justify-content-center bg-light bg-opacity-50" style={{ minHeight: '600px' }}>
                             <div className="w-100" style={{ maxWidth: '400px' }}>
                                 <div className="text-center mb-4">
-                                    <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill mb-2 px-3 fw-bold">Live Preview</span>
+                                    <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-4 mb-2 px-3 fw-bold">Live Preview</span>
                                 </div>
                                 <div className="bg-white p-4 shadow-sm rounded-4 border">
                                     <FormRenderer
@@ -308,7 +308,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
         <div className="forms-list">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h5 className="fw-bold mb-0">Lead Capture Forms</h5>
-                <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm" onClick={openCreate}>
+                <button className="btn btn-primary btn-sm rounded-4 px-3 fw-bold shadow-sm" onClick={openCreate}>
                     <i className="bi bi-file-earmark-plus me-1"></i> Create Form
                 </button>
             </div>
@@ -343,10 +343,10 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                                 <h6 className="fw-bold mb-1">{form.name}</h6>
                                 <p className="text-muted extra-small mb-4">Fields: {form.configuration.fields?.length || 0} • Status: Active</p>
                                 <div className="d-flex gap-2 mt-auto">
-                                    <button className="btn btn-outline-primary btn-xs rounded-pill px-3 flex-grow-1 border-opacity-25 extra-small fw-bold" onClick={() => copyEmbedCode(form.id)}>
+                                    <button className="btn btn-outline-primary btn-xs rounded-4 px-3 flex-grow-1 border-opacity-25 extra-small fw-bold" onClick={() => copyEmbedCode(form.id)}>
                                         <i className="bi bi-code-slash me-1"></i> Embed Code
                                     </button>
-                                    <button className="btn btn-light btn-xs rounded-pill border px-3 extra-small fw-bold" onClick={() => openEdit(form)}>
+                                    <button className="btn btn-light btn-xs rounded-4 border px-3 extra-small fw-bold" onClick={() => openEdit(form)}>
                                         <i className="bi bi-pencil me-1"></i> Edit
                                     </button>
                                 </div>

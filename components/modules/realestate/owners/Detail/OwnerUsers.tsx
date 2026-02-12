@@ -31,7 +31,7 @@ export default function OwnerUsers() {
 
     return (
         <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-            <div className="table-responsive">
+            <div className="vi-table-responsive">
                 <table className="table table-hover align-middle mb-0">
                     <thead className="bg-light">
                         <tr>
@@ -63,12 +63,12 @@ export default function OwnerUsers() {
                                     <div className="text-muted extra-small"><i className="bi bi-telephone me-2"></i>{u.phone || 'No phone'}</div>
                                 </td>
                                 <td className="py-3 text-center">
-                                    <span className="badge bg-secondary-soft text-secondary px-3 py-2 rounded-pill fw-bold">
+                                    <span className="badge bg-secondary-soft text-secondary px-3 py-2 rounded-4 fw-bold">
                                         End-User
                                     </span>
                                 </td>
                                 <td className="py-3">
-                                    <span className={`badge rounded-pill px-3 py-2 ${u.status === 1 ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
+                                    <span className={`badge rounded-4 px-3 py-2 ${u.status === 1 ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
                                         {u.status === 1 ? 'Active' : 'Inactive'}
                                     </span>
                                 </td>

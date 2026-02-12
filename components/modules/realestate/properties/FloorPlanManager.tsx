@@ -356,7 +356,7 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
                                     <label className="form-check-label extra-small fw-bold text-muted" htmlFor="aerialToggle">Aerial View Mode</label>
                                 </div>
                             </div>
-                            <div className="badge bg-dark rounded-pill px-3 py-2">
+                            <div className="badge bg-dark rounded-4 px-3 py-2">
                                 <i className="bi bi-layers me-2"></i>
                                 {selectedPlan.layout.length} CAD Entities Extracted
                             </div>

@@ -23,7 +23,7 @@ export default function PropertiesList({
     return (
         <div className="card border-0 shadow-sm overflow-hidden">
             <div className="card-body p-0">
-                <div className="table-responsive">
+                <div className="vi-table-responsive">
                     <table className="table table-hover align-middle mb-0">
                         <thead className="bg-light text-muted small text-uppercase fw-bold">
                             <tr>
@@ -66,7 +66,7 @@ export default function PropertiesList({
                                             <div className="text-muted extra-small">{property.address}</div>
                                         </td>
                                         <td className="py-3">
-                                            <span className={`badge rounded-pill ${property.status === 'active' || (property.status as any) === 1 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'} px-3 py-2`}>
+                                            <span className={`badge rounded-4 ${property.status === 'active' || (property.status as any) === 1 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'} px-3 py-2`}>
                                                 {property.status === 'active' || (property.status as any) === 1 ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>

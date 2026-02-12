@@ -69,7 +69,7 @@ const ThreeDView: React.FC<ThreeDViewProps> = ({
                     </h5>
                     <p className="extra-small text-muted mb-0">{selectedProperty.title}</p>
                 </div>
-                <button className="btn btn-outline-dark btn-sm rounded-pill px-4 fw-bold" onClick={() => setCurrentView('PROPERTY_DETAIL')}>
+                <button className="btn btn-outline-dark btn-sm rounded-4 px-4 fw-bold" onClick={() => setCurrentView('PROPERTY_DETAIL')}>
                     <i className="bi bi-x-circle me-2"></i>Exit VR Mode
                 </button>
             </div>
@@ -109,7 +109,7 @@ const ThreeDView: React.FC<ThreeDViewProps> = ({
                                                     <h6 className="fw-bold mb-1 extra-small">{plan.name}</h6>
                                                     <p className="extra-small text-muted mb-3" style={{ height: '30px', overflow: 'hidden' }}>{plan.description}</p>
                                                     <button
-                                                        className="btn btn-primary w-100 btn-xs rounded-pill fw-bold"
+                                                        className="btn btn-primary w-100 btn-xs rounded-4 fw-bold"
                                                         onClick={() => {
                                                             setActiveDemoTour(plan);
                                                             setShowDemoModal(false);
@@ -137,7 +137,7 @@ const ThreeDView: React.FC<ThreeDViewProps> = ({
                             </div>
                             <button
                                 type="button"
-                                className="btn btn-dark btn-sm rounded-pill px-3 fw-bold"
+                                className="btn btn-dark btn-sm rounded-4 px-3 fw-bold"
                                 onClick={() => setActiveDemoTour(null)}
                             >
                                 <i className="bi bi-x-lg me-2"></i> Close

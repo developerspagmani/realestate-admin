@@ -281,16 +281,16 @@ export default function PlotMapEditor({ units, propertyName, initialMapping = {}
                         {propertyName && <span className="text-muted fw-normal ms-2">| {propertyName}</span>}
                     </h5>
                     <div className="vr opacity-25"></div>
-                    <label className="btn btn-primary btn-sm mb-0 rounded-pill px-3">
+                    <label className="btn btn-primary btn-sm mb-0 rounded-4 px-3">
                         <i className="bi bi-upload me-2"></i>Upload SVG
                         <input type="file" hidden accept=".svg" onChange={handleFileUpload} />
                     </label>
                 </div>
                 <div className="d-flex gap-2">
-                    <button className="btn btn-dark btn-sm px-4 rounded-pill fw-bold" onClick={handleConvertTo3D}>
+                    <button className="btn btn-dark btn-sm px-4 rounded-4 fw-bold" onClick={handleConvertTo3D}>
                         <i className="bi bi-box-fill me-2"></i>Convert to 3D
                     </button>
-                    <button className="btn btn-outline-primary btn-sm px-4 rounded-pill fw-bold" onClick={handleSave}>
+                    <button className="btn btn-outline-primary btn-sm px-4 rounded-4 fw-bold" onClick={handleSave}>
                         <i className="bi bi-save me-2"></i>Save Mapping
                     </button>
                 </div>
@@ -343,7 +343,7 @@ export default function PlotMapEditor({ units, propertyName, initialMapping = {}
                                     <span className="d-block extra-small text-uppercase fw-bold text-muted mb-1 ls-1">Plot Details</span>
                                     <h6 className="fw-bold text-dark mb-0">{hoveredUnit.name}</h6>
                                 </div>
-                                <span className={`badge rounded-pill px-2 py-1 fw-bold`} style={{
+                                <span className={`badge rounded-4 px-2 py-1 fw-bold`} style={{
                                     fontSize: '9px',
                                     backgroundColor: getStatusColor(hoveredUnit.status).fill + '20',
                                     color: getStatusColor(hoveredUnit.status).stroke

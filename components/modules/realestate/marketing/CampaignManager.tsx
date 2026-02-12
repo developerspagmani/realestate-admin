@@ -81,13 +81,13 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
             label: 'Campaigns',
             value: marketingStats?.sentCampaigns || '0',
             icon: 'bi-megaphone',
-            color: 'primary'
+            color: 'dark'
         },
         {
             label: 'Total Sent',
             value: marketingStats?.totalDelivered?.toLocaleString() || '0',
             icon: 'bi-send',
-            color: 'primary'
+            color: 'dark'
         },
         {
             label: 'Total Opens',
@@ -245,7 +245,7 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
                                 <div className="col-12 d-flex justify-content-between align-items-center">
                                     <h5 className="fw-bold mb-0">Recent Campaigns</h5>
                                     <button
-                                        className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center gap-2"
+                                        className="btn btn-primary rounded-4 px-4 fw-bold shadow-sm d-flex align-items-center gap-2"
                                         onClick={() => { setEditingCampaign(null); setShowDesigner(true); }}
                                     >
                                         <i className="bi bi-plus-lg"></i> Create Campaign
@@ -253,8 +253,8 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
                                 </div>
 
                                 <div className="col-12">
-                                    <div className="card border-0 shadow-sm rounded-4 p-0 overflow-hidden">
-                                        <div className="table-responsive">
+                                    <div className="card border-0 shadow-sm rounded-4 p-0 overflow-visible">
+                                        <div className="vi-table-responsive">
                                             <table className="table table-hover align-middle mb-0">
                                                 <thead className="bg-light">
                                                     <tr>
@@ -281,7 +281,7 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
                                                             </td>
                                                             <td className="small">{campaign.group?.name || 'No Group'}</td>
                                                             <td>
-                                                                <span className={`badge rounded-pill extra-small px-3 ${campaign.status === 4 ? 'bg-success bg-opacity-10 text-success' :
+                                                                <span className={`badge rounded-4 extra-small px-3 ${campaign.status === 4 ? 'bg-success bg-opacity-10 text-success' :
                                                                     campaign.status === 1 ? 'bg-warning bg-opacity-10 text-warning' :
                                                                         'bg-primary bg-opacity-10 text-primary'
                                                                     }`}>

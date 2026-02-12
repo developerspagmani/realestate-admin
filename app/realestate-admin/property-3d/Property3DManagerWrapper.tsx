@@ -19,7 +19,7 @@ export default function Property3DManagerWrapper() {
                         <i className="bi bi-exclamation-triangle-fill text-warning fs-1 mb-3 d-block"></i>
                         <h4 className="fw-bold">No Property Selected</h4>
                         <p className="text-muted">Please select a property from the Properties list to configure its 3D Workspace.</p>
-                        <Link href="/realestate-admin/properties" className="btn btn-primary rounded-pill px-4">Go to Properties</Link>
+                        <Link href="/realestate-admin/properties" className="btn btn-primary rounded-4 px-4">Go to Properties</Link>
                     </div>
                 </div>
             </MainLayout>

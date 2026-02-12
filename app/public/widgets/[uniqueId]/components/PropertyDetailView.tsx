@@ -94,7 +94,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                     <div className="col-6">
                                         <div className="feature-box p-3">
                                             <span className="d-block text-muted extra-small">Listing Mode</span>
-                                            <span className="badge bg-primary rounded-pill extra-small px-3 mt-1" style={{ backgroundColor: theme.primaryColor }}>{selectedProperty.listingType || 'Rent'}</span>
+                                            <span className="badge bg-primary rounded-4 extra-small px-3 mt-1" style={{ backgroundColor: theme.primaryColor }}>{selectedProperty.listingType || 'Rent'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -102,7 +102,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
 
                             {widget.configuration.workspace3D?.enabled && selectedProperty.workspace3D && (
                                 <button
-                                    className="btn btn-dark w-100 rounded-pill py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 mb-3"
+                                    className="btn btn-dark w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 mb-3"
                                     onClick={() => setCurrentView('THREE_D')}
                                 >
                                     <i className="bi bi-box-seam fs-5"></i>
@@ -111,7 +111,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                             )}
 
                             <button
-                                className="btn btn-primary w-100 rounded-pill py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 transition-all hover:translate-y-[-2px]"
+                                className="btn btn-primary w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 transition-all hover:translate-y-[-2px]"
                                 style={{ backgroundColor: theme.primaryColor, border: 'none' }}
                                 onClick={() => setCurrentView('TOUR')}
                             >
@@ -229,7 +229,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         Interactive Property Plot Layout
                                     </span>
                                     <button
-                                        className="btn btn-dark btn-sm rounded-pill px-3 d-flex align-items-center gap-2"
+                                        className="btn btn-dark btn-sm rounded-4 px-3 d-flex align-items-center gap-2"
                                         onClick={() => setShow3DPlotView(true)}
                                     >
                                         <i className="bi bi-box-seam"></i>
@@ -346,7 +346,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 <span className="extra-small text-muted"><i className="bi bi-bed me-1"></i>{unit.realEstateDetails?.bedrooms || 0} Bed</span>
                                                 <span className="extra-small text-muted"><i className="bi bi-arrows-fullscreen me-1"></i>{unit.sizeSqft || 0} sqft</span>
                                             </div>
-                                            <button className="btn btn-outline-primary btn-sm w-100 rounded-pill extra-small fw-bold" style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}>
+                                            <button className="btn btn-outline-primary btn-sm w-100 rounded-4 extra-small fw-bold" style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}>
                                                 View Unit Details
                                             </button>
                                         </div>

@@ -232,7 +232,7 @@ export default function PlotMapViewer({ units, svgContent, mapping, themeColor =
                             <span className="d-block extra-small text-uppercase fw-bold text-muted mb-1 ls-1">Property Unit</span>
                             <h6 className="fw-bold text-dark mb-0">{hoveredUnit.name}</h6>
                         </div>
-                        <span className={`badge rounded-pill px-2 py-1 fw-bold`} style={{
+                        <span className={`badge rounded-4 px-2 py-1 fw-bold`} style={{
                             fontSize: '9px',
                             backgroundColor: getStatusColor(hoveredUnit.status).fill + '20',
                             color: getStatusColor(hoveredUnit.status).stroke

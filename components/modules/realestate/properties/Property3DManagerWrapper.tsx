@@ -79,7 +79,7 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
 
                     <div className="card border-0 shadow-sm overflow-hidden">
                         <div className="card-body p-0">
-                            <div className="table-responsive">
+                            <div className="vi-table-responsive">
                                 <table className="table table-hover align-middle mb-0">
                                     <thead className="bg-light text-muted small text-uppercase fw-bold">
                                         <tr>
@@ -116,7 +116,7 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
                                                     <td className="py-3 text-end px-4">
                                                         <Link
                                                             href={`${basePath}/property-3d?propertyId=${property.id}&propertyName=${encodeURIComponent(property.slug)}`}
-                                                            className="btn btn-sm btn-primary rounded-pill px-4"
+                                                            className="btn btn-sm btn-primary rounded-4 px-4"
                                                         >
                                                             <i className="bi bi-box-fill me-2"></i>Launch Architect
                                                         </Link>

@@ -25,6 +25,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     const [showModal, setShowModal] = useState(false);
     const [editingBooking, setEditingBooking] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
+    const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
 
     const [formData, setFormData] = useState<any>({
         userId: '',
@@ -66,6 +67,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    const [currentDate, setCurrentDate] = useState(new Date());
 
     const loadData = async () => {
         try {
@@ -299,6 +302,17 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         setShowModal(false);
     };
 
+    const getCalendarEvents = () => {
+        return bookings.map(booking => ({
+            id: booking.id,
+            title: `${booking.user?.name || 'Guest'} - ${booking.unit?.unitCode || 'Unit'}`,
+            start: new Date(booking.startAt),
+            end: new Date(booking.endAt),
+            status: booking.status,
+            data: booking
+        }));
+    };
+
     if (!mounted || !isAuthenticated) return null;
 
     return (
@@ -313,8 +327,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                 {/* Header Section */}
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h2 className="fw-bold mb-1">{mode === 'admin' ? 'Booking Invitations' : 'My Reservations'}</h2>
-                        <p className="text-muted small mb-0">Manage guest bookings and space reservations</p>
+                        <h2 className="fw-bold mb-1">{mode === 'admin' ? 'Visit Schedules' : 'My Visit Visits'}</h2>
+                        <p className="text-muted small mb-0">Manage property visits and site schedules</p>
                     </div>
                     <div className="d-flex gap-2">
                         <button
@@ -333,7 +347,24 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                             onClick={() => { resetForm(); setShowModal(true); }}
                         >
                             <i className="bi bi-calendar-plus-fill"></i>
-                            <span>Create Booking</span>
+                            <span>Create Visit</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <div className="btn-group shadow-sm bg-white p-1 rounded-3">
+                        <button
+                            className={`btn btn-sm px-3 ${viewMode === 'table' ? 'btn-primary shadow-none' : 'btn-white border-0'}`}
+                            onClick={() => setViewMode('table')}
+                        >
+                            <i className="bi bi-table me-2"></i> Table View
+                        </button>
+                        <button
+                            className={`btn btn-sm px-3 ${viewMode === 'calendar' ? 'btn-primary shadow-none' : 'btn-white border-0'}`}
+                            onClick={() => setViewMode('calendar')}
+                        >
+                            <i className="bi bi-calendar3 me-2"></i> Calendar
                         </button>
                     </div>
                 </div>
@@ -417,129 +448,141 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                     </div>
                 </div>
 
-                {/* Main Table Card */}
-                <div className="card border-0 shadow-sm rounded-4">
-                    <div className="table-responsive">
-                        <table className="table table-hover align-middle mb-0">
-                            <thead className="bg-light">
-                                <tr>
-                                    <th className="px-4 py-3 text-uppercase small fw-bold text-muted">Guest Details</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Property & Unit</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Schedule</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Financials</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Status</th>
-                                    <th className="py-3 text-uppercase small fw-bold text-muted">Agent</th>
-                                    <th className="px-4 py-3 text-uppercase small fw-bold text-muted text-end">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
+                {/* Main Content Area */}
+                {viewMode === 'table' ? (
+                    <div className="card border-0 shadow-sm rounded-4">
+                        <div className="vi-table-responsive">
+                            <table className="table table-hover align-middle mb-0">
+                                <thead className="bg-light">
                                     <tr>
-                                        <td colSpan={7} className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status"></div>
-                                        </td>
+                                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted">Guest Details</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Property & Unit</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Schedule</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Financials</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Status</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Agent</th>
+                                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted text-end">Actions</th>
                                     </tr>
-                                ) : filteredBookings.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="text-center py-5">
-                                            <i className="bi bi-calendar-x display-4 text-muted mb-3 d-block"></i>
-                                            <p className="text-muted">No reservations found matching your criteria</p>
-                                        </td>
-                                    </tr>
-                                ) : filteredBookings.map((booking) => {
-                                    const status = getStatusLabel(booking.status);
-                                    return (
-                                        <tr key={booking.id} className="cursor-pointer" onClick={() => { setSelectedBooking(booking); setShowDetailModal(true); }}>
-                                            <td className="px-4 py-3">
-                                                <div className="d-flex align-items-center gap-3">
-                                                    <div className="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px' }}>
-                                                        {booking.user?.name?.charAt(0) || 'U'}
-                                                    </div>
-                                                    <div>
-                                                        <div className="fw-bold text-dark">{booking.user?.name || 'Unknown User'}</div>
-                                                        <div className="text-muted small">{booking.user?.email}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="fw-semibold text-dark">{booking.unit?.property?.title || 'Unknown Property'}</div>
-                                                <div className="badge bg-light text-dark fw-normal border">
-                                                    <i className="bi bi-door-open me-1 text-primary"></i>
-                                                    {booking.unit?.unitCode || 'N/A'}
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="fw-semibold text-dark">
-                                                    {new Date(booking.startAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </div>
-                                                <div className="text-muted small">
-                                                    {new Date(booking.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    {' - '}
-                                                    {new Date(booking.endAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="fw-bold text-dark">${booking.totalPrice || '0.00'}</div>
-                                                <div className={`small ${booking.paymentStatus === 2 ? 'text-success' : 'text-warning'}`}>
-                                                    {booking.paymentStatus === 2 ? 'Paid' : 'Unpaid'}
-                                                </div>
-                                            </td>
-                                            <td className="py-3">
-                                                <span className={`badge rounded-pill px-3 py-2 d-inline-flex align-items-center gap-2 ${status.class}`}>
-                                                    <i className={`bi ${status.icon}`}></i>
-                                                    {status.label}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 align-middle">
-                                                {booking.agent ? (
-                                                    <div className="d-flex align-items-center gap-2">
-                                                        <div className="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', fontSize: '12px' }}>
-                                                            {booking.agent.user?.name?.charAt(0) || 'A'}
-                                                        </div>
-                                                        <div className="small fw-semibold">{booking.agent.user?.name || 'Agent'}</div>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-muted small">Direct</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3 text-end">
-                                                <div className="dropdown" onClick={(e) => e.stopPropagation()}>
-                                                    <button className="btn btn-icon btn-light border-0 rounded-circle" data-bs-toggle="dropdown">
-                                                        <i className="bi bi-three-dots-vertical"></i>
-                                                    </button>
-                                                    <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                                        <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Manage Status</h6></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(booking.id, 2)}><i className="bi bi-check-circle text-success"></i> Confirm</button></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(booking.id, 4)}><i className="bi bi-flag text-primary"></i> Complete</button></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(booking.id, 3)}><i className="bi bi-x-circle text-danger"></i> Cancel</button></li>
-                                                        <li><hr className="dropdown-divider" /></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2 text-primary" onClick={() => {
-                                                            setEditingBooking(booking);
-                                                            setFormData({
-                                                                userId: booking.userId,
-                                                                unitId: booking.unitId,
-                                                                propertyId: booking.unit?.property?.id || booking.unit?.propertyId,
-                                                                startAt: booking.startAt,
-                                                                endAt: booking.endAt,
-                                                                status: booking.status,
-                                                                paymentStatus: booking.paymentStatus,
-                                                                notes: booking.notes || '',
-                                                                specialRequests: booking.specialRequests || '',
-                                                                agentId: booking.agentId || ''
-                                                            });
-                                                            setShowModal(true);
-                                                        }}><i className="bi bi-pencil-square"></i> Edit Details</button></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={() => handleDelete(booking.id)}><i className="bi bi-trash-fill"></i> Delete</button></li>
-                                                    </ul>
-                                                </div>
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-5">
+                                                <div className="spinner-border text-primary" role="status"></div>
                                             </td>
                                         </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                    ) : filteredBookings.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} className="text-center py-5">
+                                                <i className="bi bi-calendar-x display-4 text-muted mb-3 d-block"></i>
+                                                <p className="text-muted">No reservations found matching your criteria</p>
+                                            </td>
+                                        </tr>
+                                    ) : filteredBookings.map((booking) => {
+                                        const status = getStatusLabel(booking.status);
+                                        return (
+                                            <tr key={booking.id} className="cursor-pointer" onClick={() => { setSelectedBooking(booking); setShowDetailModal(true); }}>
+                                                <td className="px-4 py-3">
+                                                    <div className="d-flex align-items-center gap-3">
+                                                        <div className="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px' }}>
+                                                            {booking.user?.name?.charAt(0) || 'U'}
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-bold text-dark">{booking.user?.name || 'Unknown User'}</div>
+                                                            <div className="text-muted small">{booking.user?.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3">
+                                                    <div className="fw-semibold text-dark">{booking.unit?.property?.title || 'Unknown Property'}</div>
+                                                    <div className="badge bg-light text-dark fw-normal border">
+                                                        <i className="bi bi-door-open me-1 text-primary"></i>
+                                                        {booking.unit?.unitCode || 'N/A'}
+                                                    </div>
+                                                </td>
+                                                <td className="py-3">
+                                                    <div className="fw-semibold text-dark">
+                                                        {new Date(booking.startAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    </div>
+                                                    <div className="text-muted small">
+                                                        {new Date(booking.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        {' - '}
+                                                        {new Date(booking.endAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </td>
+                                                <td className="py-3">
+                                                    <div className="fw-bold text-success small">FREE VISIT</div>
+                                                    <div className="text-muted small">No payment required</div>
+                                                </td>
+                                                <td className="py-3">
+                                                    <span className={`badge rounded-4 px-3 py-2 d-inline-flex align-items-center gap-2 ${status.class}`}>
+                                                        <i className={`bi ${status.icon}`}></i>
+                                                        {status.label}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 align-middle">
+                                                    {booking.agent ? (
+                                                        <div className="d-flex align-items-center gap-2">
+                                                            <div className="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', fontSize: '12px' }}>
+                                                                {booking.agent.user?.name?.charAt(0) || 'A'}
+                                                            </div>
+                                                            <div className="small fw-semibold">{booking.agent.user?.name || 'Agent'}</div>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-muted small">Direct</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-end">
+                                                    <div className="dropdown" onClick={(e) => e.stopPropagation()}>
+                                                        <button className="btn btn-icon btn-light border-0 rounded-circle" data-bs-toggle="dropdown">
+                                                            <i className="bi bi-three-dots-vertical"></i>
+                                                        </button>
+                                                        <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                                            <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Manage Status</h6></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(booking.id, 2)}><i className="bi bi-check-circle text-success"></i> Confirm</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(booking.id, 4)}><i className="bi bi-flag text-primary"></i> Complete</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(booking.id, 3)}><i className="bi bi-x-circle text-danger"></i> Cancel</button></li>
+                                                            <li><hr className="dropdown-divider" /></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2 text-primary" onClick={() => {
+                                                                setEditingBooking(booking);
+                                                                setFormData({
+                                                                    userId: booking.userId,
+                                                                    unitId: booking.unitId,
+                                                                    propertyId: booking.unit?.property?.id || booking.unit?.propertyId,
+                                                                    startAt: booking.startAt,
+                                                                    endAt: booking.endAt,
+                                                                    status: booking.status,
+                                                                    paymentStatus: booking.paymentStatus,
+                                                                    notes: booking.notes || '',
+                                                                    specialRequests: booking.specialRequests || '',
+                                                                    agentId: booking.agentId || ''
+                                                                });
+                                                                setShowModal(true);
+                                                            }}><i className="bi bi-pencil-square"></i> Edit Details</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={() => handleDelete(booking.id)}><i className="bi bi-trash-fill"></i> Delete</button></li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <CalendarView
+                        currentDate={currentDate}
+                        setCurrentDate={setCurrentDate}
+                        bookings={filteredBookings}
+                        onEventClick={(booking: any) => {
+                            if (!booking) return;
+                            setSelectedBooking(booking);
+                            setShowDetailModal(true);
+                        }}
+                        getStatusLabel={getStatusLabel}
+                    />
+                )}
             </div>
 
             {/* Booking Modal */}
@@ -548,21 +591,21 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                     <div className="modal-dialog modal-lg modal-dialog-centered">
                         <div className="modal-content border-0 shadow-lg rounded-4">
                             <div className="modal-header border-0 p-4 pb-0">
-                                <h4 className="fw-bold mb-0">{editingBooking ? 'Update Reservation' : 'New Guest Reservation'}</h4>
+                                <h4 className="fw-bold mb-0">{editingBooking ? 'Update Visit Schedule' : 'Schedule a Property Visit'}</h4>
                                 <button type="button" className="btn-close" onClick={resetForm}></button>
                             </div>
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body p-4">
                                     <div className="row g-4">
                                         <div className="col-md-12">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">Select Guest</label>
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Select Visitor / Prospect</label>
                                             <select
                                                 className="form-select form-select-lg bg-light border-0"
                                                 value={formData.userId}
                                                 onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
                                                 required
                                             >
-                                                <option value="">Choose a user...</option>
+                                                <option value="">Choose a prospect...</option>
                                                 {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
                                             </select>
                                         </div>
@@ -613,7 +656,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                         </div>
 
                                         <div className="col-md-6">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">Check-in Date & Time</label>
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Visit Start</label>
                                             <input
                                                 type="datetime-local"
                                                 className="form-control bg-light border-0"
@@ -624,7 +667,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                         </div>
 
                                         <div className="col-md-6">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">Check-out Date & Time</label>
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Visit End (Estimated)</label>
                                             <input
                                                 type="datetime-local"
                                                 className="form-control bg-light border-0"
@@ -668,8 +711,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                         </span>
                                                     </div>
                                                     <div className="text-end">
-                                                        <span className="text-muted small d-block">Estimated Total</span>
-                                                        <span className="h4 fw-bold mb-0 text-primary">${availabilityStatus.price || '0.00'}</span>
+                                                        <span className="text-muted small d-block">Visit Fee</span>
+                                                        <span className="h4 fw-bold mb-0 text-success">Free</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -683,7 +726,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                         className="btn btn-primary px-4 fw-bold shadow-sm"
                                         disabled={availabilityStatus.available === false || availabilityStatus.loading}
                                     >
-                                        {editingBooking ? 'Save Updates' : 'Confirm Reservation'}
+                                        {editingBooking ? 'Save Updates' : 'Schedule Visit'}
                                     </button>
                                 </div>
                             </form>
@@ -762,7 +805,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             <div className={`p-4 rounded-4 ${availabilityStatus.available ? 'bg-success-soft' : 'bg-danger-soft'}`}>
                                                 <i className={`bi ${availabilityStatus.available ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'} display-6 mb-2 d-block`}></i>
                                                 <h5 className={`fw-bold mb-1 ${availabilityStatus.available ? 'text-success' : 'text-danger'}`}>
-                                                    {availabilityStatus.available ? 'Unit is Available!' : 'Unit is Booked'}
+                                                    {availabilityStatus.available ? 'Unit is Available for Visit!' : 'Unit is Scheduled for another visit'}
                                                 </h5>
                                                 {availabilityStatus.available && (
                                                     <button
@@ -779,7 +822,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                             setShowModal(true);
                                                         }}
                                                     >
-                                                        Create Booking Now
+                                                        Schedule Visit Now
                                                     </button>
                                                 )}
                                             </div>
@@ -798,7 +841,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content border-0 shadow-lg rounded-4">
                             <div className="modal-header border-0 p-4 pb-0">
-                                <h4 className="fw-bold mb-0">Booking Details</h4>
+                                <h4 className="fw-bold mb-0">Visit Details</h4>
                                 <button type="button" className="btn-close" onClick={() => setShowDetailModal(false)}></button>
                             </div>
                             <div className="modal-body p-4">
@@ -822,10 +865,10 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                     </div>
                                     <div className="col-6">
                                         <div className="p-3 border rounded-3 h-100">
-                                            <div className="text-muted small text-uppercase fw-bold mb-1">Price</div>
-                                            <div className="h4 fw-bold text-dark mb-0">${selectedBooking.totalPrice}</div>
-                                            <div className={`badge rounded-pill mt-1 ${selectedBooking.paymentStatus === 2 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}`}>
-                                                {selectedBooking.paymentStatus === 2 ? 'Paid' : 'Pending'}
+                                            <div className="text-muted small text-uppercase fw-bold mb-1">Fee</div>
+                                            <div className="h4 fw-bold text-success mb-0">FREE</div>
+                                            <div className="badge rounded-4 mt-1 bg-success-soft text-success">
+                                                In-Person Visit
                                             </div>
                                         </div>
                                     </div>
@@ -867,5 +910,159 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         .cursor-pointer { cursor: pointer; }
       `}</style>
         </MainLayout>
+    );
+}
+
+// Calendar View Component
+function CalendarView({ currentDate, setCurrentDate, bookings, onEventClick, getStatusLabel }: any) {
+    const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    const firstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    const today = () => setCurrentDate(new Date());
+
+    const days = [];
+    const totalDays = daysInMonth(currentDate);
+    const startDay = firstDayOfMonth(currentDate);
+
+    // Padding for first week
+    for (let i = 0; i < startDay; i++) {
+        days.push(null);
+    }
+    for (let i = 1; i <= totalDays; i++) {
+        days.push(i);
+    }
+
+    const isToday = (day: number) => {
+        const now = new Date();
+        return now.getDate() === day && now.getMonth() === currentDate.getMonth() && now.getFullYear() === currentDate.getFullYear();
+    };
+
+    const getEventsForDay = (day: number) => {
+        if (!bookings) return [];
+        return bookings.filter((b: any) => {
+            if (!b.startAt) return false;
+            const date = new Date(b.startAt);
+            return date.getDate() === day && date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
+        });
+    };
+
+    const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newDate = new Date(currentDate.getFullYear(), parseInt(e.target.value), 1);
+        setCurrentDate(newDate);
+    };
+
+    const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newDate = new Date(parseInt(e.target.value), currentDate.getMonth(), 1);
+        setCurrentDate(newDate);
+    };
+
+    const years = [];
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear - 10; i <= currentYear + 10; i++) {
+        years.push(i);
+    }
+
+    return (
+        <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+            <div className="card-header bg-white border-0 p-4">
+                <div className="d-flex justify-content-between align-items-center">
+                    <div className="d-flex gap-2">
+                        <select
+                            className="form-select border-0 bg-light fw-bold col-3"
+                            style={{ cursor: 'pointer', width: 'auto' }}
+                            value={currentDate.getMonth()}
+                            onChange={handleMonthChange}
+                        >
+                            {monthNames.map((name, index) => (
+                                <option key={name} value={index}>{name}</option>
+                            ))}
+                        </select>
+                        <select
+                            className="form-select border-0 bg-light fw-bold col-3"
+                            style={{ cursor: 'pointer', width: '120px' }}
+                            value={currentDate.getFullYear()}
+                            onChange={handleYearChange}
+                        >
+                            {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="d-flex gap-2">
+                        <button className="btn btn-light btn-sm px-3 shadow-none border" onClick={today}>Today</button>
+                        <div className="btn-group shadow-sm rounded-2 overflow-hidden">
+                            <button className="btn btn-white btn-sm px-3 border" onClick={prevMonth}><i className="bi bi-chevron-left"></i></button>
+                            <button className="btn btn-white btn-sm px-3 border" onClick={nextMonth}><i className="bi bi-chevron-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="card-body p-0">
+                <div className="calendar-grid">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="calendar-header-day text-center py-2 fw-bold text-muted small border-bottom border-end bg-light">
+                            {day}
+                        </div>
+                    ))}
+                    {days.map((day, idx) => (
+                        <div key={idx} className={`calendar-day border-bottom border-end p-2 ${day ? 'bg-white' : 'bg-light'} ${day && isToday(day) ? 'bg-primary-soft' : ''}`} style={{ minHeight: '120px' }}>
+                            {day && (
+                                <>
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <span className={`fw-bold small px-2 py-1 rounded-circle ${isToday(day) ? 'bg-primary text-white' : ''}`} style={{ width: '38px', height: '38px', textAlign: 'center', lineHeight: '30px' }}>{day}</span>
+                                    </div>
+                                    <div className="calendar-events d-flex flex-column gap-1">
+                                        {getEventsForDay(day).map((event: any) => {
+                                            const status = getStatusLabel(event.status);
+                                            return (
+                                                <div
+                                                    key={event.id}
+                                                    className={`event-tag p-2 rounded-3 cursor-pointer shadow-sm border-start border-4 ${status.class}`}
+                                                    style={{ fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onEventClick(event);
+                                                    }}
+                                                >
+                                                    <div className="fw-bold mb-0">{new Date(event.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                    <div className="text-truncate" title={event.user?.name || 'Guest'}>
+                                                        {event.user?.name ? event.user.name.split(' ')[0] : 'Guest'}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <style jsx>{`
+                .calendar-grid {
+                    display: grid;
+                    grid-template-columns: repeat(7, 1fr);
+                    border-top: 1px solid var(--bs-gray-200);
+                    border-left: 1px solid var(--bs-gray-200);
+                }
+                .calendar-day {
+                    transition: all 0.2s;
+                }
+                .calendar-day:hover {
+                    background-color: var(--bs-gray-50) !important;
+                }
+                .event-tag {
+                    transition: transform 0.1s, box-shadow 0.1s;
+                }
+                .event-tag:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+                }
+            `}</style>
+        </div>
     );
 }

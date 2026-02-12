@@ -34,7 +34,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                                     {block.subtitle || 'Discover premium properties in the most desirable locations.'}
                                                 </p>
                                                 <div className="d-flex gap-3">
-                                                    <button className="btn btn-primary rounded-pill px-5 py-3 fw-bold" style={{ backgroundColor: theme.primaryColor, border: 'none' }}>
+                                                    <button className="btn btn-primary rounded-4 px-5 py-3 fw-bold" style={{ backgroundColor: theme.primaryColor, border: 'none' }}>
                                                         Get Started
                                                     </button>
                                                 </div>
@@ -145,7 +145,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                         </p>
                         <div className="animate-fade-up">
                             <button
-                                className="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-lg"
+                                className="btn btn-primary rounded-4 px-5 py-3 fw-bold shadow-lg"
                                 style={{ backgroundColor: theme.primaryColor, border: 'none' }}
                                 onClick={() => {
                                     const el = document.getElementById('property-listing');

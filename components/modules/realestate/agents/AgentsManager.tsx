@@ -326,9 +326,9 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                     </button>
                 </div>
 
-                <div className="card border-0 shadow-sm rounded-4">
+                <div className="card border-0 shadow-sm rounded-4 overflow-visible">
                     <div className="card-body p-0">
-                        <div className="vi-table-responsive">
+                        <div className="vi-vi-table-responsive">
                             <table className="table table-hover align-middle mb-0">
                                 <thead className="bg-light">
                                     <tr>
@@ -382,7 +382,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                     </div>
                                                 </td>
                                                 <td className="py-3">
-                                                    <span className={`badge rounded-pill ${agent.status === 1 ? 'bg-success-subtle text-success' :
+                                                    <span className={`badge rounded-4 ${agent.status === 1 ? 'bg-success-subtle text-success' :
                                                         agent.status === 2 ? 'bg-secondary-subtle text-secondary' :
                                                             'bg-warning-subtle text-warning'
                                                         }`}>
@@ -584,7 +584,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                     <button type="button" className="btn-close" onClick={() => { setViewingCommissions(null); setCommissions([]); }}></button>
                                 </div>
                                 <div className="modal-body p-0">
-                                    <div className="table-responsive">
+                                    <div className="vi-table-responsive">
                                         <table className="table table-hover mb-0">
                                             <thead className="bg-light small text-uppercase">
                                                 <tr>
@@ -609,7 +609,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                             </td>
                                                             <td className="small font-monospace">{comm.booking?.id?.substring(0, 8)}...</td>
                                                             <td>
-                                                                <span className={`badge rounded-pill ${comm.status === 'PAID' ? 'bg-success-subtle text-success' :
+                                                                <span className={`badge rounded-4 ${comm.status === 'PAID' ? 'bg-success-subtle text-success' :
                                                                     comm.status === 'CANCELLED' ? 'bg-danger-subtle text-danger' :
                                                                         'bg-warning-subtle text-warning'
                                                                     }`}>
@@ -759,8 +759,8 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                             {viewingAgent.user?.firstName?.[0]}{viewingAgent.user?.lastName?.[0]}
                                         </div>
                                         <div>
-                                            <h3 className="fw-bold mb-1">{viewingAgent.user?.firstName} {viewingAgent.user?.lastName}</h3>
-                                            <div className="badge bg-white text-primary rounded-pill mb-2">Agent ID: {viewingAgent.id.substring(0, 8)}</div>
+                                            <h3 className="fw-bold mb-1 text-white">{viewingAgent.user?.firstName} {viewingAgent.user?.lastName}</h3>
+                                            <div className="badge bg-white text-primary rounded-4 mb-2">Agent ID: {viewingAgent.id.substring(0, 8)}</div>
                                             <div className="d-flex gap-3 small opacity-75">
                                                 <span><i className="bi bi-envelope me-1"></i> {viewingAgent.user?.email}</span>
                                                 <span><i className="bi bi-telephone me-1"></i> {viewingAgent.user?.phone}</span>
@@ -809,7 +809,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                             <div className="bg-white rounded-4 shadow-sm overflow-hidden mb-4">
                                                 <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
                                                     <h6 className="fw-bold mb-0">Assigned Properties ({viewingAgentProperties.length})</h6>
-                                                    <button className="btn btn-sm btn-outline-primary rounded-pill py-0" onClick={() => { setViewingAgent(null); handleAssignClick('properties', viewingAgent); }}>
+                                                    <button className="btn btn-sm btn-outline-primary rounded-4 py-0" onClick={() => { setViewingAgent(null); handleAssignClick('properties', viewingAgent); }}>
                                                         <i className="bi bi-plus"></i> Manage
                                                     </button>
                                                 </div>
@@ -851,7 +851,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                             <div className="bg-white rounded-4 shadow-sm overflow-hidden">
                                                 <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
                                                     <h6 className="fw-bold mb-0">Assigned Leads ({viewingAgentLeads.length})</h6>
-                                                    <button className="btn btn-sm btn-outline-primary rounded-pill py-0" onClick={() => { setViewingAgent(null); handleAssignClick('leads', viewingAgent); }}>
+                                                    <button className="btn btn-sm btn-outline-primary rounded-4 py-0" onClick={() => { setViewingAgent(null); handleAssignClick('leads', viewingAgent); }}>
                                                         <i className="bi bi-plus"></i> Manage
                                                     </button>
                                                 </div>
@@ -890,8 +890,8 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                     </div>
                                 </div>
                                 <div className="modal-footer border-0 p-4 bg-white">
-                                    <button type="button" className="btn btn-light rounded-pill px-4" onClick={() => setViewingAgent(null)}>Close Profile</button>
-                                    <button type="button" className="btn btn-primary rounded-pill px-4" onClick={() => { setViewingAgent(null); handleEdit(viewingAgent); }}>
+                                    <button type="button" className="btn btn-light rounded-4 px-4" onClick={() => setViewingAgent(null)}>Close Profile</button>
+                                    <button type="button" className="btn btn-primary rounded-4 px-4" onClick={() => { setViewingAgent(null); handleEdit(viewingAgent); }}>
                                         <i className="bi bi-pencil me-2"></i> Edit Account
                                     </button>
                                 </div>

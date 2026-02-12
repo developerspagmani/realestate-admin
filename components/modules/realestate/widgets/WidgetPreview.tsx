@@ -28,7 +28,7 @@ export default function WidgetPreview({ formData, tenantType }: WidgetPreviewPro
     return (
         <div className="widget-preview-container sticky-top" style={{ top: '20px' }}>
             <div className="preview-header mb-3 d-flex justify-content-between align-items-center">
-                <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill small fw-bold">
+                <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-4 small fw-bold">
                     <i className="bi bi-eye-fill me-2"></i>Live Preview
                 </span>
                 <div className="preview-devices d-flex gap-2">
@@ -108,7 +108,7 @@ export default function WidgetPreview({ formData, tenantType }: WidgetPreviewPro
                                             <div className="mock-line bg-light mb-2 w-75" style={{ height: '8px', borderRadius: '4px' }}></div>
                                             <div className="mock-line bg-light w-50" style={{ height: '6px', borderRadius: '4px' }}></div>
                                             <div
-                                                className="mock-btn mt-3 rounded-pill"
+                                                className="mock-btn mt-3 rounded-4"
                                                 style={{ height: '20px', backgroundColor: theme.primaryColor, opacity: 0.1 }}
                                             ></div>
                                         </div>
@@ -129,7 +129,7 @@ export default function WidgetPreview({ formData, tenantType }: WidgetPreviewPro
                                 <div className="mock-line bg-light mb-3" style={{ height: '25px', borderRadius: '5px' }}></div>
                                 <div className="mock-line bg-light mb-3" style={{ height: '25px', borderRadius: '5px' }}></div>
                                 <div
-                                    className="mock-btn w-100 rounded-pill"
+                                    className="mock-btn w-100 rounded-4"
                                     style={{ height: '35px', backgroundColor: theme.primaryColor }}
                                 ></div>
                             </div>

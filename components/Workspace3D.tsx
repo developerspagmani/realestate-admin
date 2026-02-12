@@ -683,7 +683,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onShowDemoPl
 
               {onShowDemoPlans && (
                 <button
-                  className="btn btn-sm btn-outline-info w-100 mt-2 rounded-pill fw-bold"
+                  className="btn btn-sm btn-outline-info w-100 mt-2 rounded-4 fw-bold"
                   onClick={() => onShowDemoPlans(selectedWorkspace)}
                 >
                   <i className="bi bi-house-door me-2"></i>

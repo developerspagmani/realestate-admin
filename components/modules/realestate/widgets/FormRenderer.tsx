@@ -86,7 +86,7 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
                 <h5 className="fw-bold">Thank You!</h5>
                 <p className="text-muted small">Your inquiry has been received. We will get back to you soon.</p>
                 <button
-                    className="btn btn-outline-primary btn-sm rounded-pill mt-2"
+                    className="btn btn-outline-primary btn-sm rounded-4 mt-2"
                     onClick={() => {
                         setSubmitted(false);
                         setFormData({});
@@ -146,7 +146,7 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
                     <div className="col-12 mt-4">
                         <button
                             type="submit"
-                            className="btn btn-primary w-100 rounded-pill py-2 fw-bold"
+                            className="btn btn-primary w-100 rounded-4 py-2 fw-bold"
                             style={{ backgroundColor: primaryColor, border: 'none' }}
                             disabled={submitting}
                         >

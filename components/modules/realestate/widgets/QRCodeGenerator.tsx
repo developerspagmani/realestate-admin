@@ -49,7 +49,7 @@ export default function QRCodeGenerator({ widget, onClose }: QRCodeGeneratorProp
                         <img src={qrCodeUrl} alt="Widget QR Code" style={{ width: '100%', height: 'auto', maxWidth: '250px' }} />
                     </div>
                     <div className="mt-3">
-                        <span className="badge bg-primary-subtle text-primary px-3 rounded-pill">
+                        <span className="badge bg-primary-subtle text-primary px-3 rounded-4">
                             <i className="bi bi-link-45deg me-1"></i>
                             {shortUrl}
                         </span>
@@ -92,7 +92,7 @@ export default function QRCodeGenerator({ widget, onClose }: QRCodeGeneratorProp
                 </div>
 
                 <div className="d-grid gap-2">
-                    <button className="btn btn-primary rounded-pill py-2 fw-bold" onClick={handleDownload}>
+                    <button className="btn btn-primary rounded-4 py-2 fw-bold" onClick={handleDownload}>
                         <i className="bi bi-download me-2"></i>
                         Download QR Code
                     </button>

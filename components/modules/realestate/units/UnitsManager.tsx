@@ -19,7 +19,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const searchParams = useSearchParams();
 
     const { user, isAuthenticated } = useAuthContext();
-    const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
+    const { tenantType, activeTenantId, activeOwnerId, currencySymbol, currencyCode } = useManagementContext();
     const [mounted, setMounted] = useState(false);
     const [units, setUnits] = useState<Seats[]>([]);
     const [properties, setProperties] = useState<Property[]>([]);
@@ -202,7 +202,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                 status: statusMap[formData.status as keyof typeof statusMap] || 1,
                 price: formData.price,
                 monthlyRate: formData.monthlyRate,
-                currency: 'USD',
+                currency: currencyCode,
                 mainImageId: formData.mainImageId,
                 gallery: formData.gallery,
                 realEstateDetails: {
@@ -306,7 +306,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                 status: statusMap[unit.status as keyof typeof statusMap] || 1,
                 price: unit.price,
                 monthlyRate: unit.monthlyRate,
-                currency: 'USD',
+                currency: currencyCode,
                 mainImageId: unit.mainImageId,
                 gallery: unit.gallery,
                 realEstateDetails: {
@@ -448,7 +448,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                 status: 1,
                 price: parseFloat(getVal('price') || '0'),
                 monthlyRate: parseFloat(getVal('monthlyRate') || '0'),
-                currency: 'USD',
+                currency: currencyCode,
                 realEstateDetails: {
                     bedrooms: parseInt(getVal('bedrooms') || '1'),
                     bathrooms: parseInt(getVal('bathrooms') || '1'),
@@ -518,7 +518,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             sold: { class: 'bg-info-soft text-info', text: 'Sold' },
         };
         const c = config[status] || config.available;
-        return <span className={`badge rounded-pill px-3 py-2 ${c.class}`}>{c.text}</span>;
+        return <span className={`badge rounded-4 px-3 py-2 ${c.class}`}>{c.text}</span>;
     };
 
     if (!mounted || !isAuthenticated) return null;
@@ -598,7 +598,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                     <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
                 ) : (
                     <div className="card border-0 shadow-sm rounded-4">
-                        <div className="table-responsive">
+                        <div className="vi-table-responsive">
                             <table className="table table-hover align-middle mb-0">
                                 <thead className="bg-light">
                                     <tr>
@@ -637,9 +637,9 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                             </td>
                                             <td className="py-3">
                                                 {unit.monthlyRate ? (
-                                                    <div className="small fw-bold text-dark">${unit.monthlyRate}/mo</div>
+                                                    <div className="small fw-bold text-dark">{currencySymbol}{unit.monthlyRate}/mo</div>
                                                 ) : (
-                                                    <div className="small fw-bold text-dark">${unit.price}</div>
+                                                    <div className="small fw-bold text-dark">{currencySymbol}{unit.price}</div>
                                                 )}
                                             </td>
                                             <td className="py-3">{getStatusBadge(unit.status)}</td>
@@ -746,11 +746,11 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                             <input type="number" className="form-control bg-light border-0 form-control-lg" value={formData.floorNo} onChange={(e) => setFormData({ ...formData, floorNo: parseInt(e.target.value) })} />
                                         </div>
                                         <div className="col-md-3">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">Monthly Rent ($)</label>
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Monthly Rent ({currencySymbol})</label>
                                             <input type="number" className="form-control bg-light border-0 form-control-lg" value={formData.monthlyRate} onChange={(e) => setFormData({ ...formData, monthlyRate: parseFloat(e.target.value) })} />
                                         </div>
                                         <div className="col-md-3">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">Sale Price ($)</label>
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Sale Price ({currencySymbol})</label>
                                             <input type="number" className="form-control bg-light border-0 form-control-lg" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })} />
                                         </div>
 
@@ -861,7 +861,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                         <div className="spinner-border text-primary mb-3 text-opacity-75" style={{ width: '3rem', height: '3rem' }}></div>
                                         <h5>Importing Data...</h5>
                                         <p className="text-muted mb-4">Processing {importProgress} of {importTotal} records</p>
-                                        <div className="progress rounded-pill bg-light" style={{ height: '12px', maxWidth: '400px', margin: '0 auto' }}>
+                                        <div className="progress rounded-4 bg-light" style={{ height: '12px', maxWidth: '400px', margin: '0 auto' }}>
                                             <div
                                                 className="progress-bar progress-bar-striped progress-bar-animated bg-primary"
                                                 style={{ width: `${(importProgress / importTotal) * 100}%` }}

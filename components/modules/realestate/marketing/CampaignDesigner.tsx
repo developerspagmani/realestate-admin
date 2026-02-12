@@ -94,7 +94,7 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
                             <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h4 className="fw-bold mb-0">{initialData?.id ? 'Edit Blast Details' : 'Launch a New Blast'}</h4>
                                 {marketingStats && (
-                                    <div className="badge bg-white text-primary border px-3 py-2 rounded-pill fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
+                                    <div className="badge bg-white text-primary border px-3 py-2 rounded-4 fw-bold extra-small shadow-sm d-flex align-items-center gap-2">
                                         <i className="bi bi-file-earmark-check"></i>
                                         {marketingStats.totalSubmissions || 0} Submissions
                                     </div>
@@ -122,7 +122,7 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
                                     />
                                 </div>
                             </div>
-                            <button className="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-sm" disabled={!campaignData.name} onClick={() => setStep(2)}>
+                            <button className="btn btn-primary w-100 rounded-4 py-3 fw-bold shadow-sm" disabled={!campaignData.name} onClick={() => setStep(2)}>
                                 Choose Template <i className="bi bi-arrow-right ms-2"></i>
                             </button>
                         </div>
@@ -150,8 +150,8 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
                                 {templates.length === 0 && <div className="col-12 text-center py-5 bg-light rounded-4 border-dashed text-muted small">No templates found. Go to Templates tab to create designs first.</div>}
                             </div>
                             <div className="d-flex gap-3">
-                                <button className="btn btn-light rounded-pill px-4 fw-bold" onClick={() => setStep(1)}>Back</button>
-                                <button className="btn btn-primary flex-grow-1 rounded-pill fw-bold" disabled={!campaignData.templateId} onClick={() => setStep(3)}>Next: Select Audience</button>
+                                <button className="btn btn-light rounded-4 px-4 fw-bold" onClick={() => setStep(1)}>Back</button>
+                                <button className="btn btn-primary flex-grow-1 rounded-4 fw-bold" disabled={!campaignData.templateId} onClick={() => setStep(3)}>Next: Select Audience</button>
                             </div>
                         </div>
                     )}
@@ -180,8 +180,8 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
                                 {groups.length === 0 && <div className="p-4 text-center bg-light text-muted small">No audience groups found.</div>}
                             </div>
                             <div className="d-flex gap-3">
-                                <button className="btn btn-light rounded-pill px-4 fw-bold" onClick={() => setStep(2)}>Back</button>
-                                <button className="btn btn-success flex-grow-1 rounded-pill fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
+                                <button className="btn btn-light rounded-4 px-4 fw-bold" onClick={() => setStep(2)}>Back</button>
+                                <button className="btn btn-success flex-grow-1 rounded-4 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
                                     disabled={!campaignData.groupId || loading} onClick={handleSave}>
                                     {loading && <span className="spinner-border spinner-border-sm"></span>}
                                     {initialData?.id ? 'Update Campaign' : (campaignData.scheduledAt ? 'Schedule Campaign' : 'Launch Campaign Now')}

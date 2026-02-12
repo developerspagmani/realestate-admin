@@ -50,7 +50,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                         <p className="text-muted small mb-0">Exclusive listings curated for your needs</p>
                     </div>
                     {isFiltered && (
-                        <button className="btn btn-light btn-sm rounded-pill px-3 border" onClick={onReset}>
+                        <button className="btn btn-light btn-sm rounded-4 px-3 border" onClick={onReset}>
                             <i className="bi bi-x-circle me-1"></i>Reset
                         </button>
                     )}
@@ -111,7 +111,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                                         <span className="extra-small text-muted">Type</span>
                                     </div>
                                 </div>
-                                <button className="btn btn-primary w-100 rounded-pill py-2 shadow-sm fw-bold" style={{ backgroundColor: theme.primaryColor, border: 'none' }}>
+                                <button className="btn btn-primary w-100 rounded-4 py-2 shadow-sm fw-bold" style={{ backgroundColor: theme.primaryColor, border: 'none' }}>
                                     View Details
                                 </button>
                             </div>

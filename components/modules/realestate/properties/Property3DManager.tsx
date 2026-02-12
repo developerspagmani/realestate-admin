@@ -218,9 +218,9 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                         </div>
 
                         <div>
-                            <button className="btn btn-light me-2 rounded-pill px-4" onClick={onClose}>Discard</button>
+                            <button className="btn btn-light me-2 rounded-4 px-4" onClick={onClose}>Discard</button>
                             <button
-                                className="btn btn-primary rounded-pill px-4 shadow"
+                                className="btn btn-primary rounded-4 px-4 shadow"
                                 onClick={handleSave}
                                 disabled={saving}
                             >
@@ -335,7 +335,7 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                                                             <h6 className="fw-bold mb-1 small">{plan.name}</h6>
                                                             <p className="extra-small text-muted mb-3" style={{ height: '40px', overflow: 'hidden' }}>{plan.description}</p>
                                                             <button
-                                                                className="btn btn-primary w-100 btn-sm rounded-pill fw-bold"
+                                                                className="btn btn-primary w-100 btn-sm rounded-4 fw-bold"
                                                                 onClick={() => {
                                                                     setActiveDemoTour(plan);
                                                                     setShowDemoModal(false);
@@ -374,12 +374,12 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                                             <div className="vr opacity-10"></div>
                                             <div className="d-flex gap-3">
                                                 <div className="text-center">
-                                                    <span className="badge bg-primary-soft text-primary extra-small px-3 py-2 rounded-pill">AESTHETIC VIBE</span>
+                                                    <span className="badge bg-primary-soft text-primary extra-small px-3 py-2 rounded-4">AESTHETIC VIBE</span>
                                                 </div>
                                             </div>
                                             <button
                                                 type="button"
-                                                className="btn btn-dark rounded-pill px-4 fw-bold shadow-sm"
+                                                className="btn btn-dark rounded-4 px-4 fw-bold shadow-sm"
                                                 onClick={() => setActiveDemoTour(null)}
                                             >
                                                 <i className="bi bi-x-lg me-2"></i> Close Tour

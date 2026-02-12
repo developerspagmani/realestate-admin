@@ -141,7 +141,7 @@ export default function CoworkingRegisterPage() {
                                     </div>
                                     <h3 className="fw-extrabold text-dark mb-3">Welcome to the Community!</h3>
                                     <p className="text-muted small mb-4">Account created for <strong>{formData.spaceName}</strong>.<br />Please check <strong>{formData.email}</strong> to verify your account.</p>
-                                    <Link href="/login" className="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm">
+                                    <Link href="/login" className="btn btn-primary rounded-4 px-5 py-3 fw-bold shadow-sm">
                                         Proceed to Login
                                     </Link>
                                 </div>
@@ -152,7 +152,7 @@ export default function CoworkingRegisterPage() {
                                             <h2 className="fw-extrabold text-dark mb-1">Coworking Registration</h2>
                                             <p className="text-muted small">Register your shared workspace</p>
                                         </div>
-                                        <div className="badge bg-dark rounded-pill px-3 py-2 small">Shared Space</div>
+                                        <div className="badge bg-dark rounded-4 px-3 py-2 small">Shared Space</div>
                                     </div>
 
                                     {error && (
@@ -222,7 +222,7 @@ export default function CoworkingRegisterPage() {
                                             </div>
                                         </div>
 
-                                        <button type="submit" className="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-lg mt-4" disabled={loading}>
+                                        <button type="submit" className="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-lg mt-4" disabled={loading}>
                                             {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-building-fill-add me-2"></i>}
                                             {loading ? 'Creating Workspace...' : 'Register Workspace'}
                                         </button>

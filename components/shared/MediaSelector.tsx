@@ -14,12 +14,14 @@ interface MediaSelectorProps {
     title?: string;
 }
 
+const DEFAULT_SELECTED_IDS: string[] = [];
+
 export default function MediaSelector({
     show,
     onClose,
     onSelect,
     multiple = false,
-    selectedIds = [],
+    selectedIds = DEFAULT_SELECTED_IDS,
     title = 'Select Media'
 }: MediaSelectorProps) {
     const { user } = useAuthContext();
@@ -27,7 +29,7 @@ export default function MediaSelector({
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('image'); // Default to images
-    const [localSelectedIds, setLocalSelectedIds] = useState<string[]>(selectedIds);
+    const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +44,10 @@ export default function MediaSelector({
         try {
             setLoading(true);
             const token = getAuthToken();
-            if (!token) return;
+            if (!token) {
+                setLoading(false);
+                return;
+            }
             const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || undefined;
             const response = await mediaService.getMedia(token, tenantId ? { tenantId } : undefined);
             if (response.success) {
@@ -201,6 +206,9 @@ export default function MediaSelector({
                                                         src={item.url}
                                                         alt={item.alt}
                                                         className="w-100 h-100 object-fit-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = 'https://placehold.co/400x400?text=No+Image';
+                                                        }}
                                                     />
                                                 ) : (
                                                     <div className="w-100 h-100 d-flex align-items-center justify-content-center">
@@ -215,7 +223,7 @@ export default function MediaSelector({
                                             </div>
                                             <div className="p-2">
                                                 <div className="small text-truncate fw-bold">{item.title}</div>
-                                               
+
                                             </div>
                                         </div>
                                     </div>

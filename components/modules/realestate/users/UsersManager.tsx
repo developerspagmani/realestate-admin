@@ -286,7 +286,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                 </div>
 
                 <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                    <div className="table-responsive">
+                    <div className="vi-table-responsive">
                         <table className="table table-hover align-middle mb-0">
                             <thead className="bg-light">
                                 <tr>
@@ -329,7 +329,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                                 {getRoleBadge(u.role)}
                                             </td>
                                             <td className="py-3 text-center">
-                                                <span className="badge rounded-pill bg-light text-dark border fw-medium px-3">
+                                                <span className="badge rounded-4 bg-light text-dark border fw-medium px-3">
                                                     {(u as any).bookingsCount || 0}
                                                 </span>
                                             </td>

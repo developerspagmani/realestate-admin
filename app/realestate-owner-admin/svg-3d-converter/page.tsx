@@ -183,7 +183,7 @@ export default function Svg3DConverterPage() {
                         <i className="bi bi-exclamation-circle fs-1 mb-3 d-block"></i>
                         <h4 className="fw-bold">No SVG Data Found</h4>
                         <p className="text-muted">Please go back to the Plot Map Editor and click "Convert to 3D".</p>
-                        <button onClick={() => router.back()} className="btn btn-primary rounded-pill px-4 mt-3">Go Back</button>
+                        <button onClick={() => router.back()} className="btn btn-primary rounded-4 px-4 mt-3">Go Back</button>
                     </div>
                 </div>
             </MainLayout>
@@ -207,10 +207,10 @@ export default function Svg3DConverterPage() {
                     </div>
 
                     <div className="d-flex gap-2">
-                        <button className="btn btn-primary rounded-pill px-4 fw-bold shadow-lg hvr-translate-up" onClick={() => window.print()}>
+                        <button className="btn btn-primary rounded-4 px-4 fw-bold shadow-lg hvr-translate-up" onClick={() => window.print()}>
                             <i className="bi bi-camera me-2"></i>Capture Preview
                         </button>
-                        <button className="btn btn-success rounded-pill px-4 fw-bold shadow-lg hvr-translate-up">
+                        <button className="btn btn-success rounded-4 px-4 fw-bold shadow-lg hvr-translate-up">
                             <i className="bi bi-check-circle me-2"></i>Finalize 3D Model
                         </button>
                     </div>
@@ -304,7 +304,7 @@ export default function Svg3DConverterPage() {
                                 <span className="d-block extra-small text-uppercase fw-bold text-muted mb-1" style={{ letterSpacing: '0.05em' }}>Property Unit</span>
                                 <h6 className="fw-bold text-dark mb-0">{hoveredUnit.name}</h6>
                             </div>
-                            <span className="badge rounded-pill px-2 py-1 fw-bold" style={{
+                            <span className="badge rounded-4 px-2 py-1 fw-bold" style={{
                                 fontSize: '9px',
                                 backgroundColor: getStatusColor(hoveredUnit.status).fill + '20',
                                 color: getStatusColor(hoveredUnit.status).stroke

@@ -48,11 +48,11 @@ export default function WorkflowEnrollmentList({ workflowId, workflowName, onClo
 
     const getStatusBadge = (status: number) => {
         switch (status) {
-            case 1: return <span className="badge bg-success-soft text-success rounded-pill px-2">Active</span>;
-            case 2: return <span className="badge bg-primary-soft text-primary rounded-pill px-2">Completed</span>;
-            case 3: return <span className="badge bg-warning-soft text-warning rounded-pill px-2">Paused</span>;
-            case 4: return <span className="badge bg-danger-soft text-danger rounded-pill px-2">Cancelled</span>;
-            default: return <span className="badge bg-secondary-soft text-secondary rounded-pill px-2">Unknown</span>;
+            case 1: return <span className="badge bg-success-soft text-success rounded-4 px-2">Active</span>;
+            case 2: return <span className="badge bg-primary-soft text-primary rounded-4 px-2">Completed</span>;
+            case 3: return <span className="badge bg-warning-soft text-warning rounded-4 px-2">Paused</span>;
+            case 4: return <span className="badge bg-danger-soft text-danger rounded-4 px-2">Cancelled</span>;
+            default: return <span className="badge bg-secondary-soft text-secondary rounded-4 px-2">Unknown</span>;
         }
     };
 
@@ -76,7 +76,7 @@ export default function WorkflowEnrollmentList({ workflowId, workflowName, onClo
                         <p className="text-muted small mt-2">No leads are currently enrolled in this workflow.</p>
                     </div>
                 ) : (
-                    <div className="table-responsive">
+                    <div className="vi-table-responsive">
                         <table className="table table-hover align-middle mb-0">
                             <thead className="bg-light">
                                 <tr>

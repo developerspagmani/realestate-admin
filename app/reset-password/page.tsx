@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/app/services/api';
 import Link from 'next/link';
@@ -15,6 +15,13 @@ function ResetPasswordForm() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -85,11 +92,16 @@ function ResetPasswordForm() {
                                 <div className="bg-success bg-opacity-10 rounded-circle d-inline-flex p-4 mb-4">
                                     <i className="bi bi-check-circle-fill display-4 text-success"></i>
                                 </div>
-                                <h2 className="fw-extrabold text-dark mb-1">Passowrd Reset!</h2>
+                                <h2 className="fw-extrabold text-dark mb-1">Password Reset!</h2>
                                 <p className="text-muted small mb-4">Your security credentials have been successfully updated.</p>
-                                <button className="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm" onClick={() => router.push('/login')}>
+                                <button className="btn btn-primary rounded-4 px-5 py-3 fw-bold shadow-sm" onClick={() => router.push('/login')}>
                                     Go to Login
                                 </button>
+                            </div>
+                        ) : !isMounted ? (
+                            <div className="text-center py-5">
+                                <div className="spinner-border text-primary mb-3"></div>
+                                <p className="text-muted small">Verifying security link...</p>
                             </div>
                         ) : !token ? (
                             <div className="text-center py-5">
@@ -98,7 +110,7 @@ function ResetPasswordForm() {
                                 </div>
                                 <h2 className="fw-extrabold text-dark mb-1">Invalid Link</h2>
                                 <p className="text-muted small mb-4">This reset link has expired or is invalid. Please request a new one.</p>
-                                <Link href="/forgot-password" className="btn btn-dark rounded-pill px-5 py-3 fw-bold shadow-sm">
+                                <Link href="/forgot-password" className="btn btn-dark rounded-4 px-5 py-3 fw-bold shadow-sm">
                                     Try Again
                                 </Link>
                             </div>
@@ -121,7 +133,7 @@ function ResetPasswordForm() {
                                         <div className="input-group">
                                             <span className="input-group-text bg-light border-end-0 rounded-start-3"><i className="bi bi-lock text-muted"></i></span>
                                             <input
-                                                type="password"
+                                                type={showPassword ? 'text' : 'password'}
                                                 className="form-control bg-light border-start-0 ps-0"
                                                 placeholder="Min. 8 characters"
                                                 value={password}
@@ -129,6 +141,13 @@ function ResetPasswordForm() {
                                                 required
                                                 disabled={loading}
                                             />
+                                            <button
+                                                type="button"
+                                                className="btn btn-light border-start-0 rounded-end-3 text-muted"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                            >
+                                                <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -137,7 +156,7 @@ function ResetPasswordForm() {
                                         <div className="input-group">
                                             <span className="input-group-text bg-light border-end-0 rounded-start-3"><i className="bi bi-lock-fill text-muted"></i></span>
                                             <input
-                                                type="password"
+                                                type={showConfirmPassword ? 'text' : 'password'}
                                                 className="form-control bg-light border-start-0 ps-0"
                                                 placeholder="Repeat your password"
                                                 value={confirmPassword}
@@ -145,12 +164,19 @@ function ResetPasswordForm() {
                                                 required
                                                 disabled={loading}
                                             />
+                                            <button
+                                                type="button"
+                                                className="btn btn-light border-start-0 rounded-end-3 text-muted"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            >
+                                                <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                                            </button>
                                         </div>
                                     </div>
 
                                     <button
                                         type="submit"
-                                        className="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
+                                        className="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
                                         disabled={loading}
                                     >
                                         {loading ? <span className="spinner-border spinner-border-sm"></span> : <i className="bi bi-shield-check"></i>}

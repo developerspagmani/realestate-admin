@@ -64,7 +64,7 @@ export default function AgentCommissions() {
                         <h5 className="fw-bold mb-0">Earning History</h5>
                     </div>
                     <div className="card-body p-0">
-                        <div className="table-responsive">
+                        <div className="vi-table-responsive">
                             <table className="table table-hover align-middle mb-0">
                                 <thead className="bg-light">
                                     <tr>
@@ -99,9 +99,9 @@ export default function AgentCommissions() {
                                                 <td className="small">${Number(item.booking?.totalPrice || 0).toFixed(2)}</td>
                                                 <td className="fw-bold text-dark">${Number(item.amount).toFixed(2)}</td>
                                                 <td>
-                                                    <span className={`badge rounded-pill ${item.status === 'PAID' ? 'bg-success-subtle text-success' :
-                                                            item.status === 'PENDING' ? 'bg-warning-subtle text-warning' :
-                                                                'bg-danger-subtle text-danger'
+                                                    <span className={`badge rounded-4 ${item.status === 'PAID' ? 'bg-success-subtle text-success' :
+                                                        item.status === 'PENDING' ? 'bg-warning-subtle text-warning' :
+                                                            'bg-danger-subtle text-danger'
                                                         }`}>
                                                         {item.status}
                                                     </span>

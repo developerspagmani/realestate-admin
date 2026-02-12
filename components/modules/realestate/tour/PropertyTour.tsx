@@ -344,7 +344,7 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
         <div className={`tour-wrapper bg-dark shadow-lg overflow-hidden position-relative ${isMobile ? 'mobile-tour' : ''}`}>
             {/* UI: Header */}
             <div className="tour-header position-absolute top-0 start-0 end-0 p-3 p-md-4 d-flex justify-content-between align-items-center z-index-10">
-                <div className="glass-panel text-white p-2 px-3 px-md-4 rounded-pill d-flex align-items-center">
+                <div className="glass-panel text-white p-2 px-3 px-md-4 rounded-4 d-flex align-items-center">
                     <div className="me-2 me-md-3">
                         <i className="bi bi-house-fill fs-5 fs-md-4 text-primary"></i>
                     </div>
@@ -427,7 +427,7 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
                         {(['A', 'B', 'C'] as const).map(p => (
                             <button
                                 key={p}
-                                className={`btn btn-sm ${planId === p ? 'btn-primary' : 'btn-outline-light'} rounded-pill`}
+                                className={`btn btn-sm ${planId === p ? 'btn-primary' : 'btn-outline-light'} rounded-4`}
                                 onClick={() => setPlanId(p)}
                             >
                                 Plan {p} - {p === 'A' ? 'Classic' : p === 'B' ? 'Studio' : 'Executive'}
@@ -435,7 +435,7 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
                         ))}
                     </div>
                     {isMobile && (
-                        <button className="btn btn-light btn-sm w-100 mt-3 rounded-pill fw-bold" onClick={() => setSidebarVisible(false)}>
+                        <button className="btn btn-light btn-sm w-100 mt-3 rounded-4 fw-bold" onClick={() => setSidebarVisible(false)}>
                             Apply Changes
                         </button>
                     )}
@@ -463,8 +463,8 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
                         </ul>
 
                         <div className="d-grid gap-2">
-                            <button className="btn btn-outline-light btn-sm rounded-pill">More Photos</button>
-                            <button className="btn btn-primary rounded-pill px-4 shadow">
+                            <button className="btn btn-outline-light btn-sm rounded-4">More Photos</button>
+                            <button className="btn btn-primary rounded-4 px-4 shadow">
                                 Schedule a Visit <i className="bi bi-chevron-right ms-2"></i>
                             </button>
                         </div>
@@ -474,7 +474,7 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
 
             {/* UI: Bottom Toolbar */}
             <div className={`tour-toolbar position-absolute bottom-0 start-50 translate-middle-x p-3 p-md-4 z-index-10 w-100 d-flex justify-content-center ${isMobile && (sidebarVisible || selectedHotspot) ? 'd-none' : ''}`}>
-                <div className="glass-toolbar p-2 rounded-pill d-flex gap-1 animate__animated animate__fadeInUp overflow-auto no-scrollbar" style={{ maxWidth: '90vw' }}>
+                <div className="glass-toolbar p-2 rounded-4 d-flex gap-1 animate__animated animate__fadeInUp overflow-auto no-scrollbar" style={{ maxWidth: '90vw' }}>
                     <button className={`btn-tool-pill ${isDay ? 'active' : ''}`} onClick={() => setIsDay(!isDay)}>
                         <i className={`bi bi-${isDay ? 'sun' : 'moon-stars'} me-2`}></i> {isDay ? 'Day' : 'Night'}
                     </button>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import FormBuilder from './FormBuilder';
 import WidgetPreview from './WidgetPreview';
+import MediaSelector from '@/components/shared/MediaSelector';
 
 interface WidgetFormProps {
     formData: any;
@@ -26,6 +27,16 @@ export default function WidgetForm({
     marketingForms
 }: WidgetFormProps) {
     const [activeTab, setActiveTab] = useState<'basics' | 'style' | 'builder' | 'modules'>('basics');
+    const [showMediaSelector, setShowMediaSelector] = useState(false);
+    const [mediaTarget, setMediaTarget] = useState<'logoUrl' | 'heroBgUrl' | null>(null);
+
+    const handleMediaSelect = (media: any) => {
+        if (media && mediaTarget) {
+            toggleNestedConfig('builder', mediaTarget, media.url);
+        }
+        setShowMediaSelector(false);
+        setMediaTarget(null);
+    };
 
     const toggleNestedConfig = (parent: string, child: string, value: any) => {
         setFormData({
@@ -68,7 +79,7 @@ export default function WidgetForm({
                                 <button
                                     key={tab.id}
                                     type="button"
-                                    className={`btn btn-sm px-3 rounded-pill d-flex align-items-center gap-2 transition-all ${activeTab === tab.id ? 'btn-primary shadow-sm shadow-primary' : 'btn-link text-muted text-decoration-none'}`}
+                                    className={`btn btn-sm px-3 rounded-4 d-flex align-items-center gap-2 transition-all ${activeTab === tab.id ? 'btn-primary shadow-sm shadow-primary' : 'btn-link text-muted text-decoration-none'}`}
                                     onClick={() => setActiveTab(tab.id as any)}
                                 >
                                     <i className={`bi ${tab.icon}`}></i>
@@ -192,7 +203,7 @@ export default function WidgetForm({
                                             <label className="form-label small fw-bold">Architectural Layout</label>
                                             <div className="d-flex gap-3">
                                                 <div
-                                                    className={`card flex-grow-1 cursor-pointer transition-all border-2 ${formData.configuration.settings?.layout === 'grid' ? 'border-primary bg-primary bg-opacity-10' : 'border-light-subtle bg-white text-muted opacity-50'}`}
+                                                    className={`card flex-grow-1 cursor-pointer transition-all border-2 ${formData.configuration.settings?.layout === 'grid' ? 'border-primary bg-primary bg-opacity-10 text-white' : 'border-light-subtle bg-white text-muted opacity-50'}`}
                                                     onClick={() => toggleNestedConfig('settings', 'layout', 'grid')}
                                                 >
                                                     <div className="card-body p-3 text-center">
@@ -201,7 +212,7 @@ export default function WidgetForm({
                                                     </div>
                                                 </div>
                                                 <div
-                                                    className={`card flex-grow-1 cursor-pointer transition-all border-2 ${formData.configuration.settings?.layout === 'builder' ? 'border-primary bg-primary bg-opacity-10' : 'border-light-subtle bg-white text-muted opacity-50'}`}
+                                                    className={`card flex-grow-1 cursor-pointer transition-all border-2 ${formData.configuration.settings?.layout === 'builder' ? 'border-primary bg-primary bg-opacity-10 text-white' : 'border-light-subtle bg-white text-muted opacity-50'}`}
                                                     onClick={() => toggleNestedConfig('settings', 'layout', 'builder')}
                                                 >
                                                     <div className="card-body p-3 text-center">
@@ -221,7 +232,7 @@ export default function WidgetForm({
                                             <div className="d-flex align-items-center gap-3">
                                                 <h6 className="fw-bold mb-0 text-secondary text-uppercase extra-small">Header & Hero Content</h6>
                                                 {formData.configuration.settings?.layout !== 'builder' && (
-                                                    <span className="badge bg-warning-subtle text-warning-emphasis fw-normal px-3 py-1 border border-warning-subtle rounded-pill">
+                                                    <span className="badge bg-warning-subtle text-warning-emphasis fw-normal px-3 py-1 border border-warning-subtle rounded-4">
                                                         <i className="bi bi-exclamation-circle me-1"></i>
                                                         Builder Layout Inactive
                                                     </span>
@@ -231,13 +242,25 @@ export default function WidgetForm({
 
                                         <div className="col-md-6">
                                             <label className="form-label small fw-bold">Brand Logo URL</label>
-                                            <input
-                                                type="text"
-                                                className="form-control rounded-3"
-                                                placeholder="https://example.com/logo.png"
-                                                value={formData.configuration.builder?.logoUrl || ''}
-                                                onChange={(e) => toggleNestedConfig('builder', 'logoUrl', e.target.value)}
-                                            />
+                                            <div className="input-group">
+                                                <input
+                                                    type="text"
+                                                    className="form-control rounded-start-3"
+                                                    placeholder="https://example.com/logo.png"
+                                                    value={formData.configuration.builder?.logoUrl || ''}
+                                                    onChange={(e) => toggleNestedConfig('builder', 'logoUrl', e.target.value)}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary rounded-end-3"
+                                                    onClick={() => {
+                                                        setMediaTarget('logoUrl');
+                                                        setShowMediaSelector(true);
+                                                    }}
+                                                >
+                                                    <i className="bi bi-image"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="col-md-6">
                                             <label className="form-label small fw-bold">Landing Page Title</label>
@@ -271,13 +294,25 @@ export default function WidgetForm({
                                         </div>
                                         <div className="col-md-6">
                                             <label className="form-label small fw-bold">Hero Cover Image</label>
-                                            <input
-                                                type="text"
-                                                className="form-control rounded-3"
-                                                placeholder="https://example.com/banner.jpg"
-                                                value={formData.configuration.builder?.heroBgUrl || ''}
-                                                onChange={(e) => toggleNestedConfig('builder', 'heroBgUrl', e.target.value)}
-                                            />
+                                            <div className="input-group">
+                                                <input
+                                                    type="text"
+                                                    className="form-control rounded-start-3"
+                                                    placeholder="https://example.com/banner.jpg"
+                                                    value={formData.configuration.builder?.heroBgUrl || ''}
+                                                    onChange={(e) => toggleNestedConfig('builder', 'heroBgUrl', e.target.value)}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline-secondary rounded-end-3"
+                                                    onClick={() => {
+                                                        setMediaTarget('heroBgUrl');
+                                                        setShowMediaSelector(true);
+                                                    }}
+                                                >
+                                                    <i className="bi bi-image"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="col-md-6">
                                             <label className="form-label small fw-bold">Hero Text Color</label>
@@ -426,8 +461,8 @@ export default function WidgetForm({
                             </div>
 
                             <div className="form-footer mt-5 border-top pt-4 text-end">
-                                <button type="button" className="btn btn-outline-secondary me-2 rounded-pill px-4 fw-bold" onClick={() => setShowForm(false)}>Discard</button>
-                                <button type="submit" className="btn btn-primary rounded-pill px-5 fw-bold shadow-lg hvr-grow">
+                                <button type="button" className="btn btn-outline-secondary me-2 rounded-4 px-4 fw-bold" onClick={() => setShowForm(false)}>Discard</button>
+                                <button type="submit" className="btn btn-primary rounded-4 px-5 fw-bold shadow-lg hvr-grow">
                                     <i className="bi bi-check-lg me-2"></i>
                                     {editingWidget ? 'Finalize Changes' : 'Publish Widget'}
                                 </button>
@@ -441,6 +476,16 @@ export default function WidgetForm({
                     </div>
                 </div>
             </div>
+
+            <MediaSelector
+                show={showMediaSelector}
+                onClose={() => {
+                    setShowMediaSelector(false);
+                    setMediaTarget(null);
+                }}
+                onSelect={handleMediaSelect}
+                title={`Select ${mediaTarget === 'logoUrl' ? 'Brand Logo' : 'Hero Cover'}`}
+            />
 
             <style jsx>{`
                 .extra-small { font-size: 0.72rem; }

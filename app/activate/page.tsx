@@ -63,7 +63,7 @@ function ActivateAccountContent() {
                         </div>
                         <h3 className="fw-bold mb-3 text-success">Account Activated!</h3>
                         <p className="text-muted mb-4">{message}</p>
-                        <Link href="/login" className="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                        <Link href="/login" className="btn btn-primary rounded-4 px-5 fw-bold shadow-sm">
                             Login Now
                         </Link>
                     </div>
@@ -76,7 +76,7 @@ function ActivateAccountContent() {
                         </div>
                         <h3 className="fw-bold mb-3 text-danger">Activation Failed</h3>
                         <p className="text-muted mb-4">{message}</p>
-                        <Link href="/login" className="btn btn-light rounded-pill px-5 fw-bold">
+                        <Link href="/login" className="btn btn-light rounded-4 px-5 fw-bold">
                             Back to Login
                         </Link>
                     </div>

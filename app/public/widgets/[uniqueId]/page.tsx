@@ -151,7 +151,7 @@ export default function PublicWidgetPage() {
                 <i className="bi bi-exclamation-triangle display-4 text-danger mb-3 d-block"></i>
                 <h4 className="fw-bold">Widget Error</h4>
                 <p className="text-muted">{error}</p>
-                <button className="btn btn-primary rounded-pill px-4 mt-3" onClick={loadWidgetData}>Try Again</button>
+                <button className="btn btn-primary rounded-4 px-4 mt-3" onClick={loadWidgetData}>Try Again</button>
             </div>
         </div>
     );
@@ -292,7 +292,7 @@ export default function PublicWidgetPage() {
                                     </h5>
                                     <p className="extra-small text-muted mb-0">{selectedProperty?.title}</p>
                                 </div>
-                                <button className="btn btn-outline-dark btn-sm rounded-pill px-4 fw-bold" onClick={() => setCurrentView('PROPERTY_DETAIL')}>
+                                <button className="btn btn-outline-dark btn-sm rounded-4 px-4 fw-bold" onClick={() => setCurrentView('PROPERTY_DETAIL')}>
                                     <i className="bi bi-x-circle me-2"></i>Exit Tour
                                 </button>
                             </div>
@@ -327,7 +327,7 @@ export default function PublicWidgetPage() {
                             )}
                         </div>
                         <div className="d-flex align-items-center gap-3">
-                            <button className="btn btn-primary btn-sm rounded-pill px-4" style={{ backgroundColor: theme.primaryColor, border: 'none' }} onClick={() => setCurrentView('PROPERTY_DETAIL')}>
+                            <button className="btn btn-primary btn-sm rounded-4 px-4" style={{ backgroundColor: theme.primaryColor, border: 'none' }} onClick={() => setCurrentView('PROPERTY_DETAIL')}>
                                 <i className="bi bi-building-fill me-2"></i>Properties
                             </button>
                         </div>

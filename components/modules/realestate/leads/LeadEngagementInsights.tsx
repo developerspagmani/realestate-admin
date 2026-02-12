@@ -88,7 +88,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                 <div>
                     <h5 className="offcanvas-title fw-bold mb-1">{leadName}</h5>
                     <div className="d-flex align-items-center gap-2">
-                        <span className="badge bg-primary rounded-pill">Score: {leadScore}</span>
+                        <span className="badge bg-primary rounded-4">Score: {leadScore}</span>
                         <span className="text-muted extra-small"><i className="bi bi-person me-1"></i> Lead Insights</span>
                     </div>
                 </div>
@@ -97,10 +97,10 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
 
             <div className="offcanvas-body p-0 d-flex flex-column">
                 <div className="px-4 py-3 bg-light border-bottom sticky-top" style={{ top: '0', zIndex: 10 }}>
-                    <ul className="nav nav-pills nav-fill bg-white p-1 rounded-pill shadow-sm border">
+                    <ul className="nav nav-pills nav-fill bg-white p-1 rounded-4 shadow-sm border">
                         <li className="nav-item">
                             <button
-                                className={`nav-link rounded-pill extra-small fw-bold transition-all ${activeView === 'timeline' ? 'active bg-primary' : 'text-muted border-0 bg-transparent'}`}
+                                className={`nav-link rounded-4 extra-small fw-bold transition-all ${activeView === 'timeline' ? 'active bg-primary' : 'text-muted border-0 bg-transparent'}`}
                                 onClick={() => setActiveView('timeline')}
                             >
                                 <i className="bi bi-clock-history me-1"></i> Timeline
@@ -108,7 +108,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                         </li>
                         <li className="nav-item">
                             <button
-                                className={`nav-link rounded-pill extra-small fw-bold transition-all ${activeView === 'recommendations' ? 'active bg-primary' : 'text-muted border-0 bg-transparent'}`}
+                                className={`nav-link rounded-4 extra-small fw-bold transition-all ${activeView === 'recommendations' ? 'active bg-primary' : 'text-muted border-0 bg-transparent'}`}
                                 onClick={() => setActiveView('recommendations')}
                             >
                                 <i className="bi bi-magic me-1"></i> AI Matches
@@ -116,7 +116,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                         </li>
                         <li className="nav-item">
                             <button
-                                className={`nav-link rounded-pill extra-small fw-bold transition-all ${activeView === 'report' ? 'active bg-primary' : 'text-muted border-0 bg-transparent'}`}
+                                className={`nav-link rounded-4 extra-small fw-bold transition-all ${activeView === 'report' ? 'active bg-primary' : 'text-muted border-0 bg-transparent'}`}
                                 onClick={() => setActiveView('report')}
                             >
                                 <i className="bi bi-bar-chart-line me-1"></i> Analysis
@@ -221,7 +221,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                                         </div>
 
                                                         <button
-                                                            className="btn btn-primary w-100 btn-sm rounded-pill extra-small fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
+                                                            className="btn btn-primary w-100 btn-sm rounded-4 extra-small fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
                                                             onClick={handleSendRecommendation}
                                                             disabled={sending}
                                                         >
@@ -270,7 +270,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                         <h6 className="fw-bold extra-small text-muted text-uppercase mb-3">Interaction Velocity</h6>
                                         <div className="d-flex justify-content-between align-items-end" style={{ height: '60px' }}>
                                             {[15, 45, 25, 65, 35, 85, 20].map((h, i) => (
-                                                <div key={i} className="bg-primary rounded-pill opacity-25" style={{ width: '8%', height: `${h}%` }}></div>
+                                                <div key={i} className="bg-primary rounded-4 opacity-25" style={{ width: '8%', height: `${h}%` }}></div>
                                             ))}
                                         </div>
                                         <div className="mt-3 d-flex justify-content-between extra-small text-muted">

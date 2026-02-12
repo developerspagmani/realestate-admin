@@ -109,7 +109,7 @@ export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, o
                                     <div className="d-flex align-items-center gap-2">
                                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: column.color }}></div>
                                         <h6 className="fw-bold mb-0 text-dark">{column.title}</h6>
-                                        <span className="badge rounded-pill bg-white text-dark border small">{columnLeads.length}</span>
+                                        <span className="badge rounded-4 bg-white text-dark border small">{columnLeads.length}</span>
                                     </div>
                                     {totalBudget > 0 && (
                                         <div className="small text-muted fw-medium">
@@ -137,7 +137,7 @@ export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, o
                                                     <div className="d-flex justify-content-between align-items-start mb-2">
                                                         <div className="d-flex align-items-center gap-2">
                                                             {getSourceIcon(lead.source)}
-                                                            <div className={`badge rounded-pill px-2 py-0 small ${lead.priority === 3 ? 'bg-danger-soft text-danger' : lead.priority === 2 ? 'bg-warning-soft text-warning' : 'bg-info-soft text-info'}`}>
+                                                            <div className={`badge rounded-4 px-2 py-0 small ${lead.priority === 3 ? 'bg-danger-soft text-danger' : lead.priority === 2 ? 'bg-warning-soft text-warning' : 'bg-info-soft text-info'}`}>
                                                                 {lead.priority === 3 ? 'High' : lead.priority === 2 ? 'Med' : 'Low'}
                                                             </div>
                                                         </div>

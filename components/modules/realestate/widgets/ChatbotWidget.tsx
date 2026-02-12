@@ -42,7 +42,7 @@ const CheckboxGroup = ({ options, onConfirm, theme, onMessage }: { options: { la
                             }}
                         />
                         <label
-                            className={`btn btn-sm rounded-pill px-3 border-0 transition-all ${selected.includes(opt.value) ? 'text-white' : 'bg-light text-muted'}`}
+                            className={`btn btn-sm rounded-4 px-3 border-0 transition-all ${selected.includes(opt.value) ? 'text-white' : 'bg-light text-muted'}`}
                             style={{ backgroundColor: selected.includes(opt.value) ? theme.primaryColor : undefined }}
                             htmlFor={`check-${opt.value}`}
                         >
@@ -52,7 +52,7 @@ const CheckboxGroup = ({ options, onConfirm, theme, onMessage }: { options: { la
                 ))}
             </div>
             <button
-                className="btn btn-primary w-100 rounded-pill btn-sm fw-bold shadow-sm"
+                className="btn btn-primary w-100 rounded-4 btn-sm fw-bold shadow-sm"
                 style={{ backgroundColor: theme.primaryColor, border: 'none' }}
                 onClick={() => {
                     if (selected.length > 0) onConfirm(selected);
@@ -373,7 +373,7 @@ export default function ChatbotWidget({
                         <h6 className="fw-bold">{customWelcomeTitle || 'Looking for a new home?'}</h6>
                         <p className="extra-small text-muted px-4">{customWelcomeSubtext || 'I can find the perfect properties in seconds based on your specific requirements.'}</p>
                         <button
-                            className="btn btn-primary rounded-pill px-4 mt-2 shadow-sm fw-bold small"
+                            className="btn btn-primary rounded-4 px-4 mt-2 shadow-sm fw-bold small"
                             style={{ backgroundColor: theme.primaryColor, border: 'none' }}
                             onClick={() => setStep('LEAD_CAPTURE')}
                         >
@@ -407,7 +407,7 @@ export default function ChatbotWidget({
                                 <input
                                     name="name"
                                     type="text"
-                                    className="form-control rounded-pill border-0 shadow-sm px-3 small"
+                                    className="form-control rounded-4 border-0 shadow-sm px-3 small"
                                     placeholder="Enter your name"
                                     required
                                     disabled={isSubmittingLead}
@@ -421,7 +421,7 @@ export default function ChatbotWidget({
                                         <input
                                             name="email"
                                             type="email"
-                                            className="form-control rounded-pill border-0 shadow-sm px-3 small"
+                                            className="form-control rounded-4 border-0 shadow-sm px-3 small"
                                             placeholder="your@email.com"
                                             required
                                             disabled={isSubmittingLead}
@@ -432,7 +432,7 @@ export default function ChatbotWidget({
                                         <input
                                             name="mobile"
                                             type="tel"
-                                            className="form-control rounded-pill border-0 shadow-sm px-3 small"
+                                            className="form-control rounded-4 border-0 shadow-sm px-3 small"
                                             placeholder="+1 234..."
                                             required
                                             disabled={isSubmittingLead}
@@ -447,7 +447,7 @@ export default function ChatbotWidget({
                                     <input
                                         name="contact"
                                         type={leadCaptureMode === 'email' ? 'email' : 'tel'}
-                                        className="form-control rounded-pill border-0 shadow-sm px-3 small"
+                                        className="form-control rounded-4 border-0 shadow-sm px-3 small"
                                         placeholder={leadCaptureMode === 'email' ? 'your@email.com' : '+1 234...'}
                                         required
                                         disabled={isSubmittingLead}
@@ -464,7 +464,7 @@ export default function ChatbotWidget({
 
                             <button
                                 type="submit"
-                                className="btn btn-primary w-100 rounded-pill py-2 shadow-sm fw-bold small"
+                                className="btn btn-primary w-100 rounded-4 py-2 shadow-sm fw-bold small"
                                 style={{ backgroundColor: theme.primaryColor, border: 'none' }}
                                 disabled={isSubmittingLead}
                             >
@@ -517,7 +517,7 @@ export default function ChatbotWidget({
                         {step === 'RESULTS' && (
                             <div className="text-center mt-3 animate-fade-in">
                                 <button
-                                    className="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold extra-small"
+                                    className="btn btn-outline-primary btn-sm rounded-4 px-4 fw-bold extra-small"
                                     onClick={handleChatAgain}
                                     style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
                                 >

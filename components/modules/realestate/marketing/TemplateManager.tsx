@@ -343,10 +343,10 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                     <p className="extra-small text-muted mb-0">Designs responsive campaigns for your property leads.</p>
                 </div>
                 <div className="d-flex gap-2">
-                    <button className="btn btn-outline-primary btn-sm rounded-pill px-3" onClick={() => setShowGallery(true)}>
+                    <button className="btn btn-outline-primary btn-sm rounded-4 px-3" onClick={() => setShowGallery(true)}>
                         <i className="bi bi-grid-3x3-gap me-1"></i> Pre-built Gallery
                     </button>
-                    <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm" onClick={() => { resetForm(); setActiveTab('designer'); setShowModal(true); }}>
+                    <button className="btn btn-primary btn-sm rounded-4 px-3 fw-bold shadow-sm" onClick={() => { resetForm(); setActiveTab('designer'); setShowModal(true); }}>
                         <i className="bi bi-magic me-1"></i> Design Theme
                     </button>
                 </div>
@@ -360,7 +360,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                     <h6 className="fw-bold text-muted">No Templates Created</h6>
                     <p className="text-muted small">Choose from our pre-built gallery to get started quickly.</p>
                     <div className="mt-3">
-                        <button className="btn btn-outline-primary btn-sm rounded-pill" onClick={() => setShowGallery(true)}>Open Gallery</button>
+                        <button className="btn btn-outline-primary btn-sm rounded-4" onClick={() => setShowGallery(true)}>Open Gallery</button>
                     </div>
                 </div>
             ) : (
@@ -409,7 +409,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                                     <div className="btn btn-xs btn-outline-primary mb-3">Professional</div>
                                                     <h6 className="fw-bold">{tpl.name}</h6>
                                                     <small className="text-muted d-block mb-3 h-40px overflow-hidden">{tpl.subject}</small>
-                                                    <button className="btn btn-primary w-100 rounded-pill btn-sm fw-bold" onClick={() => handleQuickUse(tpl)}>Use Template</button>
+                                                    <button className="btn btn-primary w-100 rounded-4 btn-sm fw-bold" onClick={() => handleQuickUse(tpl)}>Use Template</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -427,19 +427,19 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                     <div className="modal-dialog modal-dialog-centered modal-xl">
                         <div className="modal-content border-0 shadow-lg rounded-5 overflow-hidden">
                             <div className="modal-header border-0 bg-primary bg-opacity-10 p-4">
-                                <h5 className="fw-bold mb-0 text-dark">
-                                    <i className="bi bi-palette2 me-2 text-primary"></i>
+                                <h5 className="fw-bold mb-0 text-white">
+                                    <i className="bi bi-palette2 me-2 text-white"></i>
                                     {isEditing ? 'Edit Existing Template' : 'Template Designer'}
                                 </h5>
-                                <button className="btn-close" onClick={() => setShowModal(false)}></button>
+                                <button className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
                             </div>
                             <div className="modal-body p-0">
                                 <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '650px' }}>
                                     {/* Sidebar Controls */}
                                     <div className="bg-light p-4" style={{ width: '100%', maxWidth: '380px', maxHeight: '650px', overflowY: 'auto' }}>
-                                        <div className="nav nav-pills nav-fill bg-white border p-1 rounded-pill mb-4">
-                                            <button className={`nav-link rounded-pill px-4 btn-sm ${activeTab === 'designer' ? 'active shadow-sm' : ''}`} onClick={() => setActiveTab('designer')}>Design</button>
-                                            <button className={`nav-link rounded-pill px-4 btn-sm ${activeTab === 'editor' ? 'active shadow-sm' : ''}`} onClick={() => setActiveTab('editor')}>HTML</button>
+                                        <div className="nav nav-pills nav-fill bg-white border p-1 rounded-4 mb-4">
+                                            <button className={`nav-link rounded-4 px-4 btn-sm ${activeTab === 'designer' ? 'active shadow-sm' : ''}`} onClick={() => setActiveTab('designer')}>Design</button>
+                                            <button className={`nav-link rounded-4 px-4 btn-sm ${activeTab === 'editor' ? 'active shadow-sm' : ''}`} onClick={() => setActiveTab('editor')}>HTML</button>
                                         </div>
 
                                         <div className="mb-4">
@@ -567,14 +567,14 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                             <button className="btn btn-link link-muted btn-sm ms-1" onClick={() => setShowTestInput(false)}>Cancel</button>
                                         </div>
                                     ) : (
-                                        <button className="btn btn-outline-dark rounded-pill px-4 btn-sm" onClick={() => setShowTestInput(true)}>
+                                        <button className="btn btn-outline-dark rounded-4 px-4 btn-sm" onClick={() => setShowTestInput(true)}>
                                             <i className="bi bi-send me-2"></i> Send Test
                                         </button>
                                     )}
                                 </div>
                                 <div className="d-flex gap-2">
                                     <button className="btn btn-link link-dark fw-bold text-decoration-none px-4" onClick={() => setShowModal(false)}>Discard</button>
-                                    <button className="btn btn-primary rounded-pill px-5 fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleSave} disabled={!templateData.name || saving}>
+                                    <button className="btn btn-primary rounded-4 px-5 fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleSave} disabled={!templateData.name || saving}>
                                         {saving && <span className="spinner-border spinner-border-sm"></span>}
                                         {isEditing ? 'Save Changes' : 'Finalize & Save'}
                                     </button>

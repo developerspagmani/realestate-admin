@@ -282,7 +282,7 @@ export default function Plot3DViewer({ svgContent, mapping, units, theme, onClos
                 </div>
 
                 <button
-                    className="btn btn-outline-light rounded-pill px-5 fw-bold shadow-lg"
+                    className="btn btn-outline-light rounded-4 px-5 fw-bold shadow-lg"
                     onClick={onClose}
                 >
                     <i className="bi bi-x-lg me-2"></i>

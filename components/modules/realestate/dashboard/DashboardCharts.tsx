@@ -89,7 +89,7 @@ export default function DashboardCharts({ data, loading, periodLabel, onRangeCha
                         </div>
                     )}
                     <select
-                        className="form-select form-select-sm border-0 shadow-sm rounded-pill px-3"
+                        className="form-select form-select-sm border-0 shadow-sm rounded-4 px-3"
                         style={{ width: 'auto', minWidth: '150px' }}
                         value={period}
                         onChange={(e) => setPeriod(e.target.value)}
@@ -108,7 +108,7 @@ export default function DashboardCharts({ data, loading, periodLabel, onRangeCha
                 <div className="card border-0 shadow-sm rounded-4 p-4">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h5 className="fw-bold mb-0">Bookings Trend</h5>
-                        <span className="badge bg-primary-soft text-primary px-3 py-2 rounded-pill small">{periodLabel || 'Report'}</span>
+                        <span className="badge bg-primary-soft text-primary px-3 py-2 rounded-4 small">{periodLabel || 'Report'}</span>
                     </div>
                     <div style={{ width: '100%', height: 300 }}>
                         <ResponsiveContainer>
@@ -159,7 +159,7 @@ export default function DashboardCharts({ data, loading, periodLabel, onRangeCha
                 <div className="card border-0 shadow-sm rounded-4 p-4">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h5 className="fw-bold mb-0">Leads Acquisition</h5>
-                        <span className="badge bg-success-soft text-success px-3 py-2 rounded-pill small">{periodLabel || 'Report'}</span>
+                        <span className="badge bg-success-soft text-success px-3 py-2 rounded-4 small">{periodLabel || 'Report'}</span>
                     </div>
                     <div style={{ width: '100%', height: 300 }}>
                         <ResponsiveContainer>

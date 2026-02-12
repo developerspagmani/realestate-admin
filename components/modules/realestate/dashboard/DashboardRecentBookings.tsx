@@ -7,12 +7,12 @@ interface DashboardRecentBookingsProps {
 
 export default function DashboardRecentBookings({ bookings, loading }: DashboardRecentBookingsProps) {
     return (
-        <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+        <div className="card border-0 shadow-sm rounded-4 h-100 overflow-visible">
             <div className="card-header bg-white border-0 p-4 d-flex justify-content-between align-items-center">
                 <h5 className="fw-bold mb-0">Recent Bookings</h5>
                 {/* Helper link could be added here if needed */}
             </div>
-            <div className="table-responsive">
+            <div className="vi-table-responsive">
                 <table className="table table-hover align-middle mb-0">
                     <thead className="bg-light">
                         <tr>
@@ -30,7 +30,7 @@ export default function DashboardRecentBookings({ bookings, loading }: Dashboard
                                     <td className="px-4 py-3"><div className="skeleton h-2rem w-100"></div></td>
                                     <td className="py-3"><div className="skeleton h-1rem w-75"></div></td>
                                     <td className="py-3"><div className="skeleton h-1rem w-50"></div></td>
-                                    <td className="py-3 text-center"><div className="skeleton h-2rem w-50 mx-auto rounded-pill"></div></td>
+                                    <td className="py-3 text-center"><div className="skeleton h-2rem w-50 mx-auto rounded-4"></div></td>
                                     <td className="pe-4 py-3 text-end"><div className="skeleton h-1rem w-75 ms-auto"></div></td>
                                 </tr>
                             ))
@@ -57,7 +57,7 @@ export default function DashboardRecentBookings({ bookings, loading }: Dashboard
                                     <span className="fw-bold text-dark small">${booking.totalPrice}</span>
                                 </td>
                                 <td className="py-3 text-center">
-                                    <span className={`badge rounded-pill px-3 ${booking.status === 2 || booking.status === 3 ? 'bg-success-soft text-success' : // Confirmed/Completed
+                                    <span className={`badge rounded-4 px-3 ${booking.status === 2 || booking.status === 3 ? 'bg-success-soft text-success' : // Confirmed/Completed
                                         booking.status === 4 ? 'bg-danger-soft text-danger' : // Cancelled
                                             'bg-warning-soft text-warning' // Pending
                                         }`}>

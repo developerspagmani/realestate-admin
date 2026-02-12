@@ -84,9 +84,9 @@ export default function AgentLeads() {
                     </button>
                 </div>
 
-                <div className="card border-0 shadow-sm rounded-4">
+                <div className="card border-0 shadow-sm rounded-4 overflow-visible">
                     <div className="card-body p-0">
-                        <div className="table-responsive">
+                        <div className="vi-table-responsive">
                             <table className="table table-hover align-middle mb-0">
                                 <thead className="bg-light">
                                     <tr>

@@ -155,6 +155,9 @@ export const adminEndpoints = {
   createWorkspace: () => '/realestate-admin/workspace',
   getAnalytics: (params?: Record<string, any>) =>
     params ? `/realestate-admin/analytics?${buildQueryString(params)}` : '/realestate-admin/analytics',
+  getSettings: () => '/realestate-admin/settings',
+  updateSetting: () => '/realestate-admin/settings',
+  extendTrial: () => '/realestate-admin/tenants/extend-trial',
 };
 
 // Public Discovery Modules
@@ -388,6 +391,23 @@ export const property3DEndpoints = {
   getByPropertyId: (propertyId: string) => `/property-3d/${propertyId}`,
   save: (propertyId: string) => `/property-3d/${propertyId}`,
 };
+
+// Subscription/Plan endpoints
+export const subscriptionEndpoints = {
+  getPlans: () => '/plans',
+  createPlan: () => '/plans',
+  updatePlan: (id: string) => `/plans/${id}`,
+};
+
+// License Key endpoints
+export const licenseKeyEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/license-keys?${buildQueryString(params)}` : '/license-keys',
+  generate: () => '/license-keys/generate',
+  validate: () => '/license-keys/validate',
+  activate: () => '/license-keys/activate',
+};
+
 
 // Helper function to build query strings
 export const buildQueryString = (params: Record<string, any>): string => {

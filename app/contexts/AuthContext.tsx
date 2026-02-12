@@ -13,6 +13,8 @@ export interface User {
   role: number; // 1: user, 2: admin, 3: owner, 4: agent
   tenantId?: string;
   status?: string;
+  subscriptionStatus?: number;
+  subscriptionExpiresAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -132,6 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await moduleService.getMyModules(token);
       if (response.success) {
         dispatch({ type: 'SET_MODULES', payload: response.data });
+        localStorage.setItem('activeModules', JSON.stringify(response.data));
       }
     } catch (error) {
       console.error('Failed to fetch modules:', error);

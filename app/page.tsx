@@ -109,10 +109,10 @@ export default function Home() {
             <a href="#features" className="text-white opacity-60 text-decoration-none hvr-opacity">Platform</a>
             <a href="#results" className="text-white opacity-60 text-decoration-none hvr-opacity">Impact</a>
             <Link href="/login" className="text-white opacity-60 text-decoration-none hvr-opacity">Sign In</Link>
-            <Link href="/register" className="btn btn-white btn-sm rounded-pill px-4 fw-600 bg-white text-black">Get Started</Link>
+            <Link href="/register" className="btn btn-white btn-sm rounded-4 px-4 fw-600 bg-white text-black">Get Started</Link>
           </div>
           <div className="d-lg-none">
-            <Link href="/login" className="btn btn-outline-light btn-sm rounded-pill px-3 me-2">Sign In</Link>
+            <Link href="/login" className="btn btn-outline-light btn-sm rounded-4 px-3 me-2">Sign In</Link>
           </div>
         </div>
       </nav>
@@ -128,10 +128,10 @@ export default function Home() {
               Virpanix merges spatial computing with predictive AI to redefine institutional real estate management. Maximize yield. Automate operations.
             </p>
             <div className="d-flex flex-column flex-md-row gap-3 gap-md-4 justify-content-center align-items-center">
-              <Link href="/register" className="btn btn-white rounded-pill px-5 py-3 fw-600 bg-white text-black hvr-shift w-md-auto">
+              <Link href="/register" className="btn btn-white rounded-4 px-5 py-3 fw-600 bg-white text-black hvr-shift w-md-auto">
                 Start Exploring
               </Link>
-              <button className="btn btn-outline-light rounded-pill px-5 py-3 border-opacity-25 hvr-shift fw-400 w-md-auto text-white">
+              <button className="btn btn-outline-light rounded-4 px-5 py-3 border-opacity-25 hvr-shift fw-400 w-md-auto text-white">
                 Watch Intro
               </button>
             </div>
@@ -325,7 +325,7 @@ export default function Home() {
               <div className="card bg-charcoal text-white p-5 rounded-5 border-0 shadow-pro position-relative overflow-hidden">
                 <div className="mb-5 d-flex justify-content-between align-items-center">
                   <h5 className="fw-400 m-0 tracking-tight lg-large">Performance Report</h5>
-                  <span className="x-small bg-white/10 text-white rounded-pill px-3 py-1 fw-500 tracking-widest">REAL-TIME</span>
+                  <span className="x-small bg-white/10 text-white rounded-4 px-3 py-1 fw-500 tracking-widest">REAL-TIME</span>
                 </div>
                 <div className="d-flex flex-column gap-5">
                   <div>
@@ -398,8 +398,8 @@ export default function Home() {
         <div className="container">
           <h2 className="display-3 display-md-2 fw-300 mb-5 tracking-tighter text-white">Ready to automate <br /> your estate?</h2>
           <div className="d-flex gap-4 justify-content-center pt-2">
-            <Link href="/register" className="btn btn-white btn-lg rounded-pill px-5 py-3 fw-600 bg-white text-black hvr-shift">Try it Free</Link>
-            <button className="btn btn-outline-light btn-lg rounded-pill px-5 py-3 fw-400 border-opacity-25 hvr-shift">Book Demo</button>
+            <Link href="/register" className="btn btn-white btn-lg rounded-4 px-5 py-3 fw-600 bg-white text-black hvr-shift">Try it Free</Link>
+            <button className="btn btn-outline-light btn-lg rounded-4 px-5 py-3 fw-400 border-opacity-25 hvr-shift">Book Demo</button>
           </div>
         </div>
       </section>

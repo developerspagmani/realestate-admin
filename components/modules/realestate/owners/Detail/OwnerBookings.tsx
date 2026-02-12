@@ -31,17 +31,17 @@ export default function OwnerBookings() {
 
     const getStatusBadge = (status: number) => {
         switch (status) {
-            case 1: return <span className="badge bg-warning-soft text-warning rounded-pill px-3 py-2">Pending</span>;
-            case 2: return <span className="badge bg-success-soft text-success rounded-pill px-3 py-2">Confirmed</span>;
-            case 3: return <span className="badge bg-danger-soft text-danger rounded-pill px-3 py-2">Cancelled</span>;
-            case 4: return <span className="badge bg-info-soft text-info rounded-pill px-3 py-2">Completed</span>;
-            default: return <span className="badge bg-secondary-soft text-secondary rounded-pill px-3 py-2">Other</span>;
+            case 1: return <span className="badge bg-warning-soft text-warning rounded-4 px-3 py-2">Pending</span>;
+            case 2: return <span className="badge bg-success-soft text-success rounded-4 px-3 py-2">Confirmed</span>;
+            case 3: return <span className="badge bg-danger-soft text-danger rounded-4 px-3 py-2">Cancelled</span>;
+            case 4: return <span className="badge bg-info-soft text-info rounded-4 px-3 py-2">Completed</span>;
+            default: return <span className="badge bg-secondary-soft text-secondary rounded-4 px-3 py-2">Other</span>;
         }
     };
 
     return (
         <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
-            <div className="table-responsive">
+            <div className="vi-table-responsive">
                 <table className="table table-hover align-middle mb-0">
                     <thead className="bg-light">
                         <tr>
