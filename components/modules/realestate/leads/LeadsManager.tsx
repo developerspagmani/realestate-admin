@@ -29,6 +29,7 @@ export interface Lead {
     createdAt: string;
     updatedAt: string;
     lastContacted: string | null;
+    tags?: string[];
 }
 
 interface LeadsManagerProps {
@@ -127,7 +128,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     leadScore: l.leadScore || 0,
                     createdAt: l.createdAt,
                     updatedAt: l.updatedAt || l.createdAt,
-                    lastContacted: l.lastContacted || null
+                    lastContacted: l.lastContacted || null,
+                    tags: l.preferences?.tags || []
                 }));
                 setLeads(mappedLeads);
             }
@@ -451,6 +453,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Contact Info</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Source</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Status</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Tags</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Created</th>
                                         <th className="px-4 py-3 text-uppercase small fw-bold text-muted text-end">Actions</th>
                                     </tr>
@@ -513,6 +516,15 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                                 <span className="badge bg-light text-dark border fw-normal text-capitalize">{lead.source}</span>
                                             </td>
                                             <td className="py-3">{getStatusBadge(lead.status)}</td>
+                                            <td className="py-3">
+                                                <div className="d-flex flex-wrap gap-1">
+                                                    {lead.tags?.map(tag => (
+                                                        <span key={tag} className="badge bg-primary bg-opacity-10 text-primary border-primary border-opacity-10 rounded-4 extra-small-badge">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </td>
                                             <td className="py-3 small text-muted">{new Date(lead.createdAt).toLocaleDateString()}</td>
                                             <td className="px-4 py-3 text-end">
                                                 <div className="btn-group">

@@ -70,4 +70,16 @@ export const bookingService = {
             headers: { 'Authorization': `Bearer ${token}` },
         });
     },
+
+    sendVisitInfo: async (token: string, bookingId: string, tenantId?: string) => {
+        const params: Record<string, string> = {};
+        if (tenantId) params.tenantId = tenantId;
+        const queryString = new URLSearchParams(params).toString();
+        const endpoint = queryString ? `/bookings/${bookingId}/send-info?${queryString}` : `/bookings/${bookingId}/send-info`;
+
+        return await makeApiCall(endpoint, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
 };

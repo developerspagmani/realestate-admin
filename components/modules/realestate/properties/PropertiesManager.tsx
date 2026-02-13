@@ -114,6 +114,7 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     listingType: (p.listingType?.toLowerCase() as any) || 'rent',
                     categoryId: p.categoryId || '',
                     videoUrl: p.videoUrl || '',
+                    displayPrice: p.displayPrice !== undefined ? p.displayPrice : true,
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt
                 }));
@@ -217,7 +218,8 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                 lotSize: formData.lotSize,
                 listingType: formData.listingType,
                 categoryId: (formData as any).categoryId || null,
-                videoUrl: (formData as any).videoUrl || null
+                videoUrl: (formData as any).videoUrl || null,
+                displayPrice: (formData as any).displayPrice
             };
 
             if (editingProperty) {

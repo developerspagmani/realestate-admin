@@ -57,36 +57,40 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
 
     const addField = () => {
         const newField = {
-            id: `f${Date.now()}`,
+            id: `f${Date.now()}-${Math.floor(Math.random() * 1000)}`,
             label: 'New Field',
             type: 'text',
             placeholder: 'Enter text...',
             required: false
         };
-        setCurrentForm({
-            ...currentForm,
+        setCurrentForm((prev: any) => ({
+            ...prev,
             configuration: {
-                ...currentForm.configuration,
-                fields: [...currentForm.configuration.fields, newField]
+                ...prev.configuration,
+                fields: [...prev.configuration.fields, newField]
             }
-        });
+        }));
     };
 
     const updateField = (id: string, updates: any) => {
-        const updatedFields = currentForm.configuration.fields.map((f: any) =>
-            f.id === id ? { ...f, ...updates } : f
-        );
-        setCurrentForm({
-            ...currentForm,
-            configuration: { ...currentForm.configuration, fields: updatedFields }
+        setCurrentForm((prev: any) => {
+            const updatedFields = prev.configuration.fields.map((f: any) =>
+                f.id === id ? { ...f, ...updates } : f
+            );
+            return {
+                ...prev,
+                configuration: { ...prev.configuration, fields: updatedFields }
+            };
         });
     };
 
     const removeField = (id: string) => {
-        const updatedFields = currentForm.configuration.fields.filter((f: any) => f.id !== id);
-        setCurrentForm({
-            ...currentForm,
-            configuration: { ...currentForm.configuration, fields: updatedFields }
+        setCurrentForm((prev: any) => {
+            const updatedFields = prev.configuration.fields.filter((f: any) => f.id !== id);
+            return {
+                ...prev,
+                configuration: { ...prev.configuration, fields: updatedFields }
+            };
         });
     };
 
@@ -133,9 +137,13 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
     };
 
     const openEdit = (form: any) => {
+        const config = typeof form.configuration === 'string' ? JSON.parse(form.configuration) : (form.configuration || {});
         setCurrentForm({
             ...form,
-            configuration: typeof form.configuration === 'string' ? JSON.parse(form.configuration) : form.configuration
+            configuration: {
+                ...config,
+                fields: config.fields || []
+            }
         });
         setIsEditing(true);
     };

@@ -456,6 +456,68 @@ export default function WidgetForm({
                                                 )}
                                             </div>
                                         </div>
+
+                                        <div className="col-12 mt-4">
+                                            <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Booking & Reservation Module</h6>
+                                            <div className="card bg-light border-0 rounded-4 p-4 border-start border-success border-4">
+                                                <div className="form-check form-switch mb-3">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        id="bookingEnabled"
+                                                        checked={formData.configuration.bookingForm?.enabled || false}
+                                                        onChange={(e) => toggleNestedConfig('bookingForm', 'enabled', e.target.checked)}
+                                                    />
+                                                    <label className="form-check-label fw-bold small" htmlFor="bookingEnabled">Enable "Book Now" Button</label>
+                                                </div>
+
+                                                {formData.configuration.bookingForm?.enabled && (
+                                                    <div className="animate-fade-in">
+                                                        <label className="form-label small fw-bold mb-3">Booking Strategy</label>
+                                                        <div className="d-flex gap-3 mb-4">
+                                                            <div
+                                                                className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center ${!formData.configuration.bookingForm?.useMarketingForm ? 'border-success bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'}`}
+                                                                onClick={() => toggleNestedConfig('bookingForm', 'useMarketingForm', false)}
+                                                            >
+                                                                <i className="bi bi-calendar-plus d-block mb-1"></i>
+                                                                <div className="fw-bold extra-small">Booking Form Builder</div>
+                                                            </div>
+                                                            <div
+                                                                className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center ${formData.configuration.bookingForm?.useMarketingForm ? 'border-success bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'}`}
+                                                                onClick={() => toggleNestedConfig('bookingForm', 'useMarketingForm', true)}
+                                                            >
+                                                                <i className="bi bi-link-45deg d-block mb-1"></i>
+                                                                <div className="fw-bold extra-small">Marketing Form Link</div>
+                                                            </div>
+                                                        </div>
+
+                                                        {formData.configuration.bookingForm?.useMarketingForm ? (
+                                                            <div className="animate-fade-in">
+                                                                <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Booking Form</label>
+                                                                <select
+                                                                    className="form-select border-0 shadow-sm py-2 rounded-3"
+                                                                    value={formData.configuration.bookingForm?.marketingFormId || ''}
+                                                                    onChange={(e) => toggleNestedConfig('bookingForm', 'marketingFormId', e.target.value)}
+                                                                >
+                                                                    <option value="">-- Choose a Marketing Form --</option>
+                                                                    {marketingForms.map(f => (
+                                                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
+                                                        ) : (
+                                                            <FormBuilder
+                                                                config={formData.configuration.bookingForm || { enabled: false, title: '', description: '', fields: [] }}
+                                                                onChange={(formConfig) => setFormData({
+                                                                    ...formData,
+                                                                    configuration: { ...formData.configuration, bookingForm: formConfig }
+                                                                })}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

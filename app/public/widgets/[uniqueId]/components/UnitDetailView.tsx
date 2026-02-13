@@ -4,6 +4,7 @@ import React from 'react';
 import GallerySlider from './GallerySlider';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
 import { widgetService } from '@/app/services/api';
+import BookingModal from './BookingModal';
 
 interface UnitDetailViewProps {
     selectedUnit: any;
@@ -32,6 +33,7 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
     trackAction,
     identifyLead
 }) => {
+    const [showBookingModal, setShowBookingModal] = React.useState(false);
     const uImages = [
         ...(selectedUnit.mainImage ? [selectedUnit.mainImage] : []),
         ...(selectedUnit.gallery || []).filter((g: any) => g.id !== selectedUnit.mainImage?.id && g.url !== selectedUnit.mainImage?.url)
@@ -105,6 +107,15 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                     <i className="bi bi-calendar-check"></i>
                                     Request Official Tour
                                 </button>
+                                {widget.configuration.bookingForm?.enabled && (
+                                    <button
+                                        className="btn btn-dark w-100 rounded-4 py-3 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2 mt-3"
+                                        onClick={() => setShowBookingModal(true)}
+                                    >
+                                        <i className="bi bi-calendar-plus"></i>
+                                        Instant Booking Request
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -211,6 +222,17 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                     </div>
                 </div>
             </div>
+
+            <BookingModal
+                show={showBookingModal}
+                onClose={() => setShowBookingModal(false)}
+                widget={widget}
+                widgetId={widgetId}
+                selectedProperty={selectedProperty}
+                selectedUnit={selectedUnit}
+                theme={theme}
+                identifyLead={identifyLead}
+            />
         </div>
     );
 };

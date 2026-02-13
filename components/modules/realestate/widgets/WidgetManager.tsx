@@ -67,6 +67,18 @@ const INITIAL_FORM_DATA = {
                 { id: 'f2', type: 'email', label: 'Email Address', placeholder: 'Enter your email', required: true },
                 { id: 'f3', type: 'textarea', label: 'Message', placeholder: 'How can we help you?', required: true }
             ]
+        },
+        bookingForm: {
+            enabled: false,
+            useMarketingForm: false,
+            marketingFormId: '',
+            title: 'Book This Selection',
+            description: 'Provide your details to initiate the booking process.',
+            fields: [
+                { id: 'f1', type: 'text', label: 'Full Name', placeholder: 'Enter your name', required: true },
+                { id: 'f2', type: 'email', label: 'Email Address', placeholder: 'Enter your email', required: true },
+                { id: 'f3', type: 'phone', label: 'Phone Number', placeholder: 'For booking confirmation', required: true }
+            ]
         }
     }
 };

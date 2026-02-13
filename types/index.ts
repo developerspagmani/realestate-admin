@@ -88,6 +88,7 @@ export interface Property extends BaseListing {
   metadata?: any;
   categoryId?: string;
   videoUrl?: string;
+  displayPrice?: boolean;
 }
 
 export interface Unit {
@@ -138,6 +139,7 @@ export interface Seats {
   mainImageId?: string;
   gallery?: string[];
   mainImage?: MediaItem;
+  displayPrice?: boolean;
 }
 
 export interface User {

@@ -7,6 +7,7 @@ import { widgetService } from '@/app/services/api';
 import PlotMapViewer from '@/components/modules/realestate/properties/PlotMapViewer';
 import Plot3DViewer from './Plot3DViewer';
 import { Seats } from '@/types';
+import BookingModal from './BookingModal';
 
 interface PropertyDetailViewProps {
     selectedProperty: any;
@@ -17,6 +18,7 @@ interface PropertyDetailViewProps {
     widgetId: string;
     colClass: string;
     setCurrentView: (view: any) => void;
+    selectedUnit: any;
     setSelectedUnit: (unit: any) => void;
     setUnitImageIndex: (i: number) => void;
     getFormattedPrice: (unit: any) => string;
@@ -33,6 +35,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
     widgetId,
     colClass,
     setCurrentView,
+    selectedUnit,
     setSelectedUnit,
     setUnitImageIndex,
     getFormattedPrice,
@@ -40,6 +43,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
     identifyLead
 }) => {
     const [show3DPlotView, setShow3DPlotView] = useState(false);
+    const [showBookingModal, setShowBookingModal] = useState(false);
 
     const images = [
         ...(selectedProperty.mainImage ? [selectedProperty.mainImage] : []),
@@ -118,6 +122,16 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                 <i className="bi bi-view-stacked fs-5"></i>
                                 <span className="fw-bold">Experience Full 3D Walkthrough</span>
                             </button>
+
+                            {widget.configuration.bookingForm?.enabled && (
+                                <button
+                                    className="btn btn-dark w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 mt-3 transition-all hover:translate-y-[-2px]"
+                                    onClick={() => setShowBookingModal(true)}
+                                >
+                                    <i className="bi bi-calendar-plus fs-5"></i>
+                                    <span className="fw-bold">Reserve Property Now</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -236,7 +250,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         View in 3D
                                     </button>
                                 </h5>
-                                <div style={{ height: '800px', width: '100%' }}>
+                                <div style={{ height: '1200px', width: '100%' }}>
                                     <PlotMapViewer
                                         units={selectedProperty.units?.map((u: any) => {
                                             // Enhanced status transformation with better fallback logic
@@ -287,6 +301,14 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 setUnitImageIndex(0);
                                                 setCurrentView('UNIT_DETAIL');
                                                 if (trackAction) trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
+                                            }
+                                        }}
+                                        onBookingSelect={(id) => {
+                                            const unit = selectedProperty.units.find((u: any) => u.id === id);
+                                            if (unit) {
+                                                setSelectedUnit(unit);
+                                                setShowBookingModal(true);
+                                                if (trackAction) trackAction('UNIT_BOOKING_START', { unitId: unit.id, propertyId: selectedProperty.id });
                                             }
                                         }}
                                     />
@@ -429,6 +451,17 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                     onClose={() => setShow3DPlotView(false)}
                 />
             )}
+
+            <BookingModal
+                show={showBookingModal}
+                onClose={() => setShowBookingModal(false)}
+                widget={widget}
+                widgetId={widgetId}
+                selectedProperty={selectedProperty}
+                selectedUnit={selectedUnit}
+                theme={theme}
+                identifyLead={identifyLead}
+            />
         </div>
     );
 };

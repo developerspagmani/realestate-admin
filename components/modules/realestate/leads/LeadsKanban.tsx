@@ -177,7 +177,14 @@ export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, o
                                                             <div className="pulse-danger" title="Stale lead: No activity for 3+ days"></div>
                                                         )}
                                                     </h6>
-                                                    <p className="small text-muted mb-3 text-truncate">{lead.company || 'Private Lead'}</p>
+                                                    <p className="small text-muted mb-2 text-truncate">{lead.company || 'Private Lead'}</p>
+                                                    <div className="d-flex flex-wrap gap-1 mb-3">
+                                                        {lead.tags?.map(tag => (
+                                                            <span key={tag} className="badge bg-primary bg-opacity-10 text-primary border-primary border-opacity-10 rounded-4 extra-small-badge" style={{ fontSize: '0.65rem' }}>
+                                                                {tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
 
                                                     <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
                                                         <div className="d-flex align-items-center gap-1">
@@ -330,6 +337,7 @@ export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, o
                     70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
                     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
                 }
+                .extra-small-badge { font-size: 0.6rem; padding: 0.2rem 0.5rem; letter-spacing: 0.5px; }
             `}</style>
         </div>
     );

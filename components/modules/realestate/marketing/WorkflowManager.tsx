@@ -18,6 +18,7 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
     const [templates, setTemplates] = useState<any[]>([]);
     const [agents, setAgents] = useState<any[]>([]);
     const [selectedWorkflowForEnrollments, setSelectedWorkflowForEnrollments] = useState<any>(null);
+    const [leadForms, setLeadForms] = useState<any[]>([]);
     const [processing, setProcessing] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' });
 
@@ -68,6 +69,11 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
             } else if (aRes.success) {
                 // If success but no agents array, just keep the default
                 setAgents([{ id: 'auto', name: 'Auto-Assign (Round Robin)' }]);
+            }
+
+            const fRes = await marketingService.getForms(token, { tenantId });
+            if (fRes.success && Array.isArray(fRes.data)) {
+                setLeadForms(fRes.data);
             }
         } catch (e) { console.error(e); }
     };
@@ -179,9 +185,101 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
         }
     };
 
+    const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+
+    const PREBUILT_WORKFLOWS = [
+        {
+            id: 'tpl1',
+            name: 'New Lead Welcome & Nurture',
+            description: 'Send immediate welcome and follow up after 2 days.',
+            trigger: { type: 'LEAD_CREATED', source: 'Any' },
+            steps: [
+                { id: `s1-${Date.now()}`, type: 'EMAIL', templateId: '', name: 'Intro Email' },
+                { id: `s2-${Date.now()}`, type: 'DELAY', duration: 2, unit: 'days' },
+                { id: `s3-${Date.now()}`, type: 'EMAIL', templateId: '', name: 'Follow-up Email' }
+            ]
+        },
+        {
+            id: 'tpl2',
+            name: 'High-Value Lead Priority',
+            description: 'Route leads with budget > $1M to senior agents immediately.',
+            trigger: { type: 'LEAD_CREATED', source: 'Any' },
+            steps: [
+                {
+                    id: `s1-${Date.now()}`,
+                    type: 'CONDITION',
+                    field: 'budget',
+                    operator: 'greater_than',
+                    value: '1000000',
+                    yesSteps: [
+                        { id: `s2-${Date.now()}`, type: 'ASSIGN', agentId: 'auto' },
+                        { id: `s3-${Date.now()}`, type: 'TAG', action: 'add', tag: 'VIP' }
+                    ],
+                    noSteps: [
+                        { id: `s4-${Date.now()}`, type: 'ASSIGN', agentId: 'auto' }
+                    ]
+                }
+            ]
+        },
+        {
+            id: 'tpl3',
+            name: 'Property Inquiry Follow-up',
+            description: 'Automated response for property viewing requests.',
+            trigger: { type: 'FORM_SUBMITTED', source: 'Website' },
+            steps: [
+                { id: `s1-${Date.now()}`, type: 'EMAIL', templateId: '', name: 'Scheduling Email' },
+                { id: `s2-${Date.now()}`, type: 'DELAY', duration: 24, unit: 'hours' },
+                { id: `s3-${Date.now()}`, type: 'ASSIGN', agentId: 'auto' }
+            ]
+        },
+        {
+            id: 'tpl4',
+            name: 'Long-term Drip Campaign',
+            description: 'Stay top-of-mind with monthly check-ins.',
+            trigger: { type: 'LEAD_CREATED', source: 'Any' },
+            steps: [
+                { id: `s1-${Date.now()}`, type: 'DELAY', duration: 7, unit: 'days' },
+                { id: `s2-${Date.now()}`, type: 'EMAIL', templateId: '', name: 'Week 1 Update' },
+                { id: `s3-${Date.now()}`, type: 'DELAY', duration: 30, unit: 'days' },
+                { id: `s4-${Date.now()}`, type: 'EMAIL', templateId: '', name: 'Monthly Market Report' }
+            ]
+        },
+        {
+            id: 'tpl5',
+            name: 'Re-engagement for Cold Leads',
+            description: 'Try to revive leads that haven\'t responded in 30 days.',
+            trigger: { type: 'STATUS_CHANGED', source: 'Any' },
+            steps: [
+                { id: `s1-${Date.now()}`, type: 'DELAY', duration: 30, unit: 'days' },
+                { id: `s2-${Date.now()}`, type: 'EMAIL', templateId: '', name: 'Check-in Email' },
+                {
+                    id: `s3-${Date.now()}`,
+                    type: 'CONDITION',
+                    field: 'score',
+                    operator: 'greater_than',
+                    value: '50',
+                    yesSteps: [
+                        { id: `s4-${Date.now()}`, type: 'TAG', action: 'add', tag: 'High Interest' }
+                    ],
+                    noSteps: []
+                }
+            ]
+        }
+    ];
+
+    const applyTemplate = (tpl: any) => {
+        setCurrentWorkflow({
+            ...tpl,
+            id: undefined, // Create new
+            steps: tpl.steps.map((s: any) => ({ ...s, id: `s${Math.random().toString(36).substr(2, 9)}` }))
+        });
+        setIsEditing(true);
+        setShowTemplatesModal(false);
+    };
+
     const addStep = (type: 'DELAY' | 'EMAIL' | 'CONDITION' | 'TAG' | 'ASSIGN', parentStepId?: string, branch?: 'yes' | 'no') => {
         const newStep: any = {
-            id: `s${Date.now()}`,
+            id: `s${Math.random().toString(36).substr(2, 9)}`,
             type,
             ...(type === 'DELAY' ? { duration: 24, unit: 'hours' } : {}),
             ...(type === 'EMAIL' ? { templateId: '' } : {}),
@@ -420,6 +518,20 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                                         <option value="TAG_ADDED">Tag Added to Lead</option>
                                     </select>
                                 </div>
+
+                                {currentWorkflow.trigger?.type === 'FORM_SUBMITTED' && (
+                                    <div className="mb-0 mt-3 animate-fade-in">
+                                        <label className="form-label extra-small fw-bold text-muted text-uppercase">Target Lead Form</label>
+                                        <select className="form-select bg-light border-0" value={currentWorkflow.trigger?.formId || ''}
+                                            onChange={e => setCurrentWorkflow({ ...currentWorkflow, trigger: { ...currentWorkflow.trigger, formId: e.target.value } })}>
+                                            <option value="">Any Form Submission</option>
+                                            {leadForms.map(f => (
+                                                <option key={f.id} value={f.id}>{f.name}</option>
+                                            ))}
+                                        </select>
+                                        <div className="extra-small text-muted mt-1 px-1">This workflow will trigger when the selected form is submitted.</div>
+                                    </div>
+                                )}
                             </div>
 
                             {selectedStepId && (
@@ -561,6 +673,9 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                                 <i className={`bi ${processing ? 'spinner-border spinner-border-sm' : 'bi-cpu'} me-1`}></i>
                                 {processing ? 'Processing...' : 'Run Engine Now'}
                             </button>
+                            <button className="btn btn-outline-primary btn-sm rounded-4 px-3 fw-bold" onClick={() => setShowTemplatesModal(true)}>
+                                <i className="bi bi-layers me-1"></i> Use Template
+                            </button>
                             <button className="btn btn-primary btn-sm rounded-4 px-3 fw-bold shadow-sm" onClick={openCreate}>
                                 <i className="bi bi-magic me-1"></i> Create Workflow
                             </button>
@@ -640,6 +755,40 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                     workflowName={selectedWorkflowForEnrollments.name}
                     onClose={() => setSelectedWorkflowForEnrollments(null)}
                 />
+            )}
+
+            {showTemplatesModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content border-0 shadow-lg rounded-4 animation-scale-in">
+                            <div className="modal-header border-0 p-4 pb-0">
+                                <h5 className="fw-bold mb-0">Workflow Templates</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowTemplatesModal(false)}></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                <p className="text-muted small mb-4">Choose a pre-built automation to get started instantly. You can customize the steps after selection.</p>
+                                <div className="row g-3">
+                                    {PREBUILT_WORKFLOWS.map(tpl => (
+                                        <div key={tpl.id} className="col-12">
+                                            <div className="card border p-3 rounded-4 cursor-pointer hover-bg-light transition-all hvr-grow" onClick={() => applyTemplate(tpl)}>
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h6 className="fw-bold mb-1 text-primary">{tpl.name}</h6>
+                                                        <p className="extra-small text-muted mb-0">{tpl.description}</p>
+                                                    </div>
+                                                    <i className="bi bi-chevron-right text-muted"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="modal-footer border-0 p-4 pt-0">
+                                <button className="btn btn-light rounded-4 px-4 fw-bold" onClick={() => setShowTemplatesModal(false)}>Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
             <Toast

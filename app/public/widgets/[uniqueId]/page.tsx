@@ -247,6 +247,7 @@ export default function PublicWidgetPage() {
                         widgetId={widgetId as string}
                         colClass={colClass}
                         setCurrentView={setCurrentView}
+                        selectedUnit={selectedUnit}
                         setSelectedUnit={setSelectedUnit}
                         setUnitImageIndex={setUnitImageIndex}
                         getFormattedPrice={getFormattedPrice}

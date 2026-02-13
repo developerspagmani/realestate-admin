@@ -51,7 +51,8 @@ export default function PropertyForm({
         lotSize: 0,
         listingType: 'rent',
         categoryId: '',
-        videoUrl: ''
+        videoUrl: '',
+        displayPrice: true
     });
 
     const [showMediaModal, setShowMediaModal] = useState(false);
@@ -91,7 +92,8 @@ export default function PropertyForm({
                 lotSize: initialData.lotSize || 0,
                 listingType: initialData.listingType || 'rent',
                 categoryId: (initialData as any).categoryId || '',
-                videoUrl: (initialData as any).videoUrl || ''
+                videoUrl: (initialData as any).videoUrl || '',
+                displayPrice: (initialData as any).displayPrice !== undefined ? (initialData as any).displayPrice : true
             });
         }
     }, [initialData]);
@@ -101,9 +103,10 @@ export default function PropertyForm({
         onSubmit(formData);
     };
 
-    const getMediaUrl = (id: string) => {
+    const getMediaUrl = (id?: string) => {
+        if (!id) return undefined;
         const item = mediaItems.find(m => m.id === id);
-        return item ? item.url : '';
+        return item ? item.url : undefined;
     };
 
     const handleAmenityToggle = (amenityId: string) => {
@@ -256,7 +259,20 @@ export default function PropertyForm({
                                             </div>
 
                                             <div className="col-md-6">
-                                                <label className="form-label fw-bold small text-uppercase text-muted">Base Price (Optional)</label>
+                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                    <label className="form-label fw-bold small text-uppercase text-muted mb-0">Base Price (Optional)</label>
+                                                    <div className="form-check form-switch p-0 m-0 d-flex align-items-center">
+                                                        <label className="form-check-label extra-small text-muted me-2" style={{ fontSize: '10px' }} htmlFor="displayPrice">Show in Widget</label>
+                                                        <input
+                                                            className="form-check-input ms-0 mt-0"
+                                                            type="checkbox"
+                                                            role="switch"
+                                                            id="displayPrice"
+                                                            checked={formData.displayPrice !== false}
+                                                            onChange={(e) => setFormData({ ...formData, displayPrice: e.target.checked })}
+                                                        />
+                                                    </div>
+                                                </div>
                                                 <input
                                                     type="number"
                                                     className="form-control bg-light border-0"
@@ -360,7 +376,7 @@ export default function PropertyForm({
                                                     {formData.mainImageId ? (
                                                         <div className="position-relative d-inline-block">
                                                             <img
-                                                                src={getMediaUrl(formData.mainImageId) || (initialData as any)?.mainImage?.url || ''}
+                                                                src={getMediaUrl(formData.mainImageId || '') || (initialData as any)?.mainImage?.url || undefined}
                                                                 className="rounded-3 shadow-sm"
                                                                 style={{ maxHeight: '120px' }}
                                                                 alt="Main Property"
@@ -425,7 +441,7 @@ export default function PropertyForm({
                                                         <div key={idx} className="col-3 col-md-2">
                                                             <div className="position-relative aspect-ratio-square bg-light rounded-3 overflow-hidden">
                                                                 <img
-                                                                    src={getMediaUrl(imgId) || ''}
+                                                                    src={getMediaUrl(imgId) || undefined}
                                                                     className="w-100 h-100 object-fit-cover"
                                                                     alt={`Gallery ${idx}`}
                                                                 />

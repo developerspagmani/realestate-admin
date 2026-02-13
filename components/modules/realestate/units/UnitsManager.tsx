@@ -43,7 +43,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         features: [],
         status: 'available',
         mainImageId: '',
-        gallery: [] as string[]
+        gallery: [] as string[],
+        displayPrice: true
     });
     const [showMediaModal, setShowMediaModal] = useState(false);
     const [mediaModalType, setMediaModalType] = useState<'main' | 'gallery'>('main');
@@ -142,7 +143,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                         createdAt: u.createdAt,
                         updatedAt: u.updatedAt,
                         mainImageId: u.mainImageId || '',
-                        gallery: u.gallery || []
+                        gallery: u.gallery || [],
+                        displayPrice: re.displayPrice !== undefined ? re.displayPrice : true
                     };
                 });
                 setUnits(mappedUnits);
@@ -210,7 +212,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                     bathrooms: formData.bathrooms,
                     furnishing: formData.furnishing,
                     parkingSlots: formData.parkingSlots,
-                    facing: formData.facing
+                    facing: formData.facing,
+                    displayPrice: formData.displayPrice
                 }
             };
 
@@ -256,7 +259,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             spaceId: unit.spaceId,
             status: unit.status,
             mainImageId: unit.mainImageId || '',
-            gallery: unit.gallery || []
+            gallery: unit.gallery || [],
+            displayPrice: unit.displayPrice !== undefined ? unit.displayPrice : true
         });
         setShowModal(true);
     };
@@ -454,7 +458,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                     bathrooms: parseInt(getVal('bathrooms') || '1'),
                     furnishing: parseInt(getVal('furnishing') || '1'),
                     parkingSlots: parseInt(getVal('parkingSlots') || '0'),
-                    facing: parseInt(getVal('facing') || '1')
+                    facing: parseInt(getVal('facing') || '1'),
+                    displayPrice: true
                 }
             };
 
@@ -503,7 +508,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             features: [],
             status: 'available',
             mainImageId: '',
-            gallery: []
+            gallery: [],
+            displayPrice: true
         });
         setEditingWorkspace(null);
         setIsSubmitting(false);
@@ -745,6 +751,20 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                             <label className="form-label fw-bold small text-uppercase text-muted">Floor Number</label>
                                             <input type="number" className="form-control bg-light border-0 form-control-lg" value={formData.floorNo} onChange={(e) => setFormData({ ...formData, floorNo: parseInt(e.target.value) })} />
                                         </div>
+                                        <div className="col-12">
+                                            <div className="form-check form-switch p-0 m-0 d-flex align-items-center">
+                                                <input
+                                                    className="form-check-input ms-0 mt-0 me-2"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    id="unitDisplayPrice"
+                                                    checked={formData.displayPrice !== false}
+                                                    onChange={(e) => setFormData({ ...formData, displayPrice: e.target.checked })}
+                                                />
+                                                <label className="form-check-label small text-muted fw-bold text-uppercase mb-0" htmlFor="unitDisplayPrice">Show Price in Front Page Widget</label>
+                                            </div>
+                                        </div>
+
                                         <div className="col-md-3">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Monthly Rent ({currencySymbol})</label>
                                             <input type="number" className="form-control bg-light border-0 form-control-lg" value={formData.monthlyRate} onChange={(e) => setFormData({ ...formData, monthlyRate: parseFloat(e.target.value) })} />

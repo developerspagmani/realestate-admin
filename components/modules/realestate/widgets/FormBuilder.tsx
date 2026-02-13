@@ -34,6 +34,7 @@ export default function FormBuilder({ config, onChange }: FormBuilderProps) {
     const [activeTab, setActiveTab] = useState<'settings' | 'fields'>('fields');
 
     const addField = (type: any) => {
+        const fields = config.fields || [];
         const newField: FormField = {
             id: `field_${Math.random().toString(36).substr(2, 9)}`,
             type: type as any,
@@ -42,22 +43,25 @@ export default function FormBuilder({ config, onChange }: FormBuilderProps) {
             required: false,
             ...(type === 'select' ? { options: ['Option 1', 'Option 2'] } : {})
         };
-        onChange({ ...config, fields: [...config.fields, newField] });
+        onChange({ ...config, fields: [...fields, newField] });
     };
 
     const removeField = (id: string) => {
-        onChange({ ...config, fields: config.fields.filter(f => f.id !== id) });
+        const fields = config.fields || [];
+        onChange({ ...config, fields: fields.filter(f => f.id !== id) });
     };
 
     const updateField = (id: string, updates: Partial<FormField>) => {
+        const fields = config.fields || [];
         onChange({
             ...config,
-            fields: config.fields.map(f => f.id === id ? { ...f, ...updates } : f)
+            fields: fields.map(f => f.id === id ? { ...f, ...updates } : f)
         });
     };
 
     const moveField = (index: number, direction: 'up' | 'down') => {
-        const newFields = [...config.fields];
+        const fields = config.fields || [];
+        const newFields = [...fields];
         const newIndex = direction === 'up' ? index - 1 : index + 1;
         if (newIndex >= 0 && newIndex < newFields.length) {
             [newFields[index], newFields[newIndex]] = [newFields[newIndex], newFields[index]];
@@ -148,14 +152,14 @@ export default function FormBuilder({ config, onChange }: FormBuilderProps) {
                             </div>
                             <div className="col-md-8">
                                 <div className="p-3 bg-white rounded-3 shadow-sm min-vh-25">
-                                    {config.fields.length === 0 ? (
+                                    {(!config.fields || config.fields.length === 0) ? (
                                         <div className="text-center py-5 opacity-50">
                                             <i className="bi bi-plus-circle display-6"></i>
                                             <p className="small mt-2">Add fields to start building</p>
                                         </div>
                                     ) : (
                                         <div className="field-list">
-                                            {config.fields.map((field, index) => (
+                                            {config.fields?.map((field, index) => (
                                                 <div key={field.id} className="field-item border-bottom py-3 mb-2 px-2 hover-bg-light transition-all rounded-2">
                                                     <div className="d-flex justify-content-between align-items-start mb-2">
                                                         <div className="d-flex align-items-center">
@@ -171,7 +175,7 @@ export default function FormBuilder({ config, onChange }: FormBuilderProps) {
                                                             <button type="button" className="btn btn-link text-muted p-1" onClick={() => moveField(index, 'up')} disabled={index === 0}>
                                                                 <i className="bi bi-chevron-up"></i>
                                                             </button>
-                                                            <button type="button" className="btn btn-link text-muted p-1" onClick={() => moveField(index, 'down')} disabled={index === config.fields.length - 1}>
+                                                            <button type="button" className="btn btn-link text-muted p-1" onClick={() => moveField(index, 'down')} disabled={index === (config.fields?.length || 0) - 1}>
                                                                 <i className="bi bi-chevron-down"></i>
                                                             </button>
                                                             <button type="button" className="btn btn-link text-danger p-1" onClick={() => removeField(field.id)}>

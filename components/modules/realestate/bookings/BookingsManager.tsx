@@ -37,7 +37,10 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         paymentStatus: 1, // pending
         notes: '',
         specialRequests: '',
-        agentId: ''
+        agentId: '',
+        guestName: '',
+        guestEmail: '',
+        guestPhone: ''
     });
 
     const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
@@ -139,10 +142,14 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         return bookings.filter(booking => {
             const userName = booking.user?.name?.toLowerCase() || '';
             const unitCode = booking.unit?.unitCode?.toLowerCase() || '';
-            const propertyTitle = booking.unit?.property?.title?.toLowerCase() || '';
+            const propertyTitle = (booking.unit?.property?.title || booking.property?.title || '').toLowerCase();
+            const guestName = (booking.guestName || '').toLowerCase();
+            const guestEmail = (booking.guestEmail || '').toLowerCase();
 
             const matchesSearch =
                 userName.includes(searchTerm.toLowerCase()) ||
+                guestName.includes(searchTerm.toLowerCase()) ||
+                guestEmail.includes(searchTerm.toLowerCase()) ||
                 unitCode.includes(searchTerm.toLowerCase()) ||
                 propertyTitle.includes(searchTerm.toLowerCase());
 
@@ -256,6 +263,24 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         }
     };
 
+    const handleSendInfo = async (id: string) => {
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const booking = bookings.find(b => b.id === id);
+            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+            const response = await bookingService.sendVisitInfo(token, id, tenantId as string);
+            if (response.success) {
+                showToast('Visit information email sent to prospect');
+            } else {
+                showToast(response.message || 'Failed to send email', 'error');
+            }
+        } catch (error) {
+            console.error('Error sending email:', error);
+            showToast('Error sending email', 'error');
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this booking?')) return;
         try {
@@ -296,7 +321,10 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             paymentStatus: 1,
             notes: '',
             specialRequests: '',
-            agentId: ''
+            agentId: '',
+            guestName: '',
+            guestEmail: '',
+            guestPhone: ''
         });
         setEditingBooking(null);
         setShowModal(false);
@@ -305,7 +333,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     const getCalendarEvents = () => {
         return bookings.map(booking => ({
             id: booking.id,
-            title: `${booking.user?.name || 'Guest'} - ${booking.unit?.unitCode || 'Unit'}`,
+            title: `${booking.guestName || booking.user?.name || 'Guest'} - ${booking.unit?.unitCode || booking.unit?.property?.title || booking.property?.title || 'Visit'}`,
             start: new Date(booking.startAt),
             end: new Date(booking.endAt),
             status: booking.status,
@@ -485,16 +513,16 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                 <td className="px-4 py-3">
                                                     <div className="d-flex align-items-center gap-3">
                                                         <div className="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px' }}>
-                                                            {booking.user?.name?.charAt(0) || 'U'}
+                                                            {(booking.guestName || booking.user?.name || 'G').charAt(0)}
                                                         </div>
                                                         <div>
-                                                            <div className="fw-bold text-dark">{booking.user?.name || 'Unknown User'}</div>
-                                                            <div className="text-muted small">{booking.user?.email}</div>
+                                                            <div className="fw-bold text-dark">{booking.guestName || booking.user?.name || 'Guest'}</div>
+                                                            <div className="text-muted small">{booking.guestEmail || booking.user?.email}</div>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="py-3">
-                                                    <div className="fw-semibold text-dark">{booking.unit?.property?.title || 'Unknown Property'}</div>
+                                                    <div className="fw-semibold text-dark">{booking.unit?.property?.title || booking.property?.title || 'Unknown Property'}</div>
                                                     <div className="badge bg-light text-dark fw-normal border">
                                                         <i className="bi bi-door-open me-1 text-primary"></i>
                                                         {booking.unit?.unitCode || 'N/A'}
@@ -546,16 +574,19 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                             <li><button className="dropdown-item d-flex align-items-center gap-2 text-primary" onClick={() => {
                                                                 setEditingBooking(booking);
                                                                 setFormData({
-                                                                    userId: booking.userId,
-                                                                    unitId: booking.unitId,
-                                                                    propertyId: booking.unit?.property?.id || booking.unit?.propertyId,
+                                                                    userId: booking.userId || '',
+                                                                    unitId: booking.unitId || '',
+                                                                    propertyId: booking.unit?.property?.id || booking.unit?.propertyId || '',
                                                                     startAt: booking.startAt,
                                                                     endAt: booking.endAt,
-                                                                    status: booking.status,
-                                                                    paymentStatus: booking.paymentStatus,
+                                                                    status: booking.status || 1,
+                                                                    paymentStatus: booking.paymentStatus || 1,
                                                                     notes: booking.notes || '',
                                                                     specialRequests: booking.specialRequests || '',
-                                                                    agentId: booking.agentId || ''
+                                                                    agentId: booking.agentId || '',
+                                                                    guestName: booking.guestName || booking.user?.name || '',
+                                                                    guestEmail: booking.guestEmail || booking.user?.email || '',
+                                                                    guestPhone: booking.guestPhone || booking.user?.phone || ''
                                                                 });
                                                                 setShowModal(true);
                                                             }}><i className="bi bi-pencil-square"></i> Edit Details</button></li>
@@ -601,20 +632,69 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             <label className="form-label fw-bold small text-uppercase text-muted">Select Visitor / Prospect</label>
                                             <select
                                                 className="form-select form-select-lg bg-light border-0"
-                                                value={formData.userId}
-                                                onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                                                required
+                                                value={formData.userId || ''}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    if (val === 'new' || val === '') {
+                                                        setFormData({ ...formData, userId: val === 'new' ? '' : val, guestName: '', guestEmail: '', guestPhone: '' });
+                                                    } else {
+                                                        const selUser = users.find(u => u.id === val);
+                                                        setFormData({
+                                                            ...formData,
+                                                            userId: val,
+                                                            guestName: selUser?.name || '',
+                                                            guestEmail: selUser?.email || '',
+                                                            guestPhone: selUser?.phone || ''
+                                                        });
+                                                    }
+                                                }}
                                             >
                                                 <option value="">Choose a prospect...</option>
                                                 {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+                                                <option value="new">+ Add New Guest / Lead</option>
                                             </select>
+                                        </div>
+
+                                        <div className="col-md-4">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Visitor Name</label>
+                                            <input
+                                                type="text"
+                                                className="form-control bg-light border-0"
+                                                value={formData.guestName}
+                                                onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
+                                                placeholder="Full Name"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="col-md-4">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Email Address</label>
+                                            <input
+                                                type="email"
+                                                className="form-control bg-light border-0"
+                                                value={formData.guestEmail}
+                                                onChange={(e) => setFormData({ ...formData, guestEmail: e.target.value })}
+                                                placeholder="email@example.com"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="col-md-4">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Mobile Number</label>
+                                            <input
+                                                type="tel"
+                                                className="form-control bg-light border-0"
+                                                value={formData.guestPhone}
+                                                onChange={(e) => setFormData({ ...formData, guestPhone: e.target.value })}
+                                                placeholder="+1 234 567 890"
+                                            />
                                         </div>
 
                                         <div className="col-md-6">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Assigned Agent</label>
                                             <select
                                                 className="form-select bg-light border-0"
-                                                value={formData.agentId}
+                                                value={formData.agentId || ''}
                                                 onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
                                             >
                                                 <option value="">No Agent (Direct)</option>
@@ -630,7 +710,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             <label className="form-label fw-bold small text-uppercase text-muted">Property</label>
                                             <select
                                                 className="form-select bg-light border-0"
-                                                value={formData.propertyId}
+                                                value={formData.propertyId || ''}
                                                 onChange={(e) => setFormData({ ...formData, propertyId: e.target.value, unitId: '' })}
                                                 required
                                             >
@@ -643,7 +723,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             <label className="form-label fw-bold small text-uppercase text-muted">Workspace / Unit</label>
                                             <select
                                                 className="form-select bg-light border-0"
-                                                value={formData.unitId}
+                                                value={formData.unitId || ''}
                                                 onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
                                                 required
                                                 disabled={!formData.propertyId}
@@ -732,174 +812,232 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                             </form>
                         </div>
                     </div>
-                </div>
-            )}
+                </div >
+            )
+            }
 
             {/* Availability Tool Modal */}
-            {showAvailabilityModal && (
-                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
-                    <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content border-0 shadow-lg rounded-4">
-                            <div className="modal-header border-0 p-4 pb-0">
-                                <h4 className="fw-bold mb-0">Availability Checker</h4>
-                                <button type="button" className="btn-close" onClick={() => setShowAvailabilityModal(false)}></button>
-                            </div>
-                            <div className="modal-body p-4">
-                                <div className="row g-3">
-                                    <div className="col-12">
-                                        <label className="form-label fw-bold small text-uppercase text-muted">Property</label>
-                                        <select
-                                            className="form-select bg-light border-0"
-                                            value={availabilityForm.propertyId}
-                                            onChange={(e) => setAvailabilityForm({ ...availabilityForm, propertyId: e.target.value, unitId: '' })}
-                                        >
-                                            <option value="">Select Property...</option>
-                                            {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="col-12">
-                                        <label className="form-label fw-bold small text-uppercase text-muted">Unit</label>
-                                        <select
-                                            className="form-select bg-light border-0"
-                                            value={availabilityForm.unitId}
-                                            onChange={(e) => setAvailabilityForm({ ...availabilityForm, unitId: e.target.value })}
-                                            disabled={!availabilityForm.propertyId}
-                                        >
-                                            <option value="">Select Unit...</option>
-                                            {units
-                                                .filter(u => u.propertyId === availabilityForm.propertyId)
-                                                .map(u => <option key={u.id} value={u.id}>{u.unitCode}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="col-6">
-                                        <label className="form-label fw-bold small text-uppercase text-muted">From</label>
-                                        <input
-                                            type="datetime-local"
-                                            className="form-control bg-light border-0"
-                                            value={availabilityForm.startAt}
-                                            onChange={(e) => setAvailabilityForm({ ...availabilityForm, startAt: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="col-6">
-                                        <label className="form-label fw-bold small text-uppercase text-muted">To</label>
-                                        <input
-                                            type="datetime-local"
-                                            className="form-control bg-light border-0"
-                                            value={availabilityForm.endAt}
-                                            onChange={(e) => setAvailabilityForm({ ...availabilityForm, endAt: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div className="col-12 mt-4">
-                                        <button
-                                            className="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-none"
-                                            disabled={!availabilityForm.unitId || !availabilityForm.startAt || !availabilityForm.endAt || availabilityStatus.loading}
-                                            onClick={() => checkAvailability(true)}
-                                        >
-                                            {availabilityStatus.loading ? 'Checking...' : 'Check Now'}
-                                        </button>
-                                    </div>
-
-                                    {availabilityStatus.available !== undefined && !availabilityStatus.loading && (
-                                        <div className="col-12 mt-3 text-center">
-                                            <div className={`p-4 rounded-4 ${availabilityStatus.available ? 'bg-success-soft' : 'bg-danger-soft'}`}>
-                                                <i className={`bi ${availabilityStatus.available ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'} display-6 mb-2 d-block`}></i>
-                                                <h5 className={`fw-bold mb-1 ${availabilityStatus.available ? 'text-success' : 'text-danger'}`}>
-                                                    {availabilityStatus.available ? 'Unit is Available for Visit!' : 'Unit is Scheduled for another visit'}
-                                                </h5>
-                                                {availabilityStatus.available && (
-                                                    <button
-                                                        className="btn btn-success btn-sm mt-3 fw-bold px-4"
-                                                        onClick={() => {
-                                                            setFormData({
-                                                                ...formData,
-                                                                propertyId: availabilityForm.propertyId,
-                                                                unitId: availabilityForm.unitId,
-                                                                startAt: availabilityForm.startAt,
-                                                                endAt: availabilityForm.endAt
-                                                            });
-                                                            setShowAvailabilityModal(false);
-                                                            setShowModal(true);
-                                                        }}
-                                                    >
-                                                        Schedule Visit Now
-                                                    </button>
-                                                )}
-                                            </div>
+            {
+                showAvailabilityModal && (
+                    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
+                        <div className="modal-dialog modal-dialog-centered">
+                            <div className="modal-content border-0 shadow-lg rounded-4">
+                                <div className="modal-header border-0 p-4 pb-0">
+                                    <h4 className="fw-bold mb-0">Availability Checker</h4>
+                                    <button type="button" className="btn-close" onClick={() => setShowAvailabilityModal(false)}></button>
+                                </div>
+                                <div className="modal-body p-4">
+                                    <div className="row g-3">
+                                        <div className="col-12">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Property</label>
+                                            <select
+                                                className="form-select bg-light border-0"
+                                                value={availabilityForm.propertyId}
+                                                onChange={(e) => setAvailabilityForm({ ...availabilityForm, propertyId: e.target.value, unitId: '' })}
+                                            >
+                                                <option value="">Select Property...</option>
+                                                {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                                            </select>
                                         </div>
-                                    )}
+                                        <div className="col-12">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Unit</label>
+                                            <select
+                                                className="form-select bg-light border-0"
+                                                value={availabilityForm.unitId}
+                                                onChange={(e) => setAvailabilityForm({ ...availabilityForm, unitId: e.target.value })}
+                                                disabled={!availabilityForm.propertyId}
+                                            >
+                                                <option value="">Select Unit...</option>
+                                                {units
+                                                    .filter(u => u.propertyId === availabilityForm.propertyId)
+                                                    .map(u => <option key={u.id} value={u.id}>{u.unitCode}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="col-6">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">From</label>
+                                            <input
+                                                type="datetime-local"
+                                                className="form-control bg-light border-0"
+                                                value={availabilityForm.startAt}
+                                                onChange={(e) => setAvailabilityForm({ ...availabilityForm, startAt: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="col-6">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">To</label>
+                                            <input
+                                                type="datetime-local"
+                                                className="form-control bg-light border-0"
+                                                value={availabilityForm.endAt}
+                                                onChange={(e) => setAvailabilityForm({ ...availabilityForm, endAt: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div className="col-12 mt-4">
+                                            <button
+                                                className="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-none"
+                                                disabled={!availabilityForm.unitId || !availabilityForm.startAt || !availabilityForm.endAt || availabilityStatus.loading}
+                                                onClick={() => checkAvailability(true)}
+                                            >
+                                                {availabilityStatus.loading ? 'Checking...' : 'Check Now'}
+                                            </button>
+                                        </div>
+
+                                        {availabilityStatus.available !== undefined && !availabilityStatus.loading && (
+                                            <div className="col-12 mt-3 text-center">
+                                                <div className={`p-4 rounded-4 ${availabilityStatus.available ? 'bg-success-soft' : 'bg-danger-soft'}`}>
+                                                    <i className={`bi ${availabilityStatus.available ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'} display-6 mb-2 d-block`}></i>
+                                                    <h5 className={`fw-bold mb-1 ${availabilityStatus.available ? 'text-success' : 'text-danger'}`}>
+                                                        {availabilityStatus.available ? 'Unit is Available for Visit!' : 'Unit is Scheduled for another visit'}
+                                                    </h5>
+                                                    {availabilityStatus.available && (
+                                                        <button
+                                                            className="btn btn-success btn-sm mt-3 fw-bold px-4"
+                                                            onClick={() => {
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    propertyId: availabilityForm.propertyId,
+                                                                    unitId: availabilityForm.unitId,
+                                                                    startAt: availabilityForm.startAt,
+                                                                    endAt: availabilityForm.endAt
+                                                                });
+                                                                setShowAvailabilityModal(false);
+                                                                setShowModal(true);
+                                                            }}
+                                                        >
+                                                            Schedule Visit Now
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Detail View Modal */}
-            {showDetailModal && selectedBooking && (
-                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1070 }}>
-                    <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content border-0 shadow-lg rounded-4">
-                            <div className="modal-header border-0 p-4 pb-0">
-                                <h4 className="fw-bold mb-0">Visit Details</h4>
-                                <button type="button" className="btn-close" onClick={() => setShowDetailModal(false)}></button>
-                            </div>
-                            <div className="modal-body p-4">
-                                <div className="mb-4 d-flex align-items-center gap-3 p-3 bg-light rounded-4">
-                                    <div className="avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold h4 mb-0" style={{ width: '60px', height: '60px' }}>
-                                        {selectedBooking.user?.name?.charAt(0) || 'U'}
-                                    </div>
-                                    <div>
-                                        <h5 className="fw-bold mb-1">{selectedBooking.user?.name}</h5>
-                                        <div className="text-muted small">{selectedBooking.user?.email}</div>
-                                    </div>
+            {
+                showDetailModal && selectedBooking && (
+                    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1070 }}>
+                        <div className="modal-dialog modal-dialog-centered">
+                            <div className="modal-content border-0 shadow-lg rounded-4">
+                                <div className="modal-header border-0 p-4 pb-0">
+                                    <h4 className="fw-bold mb-0">Visit Details</h4>
+                                    <button type="button" className="btn-close" onClick={() => setShowDetailModal(false)}></button>
                                 </div>
-
-                                <div className="row g-3 mb-4">
-                                    <div className="col-6">
-                                        <div className="p-3 border rounded-3 h-100">
-                                            <div className="text-muted small text-uppercase fw-bold mb-1">Space</div>
-                                            <div className="fw-bold">{selectedBooking.unit?.property?.title}</div>
-                                            <div className="badge bg-primary-soft text-primary mt-1">Unit: {selectedBooking.unit?.unitCode}</div>
+                                <div className="modal-body p-4">
+                                    <div className="mb-4 d-flex align-items-center gap-3 p-3 bg-light rounded-4">
+                                        <div className="avatar-lg bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold h4 mb-0" style={{ width: '60px', height: '60px' }}>
+                                            {(selectedBooking.guestName || selectedBooking.user?.name || 'G').charAt(0)}
+                                        </div>
+                                        <div>
+                                            <h5 className="fw-bold mb-1">{selectedBooking.guestName || selectedBooking.user?.name || 'Guest'}</h5>
+                                            <div className="text-muted small">{selectedBooking.guestEmail || selectedBooking.user?.email}</div>
+                                            {(selectedBooking.guestPhone || selectedBooking.user?.phone) && (
+                                                <div className="text-muted small">
+                                                    <i className="bi bi-telephone me-1"></i>
+                                                    {selectedBooking.guestPhone || selectedBooking.user?.phone}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="col-6">
-                                        <div className="p-3 border rounded-3 h-100">
-                                            <div className="text-muted small text-uppercase fw-bold mb-1">Fee</div>
-                                            <div className="h4 fw-bold text-success mb-0">FREE</div>
-                                            <div className="badge rounded-4 mt-1 bg-success-soft text-success">
-                                                In-Person Visit
+
+                                    <div className="row g-3 mb-4">
+                                        <div className="col-6">
+                                            <div className="p-3 border rounded-3 h-100">
+                                                <div className="text-muted small text-uppercase fw-bold mb-1">Property/Unit</div>
+                                                <div className="fw-bold">{selectedBooking.unit?.property?.title}</div>
+                                                <div className="badge bg-primary-soft text-primary mt-1">Unit: {selectedBooking.unit?.unitCode}</div>
+                                            </div>
+                                        </div>
+                                        <div className="col-6">
+                                            <div className="p-3 border rounded-3 h-100">
+                                                <div className="text-muted small text-uppercase fw-bold mb-1">Fee</div>
+                                                <div className="h4 fw-bold text-success mb-0">FREE</div>
+                                                <div className="badge rounded-4 mt-1 bg-success-soft text-success">
+                                                    In-Person Visit
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div className="p-3 border rounded-3">
-                                    <div className="text-muted small text-uppercase fw-bold mb-2">Schedule</div>
-                                    <div className="d-flex justify-content-between mb-1">
-                                        <span className="text-muted">In:</span>
-                                        <span className="fw-bold">{new Date(selectedBooking.startAt).toLocaleString()}</span>
+                                    <div className="p-3 border rounded-3">
+                                        <div className="text-muted small text-uppercase fw-bold mb-2">Schedule</div>
+                                        <div className="d-flex justify-content-between mb-1">
+                                            <span className="text-muted">In:</span>
+                                            <span className="fw-bold">{new Date(selectedBooking.startAt).toLocaleString()}</span>
+                                        </div>
+                                        <div className="d-flex justify-content-between">
+                                            <span className="text-muted">Out:</span>
+                                            <span className="fw-bold">{new Date(selectedBooking.endAt).toLocaleString()}</span>
+                                        </div>
                                     </div>
-                                    <div className="d-flex justify-content-between">
-                                        <span className="text-muted">Out:</span>
-                                        <span className="fw-bold">{new Date(selectedBooking.endAt).toLocaleString()}</span>
+
+                                    {selectedBooking.notes && (
+                                        <div className="mt-3 p-3 bg-light rounded-3">
+                                            <div className="small text-uppercase fw-bold text-muted mb-1">Notes</div>
+                                            <p className="mb-0 small">{selectedBooking.notes}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-4 pt-4 border-top">
+                                        <h6 className="fw-bold small text-uppercase text-muted mb-3 d-flex align-items-center gap-2">
+                                            <i className="bi bi-person-badge text-primary"></i>
+                                            Assigned Agent Information
+                                        </h6>
+                                        {selectedBooking.agent ? (
+                                            <div className="p-3 border rounded-3 bg-white">
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '48px', height: '48px' }}>
+                                                        {selectedBooking.agent.user?.name?.charAt(0) || 'A'}
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">{selectedBooking.agent.user?.name || `${selectedBooking.agent.user?.firstName} ${selectedBooking.agent.user?.lastName}`}</div>
+                                                        <div className="text-muted small d-flex align-items-center gap-2">
+                                                            <i className="bi bi-envelope"></i>
+                                                            {selectedBooking.agent.user?.email || 'N/A'}
+                                                        </div>
+                                                        {selectedBooking.agent.user?.phone && (
+                                                            <div className="text-muted small d-flex align-items-center gap-2 mt-1">
+                                                                <i className="bi bi-telephone"></i>
+                                                                {selectedBooking.agent.user?.phone}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="p-3 border rounded-3 bg-light text-center">
+                                                <span className="text-muted small italic">No agent assigned to this visit yet.</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-
-                                {selectedBooking.notes && (
-                                    <div className="mt-3 p-3 bg-light rounded-3">
-                                        <div className="small text-uppercase fw-bold text-muted mb-1">Notes</div>
-                                        <p className="mb-0 small">{selectedBooking.notes}</p>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="modal-footer border-0 p-4 pt-0">
-                                <button className="btn btn-primary w-100 fw-bold py-2 rounded-3" onClick={() => setShowDetailModal(false)}>Close</button>
+                                <div className="modal-footer border-0 p-4 pt-0 flex-column gap-2">
+                                    {!(selectedBooking.guestEmail || selectedBooking.user?.email || selectedBooking.lead?.email) && (
+                                        <div className="alert alert-warning py-2 mb-2 rounded-3 small border-0 d-flex align-items-center gap-2">
+                                            <i className="bi bi-exclamation-triangle"></i>
+                                            Recipent email not found. Please edit booking to add email.
+                                        </div>
+                                    )}
+                                    <button
+                                        className="btn btn-primary w-100 fw-bold py-2 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm"
+                                        onClick={() => handleSendInfo(selectedBooking.id)}
+                                        disabled={!(selectedBooking.guestEmail || selectedBooking.user?.email || selectedBooking.lead?.email)}
+                                    >
+                                        <i className="bi bi-send-fill"></i>
+                                        Send Info Email to Guest
+                                    </button>
+                                    <button className="btn btn-light w-100 fw-bold py-2 rounded-3" onClick={() => setShowDetailModal(false)}>Close</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <style jsx>{`
         .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
@@ -909,7 +1047,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         .bg-secondary-soft { background-color: rgba(108, 117, 125, 0.1); }
         .cursor-pointer { cursor: pointer; }
       `}</style>
-        </MainLayout>
+        </MainLayout >
     );
 }
 

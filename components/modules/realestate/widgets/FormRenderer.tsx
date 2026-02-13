@@ -106,7 +106,7 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
 
             <form onSubmit={handleSubmit}>
                 <div className="row g-3">
-                    {localConfig.fields.map((field: any) => (
+                    {localConfig.fields?.map((field: any) => (
                         <div key={field.id} className="col-12 text-start">
                             <label className="extra-small fw-bold text-muted mb-1">
                                 {field.label} {field.required && <span className="text-danger">*</span>}
