@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import HomePageClient from './HomePageClient';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001/api';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
 
 async function getWebsiteData(slugOrDomain: string) {
     if (!slugOrDomain) return null;

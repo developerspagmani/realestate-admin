@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import UnitDetailClient from './UnitDetailClient';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001/api';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
 
 async function getUnitData(idOrSlug: string) {
     if (!idOrSlug) return null;

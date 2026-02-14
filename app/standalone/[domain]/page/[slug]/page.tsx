@@ -4,7 +4,7 @@ import '@/app/globals.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001/api';
+const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
 
 async function getPageData(slug: string) {
     if (!slug) return null;
