@@ -85,7 +85,7 @@ export function middleware(request: NextRequest) {
 
   // Custom Domain Routing (Standalone Landing Pages)
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
-  const isCustomHost = hostname && hostname !== rootDomain && hostname !== 'localhost:3001' && !hostname.endsWith('.vercel.app');
+  const isCustomHost = hostname && hostname !== rootDomain && hostname !== 'localhost:3001' && !hostname.endsWith('.vercel.app') && hostname !== 'app.virpanix.com';
 
   // PERF-F11 fix: Avoid rewriting public assets, api, or go links which are already global
   if (isCustomHost &&
