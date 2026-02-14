@@ -27,9 +27,24 @@ const BookingModal: React.FC<BookingModalProps> = ({
 }) => {
     if (!show) return null;
 
-    const bookingConfig = widget.configuration.bookingForm;
+    const bookingForm = widget?.configuration?.bookingForm;
+    const builderBookingEnabled = widget?.configuration?.builder?.enableBooking;
 
-    if (!bookingConfig || !bookingConfig.enabled) return null;
+    const bookingConfig = (bookingForm && bookingForm.enabled) ? bookingForm : (builderBookingEnabled || show ? {
+        enabled: true,
+        title: 'Reservation Request',
+        submitLabel: 'Send Request',
+        successMessage: 'We have received your request!',
+        fields: [
+            { id: 'f1', type: 'text', label: 'Full Name', required: true, placeholder: 'Your Name' },
+            { id: 'f2', type: 'email', label: 'Email Address', required: true, placeholder: 'name@example.com' },
+            { id: 'f3', type: 'phone', label: 'Phone Number', required: true, placeholder: '+1 234 567 890' },
+            { id: 'f4', type: 'date', label: 'Preferred Date', required: true },
+            { id: 'f5', type: 'textarea', label: 'Additional Notes', required: false, placeholder: 'Any specific requirements?' }
+        ]
+    } : null);
+
+    if (!bookingConfig) return null;
 
     const handleSubmit = async (formData: any, configUsed: any) => {
         const leadPayload: any = {

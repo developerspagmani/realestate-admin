@@ -1,13 +1,7 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import PublicWidgetPage from '@/app/public/widgets/[uniqueId]/page';
-
-/**
- * Go Link Standalone Portal
- * Redirects or renders the public widget in a full-page standalone mode.
- */
-export default function GoLinkPage() {
-    // We can just reuse the PublicWidgetPage component as it occupies the full screen naturally
-    // but we can wrap it in any specific SEO or "Landing Page" containers if needed.
-    return <PublicWidgetPage />;
+export default async function GoLinkPage({ params }: { params: Promise<{ uniqueId: string }> }) {
+    const resolvedParams = await params;
+    // Redirect to the new multi-page standalone structure
+    redirect(`/standalone/${resolvedParams.uniqueId}`);
 }

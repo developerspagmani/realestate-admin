@@ -5,15 +5,16 @@ import { useParams } from 'next/navigation';
 import { widgetService, marketingService } from '@/app/services/api';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
 import { Seats } from '@/types';
-import './widget.css';
+import '@/components/modules/realestate/shared/shared.css';
 
 // Import split components
-import ListingView from './components/ListingView';
-import PropertyDetailView from './components/PropertyDetailView';
-import UnitDetailView from './components/UnitDetailView';
-import ThreeDView from './components/ThreeDView';
-import PageBuilder from './components/PageBuilder';
+import ListingView from '@/components/modules/realestate/shared/ListingView';
+import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
+import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailView';
+import ThreeDView from '@/components/modules/realestate/shared/ThreeDView';
+import PageBuilder from '@/components/modules/realestate/shared/PageBuilder';
 import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
+import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 
 type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'THREE_D' | 'TOUR';
 
@@ -119,16 +120,34 @@ export default function PublicWidgetPage() {
         return () => window.removeEventListener('message', handleMessage);
     }, [loadWidgetData]);
 
-    // Send height to parent for iframe resizing
+    // For iframe resizing
     useEffect(() => {
         const sendHeight = () => {
-            const height = document.body.scrollHeight;
-            window.parent.postMessage({ type: 'WIDGET_HEIGHT', height }, '*');
+            // Use a more robust way to get the actual content height
+            // document.body.scrollHeight can sometimes stay large
+            const mainElement = document.getElementById('widget-content-wrapper');
+            if (mainElement) {
+                const height = mainElement.offsetHeight;
+                window.parent.postMessage({ type: 'cw-widget-resize', height }, '*');
+            }
         };
+
+        const wrapper = document.getElementById('widget-content-wrapper');
+        if (!wrapper) return;
+
         const resizeObserver = new ResizeObserver(sendHeight);
-        resizeObserver.observe(document.body);
+        resizeObserver.observe(wrapper);
+
+        // Initial height
         sendHeight();
-        return () => resizeObserver.disconnect();
+
+        // Backup periodic check
+        const interval = setInterval(sendHeight, 1000);
+
+        return () => {
+            resizeObserver.disconnect();
+            clearInterval(interval);
+        };
     }, [currentView, loading, data]);
 
     useEffect(() => {
@@ -138,7 +157,7 @@ export default function PublicWidgetPage() {
     }, [widget]);
 
     if (loading) return (
-        <div className="min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '300px' }}>
             <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
             </div>
@@ -146,7 +165,7 @@ export default function PublicWidgetPage() {
     );
 
     if (error) return (
-        <div className="min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '400px' }}>
             <div className="text-center p-5 glass-panel rounded-4">
                 <i className="bi bi-exclamation-triangle display-4 text-danger mb-3 d-block"></i>
                 <h4 className="fw-bold">Widget Error</h4>
@@ -191,10 +210,19 @@ export default function PublicWidgetPage() {
                 pricing.pricingModel === 4 ? 'mo' :
                     pricing.pricingModel === 5 ? 'yr' : '';
 
-        return `$${Number(pricing.price).toLocaleString()}${label ? `/${label}` : ''}`;
+        // Get currency from tenant country
+        const country = widget?.tenant?.country || 'USA';
+        const config = getCurrencyConfig(country);
+        const symbol = config?.symbol || '$';
+
+        return `${symbol}${Number(pricing.price).toLocaleString()}${label ? `/${label}` : ''}`;
     };
 
     const renderContent = () => {
+        const country = widget?.tenant?.country || 'USA';
+        const currencyConfig = getCurrencyConfig(country);
+        const currencySymbol = currencyConfig?.symbol || '$';
+
         switch (currentView) {
             case 'LISTING':
                 if (widget.configuration?.settings?.layout === 'builder' || widget.configuration?.pageBuilder?.enabled) {
@@ -210,6 +238,7 @@ export default function PublicWidgetPage() {
                                 setPropertyImageIndex(0);
                                 setCurrentView('PROPERTY_DETAIL');
                                 trackAction('PROPERTY_VIEW', { propertyId: property.id });
+                                window.scrollTo(0, 0);
                             }}
                         />
                     );
@@ -231,6 +260,7 @@ export default function PublicWidgetPage() {
                             setPropertyImageIndex(0);
                             setCurrentView('PROPERTY_DETAIL');
                             trackAction('PROPERTY_VIEW', { propertyId: property.id });
+                            window.scrollTo(0, 0);
                         }}
                         trackAction={trackAction}
                         identifyLead={identifyLead}
@@ -253,6 +283,7 @@ export default function PublicWidgetPage() {
                         getFormattedPrice={getFormattedPrice}
                         trackAction={trackAction}
                         identifyLead={identifyLead}
+                        currencySymbol={currencySymbol}
                     />
                 );
             case 'UNIT_DETAIL':
@@ -269,6 +300,7 @@ export default function PublicWidgetPage() {
                         getFormattedPrice={getFormattedPrice}
                         trackAction={trackAction}
                         identifyLead={identifyLead}
+                        currencySymbol={currencySymbol}
                     />
                 );
             case 'THREE_D':
@@ -279,6 +311,7 @@ export default function PublicWidgetPage() {
                         setCurrentView={setCurrentView}
                         setSelectedUnit={setSelectedUnit}
                         mapUnitsToSeats={mapUnitsToSeats}
+                        currencySymbol={currencySymbol}
                     />
                 );
             case 'TOUR':
@@ -313,55 +346,8 @@ export default function PublicWidgetPage() {
 
 
     return (
-        <div className="public-widget min-vh-100 bg-white" style={{ '--primary-color': theme.primaryColor } as any}>
-            {/* Header: Show standard header ONLY if NOT in the builder landing page itself AND if builder logo isn't globally disabled */}
-            {!isBuilderActiveListing && config?.showLogo !== false && (
-                <header className="p-3 bg-white border-bottom sticky-top shadow-sm z-3">
-                    <div className="container d-flex justify-content-between align-items-center">
-                        <div className="property-logo">
-                            {config?.logoUrl ? (
-                                <img src={config.logoUrl} alt="Logo" style={{ height: '60px', objectFit: 'contain' }} />
-                            ) : (
-                                <div className="rounded-3 p-2 d-flex align-items-center justify-content-center" style={{ width: '42px', height: '42px', backgroundColor: theme.primaryColor }}>
-                                    <i className="bi bi-house-heart-fill text-white fs-5"></i>
-                                </div>
-                            )}
-                        </div>
-                        <div className="d-flex align-items-center gap-3">
-                            <button className="btn btn-primary btn-sm rounded-4 px-4" style={{ backgroundColor: theme.primaryColor, border: 'none' }} onClick={() => setCurrentView('PROPERTY_DETAIL')}>
-                                <i className="bi bi-building-fill me-2"></i>Properties
-                            </button>
-                        </div>
-                    </div>
-                </header>
-            )}
-
+        <div id="widget-content-wrapper" className="public-widget bg-white overflow-hidden" style={{ '--primary-color': theme.primaryColor } as any}>
             <main>
-                {currentView === 'LISTING' && !isBuilderLayout && (config?.heroTitle || config?.heroBgUrl) && config?.showHero !== false && (
-                    <section className="container-md widget-hero py-10 mb-2 position-relative overflow-hidden" style={{
-                        backgroundColor: theme.primaryColor || '#f8f9fa',
-                        backgroundImage: config?.heroBgUrl ? `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${config.heroBgUrl})` : 'none',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        color: (config?.heroBgUrl || config?.heroTitle) ? (config?.heroTextColor || '#ffffff') : 'inherit',
-                        minHeight: config?.heroBgUrl ? (isBuilderLayout ? '550px' : '400px') : 'auto',
-                        display: 'flex',
-                        alignItems: 'center',
-                        textAlign: 'center',
-                        marginTop: '-1px',
-                    }}>
-                        <div className="container position-relative z-1 py-4">
-                            <h1 className="display-4 fw-extrabold mb-3 animate-fade-up letter-spacing-tight hero-title">
-                                {config?.heroTitle || 'Premium Real Estate'}
-                            </h1>
-                            {config?.heroSubtitle && (
-                                <p className="lead mb-0 opacity-90 animate-fade-up mx-auto hero-subtitle" style={{ maxWidth: '700px', animationDelay: '0.1s' }}>
-                                    {config?.heroSubtitle}
-                                </p>
-                            )}
-                        </div>
-                    </section>
-                )}
                 {renderContent()}
             </main>
 
@@ -424,12 +410,12 @@ export default function PublicWidgetPage() {
                                     if (contact.includes('@')) leadPayload.email = contact;
                                     else leadPayload.phone = contact;
 
-                                    const res = await widgetService.createPublicLead(widgetId as string, leadPayload);
+                                    const res = await widgetService.createPublicLead(uniqueId as string, leadPayload);
                                     if (res.success && res.data?.id) {
                                         identifyLead(res.data.id, res.data.email);
                                     }
                                 }}
-                                // Advanced configuration from property metadata or global tenant settings
+                                // Advanced configuration
                                 customWelcomeTitle={
                                     widget?.configuration?.chatbot?.welcomeMessage ||
                                     (data?.[0]?.metadata?.chatbotConfig?.welcomeMessage) ||
@@ -467,29 +453,6 @@ export default function PublicWidgetPage() {
                     )}
                 </>
             )}
-
-            {/* Global Footer: Hide if in builder landing page (it has its own) OR if footer is disabled in config */}
-            {!isBuilderActiveListing && config?.showFooter !== false && (
-                <footer className="py-5 bg-light border-top mt-5 mb-2">
-                    <div className="container text-center">
-                        <div className="mb-4 text-muted">
-                            {config?.logoUrl ? (
-                                <img src={config.logoUrl} alt="Logo" style={{ height: '50px', objectFit: 'contain', margin: 'auto' }} className="mb-2" />
-                            ) : (
-                                <i className="bi bi-building fs-3 text-muted">Your Company Name</i>
-                            )}
-                            <div>
-                                <i className="bi bi-patch-check-fill text-primary" style={{ color: theme.primaryColor }}></i> Verified Real Estate Portal
-                            </div>
-                        </div>
-                        <p className="extra-small text-muted mb-0">
-
-                            {config?.footerText || `© 2026 ${widget.name}. All rights reserved.`}
-                        </p>
-                    </div>
-                </footer>
-            )
-            }
         </div >
     );
 }

@@ -139,11 +139,28 @@ export default function WidgetPreview({ formData, tenantType }: WidgetPreviewPro
 
                 {/* Mock Footer */}
                 {isPageBuilder && builder.showFooter && (
-                    <div className="preview-mock-footer p-4 border-top mt-5 text-center bg-light">
+                    <div className="preview-mock-footer p-4 border-top mt-5 text-center bg-light position-relative">
                         <div className="mock-line bg-secondary-subtle mb-2 mx-auto w-25" style={{ height: '6px', borderRadius: '3px' }}></div>
                         <p className="extra-small text-muted mb-0" style={{ fontSize: '0.6rem' }}>
                             {builder.footerText || '© 2026 Your Company'}
                         </p>
+                        {/* Non-removable Watermark */}
+                        <div
+                            className="position-absolute bottom-0 start-50 translate-middle-x mb-2 text-decoration-none d-flex align-items-center"
+                            style={{
+                                fontSize: '8px',
+                                color: 'rgba(0,0,0,0.3)',
+                                userSelect: 'none',
+                                pointerEvents: 'none'
+                            }}
+                        >
+                            <img
+                                src="/images/Virpnix-logo-icon-svg.svg"
+                                alt="Virpanix"
+                                style={{ height: '8px', width: 'auto', marginRight: '3px', opacity: 0.3 }}
+                            />
+                            Powered by Virpanix
+                        </div>
                     </div>
                 )}
 

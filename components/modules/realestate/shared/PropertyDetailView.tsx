@@ -24,6 +24,7 @@ interface PropertyDetailViewProps {
     getFormattedPrice: (unit: any) => string;
     trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
     identifyLead?: (id: string, email?: string) => void;
+    currencySymbol?: string;
 }
 
 const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
@@ -40,7 +41,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
     setUnitImageIndex,
     getFormattedPrice,
     trackAction,
-    identifyLead
+    identifyLead,
+    currencySymbol = '$'
 }) => {
     const [show3DPlotView, setShow3DPlotView] = useState(false);
     const [showBookingModal, setShowBookingModal] = useState(false);
@@ -65,7 +67,18 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                     <div className="col-lg-5">
                         <div className="glass-panel p-4 rounded-4 h-100 d-flex flex-column justify-content-between">
                             <div>
-                                <h3 className="fw-bold mb-1">{selectedProperty.title}</h3>
+                                <div className="d-flex justify-content-between align-items-start mb-1">
+                                    <h3 className="fw-bold mb-0">{selectedProperty.title}</h3>
+                                    {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
+                                        <button
+                                            className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm d-md-none"
+                                            style={{ backgroundColor: theme.primaryColor, border: 'none' }}
+                                            onClick={() => setShowBookingModal(true)}
+                                        >
+                                            Reserve
+                                        </button>
+                                    )}
+                                </div>
                                 <p className="text-muted small mb-4 d-flex align-items-center">
                                     <i className="bi bi-geo-alt-fill me-2 text-primary" style={{ color: theme.primaryColor }}></i>
                                     {selectedProperty.addressLine1}, {selectedProperty.city}
@@ -123,7 +136,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                 <span className="fw-bold">Experience Full 3D Walkthrough</span>
                             </button>
 
-                            {widget.configuration.bookingForm?.enabled && (
+                            {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
                                 <button
                                     className="btn btn-dark w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 mt-3 transition-all hover:translate-y-[-2px]"
                                     onClick={() => setShowBookingModal(true)}
@@ -294,6 +307,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         svgContent={selectedProperty.metadata.interactiveSvg}
                                         mapping={selectedProperty.metadata.svgMapping || {}}
                                         themeColor={theme.primaryColor}
+                                        currencySymbol={currencySymbol}
                                         onUnitSelect={(id) => {
                                             const unit = selectedProperty.units.find((u: any) => u.id === id);
                                             if (unit) {
@@ -349,7 +363,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                             if (trackAction) trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
                                         }}
                                     >
-                                        <div className="bg-light" style={{ height: '120px' }}>
+                                        <div className="bg-light" style={{ height: '240px' }}>
                                             {unit.mainImage ? (
                                                 <img src={unit.mainImage.url} alt={unit.unitCode} className="w-100 h-100 object-fit-cover" />
                                             ) : (
@@ -363,14 +377,33 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 </span>
                                                 <span className="badge bg-success bg-opacity-10 text-success extra-small">Available</span>
                                             </div>
-                                            <h6 className="fw-bold mb-1 text-truncate">{unit.name || `Unit ${unit.unitCode}`}</h6>
+                                            <h6 className="fw-bold mb-1 text-truncate">{unit.name || `${unit.unitCode}`}</h6>
                                             <div className="d-flex gap-2 mb-3">
                                                 <span className="extra-small text-muted"><i className="bi bi-bed me-1"></i>{unit.realEstateDetails?.bedrooms || 0} Bed</span>
                                                 <span className="extra-small text-muted"><i className="bi bi-arrows-fullscreen me-1"></i>{unit.sizeSqft || 0} sqft</span>
+                                                <span className="extra-small text-muted"><i className="bi bi-bath me-1"></i>{unit.realEstateDetails?.bathrooms || 0} Bath</span>
+
                                             </div>
-                                            <button className="btn btn-outline-primary btn-sm w-100 rounded-4 extra-small fw-bold" style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}>
-                                                View Unit Details
-                                            </button>
+                                            <div className="d-flex gap-2">
+                                                <button
+                                                    className="btn btn-outline-primary btn-sm flex-grow-1 rounded-4 extra-small fw-bold"
+                                                    style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
+                                                >
+                                                    View Details
+                                                </button>
+                                                {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
+                                                    <button
+                                                        className="btn btn-dark btn-sm flex-grow-1 rounded-4 extra-small fw-bold"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedUnit(unit);
+                                                            setShowBookingModal(true);
+                                                        }}
+                                                    >
+                                                        Reserve Now
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -448,7 +481,12 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                         };
                     })}
                     theme={theme}
+                    currencySymbol={currencySymbol}
                     onClose={() => setShow3DPlotView(false)}
+                    onBookingSelect={(unit) => {
+                        setSelectedUnit(unit);
+                        setShowBookingModal(true);
+                    }}
                 />
             )}
 

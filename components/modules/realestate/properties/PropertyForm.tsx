@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Property, MediaItem } from '@/types';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MapView from '@/components/common/MapView';
 import MediaSelector from '@/components/shared/MediaSelector';
 
@@ -24,6 +25,7 @@ export default function PropertyForm({
     amenities,
     categories
 }: PropertyFormProps) {
+    const { currencySymbol } = useManagementContext();
     const [formData, setFormData] = useState<Partial<Property>>({
         name: '',
         slug: '',
@@ -260,7 +262,7 @@ export default function PropertyForm({
 
                                             <div className="col-md-6">
                                                 <div className="d-flex justify-content-between align-items-center mb-1">
-                                                    <label className="form-label fw-bold small text-uppercase text-muted mb-0">Base Price (Optional)</label>
+                                                    <label className="form-label fw-bold small text-uppercase text-muted mb-0">Base Price ({currencySymbol})</label>
                                                     <div className="form-check form-switch p-0 m-0 d-flex align-items-center">
                                                         <label className="form-check-label extra-small text-muted me-2" style={{ fontSize: '10px' }} htmlFor="displayPrice">Show in Widget</label>
                                                         <input
@@ -278,7 +280,7 @@ export default function PropertyForm({
                                                     className="form-control bg-light border-0"
                                                     value={formData.price || ''}
                                                     onChange={(e) => setFormData({ ...formData, price: e.target.value ? parseFloat(e.target.value) : 0 })}
-                                                    placeholder="0.00"
+                                                    placeholder={`${currencySymbol}0.00`}
                                                 />
                                             </div>
 

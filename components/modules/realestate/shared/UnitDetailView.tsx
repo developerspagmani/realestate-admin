@@ -18,6 +18,7 @@ interface UnitDetailViewProps {
     getFormattedPrice: (unit: any) => string;
     trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
     identifyLead?: (id: string, email?: string) => void;
+    currencySymbol?: string;
 }
 
 const UnitDetailView: React.FC<UnitDetailViewProps> = ({
@@ -31,7 +32,8 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
     setCurrentView,
     getFormattedPrice,
     trackAction,
-    identifyLead
+    identifyLead,
+    currencySymbol = '$'
 }) => {
     const [showBookingModal, setShowBookingModal] = React.useState(false);
     const uImages = [
@@ -55,7 +57,18 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                         <div className="glass-panel p-4 rounded-4 h-100 d-flex flex-column justify-content-between">
                             <div>
                                 <div className="d-flex justify-content-between align-items-start mb-3">
-                                    <span className="badge bg-dark rounded-4 px-3 py-2">Unit {selectedUnit.unitCode}</span>
+                                    <div className="d-flex gap-2 align-items-center">
+                                        <span className="badge bg-dark rounded-4 px-3 py-2">Unit {selectedUnit.unitCode}</span>
+                                        {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
+                                            <button
+                                                className="btn btn-primary btn-sm rounded-pill px-3 fw-bold d-md-none"
+                                                style={{ backgroundColor: theme.primaryColor, border: 'none' }}
+                                                onClick={() => setShowBookingModal(true)}
+                                            >
+                                                Reserve
+                                            </button>
+                                        )}
+                                    </div>
                                     <div className="text-end">
                                         <span className="d-block extra-small text-muted">Asking Price</span>
                                         <span className="text-primary fw-extrabold fs-3" style={{ color: theme.primaryColor }}>{getFormattedPrice(selectedUnit)}</span>
@@ -107,13 +120,13 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                     <i className="bi bi-calendar-check"></i>
                                     Request Official Tour
                                 </button>
-                                {widget.configuration.bookingForm?.enabled && (
+                                {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
                                     <button
                                         className="btn btn-dark w-100 rounded-4 py-3 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2 mt-3"
                                         onClick={() => setShowBookingModal(true)}
                                     >
                                         <i className="bi bi-calendar-plus"></i>
-                                        Instant Booking Request
+                                        Reserve This Unit Now
                                     </button>
                                 )}
                             </div>

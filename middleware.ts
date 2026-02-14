@@ -80,7 +80,25 @@ function sanitizePath(pathname: string): string {
 }
 
 export function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host');
   const pathname = sanitizePath(request.nextUrl.pathname);
+
+  // Custom Domain Routing (Standalone Landing Pages)
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+  const isCustomHost = hostname && hostname !== rootDomain && hostname !== 'localhost:3001' && !hostname.endsWith('.vercel.app');
+
+  // PERF-F11 fix: Avoid rewriting public assets, api, or go links which are already global
+  if (isCustomHost &&
+    !pathname.startsWith('/api') &&
+    !pathname.startsWith('/_next') &&
+    !pathname.startsWith('/public') &&
+    !pathname.startsWith('/go') &&
+    !pathname.startsWith('/standalone') // Avoid double rewriting
+  ) {
+    // Rewrite custom domain requests to our standalone renderer
+    return NextResponse.rewrite(new URL(`/standalone/${hostname}${pathname}`, request.url));
+  }
+
   const clientIP = getClientIP(request);
   const userAgent = request.headers.get('user-agent') || '';
 
@@ -201,8 +219,16 @@ export function middleware(request: NextRequest) {
     '/booking-confirmation'
   ];
 
+  // Public exceptions inside protected paths
+  const publicExceptions = [
+    '/realestate-owner-admin/widgets'
+  ];
+
   // Check if route requires authentication
-  if (protectedRoutes.some(route => pathname.startsWith(route))) {
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  const isException = publicExceptions.some(route => pathname.startsWith(route));
+
+  if (isProtectedRoute && !isException) {
     const token = request.cookies.get('auth-token')?.value;
 
     // SEC-F03 fix: Extract role from JWT payload, not from a spoofable cookie

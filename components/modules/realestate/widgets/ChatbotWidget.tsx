@@ -162,6 +162,8 @@ export default function ChatbotWidget({
         } catch (error) {
             console.error('Lead capture failed:', error);
             setStep('HI');
+            // Show friendly error message so user knows what happened, even if we logged the error
+            addMessage('bot', 'Sorry, I had trouble saving your details. Please try again or contact us directly.');
         } finally {
             setIsSubmittingLead(false);
         }
@@ -364,7 +366,7 @@ export default function ChatbotWidget({
                 </div>
             </div>
 
-            <div className="chat-body p-3 overflow-auto" style={{ height: isExpanded ? '650px' : '420px', backgroundColor: '#f9fafb' }} ref={chatBodyRef}>
+            <div className="chat-body p-3 overflow-auto flex-grow-1" style={{ backgroundColor: '#f9fafb', minHeight: '0' }} ref={chatBodyRef}>
                 {step === 'IDLE' ? (
                     <div className="text-center py-5">
                         <div className="bounce-container mb-3">
@@ -394,7 +396,7 @@ export default function ChatbotWidget({
                             e.preventDefault();
                             const formData = new FormData(e.target as HTMLFormElement);
                             const contact = leadCaptureMode === 'both'
-                                ? `${formData.get('email')} / ${formData.get('mobile')}`
+                                ? `${formData.get('email')} | ${formData.get('mobile')}`
                                 : (formData.get('contact') as string);
 
                             handleLeadSubmit({

@@ -9,10 +9,12 @@ interface Plot3DViewerProps {
     mapping: any;
     units: any[];
     theme: any;
+    currencySymbol?: string;
     onClose: () => void;
+    onBookingSelect?: (unit: any) => void;
 }
 
-export default function Plot3DViewer({ svgContent, mapping, units, theme, onClose }: Plot3DViewerProps) {
+export default function Plot3DViewer({ svgContent, mapping, units, theme, currencySymbol = '$', onClose, onBookingSelect }: Plot3DViewerProps) {
     const [selectedUnit, setSelectedUnit] = useState<any | null>(null);
     const [threeJSLoaded, setThreeJSLoaded] = useState(false);
     const [zoomValue, setZoomValue] = useState(300);
@@ -322,9 +324,16 @@ export default function Plot3DViewer({ svgContent, mapping, units, theme, onClos
                             <span className="text-muted">Status:</span>
                             <span className={`badge px-2 py-1 ${selectedUnit.status === 'available' ? 'bg-success text-white' : 'bg-danger text-white'}`}>{selectedUnit.status.toUpperCase()}</span>
                         </div>
-                        <div className="d-flex justify-content-between">
-                            <span className="text-muted">Price:</span>
-                            <span className="fw-bold text-primary">${selectedUnit.price?.toLocaleString()}</span>
+                        <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                            <span className="fw-bold text-primary">{currencySymbol}{selectedUnit.price?.toLocaleString()}</span>
+                            {onBookingSelect && (
+                                <button
+                                    className="btn btn-primary btn-sm rounded-4 px-3 fw-bold"
+                                    onClick={() => onBookingSelect(selectedUnit)}
+                                >
+                                    Reserve
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

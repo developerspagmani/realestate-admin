@@ -10,6 +10,7 @@ interface ThreeDViewProps {
     setCurrentView: (view: any) => void;
     setSelectedUnit: (unit: any) => void;
     mapUnitsToSeats: (units: any[]) => any[];
+    currencySymbol?: string;
 }
 
 const ThreeDView: React.FC<ThreeDViewProps> = ({
@@ -17,7 +18,8 @@ const ThreeDView: React.FC<ThreeDViewProps> = ({
     theme,
     setCurrentView,
     setSelectedUnit,
-    mapUnitsToSeats
+    mapUnitsToSeats,
+    currencySymbol = '$'
 }) => {
     // Demo House Plan State
     const [showDemoModal, setShowDemoModal] = React.useState(false);
@@ -78,6 +80,7 @@ const ThreeDView: React.FC<ThreeDViewProps> = ({
                     workspaces={mapUnitsToSeats(selectedProperty.units)}
                     layout={selectedProperty.workspace3D?.layout}
                     config={selectedProperty.workspace3D?.config}
+                    currencySymbol={currencySymbol}
                     onWorkspaceClick={(seats) => {
                         const unit = selectedProperty.units.find((u: any) => u.id === seats.id);
                         if (unit) {

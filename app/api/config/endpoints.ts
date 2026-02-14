@@ -326,6 +326,18 @@ export const widgetEndpoints = {
   getPublic: (uniqueId: string) => `/widgets/public/${uniqueId}`,
 };
 
+// Website endpoints
+export const websiteEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/websites?${buildQueryString(params)}` : '/websites',
+  getById: (id: string, tenantId?: string) => `/websites/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  create: () => '/websites',
+  update: (id: string, tenantId?: string) => `/websites/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  delete: (id: string, tenantId?: string) => `/websites/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  getPublic: (slugOrDomain: string) => `/websites/public/${slugOrDomain}`,
+  createPublicLead: (id: string) => `/websites/public/${id}/leads`,
+};
+
 // Public Discovery endpoints (No auth required)
 export const discoveryEndpoints = {
   getProperties: (params?: Record<string, any>) =>
@@ -407,6 +419,22 @@ export const licenseKeyEndpoints = {
   validate: () => '/license-keys/validate',
   activate: () => '/license-keys/activate',
 };
+
+// CMS endpoints
+export const cmsEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/cms?${buildQueryString(params)}` : '/cms',
+  getById: (id: string, tenantId?: string) =>
+    `/cms/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  create: () => '/cms',
+  update: (id: string, tenantId?: string) =>
+    `/cms/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  delete: (id: string, tenantId?: string) =>
+    `/cms/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  getPublic: (slug: string) => `/cms/public/${slug}`,
+};
+
+
 
 
 // Helper function to build query strings

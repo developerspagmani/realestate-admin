@@ -6,12 +6,14 @@ import { Seats } from '@/types';
 interface Workspace3DProps {
   workspaces: Seats[];
   onWorkspaceClick?: (seats: Seats) => void;
+  onBookingSelect?: (seats: Seats) => void;
   onShowDemoPlans?: (seats: Seats) => void;
   layout?: any[];
   config?: any;
+  currencySymbol?: string;
 }
 
-export default function Workspace3D({ workspaces, onWorkspaceClick, onShowDemoPlans, layout, config }: Workspace3DProps) {
+export default function Workspace3D({ workspaces, onWorkspaceClick, onBookingSelect, onShowDemoPlans, layout, config, currencySymbol = '$' }: Workspace3DProps) {
   const [selectedWorkspace, setSelectedWorkspace] = useState<Seats | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
@@ -570,7 +572,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onShowDemoPl
               </div>
               <div className="d-flex justify-content-between">
                 <span className="text-muted">Price:</span>
-                <span className="fw-bold text-primary">${selectedWorkspace.monthlyRate || selectedWorkspace.price || selectedWorkspace.hourlyRate}</span>
+                <span className="fw-bold text-primary">{currencySymbol}{selectedWorkspace.monthlyRate || selectedWorkspace.price || selectedWorkspace.hourlyRate}</span>
               </div>
             </div>
           </div>
@@ -668,7 +670,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onShowDemoPl
               <div className="d-flex justify-content-between align-items-center pt-2 border-top">
                 <div>
                   <span className="extra-small text-muted text-uppercase d-block">Asking Price</span>
-                  <span className="h5 fw-bold text-primary mb-0">${selectedWorkspace.monthlyRate || selectedWorkspace.price || selectedWorkspace.hourlyRate}</span>
+                  <span className="h5 fw-bold text-primary mb-0">{currencySymbol}{selectedWorkspace.monthlyRate || selectedWorkspace.price || selectedWorkspace.hourlyRate}</span>
                 </div>
                 <button
                   className="btn btn-sm btn-primary"

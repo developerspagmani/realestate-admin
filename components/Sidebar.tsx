@@ -36,7 +36,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
       logout();
     }
   };
-  
+
   const settingsPath = isAdmin ? '/realestate-admin/settings' : isOwner ? '/realestate-owner-admin/settings' : '/user/settings';
 
   const getMenuItems = (isAdmin: boolean, isOwner: boolean, isUser: boolean, isAgent: boolean, tenantType: number, hasModule: (m: string) => boolean, activePage?: string, user?: any) => {
@@ -92,6 +92,8 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Marketing',
           items: [
             { href: '/realestate-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
+            { href: '/realestate-admin/websites', label: 'Websites', icon: 'bi-window-stack', active: activePage === 'websites' },
+            { href: '/realestate-admin/cms', label: 'CMS / Pages', icon: 'bi-file-earmark-richtext', active: activePage === 'cms' },
             { href: '/realestate-admin/widgets', label: 'Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
           ]
         }] : [])
@@ -143,7 +145,9 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             ...(hasModule('3d_viewer') || hasModule('marketing_hub') ? [{ href: '/realestate-owner-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' }] : []),
             ...(hasModule('marketing_hub') ? [
               { href: '/realestate-owner-admin/chatbot-config', label: 'Chatbot Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
-              { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' }
+              { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
+              { href: '/realestate-owner-admin/websites', label: 'Websites', icon: 'bi-window-stack', active: activePage === 'websites' },
+              { href: '/realestate-owner-admin/cms', label: 'CMS / Pages', icon: 'bi-file-earmark-richtext', active: activePage === 'cms' }
             ] : []),
             ...(hasModule('widget_creator') || hasModule('marketing_hub') ? [{ href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }] : [])
           ]

@@ -9,11 +9,12 @@ interface PlotMapViewerProps {
     svgContent: string;
     mapping: Record<string, string>; // pathId -> unitId
     themeColor?: string;
+    currencySymbol?: string;
     onUnitSelect?: (unitId: string) => void;
     onBookingSelect?: (unitId: string) => void;
 }
 
-export default function PlotMapViewer({ units, svgContent, mapping, themeColor = '#6366f1', onUnitSelect, onBookingSelect }: PlotMapViewerProps) {
+export default function PlotMapViewer({ units, svgContent, mapping, themeColor = '#6366f1', currencySymbol = '$', onUnitSelect, onBookingSelect }: PlotMapViewerProps) {
     const [selectedUnit, setSelectedUnit] = useState<Seats | null>(null);
     const [popupPos, setPopupPos] = useState({ x: 0, y: 0 });
     const svgContainerRef = useRef<HTMLDivElement>(null);
@@ -241,7 +242,7 @@ export default function PlotMapViewer({ units, svgContent, mapping, themeColor =
                             <div className="col-6">
                                 <div className="p-2 bg-light rounded-3">
                                     <span className="text-muted extra-small d-block">Price</span>
-                                    <span className="fw-bold text-dark small">${selectedUnit.price?.toLocaleString() || 'N/A'}</span>
+                                    <span className="fw-bold text-dark small">{currencySymbol}{selectedUnit.price?.toLocaleString() || 'N/A'}</span>
                                 </div>
                             </div>
                             <div className="col-6">

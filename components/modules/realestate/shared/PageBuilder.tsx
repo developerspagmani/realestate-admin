@@ -132,7 +132,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     color: config?.heroBgUrl ? (config?.heroTextColor || '#ffffff') : 'inherit',
-                    minHeight: config?.heroBgUrl ? '400px' : 'auto',
+                    minHeight: config?.heroBgUrl ? '550px' : 'auto',
                     display: 'flex',
                     alignItems: 'center'
                 }}>
@@ -218,10 +218,30 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
 
             {/* Footer Section */}
             {config?.showFooter !== false && config?.footerText && (
-                <footer className="py-4 border-top text-center text-muted small bg-white">
+                <footer className="py-4 border-top text-center text-muted small bg-white position-relative">
                     <div className="container">
                         {config.footerText}
                     </div>
+                    {/* Non-removable Watermark */}
+                    <a
+                        href="https://www.virpanix.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="d-flex align-items-center justify-content-center mt-2 text-decoration-none"
+                        style={{
+                            fontSize: '10px',
+                            color: 'rgba(0,0,0,0.3)',
+                            userSelect: 'none',
+                            pointerEvents: 'auto'
+                        }}
+                    >
+                        <img
+                            src="/images/Virpnix-logo-icon-svg.svg"
+                            alt="Virpanix"
+                            style={{ height: '12px', width: 'auto', marginRight: '4px', opacity: 0.3 }}
+                        />
+                        Powered by Virpanix
+                    </a>
                 </footer>
             )}
         </div>
