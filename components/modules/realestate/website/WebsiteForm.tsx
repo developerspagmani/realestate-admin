@@ -44,10 +44,13 @@ export default function WebsiteForm({
             const response = await fetch(`https://dns.google/resolve?name=${formData.customDomain}&type=CNAME`);
             const data = await response.json();
 
-            const isValid = data.Answer?.some((record: any) =>
-                record.data.includes('cname.virpanix-platform.com') ||
-                record.data.includes('virpanix-platform.com')
-            );
+            const isValid = data.Answer?.some((record: any) => {
+                const target = record.data.toLowerCase();
+                // Allow our custom CNAME alias OR direct Vercel pointing
+                return target.includes('virpanix-platform.com') ||
+                    target.includes('vercel.app') ||
+                    target.includes('cname.virpanix');
+            });
 
             // Simulation for development/localhost testing or allowing manual override
             const isSimulation = formData.customDomain.includes('test') || formData.customDomain.includes('dev');
@@ -198,7 +201,11 @@ export default function WebsiteForm({
                                                     placeholder="portal.yourbrand.com"
                                                     value={formData.customDomain}
                                                     onChange={(e) => {
-                                                        setFormData({ ...formData, customDomain: e.target.value.toLowerCase() });
+                                                        // Automatically strip protocol and trailing slashes
+                                                        const cleanDomain = e.target.value.toLowerCase()
+                                                            .replace(/^https?:\/\//, '')
+                                                            .replace(/\/$/, '');
+                                                        setFormData({ ...formData, customDomain: cleanDomain });
                                                         setVerificationStatus('idle');
                                                     }}
                                                 />

@@ -269,14 +269,6 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                             // Enhanced status transformation with better fallback logic
                                             let statusStr = 'available';
 
-                                            // Debug: Log actual status values
-                                            console.log('Unit Status Debug:', {
-                                                unitId: u.id,
-                                                unitName: u.name || u.unitCode,
-                                                statusRaw: u.status,
-                                                statusType: typeof u.status
-                                            });
-
                                             // Check if status is already a string
                                             if (typeof u.status === 'string' && u.status.length > 0) {
                                                 statusStr = u.status.toLowerCase().trim();
@@ -289,11 +281,6 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 else if (statusNum === 3) statusStr = 'maintenance';
                                                 else if (statusNum === 4) statusStr = 'sold';
                                             }
-
-                                            console.log('Unit Status Transformed:', {
-                                                unitId: u.id,
-                                                finalStatus: statusStr
-                                            });
 
                                             return {
                                                 id: u.id,

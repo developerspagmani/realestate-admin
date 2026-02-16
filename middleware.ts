@@ -96,7 +96,9 @@ export function middleware(request: NextRequest) {
     !pathname.startsWith('/standalone') // Avoid double rewriting
   ) {
     // Rewrite custom domain requests to our standalone renderer
-    return NextResponse.rewrite(new URL(`/standalone/${hostname}${pathname}`, request.url));
+    // Fix: Strip port number from hostname for DB lookup consistency
+    const domainWithoutPort = hostname.split(':')[0];
+    return NextResponse.rewrite(new URL(`/standalone/${domainWithoutPort}${pathname}`, request.url));
   }
 
   const clientIP = getClientIP(request);
