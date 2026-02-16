@@ -47,7 +47,7 @@ export default function WebsiteForm({
             const isValid = data.Answer?.some((record: any) => {
                 const target = record.data.toLowerCase();
                 // Allow our custom CNAME alias OR direct Vercel pointing
-                return target.includes('virpanix-platform.com') ||
+                return target.includes('virpanix.com') ||
                     target.includes('vercel.app') ||
                     target.includes('cname.virpanix');
             });
@@ -265,7 +265,7 @@ export default function WebsiteForm({
                                                         <div className="col-6">
                                                             <div className="p-2 bg-white rounded-2 border border-light-subtle">
                                                                 <div className="extra-small text-muted mb-1">Value / Target</div>
-                                                                <div className="small fw-bold font-monospace text-truncate" title="cname.virpanix-platform.com">cname.virpanix-platform.com</div>
+                                                                <div className="small fw-bold font-monospace text-truncate" title="cname.virpanix.com">cname.virpanix.com</div>
                                                             </div>
                                                         </div>
                                                     </div>
