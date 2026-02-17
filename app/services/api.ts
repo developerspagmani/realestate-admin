@@ -24,4 +24,5 @@ export * from './marketing';
 export * from './subscription';
 export * from './licenseKey';
 export * from './admin';
+export * from './upgradeRequest';
 export { default as cmsService } from './cms';

@@ -25,6 +25,23 @@ export default function WidgetPreview({ formData, tenantType }: WidgetPreviewPro
         }
     };
 
+    // Helper to darken a color for hover states (matching logic in StandaloneProvider)
+    const darkenColor = (hex: string, percent: number) => {
+        try {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 0 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 0 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 0 ? 0 : B : 255)).toString(16).slice(1);
+        } catch (e) {
+            return hex;
+        }
+    };
+
+    const primaryHover = darkenColor(theme.primaryColor, 10);
+    const primaryGhost = theme.primaryColor + '15';
+
     return (
         <div className="widget-preview-container sticky-top" style={{ top: '20px' }}>
             <div className="preview-header mb-3 d-flex justify-content-between align-items-center">
@@ -50,13 +67,17 @@ export default function WidgetPreview({ formData, tenantType }: WidgetPreviewPro
             </div>
 
             <div
-                className={`widget-mockup-frame shadow-lg bg-white overflow-hidden border border-light-subtle rounded-4 mx-auto`}
+                className={`widget-mockup-frame widget-container shadow-lg bg-white overflow-hidden border border-light-subtle rounded-4 mx-auto`}
                 style={{
                     fontFamily: theme.fontFamily,
                     minHeight: '600px',
                     width: getFrameWidth(),
-                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                }}
+                    transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    // Inject dynamic variables for preview CSS to pick up
+                    '--primary-color': theme.primaryColor,
+                    '--primary-hover': primaryHover,
+                    '--primary-ghost': primaryGhost
+                } as any}
             >
                 {/* Mock Header */}
                 {(isPageBuilder || builder.showLogo) && (

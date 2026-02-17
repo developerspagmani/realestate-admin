@@ -84,7 +84,7 @@ const INITIAL_FORM_DATA = {
 };
 
 export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
-    const { user, isAuthenticated } = useAuthContext();
+    const { user, isAuthenticated, hasModule, activeModules } = useAuthContext();
     const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
     const [widgets, setWidgets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -109,9 +109,11 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         if (isAuthenticated) {
             loadWidgets();
             loadProperties();
-            loadMarketingForms();
+            if (hasModule('marketing_hub')) {
+                loadMarketingForms();
+            }
         }
-    }, [isAuthenticated, activeTenantId, activeOwnerId]);
+    }, [isAuthenticated, activeTenantId, activeOwnerId, activeModules]);
 
     const loadMarketingForms = async () => {
         try {
@@ -197,11 +199,12 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
             }
 
             if (response.success) {
-                setShowForm(false);
-                setEditingWidget(null);
-                setFormData(INITIAL_FORM_DATA);
+                // If it was a create operation, transition to edit mode so we stay on the page
+                if (!editingWidget && response.data) {
+                    setEditingWidget(response.data);
+                }
                 loadWidgets();
-                showToast(editingWidget ? 'Widget updated successfully' : 'Widget created successfully');
+                showToast(editingWidget ? 'Widget changes synchronized' : 'Widget published successfully');
             } else {
                 showToast(response.message || 'Failed to save widget', 'error');
             }

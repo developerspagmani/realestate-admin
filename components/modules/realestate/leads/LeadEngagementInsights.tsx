@@ -76,8 +76,11 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
             case 'EMAIL_OPEN': return 'bi-envelope-open text-primary';
             case 'EMAIL_CLICK': return 'bi-cursor text-info';
             case 'PROPERTY_VIEW': return 'bi-eye text-success';
+            case 'UNIT_VIEW': return 'bi-door-closed text-success';
             case 'FORM_SUBMIT': return 'bi-file-earmark-check text-warning';
             case 'CHAT_INIT': return 'bi-chat-dots text-secondary';
+            case 'BOOKING_REQUEST': return 'bi-calendar-check text-danger';
+            case 'UNIT_BOOKING_START': return 'bi-calendar-plus text-danger';
             default: return 'bi-activity text-muted';
         }
     };

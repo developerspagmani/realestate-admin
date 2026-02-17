@@ -52,7 +52,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             isBooking: true,
             propertyId: selectedProperty?.id,
             unitId: selectedUnit?.id,
-            notes: `Booking Request: ${selectedUnit ? `Unit ${selectedUnit.unitCode}` : selectedProperty?.title}\n` +
+            notes: `Booking Request: ${selectedUnit ? `${selectedProperty?.title} - ${selectedUnit.unitCode || selectedUnit.name}` : selectedProperty?.title}\n` +
                 (configUsed.fields || []).map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')
         };
 
@@ -75,7 +75,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             leadPayload.formId = bookingConfig.marketingFormId;
         }
 
-        const res = await widgetService.createPublicLead(widgetId, leadPayload);
+        const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
 
         if (res.success && res.data?.id) {
             const identity = { id: res.data.id, email: res.data.email };
@@ -112,7 +112,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                                 <span className="d-block extra-small text-muted fw-bold text-uppercase">Requesting Reservation</span>
                                 <h6 className="fw-bold mb-1">
                                     {selectedUnit ? (
-                                        <>{selectedUnit.unitCode || selectedUnit.name} <span className="text-muted fw-normal mx-1">at</span> {selectedProperty?.title}</>
+                                        <>{selectedProperty?.title} - {selectedUnit.unitCode || selectedUnit.name}</>
                                     ) : (
                                         selectedProperty?.title
                                     )}

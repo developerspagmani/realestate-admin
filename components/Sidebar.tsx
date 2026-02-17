@@ -52,106 +52,113 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     if (isAdmin) {
       return [
         {
-          title: 'Main',
+          title: 'Operations',
           items: [
-            { href: '/realestate-admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', active: activePage === 'dashboard' },
-            { href: '/realestate-admin/bookings', label: labels.bookings, icon: 'bi-calendar-check', active: activePage === 'bookings' },
-            { href: '/realestate-admin/leads', label: labels.leads, icon: 'bi-person-lines-fill', active: activePage === 'leads' }
+            { href: '/realestate-admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill', active: activePage === 'dashboard' },
+            { href: '/realestate-admin/bookings', label: labels.bookings, icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
+            { href: '/realestate-admin/leads', label: labels.leads, icon: 'bi-person-badge-fill', active: activePage === 'leads' }
           ]
         },
         {
-          title: 'Management',
+          title: 'Core Management',
           items: [
-            { href: '/realestate-admin/properties', label: labels.properties, icon: 'bi-building', active: activePage === 'properties' },
+            { href: '/realestate-admin/properties', label: labels.properties, icon: 'bi-building-fill', active: activePage === 'properties' },
+            { href: '/realestate-admin/units', label: labels.units, icon: 'bi-door-open-fill', active: activePage === 'units' },
+            { href: '/realestate-admin/owners', label: 'Property Owners', icon: 'bi-person-vcard-fill', active: activePage === 'owners' },
+            { href: '/realestate-admin/agents', label: 'Sales Agents', icon: 'bi-briefcase-fill', active: activePage === 'agents' },
+            { href: '/realestate-admin/users', label: 'System Users', icon: 'bi-people-fill', active: activePage === 'users' },
+          ]
+        },
+        {
+          title: 'Design Studio',
+          items: [
+            { href: '/realestate-admin/media-library', label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' },
             { href: '/realestate-admin/plot-map', label: 'Plot Map Manager', icon: 'bi-map-fill', active: activePage === 'plot-map' },
-            { href: '/realestate-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' },
-            { href: '/realestate-admin/units', label: labels.units, icon: 'bi-laptop', active: activePage === 'units' },
-            { href: '/realestate-admin/amenities', label: 'Amenities', icon: 'bi-grid', active: activePage === 'amenities' },
-            { href: '/realestate-admin/categories', label: 'Categories', icon: 'bi-collection', active: activePage === 'categories' },
-            { href: '/realestate-admin/agents', label: 'Agents', icon: 'bi-briefcase', active: activePage === 'agents' },
-            { href: '/realestate-admin/owners', label: 'Owners', icon: 'bi-person-badge', active: activePage === 'owners' },
-            { href: '/realestate-admin/users', label: 'Users', icon: 'bi-people', active: activePage === 'users' },
+            { href: '/realestate-admin/property-3d', label: '3D Architect Pro', icon: 'bi-vector-pen', active: activePage === 'property-3d' },
+            { href: '/realestate-admin/amenities', label: 'Amenities', icon: 'bi-ui-checks-grid', active: activePage === 'amenities' },
+            { href: '/realestate-admin/categories', label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },
           ]
         },
-        {
-          title: 'Resources',
-          items: [
-            { href: '/realestate-admin/media-library', label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' }
-          ]
-        },
-        {
-          title: 'System',
-          items: [
-            { href: '/realestate-admin/subscriptions', label: 'Subscriptions', icon: 'bi-credit-card-2-front', active: activePage === 'subscriptions' },
-            { href: '/realestate-admin/modules', label: 'Modules', icon: 'bi-grid-3x3-gap-fill', active: activePage === 'modules' },
-            { href: '/realestate-admin/settings', label: 'Settings', icon: 'bi-gear-wide-connected', active: activePage === 'settings' }
-          ]
-        },
-
         ...(hasModule('marketing_hub') ? [{
-          title: 'Marketing',
+          title: 'Marketing Suite',
           items: [
             { href: '/realestate-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
-            { href: '/realestate-admin/websites', label: 'Websites', icon: 'bi-window-stack', active: activePage === 'websites' },
-            { href: '/realestate-admin/cms', label: 'CMS / Pages', icon: 'bi-file-earmark-richtext', active: activePage === 'cms' },
-            { href: '/realestate-admin/widgets', label: 'Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
+            { href: '/realestate-admin/websites', label: 'Website', icon: 'bi-window-stack', active: activePage === 'websites' },
+            { href: '/realestate-admin/cms', label: 'CMS', icon: 'bi-file-earmark-richtext-fill', active: activePage === 'cms' },
+            { href: '/realestate-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
           ]
-        }] : [])
+        }] : []),
+        {
+          title: 'Administration',
+          items: [
+            { href: '/realestate-admin/subscriptions', label: 'Subscriptions', icon: 'bi-credit-card-2-front-fill', active: activePage === 'subscriptions' },
+            { href: '/realestate-admin/upgrade-requests', label: 'Upgrade Requests', icon: 'bi-rocket-takeoff-fill', active: activePage === 'upgrade-requests' },
+            { href: '/realestate-admin/modules', label: 'Feature Modules', icon: 'bi-plugin', active: activePage === 'modules' },
+            { href: '/realestate-admin/settings', label: 'Global Settings', icon: 'bi-gear-fill', active: activePage === 'settings' }
+          ]
+        }
       ];
     }
 
     if (isOwner) {
       return [
         {
-          title: 'Main',
+          title: 'Operations',
           items: [
             { href: '/realestate-owner-admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', active: activePage === 'dashboard' },
-            { href: '/realestate-owner-admin/bookings', label: 'Bookings', icon: 'bi-calendar-check', active: activePage === 'bookings' },
-            { href: '/realestate-owner-admin/leads', label: 'Leads', icon: 'bi-person-lines-fill', active: activePage === 'leads' },
-            { href: '/realestate-owner-admin/agents', label: 'Agents', icon: 'bi-briefcase', active: activePage === 'agents' },
+            { href: '/realestate-owner-admin/bookings', label: 'Bookings', icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
+            { href: '/realestate-owner-admin/leads', label: 'Leads', icon: 'bi-funnel-fill', active: activePage === 'leads' },
+            { href: '/realestate-owner-admin/agents', label: 'My Agents', icon: 'bi-person-badge-fill', active: activePage === 'agents' },
           ]
         },
         {
           title: 'Inventory',
           items: [
-            { href: '/realestate-owner-admin/properties', label: 'My Properties', icon: 'bi-building-add', active: activePage === 'properties' },
-            { href: '/realestate-owner-admin/plot-map', label: 'Plot Map Manager', icon: 'bi-map-fill', active: activePage === 'plot-map' },
-            { href: '/realestate-owner-admin/units', label: 'Units', icon: 'bi-unity', active: activePage === 'units' },
-            { href: '/realestate-owner-admin/users', label: 'Users', icon: 'bi-people', active: activePage === 'users' }
+            { href: '/realestate-owner-admin/properties', label: 'My Properties', icon: 'bi-building-fill', active: activePage === 'properties' },
+            { href: '/realestate-owner-admin/units', label: 'Unit Management', icon: 'bi-door-open-fill', active: activePage === 'units' },
+            { href: '/realestate-owner-admin/users', label: 'Staff & Users', icon: 'bi-people-fill', active: activePage === 'users' }
           ]
         },
         {
-          title: 'Resources',
+          title: 'Content & Resources',
           items: [
-            { href: '/realestate-owner-admin/amenities', label: 'Amenities', icon: 'bi-grid', active: activePage === 'amenities' },
-            { href: '/realestate-owner-admin/categories', label: 'Categories', icon: 'bi-collection', active: activePage === 'categories' },
+            { href: '/realestate-owner-admin/media-library', label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' },
+            { href: '/realestate-owner-admin/plot-map', label: 'Plot Map Editor', icon: 'bi-map-fill', active: activePage === 'plot-map' },
+            { href: '/realestate-owner-admin/amenities', label: 'Amenities', icon: 'bi-ui-checks-grid', active: activePage === 'amenities' },
+            { href: '/realestate-owner-admin/categories', label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },
           ]
         },
-        {
-          title: 'Media',
+        ...(hasModule('marketing_hub') || hasModule('widget_creator') || hasModule('3d_viewer') || hasModule('website') || hasModule('cms') || hasModule('discovery') ? [{
+          title: 'Premium Channels',
           items: [
-            { href: '/realestate-owner-admin/media-library', label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' }
+            ...(hasModule('marketing_hub') ? [
+              { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
+            ] : []),
+            ...(hasModule('website') || hasModule('marketing_hub') ? [
+              { href: '/realestate-owner-admin/websites', label: 'Website', icon: 'bi-globe', active: activePage === 'websites' },
+            ] : []),
+            ...(hasModule('cms') || hasModule('marketing_hub') ? [
+              { href: '/realestate-owner-admin/cms', label: 'CMS', icon: 'bi-layers-fill', active: activePage === 'cms' },
+            ] : []),
+            ...(hasModule('discovery') || hasModule('marketing_hub') ? [
+              { href: '/realestate-owner-admin/chatbot-config', label: 'AI Agent Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
+            ] : []),
+            ...(hasModule('widget_creator') || hasModule('marketing_hub') ? [
+              { href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' },
+            ] : []),
+            ...(hasModule('3d_viewer') || hasModule('marketing_hub') ? [
+              { href: '/realestate-owner-admin/property-3d', label: '3D Architect Pro', icon: 'bi-vector-pen', active: activePage === 'property-3d' },
+            ] : []),
           ]
-        },
+        }] : []),
         {
           title: 'Account',
           items: [
-            { href: '/realestate-owner-admin/settings', label: 'Settings', icon: 'bi-gear', active: activePage === 'settings' }
+            { href: '/realestate-owner-admin/subscriptions', label: 'Subscription Plan', icon: 'bi-credit-card-fill', active: activePage === 'subscriptions' },
+            { href: '/realestate-owner-admin/integrations', label: 'Connected Sites', icon: 'bi-link-45deg', active: activePage === 'integrations' },
+            { href: '/realestate-owner-admin/settings', label: 'Business Settings', icon: 'bi-gear-fill', active: activePage === 'settings' }
           ]
-        },
-        ...(hasModule('marketing_hub') || hasModule('widget_creator') || hasModule('3d_viewer') ? [{
-          title: 'Premium Features',
-          items: [
-            ...(hasModule('3d_viewer') || hasModule('marketing_hub') ? [{ href: '/realestate-owner-admin/property-3d', label: '3D Architect', icon: 'bi-box-fill', active: activePage === 'property-3d' }] : []),
-            ...(hasModule('marketing_hub') ? [
-              { href: '/realestate-owner-admin/chatbot-config', label: 'Chatbot Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
-              { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
-              { href: '/realestate-owner-admin/websites', label: 'Websites', icon: 'bi-window-stack', active: activePage === 'websites' },
-              { href: '/realestate-owner-admin/cms', label: 'CMS / Pages', icon: 'bi-file-earmark-richtext', active: activePage === 'cms' }
-            ] : []),
-            ...(hasModule('widget_creator') || hasModule('marketing_hub') ? [{ href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }] : [])
-          ]
-        }] : [])
+        }
       ];
     }
 

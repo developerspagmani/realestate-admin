@@ -17,7 +17,8 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         tenantType, setTenantType,
         activeTenantId, setActiveTenantId,
         activeOwnerId, setActiveOwnerId,
-        setActiveOwnerAndTenant
+        setActiveOwnerAndTenant,
+        activeTenant
     } = useManagementContext();
 
     const [owners, setOwners] = useState<any[]>([]);
@@ -54,6 +55,13 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         return () => clearInterval(timer);
     }, []);
 
+    // Ensure activeTenantId is set for owners if not already initialized
+    useEffect(() => {
+        if (isOwner && user?.tenantId && !activeTenantId) {
+            console.log('AdminHeader: Initializing owner tenant context:', user.tenantId);
+            setActiveOwnerAndTenant(user.id, user.tenantId);
+        }
+    }, [isOwner, user, activeTenantId, setActiveOwnerAndTenant]);
 
     // Fetch Owners when tenant type changes
     useEffect(() => {
@@ -340,18 +348,25 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                                     </div>
                                 )}
                             </div>
-                            {activeOwnerId && (
-                                <div className="d-none d-xl-flex flex-column ms-2 border-start ps-3 py-1">
-                                    <Link href={`/realestate-admin/subscriptions?ownerId=${activeOwnerId}`} className="text-decoration-none transition-all hover-opacity-75">
-                                        <div className="extra-small text-muted text-uppercase fw-bold line-height-1 mb-1" style={{ fontSize: '9px' }}>Subscription</div>
-                                        <div className="d-flex align-items-center gap-1">
-                                            <i className="bi bi-credit-card-2-front text-primary extra-small"></i>
-                                            <span className="fw-bold text-dark" style={{ fontSize: '12px' }}>View Details</span>
-                                        </div>
-                                    </Link>
-                                </div>
-                            )}
                         </>
+                    )}
+
+                    {/* Subscription Plan Display - Visible for both Admins (with selected owner) and Owners */}
+                    {(isAdmin ? (activeOwnerId && !pathname.includes('/realestate-owner-admin')) : isOwner) && (
+                        <div className="d-none d-xl-flex flex-column border-start ps-3 py-1 ms-2">
+                            <Link
+                                href={isAdmin ? `/realestate-admin/subscriptions?ownerId=${activeOwnerId}` : '/realestate-owner-admin/subscriptions'}
+                                className="text-decoration-none transition-all hover-opacity-75"
+                            >
+                                <div className="extra-small text-muted text-uppercase fw-bold line-height-1 mb-1" style={{ fontSize: '9px' }}>Current Plan</div>
+                                <div className="d-flex align-items-center gap-2">
+                                    <div className="badge bg-success-subtle text-success border border-success-subtle rounded-4 fw-bold shadow-sm" style={{ fontSize: '11px', padding: '4px 10px' }}>
+                                        <i className="bi bi-gem-fill me-1"></i>
+                                        {activeTenant?.plan?.name || owners.find(o => o.id === activeOwnerId)?.tenant?.plan?.name || 'Active Plan'}
+                                    </div>
+                                </div>
+                            </Link>
+                        </div>
                     )}
                 </div>
 

@@ -12,9 +12,10 @@ interface PageBuilderProps {
     widget: any;
     widgetId: string;
     onSelectProperty: (property: any) => void;
+    hideHero?: boolean;
 }
 
-const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, widgetId, onSelectProperty }) => {
+const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, widgetId, onSelectProperty, hideHero = false }) => {
     // If we have specific blocks, use the block-based renderer
     if (config?.blocks && config.blocks.length > 0) {
         return (
@@ -22,6 +23,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                 {config.blocks.map((block: any, index: number) => {
                     switch (block.type) {
                         case 'HERO':
+                            if (hideHero) return null;
                             return (
                                 <section key={index} className="pb-hero py-5 mb-5 overflow-hidden position-relative" style={{ backgroundColor: '#f8f9fa' }}>
                                     <div className="container position-relative z-1">
@@ -96,7 +98,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                                                 source: 1,
                                                                 notes: `Builder Inquiry: ${widget.name}\n${widget.configuration.inquiryForm.fields.map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
                                                             };
-                                                            await widgetService.createPublicLead(widgetId, leadPayload);
+                                                            await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
                                                         }}
                                                     />
                                                 </div>
@@ -116,16 +118,9 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
 
     // Default configuration-driven layout
     return (
-        <div className="page-builder">
-            {/* Logo Section */}
-            {config?.showLogo !== false && config?.logoUrl && (
-                <div className="container py-4 text-center">
-                    <img src={config.logoUrl} alt="Logo" style={{ maxHeight: '60px' }} className="animate-fade-in" />
-                </div>
-            )}
-
+        <div className={`page-builder ${hideHero ? 'pt-3' : ''}`}>
             {/* Hero Section */}
-            {config?.showHero !== false && (
+            {!hideHero && config?.showHero !== false && (
                 <section className="pb-hero py-5 mb-5 position-relative overflow-hidden" style={{
                     backgroundColor: '#f8f9fa',
                     backgroundImage: config?.heroBgUrl ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${config.heroBgUrl})` : 'none',
@@ -152,7 +147,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                                 }}
                             >
-                                Explorer Properties
+                                Explore Properties
                             </button>
                         </div>
                     </div>
@@ -206,7 +201,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                                 source: 1,
                                                 notes: `Landing Page Inquiry: ${widget.name}\n${widget.configuration.inquiryForm.fields.map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
                                             };
-                                            await widgetService.createPublicLead(widgetId, leadPayload);
+                                            await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
                                         }}
                                     />
                                 </div>
@@ -214,35 +209,6 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                         </div>
                     </div>
                 </section>
-            )}
-
-            {/* Footer Section */}
-            {config?.showFooter !== false && config?.footerText && (
-                <footer className="py-4 border-top text-center text-muted small bg-white position-relative">
-                    <div className="container">
-                        {config.footerText}
-                    </div>
-                    {/* Non-removable Watermark */}
-                    <a
-                        href="https://www.virpanix.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="d-flex align-items-center justify-content-center mt-2 text-decoration-none"
-                        style={{
-                            fontSize: '10px',
-                            color: 'rgba(0,0,0,0.3)',
-                            userSelect: 'none',
-                            pointerEvents: 'auto'
-                        }}
-                    >
-                        <img
-                            src="/images/Virpnix-logo-icon-svg.svg"
-                            alt="Virpanix"
-                            style={{ height: '12px', width: 'auto', marginRight: '4px', opacity: 0.3 }}
-                        />
-                        Powered by Virpanix
-                    </a>
-                </footer>
             )}
         </div>
     );

@@ -36,7 +36,7 @@ export default function Plot3DViewer({ svgContent, mapping, units, theme, curren
             case 'available': return 0x4ade80;
             case 'occupied': return 0xfb7185;
             case 'maintenance': return 0x94a3b8;
-            case 'sold': return 0xf43f5e;
+            case 'sold': return 0xef4444;
             default: return 0x6366f1;
         }
     };
@@ -302,7 +302,7 @@ export default function Plot3DViewer({ svgContent, mapping, units, theme, curren
                     <small className="extra-small">Available</small>
                 </div>
                 <div className="d-flex align-items-center mb-1">
-                    <div className="me-2 rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#f43f5e' }}></div>
+                    <div className="me-2 rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: '#ef4444' }}></div>
                     <small className="extra-small">Sold Out</small>
                 </div>
                 <div className="d-flex align-items-center">

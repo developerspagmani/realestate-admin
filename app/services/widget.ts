@@ -40,8 +40,11 @@ export const widgetService = {
         return await makeApiCall(widgetEndpoints.getPublic(uniqueId));
     },
 
-    createPublicLead: async (uniqueId: string, leadData: any) => {
-        return await makeApiCall(`${widgetEndpoints.getPublic(uniqueId)}/leads`, {
+    createPublicLead: async (uniqueId: string, leadData: any, isWebsite = false) => {
+        const endpoint = isWebsite
+            ? `/websites/public/${uniqueId}/leads`
+            : `${widgetEndpoints.getPublic(uniqueId)}/leads`;
+        return await makeApiCall(endpoint, {
             method: 'POST',
             body: JSON.stringify(leadData),
         });

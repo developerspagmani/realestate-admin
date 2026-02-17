@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { websiteService, marketingService } from '@/app/services/api';
@@ -51,6 +51,23 @@ export default function StandaloneProvider({
     const builder = website.configuration?.builder || {};
     const menus = website.configuration?.menus || { header: [], footer: [] };
 
+    // Helper to darken a color for hover states
+    const darkenColor = (hex: string, percent: number) => {
+        try {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 0 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 0 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 0 ? 0 : B : 255)).toString(16).slice(1);
+        } catch (e) {
+            return hex;
+        }
+    };
+
+    const primaryHover = darkenColor(theme.primaryColor, 10);
+    const primaryGhost = theme.primaryColor + '15'; // 15 is ~8% opacity in hex
+
     // Initial load: check for stored identity
     useEffect(() => {
         const stored = localStorage.getItem(`website_lead_${website.id}`);
@@ -83,6 +100,10 @@ export default function StandaloneProvider({
         }
     };
 
+    const handleFilterResults = useCallback((results: any[]) => {
+        setProperties(results);
+    }, []);
+
     // Close mobile menu on route change
     useEffect(() => {
         setShowMobileMenu(false);
@@ -101,11 +122,19 @@ export default function StandaloneProvider({
             trackAction,
             slugOrDomain
         }}>
-            <div className="standalone-website min-vh-100 bg-white d-flex flex-column" style={{ '--primary-color': theme.primaryColor, fontFamily: theme.fontFamily } as any}>
+            <div
+                className="standalone-website min-vh-100 bg-white d-flex flex-column"
+                style={{
+                    '--primary-color': theme.primaryColor,
+                    '--primary-hover': primaryHover,
+                    '--primary-ghost': primaryGhost,
+                    fontFamily: theme.fontFamily
+                } as any}
+            >
 
                 {/* Real Estate Premium Header */}
                 {builder.showLogo !== false && (
-                    <header className="py-3 bg-white/80 backdrop-blur-md border-bottom sticky-top z-1050">
+                    <header className="py-3 bg-white backdrop-blur-md border-bottom sticky-top z-1050">
                         <div className="container d-flex justify-content-between align-items-center">
                             <Link href={`/standalone/${slugOrDomain}`} className="website-logo text-decoration-none">
                                 {builder.logoUrl ? (
@@ -274,7 +303,8 @@ export default function StandaloneProvider({
                                     theme={theme}
                                     onClose={() => { setShowChat(false); setChatExpanded(false); }}
                                     onExpandToggle={(exp) => setChatExpanded(exp)}
-                                    onFilterResults={(results) => setProperties(results)}
+                                    onFilterResults={handleFilterResults}
+                                    trackAction={trackAction}
                                     // Chatbot navigation updated to use router
                                     onSelectProperty={(prop) => {
                                         router.push(`/standalone/${slugOrDomain}/p/${prop.slug || prop.id}`);
@@ -282,10 +312,42 @@ export default function StandaloneProvider({
                                         setChatExpanded(false);
                                     }}
                                     onCreateLead={async (contact, name) => {
-                                        const leadPayload: any = { name: name || 'Website Chat Inquiry', source: 'website_chatbot' };
-                                        if (contact && contact.includes('@')) leadPayload.email = contact;
-                                        else if (contact) leadPayload.phone = contact;
-                                        await websiteService.createPublicLead(website.id, leadPayload);
+                                        try {
+                                            const leadPayload: any = {
+                                                name: name || 'Website Chat Inquiry',
+                                                source: 'website_chatbot',
+                                                notes: 'Automated entry via Standalone Portal Chatbot'
+                                            };
+
+                                            // Parse contact string (Email vs Phone) - consistent with Website logic
+                                            if (contact && contact.includes('@')) {
+                                                leadPayload.email = contact;
+                                            } else if (contact) {
+                                                leadPayload.phone = contact;
+                                            }
+
+                                            // Handle combined email/phone format (email | phone) if present
+                                            if (contact && contact.includes('|')) {
+                                                const [e, p] = contact.split('|').map(s => s.trim());
+                                                if (e && e.includes('@')) leadPayload.email = e;
+                                                if (p) leadPayload.phone = p;
+                                            }
+
+                                            const res = await websiteService.createPublicLead(website.id, leadPayload);
+
+                                            // Identify the lead so future actions are tracked
+                                            const leadId = res.success ? (res.data?.id || res.id) : (res.data?.id || res.id);
+                                            if (leadId) {
+                                                identifyLead(leadId, leadPayload.email);
+                                            }
+
+                                            if (!res.success && !leadId) {
+                                                throw new Error(res.message || 'Failed to capture lead');
+                                            }
+                                        } catch (error) {
+                                            console.error('Standalone chatbot lead capture error:', error);
+                                            throw error;
+                                        }
                                     }}
                                 />
                             </div>

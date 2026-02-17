@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
+import { useAuthContext } from '@/app/contexts/AuthContext';
 import FormBuilder from './FormBuilder';
 import WidgetPreview from './WidgetPreview';
 import MediaSelector from '@/components/shared/MediaSelector';
@@ -26,9 +29,17 @@ export default function WidgetForm({
     properties,
     marketingForms
 }: WidgetFormProps) {
+    const router = useRouter();
+    const { activeTenant } = useManagementContext();
+    const { hasModule } = useAuthContext();
     const [activeTab, setActiveTab] = useState<'basics' | 'style' | 'builder' | 'modules'>('basics');
     const [showMediaSelector, setShowMediaSelector] = useState(false);
     const [mediaTarget, setMediaTarget] = useState<'logoUrl' | 'heroBgUrl' | null>(null);
+
+    const hasPlanFeature = (featureName: string) => {
+        const features = activeTenant?.plan?.features || {};
+        return features[featureName] === true || features[featureName] === 'true' || !!features[featureName];
+    };
 
     const handleMediaSelect = (media: any) => {
         if (media && mediaTarget) {
@@ -211,7 +222,7 @@ export default function WidgetForm({
                                         <div className="col-md-12">
                                             <div className="row g-3">
                                                 <div className="col-md-6">
-                                                    <div className="card border-0 shadow-sm rounded-4 px-5 py-3 bg-white h-100">
+                                                    <div className={`card border-0 shadow-sm rounded-4 px-5 py-3 bg-white h-100 ${!hasModule('discovery') ? 'opacity-75 grayscale' : ''}`}>
                                                         <div className="form-check form-switch p-1 mb-2">
                                                             <input
                                                                 className="form-check-input"
@@ -219,14 +230,23 @@ export default function WidgetForm({
                                                                 id="chatbotEnabled"
                                                                 checked={formData.configuration.chatbot?.enabled || false}
                                                                 onChange={(e) => toggleNestedConfig('chatbot', 'enabled', e.target.checked)}
+                                                                disabled={!hasModule('discovery')}
                                                             />
-                                                            <label className="form-check-label small fw-bold" htmlFor="chatbotEnabled">AI Discovery Assistant</label>
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <label className="form-check-label small fw-bold" htmlFor="chatbotEnabled">AI Discovery Assistant</label>
+                                                                {!hasModule('discovery') && (
+                                                                    <span className="badge bg-warning-subtle text-warning extra-small border border-warning-subtle">PRO</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <p className="extra-small text-muted mb-0">Enables a floating chatbot to help visitors find matching properties automatically.</p>
+                                                        {!hasModule('discovery') && (
+                                                            <div className="extra-small text-danger mt-2 fw-bold">Upgrade your plan to unlock AI features.</div>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="col-md-6">
-                                                    <div className="card border-0 shadow-sm rounded-4 px-5 py-3 bg-white h-100">
+                                                    <div className={`card border-0 shadow-sm rounded-4 px-5 py-3 bg-white h-100 ${!hasModule('3d_viewer') ? 'opacity-75 grayscale' : ''}`}>
                                                         <div className="form-check form-switch p-1 mb-2">
                                                             <input
                                                                 className="form-check-input"
@@ -234,10 +254,19 @@ export default function WidgetForm({
                                                                 id="workspace3DEnabled"
                                                                 checked={formData.configuration.workspace3D?.enabled || false}
                                                                 onChange={(e) => toggleNestedConfig('workspace3D', 'enabled', e.target.checked)}
+                                                                disabled={!hasModule('3d_viewer')}
                                                             />
-                                                            <label className="form-check-label small fw-bold" htmlFor="workspace3DEnabled">Virtual 3D Touring</label>
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <label className="form-check-label small fw-bold" htmlFor="workspace3DEnabled">Virtual 3D Touring</label>
+                                                                {!hasModule('3d_viewer') && (
+                                                                    <span className="badge bg-warning-subtle text-warning extra-small border border-warning-subtle">PRO</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <p className="extra-small text-muted mb-0">Allows users to see the interactive 3D map for property floor plans.</p>
+                                                        {!hasModule('3d_viewer') && (
+                                                            <div className="extra-small text-danger mt-2 fw-bold">Upgrade your plan to unlock 3D touring.</div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -256,33 +285,54 @@ export default function WidgetForm({
                                                         <div className="fw-bold extra-small">Custom Form Builder</div>
                                                     </div>
                                                     <div
-                                                        className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center ${formData.configuration.inquiryForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'}`}
-                                                        onClick={() => toggleNestedConfig('inquiryForm', 'useMarketingForm', true)}
+                                                        className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center position-relative ${formData.configuration.inquiryForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'} ${!hasModule('marketing_hub') ? 'opacity-50' : ''}`}
+                                                        onClick={() => hasModule('marketing_hub') && toggleNestedConfig('inquiryForm', 'useMarketingForm', true)}
                                                     >
+                                                        {!hasModule('marketing_hub') && (
+                                                            <div className="position-absolute top-0 end-0 p-2">
+                                                                <i className="bi bi-lock-fill text-warning"></i>
+                                                            </div>
+                                                        )}
                                                         <i className="bi bi-cloud-check d-block mb-1"></i>
                                                         <div className="fw-bold extra-small">Marketing Hub Sync</div>
+                                                        {!hasModule('marketing_hub') && (
+                                                            <div className="extra-small text-danger italic mt-1" style={{ fontSize: '9px' }}>UPGRADE REQUIRED</div>
+                                                        )}
                                                     </div>
                                                 </div>
 
                                                 {formData.configuration.inquiryForm?.useMarketingForm ? (
                                                     <div className="animate-fade-in">
-                                                        <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Target Managed Form</label>
-                                                        <select
-                                                            className="form-select border-0 shadow-sm py-2 rounded-3"
-                                                            value={formData.configuration.inquiryForm?.marketingFormId || ''}
-                                                            onChange={(e) => toggleNestedConfig('inquiryForm', 'marketingFormId', e.target.value)}
-                                                        >
-                                                            <option value="">-- Choose a Marketing Form --</option>
-                                                            {marketingForms.map(f => (
-                                                                <option key={f.id} value={f.id}>{f.name}</option>
-                                                            ))}
-                                                        </select>
-                                                        <div className="p-3 bg-white mt-3 rounded-3 border border-info border-opacity-25 shadow-sm">
-                                                            <p className="extra-small text-info mb-0 d-flex align-items-center">
-                                                                <i className="bi bi-info-circle-fill me-2 fs-6"></i>
-                                                                Data collected will be automatically routed to the Marketing Campaigns and defined target audiences.
-                                                            </p>
-                                                        </div>
+                                                        {!hasModule('marketing_hub') ? (
+                                                            <div className="p-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 text-center">
+                                                                <i className="bi bi-gem display-6 text-warning mb-3 d-block"></i>
+                                                                <h6 className="fw-bold">Premium Marketing Integration</h6>
+                                                                <p className="extra-small text-muted mb-3">Syncing widget leads directly into Marketing Hub is a premium feature. Upgrade to our Professional or Business plan to unlock this.</p>
+                                                                <button type="button" className="btn btn-warning btn-sm fw-bold px-4 rounded-3 shadow-sm" onClick={() => router.push('/realestate-owner-admin/subscriptions')}>
+                                                                    View Upgrade Plans
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Target Managed Form</label>
+                                                                <select
+                                                                    className="form-select border-0 shadow-sm py-2 rounded-3"
+                                                                    value={formData.configuration.inquiryForm?.marketingFormId || ''}
+                                                                    onChange={(e) => toggleNestedConfig('inquiryForm', 'marketingFormId', e.target.value)}
+                                                                >
+                                                                    <option value="">-- Choose a Marketing Form --</option>
+                                                                    {marketingForms.map(f => (
+                                                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <div className="p-3 bg-white mt-3 rounded-3 border border-info border-opacity-25 shadow-sm">
+                                                                    <p className="extra-small text-info mb-0 d-flex align-items-center">
+                                                                        <i className="bi bi-info-circle-fill me-2 fs-6"></i>
+                                                                        Data collected will be automatically routed to the Marketing Campaigns and defined target audiences.
+                                                                    </p>
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <FormBuilder
@@ -322,27 +372,48 @@ export default function WidgetForm({
                                                                 <div className="fw-bold extra-small">Booking Form Builder</div>
                                                             </div>
                                                             <div
-                                                                className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center ${formData.configuration.bookingForm?.useMarketingForm ? 'border-success bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'}`}
-                                                                onClick={() => toggleNestedConfig('bookingForm', 'useMarketingForm', true)}
+                                                                className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center position-relative ${formData.configuration.bookingForm?.useMarketingForm ? 'border-success bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'} ${!hasModule('marketing_hub') ? 'opacity-50' : ''}`}
+                                                                onClick={() => hasModule('marketing_hub') && toggleNestedConfig('bookingForm', 'useMarketingForm', true)}
                                                             >
+                                                                {!hasModule('marketing_hub') && (
+                                                                    <div className="position-absolute top-0 end-0 p-2">
+                                                                        <i className="bi bi-lock-fill text-warning"></i>
+                                                                    </div>
+                                                                )}
                                                                 <i className="bi bi-link-45deg d-block mb-1"></i>
                                                                 <div className="fw-bold extra-small">Marketing Form Link</div>
+                                                                {!hasModule('marketing_hub') && (
+                                                                    <div className="extra-small text-danger italic mt-1" style={{ fontSize: '9px' }}>UPGRADE REQUIRED</div>
+                                                                )}
                                                             </div>
                                                         </div>
 
                                                         {formData.configuration.bookingForm?.useMarketingForm ? (
                                                             <div className="animate-fade-in">
-                                                                <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Booking Form</label>
-                                                                <select
-                                                                    className="form-select border-0 shadow-sm py-2 rounded-3"
-                                                                    value={formData.configuration.bookingForm?.marketingFormId || ''}
-                                                                    onChange={(e) => toggleNestedConfig('bookingForm', 'marketingFormId', e.target.value)}
-                                                                >
-                                                                    <option value="">-- Choose a Marketing Form --</option>
-                                                                    {marketingForms.map(f => (
-                                                                        <option key={f.id} value={f.id}>{f.name}</option>
-                                                                    ))}
-                                                                </select>
+                                                                {!hasModule('marketing_hub') ? (
+                                                                    <div className="p-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 text-center">
+                                                                        <i className="bi bi-gem display-6 text-warning mb-3 d-block"></i>
+                                                                        <h6 className="fw-bold">Premium Marketing Integration</h6>
+                                                                        <p className="extra-small text-muted mb-3">Connecting booking forms to the Marketing Hub is a premium feature. Upgrade to unlock advanced lead tracking.</p>
+                                                                        <button type="button" className="btn btn-warning btn-sm fw-bold px-4 rounded-3 shadow-sm" onClick={() => router.push('/realestate-owner-admin/subscriptions')}>
+                                                                            View Upgrade Plans
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Booking Form</label>
+                                                                        <select
+                                                                            className="form-select border-0 shadow-sm py-2 rounded-3"
+                                                                            value={formData.configuration.bookingForm?.marketingFormId || ''}
+                                                                            onChange={(e) => toggleNestedConfig('bookingForm', 'marketingFormId', e.target.value)}
+                                                                        >
+                                                                            <option value="">-- Choose a Marketing Form --</option>
+                                                                            {marketingForms.map(f => (
+                                                                                <option key={f.id} value={f.id}>{f.name}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                         ) : (
                                                             <FormBuilder

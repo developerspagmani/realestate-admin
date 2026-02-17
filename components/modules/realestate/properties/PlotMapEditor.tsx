@@ -168,7 +168,7 @@ export default function PlotMapEditor({ units, propertyName, initialMapping = {}
             case 'available': return { fill: '#4ade80', stroke: '#16a34a' };
             case 'occupied': return { fill: '#fb7185', stroke: '#e11d48' };
             case 'maintenance': return { fill: '#94a3b8', stroke: '#475569' };
-            case 'sold': return { fill: '#f43f5e', stroke: '#9f1239' };
+            case 'sold': return { fill: '#ef4444', stroke: '#b91c1c' };
             default: return { fill: '#6366f1', stroke: '#4338ca' };
         }
     };
@@ -392,7 +392,7 @@ export default function PlotMapEditor({ units, propertyName, initialMapping = {}
                                 <span className="extra-small text-muted fw-bold">Available</span>
                             </div>
                             <div className="d-flex align-items-center gap-1">
-                                <div className="rounded-circle" style={{ width: '10px', height: '10px', background: '#f43f5e' }}></div>
+                                <div className="rounded-circle" style={{ width: '10px', height: '10px', background: '#ef4444' }}></div>
                                 <span className="extra-small text-muted fw-bold">Sold</span>
                             </div>
                             <div className="d-flex align-items-center gap-1">

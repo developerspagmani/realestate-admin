@@ -258,7 +258,7 @@ const GallerySlider: React.FC<GallerySliderProps> = ({ images, currentIndex = 0,
                     }
                 }
                 .thumbsSwiper .swiper-slide-thumb-active {
-                    border: 2px solid #6366f1 !important;
+                    border: 2px solid var(--primary-color, #6366f1) !important;
                     opacity: 1 !important;
                 }
                 .thumbsSwiper .swiper-slide {

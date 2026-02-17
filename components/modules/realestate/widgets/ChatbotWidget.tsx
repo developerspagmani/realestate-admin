@@ -18,6 +18,7 @@ interface ChatbotProps {
     crossSellEnabled?: boolean;
     recommendationLogic?: 'price-match' | 'newest' | 'featured';
     previewMode?: boolean;
+    trackAction?: (type: string, metadata?: any) => void;
 }
 
 type Step = 'IDLE' | 'LEAD_CAPTURE' | 'HI' | 'DYNAMIC_FLOW' | 'RESULTS';
@@ -72,7 +73,8 @@ export default function ChatbotWidget({
     upsellEnabled = true,
     crossSellEnabled = true,
     recommendationLogic = 'price-match',
-    previewMode = false
+    previewMode = false,
+    trackAction
 }: ChatbotProps) {
     const [step, setStep] = useState<Step>('IDLE');
     const [flowIndex, setFlowIndex] = useState(0);
@@ -288,6 +290,11 @@ export default function ChatbotWidget({
         } else {
             setStep('RESULTS');
             setTimeout(() => calculateResults(updatedAnswers), 500);
+        }
+
+        // Track the choice
+        if (trackAction) {
+            trackAction('CHAT_CHOICE', { step: currentStepKey, answer: text });
         }
     };
 

@@ -139,7 +139,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                         spaceId: u.propertyId,
                         space: prop as any,
                         features: u.unitAmenities?.map((a: any) => a.amenity?.name) || [],
-                        status: u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : u.status === 3 ? 'maintenance' : 'sold',
+                        status: u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : u.status === 3 ? 'maintenance' : u.status === 4 ? 'sold' : 'available',
                         createdAt: u.createdAt,
                         updatedAt: u.updatedAt,
                         mainImageId: u.mainImageId || '',
@@ -190,8 +190,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             if (!token) return;
             const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
 
-            const unitCategoryMap = { 'apartment': 1, 'house': 2, 'studio': 1, 'villa': 2, 'office': 2, 'shop': 2, 'warehouse': 3 };
-            const statusMap = { 'available': 1, 'occupied': 2, 'maintenance': 3, 'sold': 2 };
+            const unitCategoryMap = { 'apartment': 1, 'house': 2, 'studio': 1, 'villa': 2, 'office': 3, 'shop': 4, 'warehouse': 3 };
+            const statusMap = { 'available': 1, 'occupied': 2, 'maintenance': 3, 'sold': 4 };
 
             const payload = {
                 tenantId,
@@ -296,8 +296,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             if (!token) return;
             const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
 
-            const unitCategoryMap = { 'apartment': 1, 'house': 2, 'studio': 1, 'villa': 2, 'office': 2, 'shop': 2, 'warehouse': 3 };
-            const statusMap = { 'available': 1, 'occupied': 2, 'maintenance': 3, 'sold': 2 };
+            const unitCategoryMap = { 'apartment': 1, 'house': 2, 'studio': 1, 'villa': 2, 'office': 3, 'shop': 4, 'warehouse': 3 };
+            const statusMap = { 'available': 1, 'occupied': 2, 'maintenance': 3, 'sold': 4 };
 
             const payload = {
                 tenantId,
@@ -431,7 +431,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
         if (!token || !tenantId) return;
 
-        const unitCategoryMap = { 'apartment': 1, 'house': 2, 'studio': 1, 'villa': 2, 'office': 2, 'shop': 2, 'warehouse': 3 };
+        const unitCategoryMap = { 'apartment': 1, 'house': 2, 'studio': 1, 'villa': 2, 'office': 3, 'shop': 4, 'warehouse': 3 };
 
         for (let i = 0; i < csvRows.length; i++) {
             const row = csvRows[i];
@@ -482,7 +482,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             const token = getAuthToken();
             if (!token) return;
             const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
-            const statusMap = { 'available': 1, 'occupied': 2, 'maintenance': 3, 'sold': 2 };
+            const statusMap = { 'available': 1, 'occupied': 2, 'maintenance': 3, 'sold': 4 };
             await unitService.updateUnit(token, id, { status: statusMap[newStatus] }, tenantId);
             loadData();
         } catch (error) {
@@ -519,9 +519,9 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const getStatusBadge = (status: Seats['status']) => {
         const config = {
             available: { class: 'bg-success-soft text-success', text: 'Available' },
-            occupied: { class: 'bg-danger-soft text-danger', text: 'Occupied' },
-            maintenance: { class: 'bg-warning-soft text-warning', text: 'Maintenance' },
-            sold: { class: 'bg-info-soft text-info', text: 'Sold' },
+            occupied: { class: 'bg-warning-soft text-warning', text: 'Reserved' },
+            maintenance: { class: 'bg-secondary-soft text-secondary', text: 'Maintenance' },
+            sold: { class: 'bg-danger text-white', text: 'Sold Out' },
         };
         const c = config[status] || config.available;
         return <span className={`badge rounded-4 px-3 py-2 ${c.class}`}>{c.text}</span>;
@@ -577,9 +577,9 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                 <select className="form-select bg-light border-0" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                                     <option value="all">Status: All</option>
                                     <option value="available">Available</option>
-                                    <option value="occupied">Occupied</option>
+                                    <option value="occupied">Reserved</option>
                                     <option value="maintenance">Maintenance</option>
-                                    <option value="sold">Sold</option>
+                                    <option value="sold">Sold Out</option>
                                 </select>
                             </div>
                             <div className="col-md-2">
@@ -657,8 +657,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                                         <li><button className="dropdown-item" onClick={() => handleDuplicate(unit)}><i className="bi bi-files me-2"></i>Duplicate</button></li>
                                                         <li><hr className="dropdown-divider" /></li>
                                                         <li><button className="dropdown-item" onClick={() => handleStatusChange(unit.id, 'available')}>Set Available</button></li>
-                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(unit.id, 'occupied')}>Set Occupied</button></li>
-                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(unit.id, 'sold')}>Set Sold</button></li>
+                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(unit.id, 'occupied')}>Set Reserved</button></li>
+                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(unit.id, 'sold')}>Set Sold Out</button></li>
                                                         <li><hr className="dropdown-divider" /></li>
                                                         <li><button className="dropdown-item text-danger" onClick={() => handleDelete(unit.id)}><i className="bi bi-trash me-2"></i>Delete</button></li>
                                                     </ul>
@@ -772,6 +772,15 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                         <div className="col-md-3">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Sale Price ({currencySymbol})</label>
                                             <input type="number" className="form-control bg-light border-0 form-control-lg" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })} />
+                                        </div>
+                                        <div className="col-md-3">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Current Status</label>
+                                            <select className="form-select bg-light border-0 form-control-lg" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}>
+                                                <option value="available">Available</option>
+                                                <option value="occupied">Reserved</option>
+                                                <option value="maintenance">Maintenance</option>
+                                                <option value="sold">Sold Out</option>
+                                            </select>
                                         </div>
 
                                         <div className="col-md-6">

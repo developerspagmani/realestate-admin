@@ -389,6 +389,7 @@ export default function PublicWidgetPage() {
                                 properties={data}
                                 onFilterResults={handleChatFilters}
                                 theme={theme}
+                                trackAction={trackAction}
                                 onClose={() => {
                                     setShowChat(false);
                                     setChatExpanded(false);
@@ -402,17 +403,38 @@ export default function PublicWidgetPage() {
                                     setChatExpanded(false);
                                 }}
                                 onCreateLead={async (contact: string, name?: string) => {
-                                    const leadPayload: any = {
-                                        source: 'widget_chatbot',
-                                        notes: `Automated Chatbot Engagement`,
-                                        name: name || 'Chatbot Inquiry'
-                                    };
-                                    if (contact.includes('@')) leadPayload.email = contact;
-                                    else leadPayload.phone = contact;
+                                    try {
+                                        const leadPayload: any = {
+                                            source: 'widget_chatbot',
+                                            notes: `Automated Chatbot Engagement via Widget`,
+                                            name: name || 'Chatbot Inquiry'
+                                        };
 
-                                    const res = await widgetService.createPublicLead(uniqueId as string, leadPayload);
-                                    if (res.success && res.data?.id) {
-                                        identifyLead(res.data.id, res.data.email);
+                                        // Parse contact string (Email vs Phone)
+                                        if (contact && contact.includes('@')) {
+                                            leadPayload.email = contact;
+                                        } else if (contact) {
+                                            leadPayload.phone = contact;
+                                        }
+
+                                        // Handle combined email/phone format (email | phone) if present
+                                        if (contact && contact.includes('|')) {
+                                            const [e, p] = contact.split('|').map(s => s.trim());
+                                            if (e && e.includes('@')) leadPayload.email = e;
+                                            if (p) leadPayload.phone = p;
+                                        }
+
+                                        const res = await widgetService.createPublicLead(uniqueId as string, leadPayload);
+                                        const leadId = res.success ? (res.data?.id || res.id) : (res.data?.id || res.id);
+
+                                        if (leadId) {
+                                            identifyLead(leadId, leadPayload.email);
+                                        } else if (!res.success) {
+                                            throw new Error(res.message || 'Failed to capture lead');
+                                        }
+                                    } catch (error) {
+                                        console.error('Widget chatbot lead capture error:', error);
+                                        throw error;
                                     }
                                 }}
                                 // Advanced configuration

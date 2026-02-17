@@ -38,7 +38,12 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
     const [showBookingModal, setShowBookingModal] = React.useState(false);
     const uImages = [
         ...(selectedUnit.mainImage ? [selectedUnit.mainImage] : []),
-        ...(selectedUnit.gallery || []).filter((g: any) => g.id !== selectedUnit.mainImage?.id && g.url !== selectedUnit.mainImage?.url)
+        ...(selectedUnit.gallery || []).filter((g: any) => {
+            if (!selectedUnit.mainImage) return true;
+            const gUrl = typeof g === 'string' ? g : g?.url || '';
+            const gId = typeof g === 'string' ? g : g?.id || '';
+            return gId !== selectedUnit.mainImage.id && gUrl !== selectedUnit.mainImage.url;
+        })
     ];
 
     return (
@@ -207,7 +212,6 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                             const leadPayload: any = {
                                                 source: 1,
                                                 propertyId: selectedProperty.id,
-                                                unitId: selectedUnit.id,
                                                 notes: `Unit Specific Inquiry: ${selectedUnit.unitCode}\n${widget.configuration.inquiryForm.fields.map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
                                             };
 
@@ -221,7 +225,7 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                             });
 
                                             if (!leadPayload.name) leadPayload.name = 'Direct Unit Inquiry';
-                                            const res = await widgetService.createPublicLead(widgetId, leadPayload);
+                                            const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
 
                                             if (res.success && res.data?.id) {
                                                 const identity = { id: res.data.id, email: res.data.email };

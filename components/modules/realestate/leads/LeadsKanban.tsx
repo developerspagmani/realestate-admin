@@ -6,6 +6,7 @@ import { Lead } from './LeadsManager';
 interface LeadsKanbanProps {
     leads: Lead[];
     onStatusChange: (id: string, newStatus: Lead['status']) => void;
+    onConvertToUser: (lead: Lead) => void;
     onEdit: (lead: Lead) => void;
     onDelete: (id: string) => void;
     onViewInsights: (lead: Lead) => void;
@@ -20,7 +21,7 @@ const COLUMNS: { id: Lead['status']; title: string; color: string }[] = [
     { id: 'lost', title: 'Lost', color: '#dc3545' }
 ];
 
-export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, onViewInsights, isStale }: LeadsKanbanProps) {
+export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, onEdit, onDelete, onViewInsights, isStale }: LeadsKanbanProps) {
     const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
     const [activeDropColumn, setActiveDropColumn] = useState<Lead['status'] | null>(null);
     const [animationLead, setAnimationLead] = useState<{ id: string, type: 'blast' | 'shake' } | null>(null);
@@ -86,146 +87,196 @@ export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, o
     };
 
     return (
-        <div className="kanban-container pb-4">
-            <div className="row g-4 flex-nowrap overflow-auto px-2" style={{ minHeight: 'calc(100vh - 350px)' }}>
-                {COLUMNS.map(column => {
-                    const columnLeads = leads.filter(l => l.status === column.id);
-                    const totalBudget = columnLeads.reduce((sum, l) => sum + (l.budget || 0), 0);
+        <div className="kanban-wrapper">
+            <div className="kanban-container pb-4">
+                <div className="d-flex flex-nowrap gap-4 px-2" style={{ minHeight: 'calc(100vh - 350px)' }}>
+                    {COLUMNS.map(column => {
+                        const columnLeads = leads.filter(l => l.status === column.id);
+                        const totalBudget = columnLeads.reduce((sum, l) => sum + (l.budget || 0), 0);
 
-                    return (
-                        <div
-                            key={column.id}
-                            className={`col-12 col-md-4 col-lg-3 col-xl kanban-col-wrapper ${activeDropColumn === column.id ? 'active-drop' : ''}`}
-                            style={{ minWidth: '300px' }}
-                        >
+                        return (
                             <div
-                                className={`kanban-column rounded-4 p-3 h-100 ${activeDropColumn === column.id ? 'bg-column-active' : ''}`}
-                                onDragOver={(e) => handleDragOver(e, column.id)}
-                                onDragLeave={handleDragLeave}
-                                onDrop={(e) => handleDrop(e, column.id)}
-                                style={{ backgroundColor: '#f8f9fa', border: '1px solid #eee' }}
+                                key={column.id}
+                                className={`kanban-col-wrapper ${activeDropColumn === column.id ? 'active-drop' : ''}`}
+                                style={{ minWidth: '320px', flex: '0 0 auto' }}
                             >
-                                <div className="d-flex justify-content-between align-items-center mb-3 px-1">
-                                    <div className="d-flex align-items-center gap-2">
-                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: column.color }}></div>
-                                        <h6 className="fw-bold mb-0 text-dark">{column.title}</h6>
-                                        <span className="badge rounded-4 bg-white text-dark border small">{columnLeads.length}</span>
+                                <div
+                                    className={`kanban-column rounded-4 p-3 h-100 ${activeDropColumn === column.id ? 'bg-column-active' : ''}`}
+                                    onDragOver={(e) => handleDragOver(e, column.id)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, column.id)}
+                                    style={{ backgroundColor: '#f8f9fa', border: '1px solid #eee' }}
+                                >
+                                    <div className="d-flex justify-content-between align-items-center mb-3 px-1">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: column.color }}></div>
+                                            <h6 className="fw-bold mb-0 text-dark">{column.title}</h6>
+                                            <span className="badge rounded-4 bg-white text-dark border small">{columnLeads.length}</span>
+                                        </div>
+                                        {totalBudget > 0 && (
+                                            <div className="small text-muted fw-medium">
+                                                ${totalBudget.toLocaleString()}
+                                            </div>
+                                        )}
                                     </div>
-                                    {totalBudget > 0 && (
-                                        <div className="small text-muted fw-medium">
-                                            ${totalBudget.toLocaleString()}
-                                        </div>
-                                    )}
-                                </div>
 
-                                <div className="kanban-cards d-flex flex-column gap-3">
-                                    {columnLeads.length === 0 ? (
-                                        <div className="text-center py-4 border border-dashed rounded-3 text-muted small" style={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
-                                            No leads here
-                                        </div>
-                                    ) : (
-                                        columnLeads.map(lead => (
-                                            <div
-                                                key={lead.id}
-                                                className={`kanban-card card border-0 shadow-sm rounded-3 cursor-grab ${animationLead?.id === lead.id ? (animationLead.type === 'blast' ? 'animate-blast' : 'animate-shake') : ''}`}
-                                                draggable
-                                                onDragStart={(e) => handleDragStart(e, lead.id)}
-                                                onDragEnd={handleDragEnd}
-                                                onClick={() => onViewInsights(lead)}
-                                            >
-                                                <div className="card-body p-3">
-                                                    <div className="d-flex justify-content-between align-items-start mb-2">
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            {getSourceIcon(lead.source)}
-                                                            <div className={`badge rounded-4 px-2 py-0 small ${lead.priority === 3 ? 'bg-danger-soft text-danger' : lead.priority === 2 ? 'bg-warning-soft text-warning' : 'bg-info-soft text-info'}`}>
-                                                                {lead.priority === 3 ? 'High' : lead.priority === 2 ? 'Med' : 'Low'}
-                                                            </div>
-                                                        </div>
-                                                        <div className="dropdown" onClick={(e) => e.stopPropagation()}>
-                                                            <button className="btn btn-link btn-sm text-muted p-0 border-0" data-bs-toggle="dropdown">
-                                                                <i className="bi bi-three-dots-vertical"></i>
-                                                            </button>
-                                                            <ul className="dropdown-menu dropdown-menu-end shadow border-0 small">
-                                                                <li><button className="dropdown-item" onClick={() => onEdit(lead)}><i className="bi bi-pencil me-2"></i>Edit</button></li>
-                                                                <li><button className="dropdown-item" onClick={() => onViewInsights(lead)}><i className="bi bi-graph-up me-2"></i>Insights</button></li>
-                                                                <li><hr className="dropdown-divider" /></li>
-                                                                {COLUMNS.filter(c => c.id !== column.id).map(c => (
-                                                                    <li key={c.id}>
-                                                                        <button className="dropdown-item" onClick={() => {
-                                                                            if (c.id === 'converted') {
-                                                                                setAnimationLead({ id: lead.id, type: 'blast' });
-                                                                                setTimeout(() => setAnimationLead(null), 1000);
-                                                                            } else if (c.id === 'lost') {
-                                                                                setAnimationLead({ id: lead.id, type: 'shake' });
-                                                                                setTimeout(() => setAnimationLead(null), 1000);
-                                                                            }
-                                                                            onStatusChange(lead.id, c.id);
-                                                                        }}>
-                                                                            Move to {c.title}
-                                                                        </button>
-                                                                    </li>
-                                                                ))}
-                                                                <li><hr className="dropdown-divider" /></li>
-                                                                <li><button className="dropdown-item text-danger" onClick={() => onDelete(lead.id)}><i className="bi bi-trash me-2"></i>Delete</button></li>
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-
-                                                    <h6 className="fw-bold mb-1 text-dark text-truncate d-flex align-items-center gap-2">
-                                                        {lead.name}
-                                                        {isStale(lead) && (
-                                                            <div className="pulse-danger" title="Stale lead: No activity for 3+ days"></div>
-                                                        )}
-                                                    </h6>
-                                                    <p className="small text-muted mb-2 text-truncate">{lead.company || 'Private Lead'}</p>
-                                                    <div className="d-flex flex-wrap gap-1 mb-3">
-                                                        {lead.tags?.map(tag => (
-                                                            <span key={tag} className="badge bg-primary bg-opacity-10 text-primary border-primary border-opacity-10 rounded-4 extra-small-badge" style={{ fontSize: '0.65rem' }}>
-                                                                {tag}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-
-                                                    <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                                                        <div className="d-flex align-items-center gap-1">
-                                                            <div className="lead-score-box rounded-circle d-flex align-items-center justify-content-center text-white fw-bold small"
-                                                                style={{
-                                                                    width: '24px',
-                                                                    height: '24px',
-                                                                    fontSize: '10px',
-                                                                    backgroundColor: lead.leadScore > 50 ? '#dc3545' : lead.leadScore > 20 ? '#ffc107' : '#198754'
-                                                                }}>
-                                                                {lead.leadScore}
-                                                            </div>
-                                                            <i className="bi bi-magic text-primary ms-1" style={{ fontSize: '0.7rem' }}></i>
-                                                        </div>
-                                                        <div className="d-flex align-items-center">
-                                                            {lead.assignedAgent ? (
-                                                                <div className="agent-avatar" title={lead.assignedAgent.user?.name}>
-                                                                    <div className="avatar-xs bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
-                                                                        {(lead.assignedAgent.user?.name || 'A').charAt(0)}
-                                                                    </div>
+                                    <div className="kanban-cards d-flex flex-column gap-3">
+                                        {columnLeads.length === 0 ? (
+                                            <div className="text-center py-4 border border-dashed rounded-3 text-muted small" style={{ backgroundColor: 'rgba(0,0,0,0.02)' }}>
+                                                No leads here
+                                            </div>
+                                        ) : (
+                                            columnLeads.map(lead => (
+                                                <div
+                                                    key={lead.id}
+                                                    className={`kanban-card card border-0 shadow-sm rounded-3 cursor-grab ${animationLead?.id === lead.id ? (animationLead.type === 'blast' ? 'animate-blast' : 'animate-shake') : ''}`}
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, lead.id)}
+                                                    onDragEnd={handleDragEnd}
+                                                    onClick={() => onViewInsights(lead)}
+                                                >
+                                                    <div className="card-body p-3">
+                                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                {getSourceIcon(lead.source)}
+                                                                <div className={`badge rounded-4 px-2 py-0 small ${lead.priority === 3 ? 'bg-danger-soft text-danger' : lead.priority === 2 ? 'bg-warning-soft text-warning' : 'bg-info-soft text-info'}`}>
+                                                                    {lead.priority === 3 ? 'High' : lead.priority === 2 ? 'Med' : 'Low'}
                                                                 </div>
-                                                            ) : (
-                                                                <i className="bi bi-person-dash text-muted" title="Unassigned"></i>
+                                                            </div>
+                                                            <div className="dropdown" onClick={(e) => e.stopPropagation()}>
+                                                                <button className="btn btn-link btn-sm text-muted p-0 border-0" data-bs-toggle="dropdown">
+                                                                    <i className="bi bi-three-dots-vertical"></i>
+                                                                </button>
+                                                                <ul className="dropdown-menu dropdown-menu-end shadow border-0 small">
+                                                                    <li><button className="dropdown-item" onClick={() => onEdit(lead)}><i className="bi bi-pencil me-2"></i>Edit</button></li>
+                                                                    <li><button className="dropdown-item" onClick={() => onViewInsights(lead)}><i className="bi bi-graph-up me-2"></i>Insights</button></li>
+                                                                    {lead.status === 'converted' && (
+                                                                        <>
+                                                                            <li><hr className="dropdown-divider" /></li>
+                                                                            <li>
+                                                                                <button className="dropdown-item text-primary fw-bold" onClick={() => onConvertToUser(lead)}>
+                                                                                    <i className="bi bi-person-plus-fill me-2"></i>Convert to User
+                                                                                </button>
+                                                                            </li>
+                                                                        </>
+                                                                    )}
+                                                                    <li><hr className="dropdown-divider" /></li>
+                                                                    {COLUMNS.filter(c => c.id !== column.id).map(c => (
+                                                                        <li key={c.id}>
+                                                                            <button className="dropdown-item" onClick={() => {
+                                                                                if (c.id === 'converted') {
+                                                                                    setAnimationLead({ id: lead.id, type: 'blast' });
+                                                                                    setTimeout(() => setAnimationLead(null), 1000);
+                                                                                } else if (c.id === 'lost') {
+                                                                                    setAnimationLead({ id: lead.id, type: 'shake' });
+                                                                                    setTimeout(() => setAnimationLead(null), 1000);
+                                                                                }
+                                                                                onStatusChange(lead.id, c.id);
+                                                                            }}>
+                                                                                Move to {c.title}
+                                                                            </button>
+                                                                        </li>
+                                                                    ))}
+                                                                    <li><hr className="dropdown-divider" /></li>
+                                                                    <li><button className="dropdown-item text-danger" onClick={() => onDelete(lead.id)}><i className="bi bi-trash me-2"></i>Delete</button></li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+
+                                                        <h6 className="fw-bold mb-1 text-dark text-truncate d-flex align-items-center gap-2">
+                                                            {lead.name}
+                                                            {isStale(lead) && (
+                                                                <div className="pulse-danger" title="Stale lead: No activity for 3+ days"></div>
                                                             )}
+                                                        </h6>
+                                                        <p className="small text-muted mb-2 text-truncate">{lead.company || 'Private Lead'}</p>
+                                                        <div className="d-flex flex-wrap gap-1 mb-2">
+                                                            {lead.tags?.map(tag => (
+                                                                <span key={tag} className="badge bg-primary bg-opacity-10 text-primary border-primary border-opacity-10 rounded-4 extra-small-badge" style={{ fontSize: '0.65rem' }}>
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+
+                                                        {lead.status === 'converted' && (
+                                                            <div className="mt-3">
+                                                                <button
+                                                                    className="btn btn-primary btn-sm w-100 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2 py-2 fw-bold"
+                                                                    style={{ fontSize: '0.75rem' }}
+                                                                    onClick={(e) => { e.stopPropagation(); onConvertToUser(lead); }}
+                                                                >
+                                                                    <i className="bi bi-person-plus-fill"></i>
+                                                                    <span>Convert to User</span>
+                                                                </button>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                                            <div className="d-flex align-items-center gap-1">
+                                                                <div className="lead-score-box rounded-circle d-flex align-items-center justify-content-center text-white fw-bold small"
+                                                                    style={{
+                                                                        width: '24px',
+                                                                        height: '24px',
+                                                                        fontSize: '10px',
+                                                                        backgroundColor: lead.leadScore > 50 ? '#dc3545' : lead.leadScore > 20 ? '#ffc107' : '#198754'
+                                                                    }}>
+                                                                    {lead.leadScore}
+                                                                </div>
+                                                                <i className="bi bi-magic text-primary ms-1" style={{ fontSize: '0.7rem' }}></i>
+                                                            </div>
+                                                            <div className="d-flex align-items-center">
+                                                                {lead.assignedAgent ? (
+                                                                    <div className="agent-avatar" title={lead.assignedAgent.user?.name}>
+                                                                        <div className="avatar-xs bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
+                                                                            {(lead.assignedAgent.user?.name || 'A').charAt(0)}
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <i className="bi bi-person-dash text-muted" title="Unassigned"></i>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))
-                                    )}
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
 
-            <style jsx>{`
-                .kanban-container {
+                <style jsx>{`
+                .kanban-wrapper {
+                    width: 100%;
                     overflow-x: auto;
-                    white-space: nowrap;
+                    overflow-y: visible;
+                    border-radius: 1rem;
+                    background: rgba(0,0,0,0.01);
+                    scrollbar-width: auto;
+                    scrollbar-color: #000000 #f1f3f5;
+                    padding-bottom: 20px; /* More space for scrollbar */
+                    margin-bottom: 10px;
+                }
+                .kanban-wrapper::-webkit-scrollbar {
+                    height: 12px;
+                }
+                .kanban-wrapper::-webkit-scrollbar-track {
+                    background: #f1f3f5;
+                    border-radius: 10px;
+                }
+                .kanban-wrapper::-webkit-scrollbar-thumb {
+                    background: #000000;
+                    border-radius: 10px;
+                    border: 3px solid #f1f3f5;
+                }
+                .kanban-wrapper::-webkit-scrollbar-thumb:hover {
+                    background: #333333;
+                }
+                .kanban-container {
+                    display: table; /* Force container to respect children width */
+                    min-width: 100%;
                 }
                 .cursor-grab {
                     cursor: grab;
@@ -339,6 +390,7 @@ export default function LeadsKanban({ leads, onStatusChange, onEdit, onDelete, o
                 }
                 .extra-small-badge { font-size: 0.6rem; padding: 0.2rem 0.5rem; letter-spacing: 0.5px; }
             `}</style>
+            </div>
         </div>
     );
 }

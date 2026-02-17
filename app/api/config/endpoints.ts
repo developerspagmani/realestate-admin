@@ -52,11 +52,28 @@ export async function makeApiCall(endpoint: string, options: RequestInit = {}) {
   // Extract non-header options to pass to fetch
   const { headers: _optionsHeaders, ...fetchOptions } = options;
 
+  const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method?.toUpperCase() || 'GET');
+
+  const isStandalone = typeof window !== 'undefined' && (
+    window.location.pathname.includes('/standalone/') ||
+    window.location.pathname.startsWith('/go/')
+  );
+
   try {
+    if (isMutating && typeof window !== 'undefined' && !isStandalone) {
+      const { loadingState } = await import('@/app/contexts/LoadingContext');
+      loadingState.show();
+    }
+
     const response = await fetch(url, {
       ...fetchOptions,
       headers,
     });
+
+    if (isMutating && typeof window !== 'undefined') {
+      const { loadingState } = await import('@/app/contexts/LoadingContext');
+      loadingState.hide();
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -82,6 +99,10 @@ export async function makeApiCall(endpoint: string, options: RequestInit = {}) {
 
     return await response.json();
   } catch (error) {
+    if (isMutating && typeof window !== 'undefined') {
+      const { loadingState } = await import('@/app/contexts/LoadingContext');
+      loadingState.hide();
+    }
     console.error(`API call failed for ${endpoint}:`, error);
     throw error;
   }
@@ -409,6 +430,7 @@ export const subscriptionEndpoints = {
   getPlans: () => '/plans',
   createPlan: () => '/plans',
   updatePlan: (id: string) => `/plans/${id}`,
+  deletePlan: (id: string) => `/plans/${id}`,
 };
 
 // License Key endpoints
@@ -432,6 +454,13 @@ export const cmsEndpoints = {
   delete: (id: string, tenantId?: string) =>
     `/cms/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
   getPublic: (slug: string) => `/cms/public/${slug}`,
+};
+
+// Upgrade Request endpoints
+export const upgradeRequestEndpoints = {
+  submit: () => '/upgrade-requests',
+  getAll: () => '/upgrade-requests',
+  updateStatus: (id: string) => `/upgrade-requests/${id}/status`,
 };
 
 

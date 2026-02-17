@@ -141,7 +141,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                                         </div>
                                     )}
                                     <div className="floating-badge">
-                                        {property.units?.length || 0} Units Available
+                                        {property.units?.length || 0} Total Units
                                     </div>
                                     {property.displayPrice !== false && property.price > 0 && (
                                         <div className="position-absolute bottom-0 start-0 m-3 px-3 py-1 bg-white rounded-pill shadow-sm small fw-bold text-primary">
@@ -192,7 +192,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                     </div>
                 ))}
 
-                {widget.configuration.inquiryForm?.enabled && (
+                {/* {widget.configuration.inquiryForm?.enabled && (
                     <div className="col-12 mt-5 animate-fade-up">
                         <div className="glass-panel p-4 rounded-4 inquiry-form-container">
                             <h5 className="fw-bold mb-3 d-flex align-items-center">
@@ -218,7 +218,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                                     });
 
                                     if (!leadPayload.name) leadPayload.name = 'Web Inquiry';
-                                    const res = await widgetService.createPublicLead(widgetId, leadPayload);
+                                    const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
 
                                     if (res.success && res.data?.id) {
                                         const identity = { id: res.data.id, email: res.data.email };
@@ -228,7 +228,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                             />
                         </div>
                     </div>
-                )}
+                )} */}
             </div>
 
             <ImageModal

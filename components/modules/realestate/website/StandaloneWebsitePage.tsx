@@ -120,14 +120,11 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         }));
     };
 
-    if (loading) return (
-        <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
-            <div className="text-center">
-                <div className="spinner-border text-primary shadow-sm" role="status" style={{ width: '3rem', height: '3rem' }}></div>
-                <p className="mt-3 fw-bold text-muted animate-pulse">Initializing Portal...</p>
-            </div>
-        </div>
-    );
+    const handleFilterResults = useCallback((results: any[]) => {
+        setData(results);
+    }, []);
+
+    if (loading && !website) return null;
 
     if (error || !website) return (
         <div className="min-vh-100 d-flex align-items-center justify-content-center bg-white">
@@ -258,7 +255,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         <div className="standalone-website min-vh-100 bg-white selection-none" style={{ '--primary-color': theme.primaryColor, fontFamily: theme.fontFamily } as any}>
             {/* Real Estate Premium Header */}
             {builder.showLogo !== false && (
-                <header className="py-3 bg-white/80 backdrop-blur-md border-bottom sticky-top z-1050">
+                <header className="py-3 bg-white backdrop-blur-md border-bottom sticky-top z-1050">
                     <div className="container d-flex justify-content-between align-items-center">
                         <div className="website-logo cursor-pointer" onClick={() => setCurrentView('LISTING')}>
                             {builder.logoUrl ? (
@@ -268,8 +265,28 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                             )}
                         </div>
                         <nav className="d-none d-md-flex align-items-center gap-4">
-                            <button className="btn btn-link link-dark text-decoration-none fw-bold small p-0" onClick={() => setCurrentView('LISTING')}>EXPLORE</button>
-                            <button className="btn btn-link link-dark text-decoration-none fw-bold small p-0">ABOUT</button>
+                            {website.configuration?.menus?.header?.map((item: any) => (
+                                <button
+                                    key={item.id}
+                                    className="btn btn-link link-dark text-decoration-none fw-bold small p-0"
+                                    onClick={() => {
+                                        if (item.type === 'custom') {
+                                            window.open(item.url, item.target || '_self');
+                                        } else {
+                                            // Handle CMS page navigation - this would ideally routing to a /page/[slug]
+                                            console.log('Navigate to page:', item.pageSlug);
+                                        }
+                                    }}
+                                >
+                                    {item.label.toUpperCase()}
+                                </button>
+                            ))}
+                            {!website.configuration?.menus?.header?.length && (
+                                <>
+                                    <button className="btn btn-link link-dark text-decoration-none fw-bold small p-0" onClick={() => setCurrentView('LISTING')}>EXPLORE</button>
+                                    <button className="btn btn-link link-dark text-decoration-none fw-bold small p-0">ABOUT</button>
+                                </>
+                            )}
                             {(website.configuration?.bookingForm?.enabled || website.configuration?.builder?.enableBooking) && (
                                 <button
                                     className="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-bold small"
@@ -289,13 +306,31 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                     {showMobileMenu && (
                         <div className="mobile-nav-overlay d-md-none animate-fade-in bg-white position-fixed top-0 start-0 w-100 vh-100 z-1040 p-5 mt-5">
                             <div className="d-flex flex-column gap-4 text-center mt-4">
-                                <button
-                                    className="btn btn-link link-dark text-decoration-none fw-bold h4 p-0"
-                                    onClick={() => { setCurrentView('LISTING'); setShowMobileMenu(false); }}
-                                >
-                                    EXPLORE
-                                </button>
-                                <button className="btn btn-link link-dark text-decoration-none fw-bold h4 p-0">ABOUT</button>
+                                {website.configuration?.menus?.header?.map((item: any) => (
+                                    <button
+                                        key={item.id}
+                                        className="btn btn-link link-dark text-decoration-none fw-bold h4 p-0"
+                                        onClick={() => {
+                                            setShowMobileMenu(false);
+                                            if (item.type === 'custom') {
+                                                window.open(item.url, item.target || '_self');
+                                            }
+                                        }}
+                                    >
+                                        {item.label.toUpperCase()}
+                                    </button>
+                                ))}
+                                {!website.configuration?.menus?.header?.length && (
+                                    <>
+                                        <button
+                                            className="btn btn-link link-dark text-decoration-none fw-bold h4 p-0"
+                                            onClick={() => { setCurrentView('LISTING'); setShowMobileMenu(false); }}
+                                        >
+                                            EXPLORE
+                                        </button>
+                                        <button className="btn btn-link link-dark text-decoration-none fw-bold h4 p-0">ABOUT</button>
+                                    </>
+                                )}
                                 {(website.configuration?.bookingForm?.enabled || website.configuration?.builder?.enableBooking) && (
                                     <button
                                         className="btn btn-primary rounded-pill px-4 py-3 shadow-lg fw-bold h5 mt-4"
@@ -326,12 +361,26 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                     {builder.footerText || 'A next-generation real estate experience powered by Antigravity OS.'}
                                 </p>
                             </div>
-                            <div className="col-md-2">
+                            <div className="col-md-3">
                                 <h6 className="fw-bold mb-3 small">RESOURCES</h6>
-                                <ul className="list-unstyled extra-small text-muted gap-2 d-flex flex-column text-white">
-                                    <li>Privacy Policy</li>
-                                    <li>Terms of Service</li>
-                                    <li>Cookie Settings</li>
+                                <ul className="list-group list-group-flush bg-transparent gap-2">
+                                    {website.configuration?.menus?.footer?.map((item: any) => (
+                                        <li key={item.id} className="list-group-item bg-transparent border-0 p-0">
+                                            <a
+                                                href={item.url || '#'}
+                                                target={item.target || '_self'}
+                                                className="extra-small text-muted text-decoration-none hover-text-white transition-all"
+                                            >
+                                                {item.label}
+                                            </a>
+                                        </li>
+                                    ))}
+                                    {!website.configuration?.menus?.footer?.length && (
+                                        <>
+                                            <li className="list-group-item bg-transparent border-0 p-0 extra-small text-muted">Privacy Policy</li>
+                                            <li className="list-group-item bg-transparent border-0 p-0 extra-small text-muted">Terms of Service</li>
+                                        </>
+                                    )}
                                 </ul>
                             </div>
                             <div className="col-md-6 text-md-end">
@@ -390,7 +439,8 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                     setChatExpanded(false);
                                 }}
                                 onExpandToggle={(exp) => setChatExpanded(exp)}
-                                onFilterResults={(results) => setData(results)}
+                                onFilterResults={handleFilterResults}
+                                trackAction={trackAction}
                                 onSelectProperty={(prop) => {
                                     setSelectedProperty(prop);
                                     setCurrentView('PROPERTY_DETAIL');
@@ -421,15 +471,13 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
 
                                         console.log('Creating lead for website:', website.id, leadPayload);
                                         const res = await websiteService.createPublicLead(website.id, leadPayload);
+                                        const leadId = res.success ? (res.data?.id || res.id) : (res.data?.id || res.id);
 
-                                        // Check for success flag OR if we received a lead object with an ID (fallback)
-                                        const isSuccess = res.success || (res.data && res.data.id) || res.id;
-
-                                        if (!isSuccess) {
+                                        if (leadId) {
+                                            identifyLead(leadId, leadPayload.email);
+                                        } else if (!res.success) {
                                             console.error('Lead capture response missing success or ID:', res);
                                             throw new Error(res.message || 'Failed to capture lead');
-                                        } else if (!res.success) {
-                                            console.warn('Lead captured but success flag missing in response:', res);
                                         }
                                     } catch (error) {
                                         console.error('Standalone chatbot lead capture error:', error);

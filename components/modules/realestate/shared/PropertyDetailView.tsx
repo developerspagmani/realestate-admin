@@ -46,10 +46,16 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
 }) => {
     const [show3DPlotView, setShow3DPlotView] = useState(false);
     const [showBookingModal, setShowBookingModal] = useState(false);
+    const [bookingUnit, setBookingUnit] = useState<any>(null);
 
     const images = [
         ...(selectedProperty.mainImage ? [selectedProperty.mainImage] : []),
-        ...(selectedProperty.gallery || []).filter((g: any) => g.id !== selectedProperty.mainImage?.id && g.url !== selectedProperty.mainImage?.url)
+        ...(selectedProperty.gallery || []).filter((g: any) => {
+            if (!selectedProperty.mainImage) return true;
+            const gUrl = typeof g === 'string' ? g : g?.url || '';
+            const gId = typeof g === 'string' ? g : g?.id || '';
+            return gId !== selectedProperty.mainImage.id && gUrl !== selectedProperty.mainImage.url;
+        })
     ];
 
     return (
@@ -139,7 +145,10 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                             {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
                                 <button
                                     className="btn btn-dark w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 mt-3 transition-all hover:translate-y-[-2px]"
-                                    onClick={() => setShowBookingModal(true)}
+                                    onClick={() => {
+                                        setBookingUnit(null);
+                                        setShowBookingModal(true);
+                                    }}
                                 >
                                     <i className="bi bi-calendar-plus fs-5"></i>
                                     <span className="fw-bold">Reserve Property Now</span>
@@ -307,7 +316,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         onBookingSelect={(id) => {
                                             const unit = selectedProperty.units.find((u: any) => u.id === id);
                                             if (unit) {
-                                                setSelectedUnit(unit);
+                                                setBookingUnit(unit);
                                                 setShowBookingModal(true);
                                                 if (trackAction) trackAction('UNIT_BOOKING_START', { unitId: unit.id, propertyId: selectedProperty.id });
                                             }
@@ -324,7 +333,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         <span className="small fw-bold text-dark">Reserved</span>
                                     </div>
                                     <div className="d-flex align-items-center gap-2">
-                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#f43f5e', border: '2px solid #9f1239' }}></div>
+                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#ef4444', border: '2px solid #b91c1c' }}></div>
                                         <span className="small fw-bold text-dark">Sold Out</span>
                                     </div>
                                     <div className="d-flex align-items-center gap-2">
@@ -362,7 +371,13 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 <span className="fw-extrabold text-primary" style={{ color: theme.primaryColor }}>
                                                     {getFormattedPrice(unit)}
                                                 </span>
-                                                <span className="badge bg-success bg-opacity-10 text-success extra-small">Available</span>
+                                                {(() => {
+                                                    const statusNum = Number(unit.status);
+                                                    if (statusNum === 2) return <span className="badge bg-warning bg-opacity-10 text-warning extra-small">Reserved</span>;
+                                                    if (statusNum === 3) return <span className="badge bg-secondary bg-opacity-10 text-secondary extra-small">Maintenance</span>;
+                                                    if (statusNum === 4) return <span className="badge bg-danger bg-opacity-10 text-danger extra-small">Sold Out</span>;
+                                                    return <span className="badge bg-success bg-opacity-10 text-success extra-small">Available</span>;
+                                                })()}
                                             </div>
                                             <h6 className="fw-bold mb-1 text-truncate">{unit.name || `${unit.unitCode}`}</h6>
                                             <div className="d-flex gap-2 mb-3">
@@ -378,12 +393,12 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 >
                                                     View Details
                                                 </button>
-                                                {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
+                                                {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && Number(unit.status) === 1 && (
                                                     <button
                                                         className="btn btn-dark btn-sm flex-grow-1 rounded-4 extra-small fw-bold"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            setSelectedUnit(unit);
+                                                            setBookingUnit(unit);
                                                             setShowBookingModal(true);
                                                         }}
                                                     >
@@ -425,7 +440,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         });
 
                                         if (!leadPayload.name) leadPayload.name = 'Property Interest';
-                                        const res = await widgetService.createPublicLead(widgetId, leadPayload);
+                                        const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
 
                                         if (res.success && res.data?.id) {
                                             const identity = { id: res.data.id, email: res.data.email };
@@ -471,7 +486,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                     currencySymbol={currencySymbol}
                     onClose={() => setShow3DPlotView(false)}
                     onBookingSelect={(unit) => {
-                        setSelectedUnit(unit);
+                        setBookingUnit(unit);
                         setShowBookingModal(true);
                     }}
                 />
@@ -483,7 +498,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                 widget={widget}
                 widgetId={widgetId}
                 selectedProperty={selectedProperty}
-                selectedUnit={selectedUnit}
+                selectedUnit={bookingUnit || selectedUnit}
                 theme={theme}
                 identifyLead={identifyLead}
             />

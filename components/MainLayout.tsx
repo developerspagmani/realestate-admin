@@ -107,7 +107,7 @@ export default function MainLayout({ children, activePage, hideSidebar = false, 
           transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
           {!hideHeader && <AdminHeader onMenuClick={toggleMobileSidebar} />}
-          <div className={`container-fluid flex-grow-1 ${hideSidebar || hideHeader ? 'p-0' : 'p-3 p-md-4'}`}>
+          <div className={`container-fluid flex-grow-1 ${hideSidebar || hideHeader ? 'p-0' : 'p-3 p-md-4'}`} style={{ overflowY: 'auto', overflowX: 'hidden' }}>
             {children}
           </div>
           <Footer />

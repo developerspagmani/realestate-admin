@@ -20,4 +20,11 @@ export const subscriptionService = {
             body: JSON.stringify(data),
         });
     },
+
+    deletePlan: async (token: string, id: string) => {
+        return await makeApiCall(subscriptionEndpoints.deletePlan(id), {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
 };

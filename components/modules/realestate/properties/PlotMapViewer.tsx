@@ -53,11 +53,11 @@ export default function PlotMapViewer({ units, svgContent, mapping, themeColor =
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'available': return { fill: '#4ade80', stroke: '#16a34a' };
-            case 'occupied': return { fill: '#fb7185', stroke: '#e11d48' };
-            case 'maintenance': return { fill: '#94a3b8', stroke: '#475569' };
-            case 'sold': return { fill: '#f43f5e', stroke: '#9f1239' };
-            default: return { fill: '#6366f1', stroke: '#4338ca' };
+            case 'available': return { fill: '#4ade80', stroke: '#16a34a' }; // Green
+            case 'occupied': return { fill: '#fb7185', stroke: '#e11d48' };  // Pink/Rose (Reserved)
+            case 'maintenance': return { fill: '#94a3b8', stroke: '#475569' }; // Grey
+            case 'sold': return { fill: '#ef4444', stroke: '#b91c1c' };      // Bold Red
+            default: return { fill: '#6366f1', stroke: '#4338ca' };          // Indigo (Theme default)
         }
     };
 
@@ -151,6 +151,7 @@ export default function PlotMapViewer({ units, svgContent, mapping, themeColor =
                 const unit = units.find(u => String(u.id) === String(unitId));
                 if (!unit) return '';
                 const colors = getStatusColor(unit.status);
+                console.log("MAP COLORS", colors);
                 return `
                     [id="${pathId}"] {
                         fill: ${colors.fill} !important;
@@ -172,6 +173,7 @@ export default function PlotMapViewer({ units, svgContent, mapping, themeColor =
 
     const handlePathHover = (e: MouseEvent) => {
         // Optional: Add subtle highlight or cursor change
+        // console.log("MAP HOVER", e);
     };
 
     return (
@@ -265,12 +267,9 @@ export default function PlotMapViewer({ units, svgContent, mapping, themeColor =
                             {selectedUnit.status === 'available' && (
                                 <button
                                     className="btn btn-dark btn-sm rounded-3 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
-                                    onClick={() => {
-                                        if (onBookingSelect) {
-                                            onBookingSelect(String(selectedUnit.id));
-                                        } else {
-                                            onUnitSelect?.(String(selectedUnit.id));
-                                        }
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onBookingSelect?.(String(selectedUnit.id));
                                     }}
                                 >
                                     <i className="bi bi-calendar-check"></i>

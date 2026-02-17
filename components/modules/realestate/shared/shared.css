@@ -97,7 +97,52 @@
 .property-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
-    border-color: rgba(99, 102, 241, 0.1);
+    border-color: var(--primary-ghost);
+}
+
+/* Dynamic Primary Color Overrides */
+.standalone-website .btn-primary,
+.widget-container .btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #fff !important;
+    transition: all 0.3s ease;
+}
+
+.standalone-website .btn-primary:hover,
+.widget-container .btn-primary:hover {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.standalone-website .btn-outline-primary,
+.widget-container .btn-outline-primary {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+.standalone-website .btn-outline-primary:hover,
+.widget-container .btn-outline-primary:hover {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+.standalone-website .text-primary,
+.widget-container .text-primary {
+    color: var(--primary-color) !important;
+}
+
+.standalone-website a,
+.widget-container a {
+    color: var(--primary-color);
+    transition: color 0.2s ease;
+}
+
+.standalone-website a:hover,
+.widget-container a:hover {
+    color: var(--primary-hover);
 }
 
 .feature-badge {
@@ -208,4 +253,17 @@
         padding: 5px 15px !important;
         font-size: 12px;
     }
+}
+
+.floating-badge {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    border-radius: 30px;
+    color: #fff;
+    padding: 5px 10px;
+    font-size: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
