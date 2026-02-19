@@ -19,6 +19,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
   const { tenantType } = useManagementContext();
   const [mounted, setMounted] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setMounted(true);
@@ -83,6 +84,19 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Marketing Suite',
           items: [
             { href: '/realestate-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
+            {
+              href: '/realestate-admin/social',
+              label: 'Social Media',
+              icon: 'bi-share-fill',
+              active: activePage === 'social' || activePage?.startsWith('social-'),
+              children: [
+                { href: '/realestate-admin/social/accounts', label: 'Accounts', icon: 'bi-person-badge', active: activePage === 'social-accounts' },
+                { href: '/realestate-admin/social/analytics', label: 'Analytics', icon: 'bi-graph-up', active: activePage === 'social-analytics' },
+                { href: '/realestate-admin/social/campaigns', label: 'Campaigns', icon: 'bi-megaphone', active: activePage === 'social-campaigns' },
+                { href: '/realestate-admin/social/scheduled', label: 'Scheduled', icon: 'bi-calendar-event', active: activePage === 'social-schedule' },
+                { href: '/realestate-admin/social/whatsapp', label: 'WhatsApp', icon: 'bi-whatsapp', active: activePage === 'social-whatsapp' },
+              ]
+            },
             { href: '/realestate-admin/websites', label: 'Website', icon: 'bi-window-stack', active: activePage === 'websites' },
             { href: '/realestate-admin/cms', label: 'CMS', icon: 'bi-file-earmark-richtext-fill', active: activePage === 'cms' },
             { href: '/realestate-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
@@ -133,6 +147,19 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             ...(hasModule('marketing_hub') ? [
               { href: '/realestate-owner-admin/marketing', label: 'Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
+              {
+                href: '/realestate-owner-admin/social',
+                label: 'Social Media',
+                icon: 'bi-share-fill',
+                active: activePage === 'social' || activePage?.startsWith('social-'),
+                children: [
+                  { href: '/realestate-owner-admin/social/accounts', label: 'Accounts', icon: 'bi-person-badge', active: activePage === 'social-accounts' },
+                  { href: '/realestate-owner-admin/social/analytics', label: 'Analytics', icon: 'bi-graph-up', active: activePage === 'social-analytics' },
+                  { href: '/realestate-owner-admin/social/campaigns', label: 'Campaigns', icon: 'bi-megaphone', active: activePage === 'social-campaigns' },
+                  { href: '/realestate-owner-admin/social/scheduled', label: 'Scheduled', icon: 'bi-calendar-event', active: activePage === 'social-schedule' },
+                  { href: '/realestate-owner-admin/social/whatsapp', label: 'WhatsApp', icon: 'bi-whatsapp', active: activePage === 'social-whatsapp' },
+                ]
+              },
             ] : []),
             ...(hasModule('website') || hasModule('marketing_hub') ? [
               { href: '/realestate-owner-admin/websites', label: 'Website', icon: 'bi-globe', active: activePage === 'websites' },
@@ -289,23 +316,66 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                   </span>
                 </div>
               )}
-              {section.items.map((item: any) => (
-                <div key={item.href} className="mb-1">
-                  <a
-                    href={item.href}
-                    className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all ${item.active
-                      ? 'active bg-primary text-white fw-semibold shadow-sm'
-                      : 'text-secondary hover-bg-light'
-                      }`}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <i className={`bi ${item.icon} fs-5`}></i>
-                    {(!collapsed || showMobile) && (
-                      <span className="text-nowrap">{item.label}</span>
+              {section.items.map((item: any) => {
+                const hasChildren = item.children && item.children.length > 0;
+                const isParentActive = item.active;
+                const isOpen = openMenus[item.label] ?? isParentActive;
+
+                return (
+                  <div key={item.label} className="mb-1">
+                    {hasChildren ? (
+                      <>
+                        <div
+                          onClick={() => setOpenMenus(prev => ({ ...prev, [item.label]: !isOpen }))}
+                          className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all cursor-pointer ${isParentActive
+                              ? 'bg-light text-primary fw-semibold'
+                              : 'text-secondary hover-bg-light'
+                            }`}
+                          style={{ textDecoration: 'none', cursor: 'pointer' }}
+                        >
+                          <i className={`bi ${item.icon} fs-5`}></i>
+                          {(!collapsed || showMobile) && (
+                            <>
+                              <span className="text-nowrap">{item.label}</span>
+                              <i className={`bi bi-chevron-${isOpen ? 'down' : 'right'} ms-auto small opacity-50`}></i>
+                            </>
+                          )}
+                        </div>
+                        {isOpen && (!collapsed || showMobile) && (
+                          <div className="ms-4 mt-1 border-start ps-2">
+                            {item.children.map((child: any) => (
+                              <a
+                                key={child.href}
+                                href={child.href}
+                                className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all small ${child.active ? 'bg-primary text-white fw-semibold shadow-sm' : 'text-secondary hover-bg-light'
+                                  }`}
+                                style={{ textDecoration: 'none' }}
+                              >
+                                <i className={`bi ${child.icon} fs-6`}></i>
+                                <span className="text-nowrap">{child.label}</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <a
+                        href={item.href}
+                        className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all ${item.active
+                            ? 'active bg-primary text-white fw-semibold shadow-sm'
+                            : 'text-secondary hover-bg-light'
+                          }`}
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <i className={`bi ${item.icon} fs-5`}></i>
+                        {(!collapsed || showMobile) && (
+                          <span className="text-nowrap">{item.label}</span>
+                        )}
+                      </a>
                     )}
-                  </a>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           ))}
 
