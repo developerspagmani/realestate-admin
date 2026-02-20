@@ -102,45 +102,50 @@ export default function ConnectedAccountsPage() {
         const redirectUri = `${window.location.origin}${basePath}/auth/${platform.toLowerCase()}/callback`;
 
         if (platform === 'FACEBOOK') {
-            if (!window.FB) {
-                alert('Facebook SDK not loaded. Please wait a moment and try again.');
-                return;
-            }
+            const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
 
-            window.FB.login((response: any) => {
-                if (response.authResponse) {
-                    const accessToken = response.authResponse.accessToken;
-                    const userId = response.authResponse.userID;
+            // If we have the SDK and are on a secure context (or localhost), try the SDK first
+            if (window.FB && isSecure) {
+                window.FB.login((response: any) => {
+                    if (response.authResponse) {
+                        const accessToken = response.authResponse.accessToken;
+                        const userId = response.authResponse.userID;
 
-                    const connectAccount = async () => {
-                        try {
-                            setLoading(true);
-                            // Using direct storage since we already have the token from the SDK
-                            const res = await connectedAccountsApi.connect({
-                                platform: 'FACEBOOK',
-                                accessToken: accessToken,
-                                accountId: userId,
-                                accountName: 'Facebook User',
-                                metadata: { sdk_login: true }
-                            });
+                        const connectAccount = async () => {
+                            try {
+                                setLoading(true);
+                                const res = await connectedAccountsApi.connect({
+                                    platform: 'FACEBOOK',
+                                    accessToken: accessToken,
+                                    accountId: userId,
+                                    accountName: 'Facebook User',
+                                    metadata: { sdk_login: true }
+                                });
 
-                            if (res.success) {
-                                alert('Facebook connected successfully!');
-                                loadAccounts();
-                            } else {
-                                alert(res.message || 'Failed to connect Facebook');
+                                if (res.success) {
+                                    alert('Facebook connected successfully!');
+                                    loadAccounts();
+                                } else {
+                                    alert(res.message || 'Failed to connect Facebook');
+                                }
+                            } catch (e) {
+                                console.error(e);
+                                alert('An error occurred while connecting');
+                            } finally {
+                                setLoading(false);
                             }
-                        } catch (e) {
-                            console.error(e);
-                            alert('An error occurred while connecting');
-                        } finally {
-                            setLoading(false);
-                        }
-                    };
+                        };
 
-                    connectAccount();
-                }
-            }, { scope: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish' });
+                        connectAccount();
+                    }
+                }, { scope: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish' });
+            } else {
+                // FALLBACK: OAuth Redirect Flow (Works over HTTP)
+                const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID || '1163988435719406';
+                const scope = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
+                console.log('Using Fallback Redirect Flow due to HTTP protocol');
+                window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+            }
 
         } else if (platform === 'GOOGLE') {
             const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;

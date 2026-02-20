@@ -228,7 +228,11 @@ export function middleware(request: NextRequest) {
 
   // Public exceptions inside protected paths
   const publicExceptions = [
-    '/realestate-owner-admin/widgets'
+    '/realestate-owner-admin/widgets',
+    '/realestate-owner-admin/auth/meta/callback',
+    '/realestate-owner-admin/auth/google/callback',
+    '/realestate-admin/auth/meta/callback',
+    '/realestate-admin/auth/google/callback',
   ];
 
   // Check if route requires authentication
