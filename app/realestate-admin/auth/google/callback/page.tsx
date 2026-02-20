@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { connectedAccountsApi } from '@/lib/api/social';
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [status, setStatus] = useState('processing');
@@ -97,3 +97,19 @@ export default function GoogleCallbackPage() {
         </div>
     );
 }
+
+export default function GoogleCallbackPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading authentication...</p>
+                </div>
+            </div>
+        }>
+            <GoogleCallbackContent />
+        </Suspense>
+    );
+}
+
