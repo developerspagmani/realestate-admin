@@ -16,19 +16,26 @@ export default function WhatsAppSetup({ onSuccess }: SetupComponentProps) {
     }, []);
 
     const loadMetaSDK = () => {
+        // Function to perform initialization
+        const initFB = () => {
+            if (window.FB) {
+                window.FB.init({
+                    appId: process.env.NEXT_PUBLIC_META_APP_ID,
+                    cookie: true,
+                    xfbml: true,
+                    version: 'v18.0'
+                });
+                setSdkLoaded(true);
+            }
+        };
+
         if (window.FB) {
-            setSdkLoaded(true);
+            initFB();
             return;
         }
 
         window.fbAsyncInit = function () {
-            window.FB.init({
-                appId: process.env.NEXT_PUBLIC_META_APP_ID,
-                cookie: true,
-                xfbml: true,
-                version: 'v18.0'
-            });
-            setSdkLoaded(true);
+            initFB();
         };
 
         (function (d, s, id) {

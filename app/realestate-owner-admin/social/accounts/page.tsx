@@ -20,11 +20,11 @@ interface AccountStats {
 }
 
 const PLATFORMS = [
-    { id: 'FACEBOOK', name: 'Facebook', color: 'primary', icon: 'bi-facebook' },
+    { id: 'FACEBOOK', name: 'Facebook', color: 'danger', icon: 'bi-facebook' },
     { id: 'INSTAGRAM', name: 'Instagram', color: 'danger', icon: 'bi-instagram' },
     { id: 'GOOGLE', name: 'Google My Business', color: 'warning', icon: 'bi-google' },
     { id: 'TWITTER', name: 'Twitter', color: 'info', icon: 'bi-twitter-x' },
-    { id: 'LINKEDIN', name: 'LinkedIn', color: 'primary', icon: 'bi-linkedin' },
+    { id: 'LINKEDIN', name: 'LinkedIn', color: 'danger', icon: 'bi-linkedin' },
     { id: 'TIKTOK', name: 'TikTok', color: 'dark', icon: 'bi-tiktok' },
     { id: 'WHATSAPP', name: 'WhatsApp Business', color: 'success', icon: 'bi-whatsapp' }
 ];
