@@ -47,15 +47,24 @@ export default function ConnectedAccountsPage() {
     }, []);
 
     const loadMetaSDK = () => {
-        if (window.FB) return;
+        const initFB = () => {
+            if (window.FB) {
+                window.FB.init({
+                    appId: process.env.NEXT_PUBLIC_META_APP_ID,
+                    cookie: true,
+                    xfbml: true,
+                    version: 'v18.0'
+                });
+            }
+        };
+
+        if (window.FB) {
+            initFB();
+            return;
+        }
 
         window.fbAsyncInit = function () {
-            window.FB.init({
-                appId: process.env.NEXT_PUBLIC_META_APP_ID,
-                cookie: true,
-                xfbml: true,
-                version: 'v18.0'
-            });
+            initFB();
         };
 
         (function (d, s, id) {
