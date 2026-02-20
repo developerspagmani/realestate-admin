@@ -1,11 +1,12 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Property3DManager from '@/components/modules/realestate/properties/Property3DManager';
 import MainLayout from '@/components/MainLayout';
 
-export default function Property3DManagerWrapper() {
+function Property3DManagerContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const propertyId = searchParams.get('propertyId');
@@ -46,3 +47,19 @@ export default function Property3DManagerWrapper() {
         </MainLayout>
     );
 }
+
+export default function Property3DManagerWrapper() {
+    return (
+        <Suspense fallback={
+            <MainLayout activePage="properties">
+                <div className="container-fluid p-4 text-center py-5">
+                    <div className="spinner-border text-primary"></div>
+                    <p className="mt-3 text-muted">Loading 3D workspace...</p>
+                </div>
+            </MainLayout>
+        }>
+            <Property3DManagerContent />
+        </Suspense>
+    );
+}
+

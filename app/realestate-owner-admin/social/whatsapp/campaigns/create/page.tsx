@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import { whatsappApi, connectedAccountsApi } from '@/lib/api/social';
@@ -20,7 +20,7 @@ interface ConnectedAccount {
     metadata?: any;
 }
 
-export default function CreateWhatsAppCampaignPage() {
+function CreateWhatsAppCampaignContent() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -130,132 +130,141 @@ export default function CreateWhatsAppCampaignPage() {
     };
 
     return (
-        <MainLayout activePage="social-campaigns">
-            <div className="container py-4">
-                <div className="mb-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="btn btn-link text-decoration-none text-muted p-0 mb-2"
-                    >
-                        <i className="bi bi-arrow-left me-1"></i> Back to WhatsApp
-                    </button>
-                    <h1 className="fw-bold h2">Create WhatsApp Campaign</h1>
-                    <p className="text-muted">Send bulk messages to your customers</p>
-                </div>
-
-                <div className="card border-0 shadow-sm rounded-4">
-                    <form onSubmit={handleSubmit} className="card-body p-4 p-md-5">
-                        <div className="row g-4">
-                            {/* Campaign Name */}
-                            <div className="col-12">
-                                <label className="form-label fw-bold small text-muted text-uppercase">Campaign Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    className="form-control form-control-lg rounded-3 bg-light border-0"
-                                    placeholder="e.g., Summer Property Launch"
-                                />
-                            </div>
-
-                            {/* Select Account */}
-                            <div className="col-md-6">
-                                <label className="form-label fw-bold small text-muted text-uppercase">WhatsApp Account</label>
-                                <select
-                                    required
-                                    value={formData.accountId}
-                                    onChange={(e) => {
-                                        const acc = accounts.find(a => a.accountId === e.target.value);
-                                        setFormData({
-                                            ...formData,
-                                            accountId: e.target.value,
-                                            phoneNumberId: acc?.metadata?.phoneNumberId || ''
-                                        });
-                                    }}
-                                    className="form-select form-select-lg rounded-3 bg-light border-0"
-                                >
-                                    <option value="">Select Account</option>
-                                    {accounts.map(acc => (
-                                        <option key={acc.id} value={acc.accountId}>{acc.accountName}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Phone Number ID */}
-                            <div className="col-md-6">
-                                <label className="form-label fw-bold small text-muted text-uppercase">Phone Number ID</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.phoneNumberId}
-                                    onChange={(e) => setFormData({ ...formData, phoneNumberId: e.target.value })}
-                                    className="form-control form-control-lg rounded-3 bg-light border-0"
-                                    placeholder="Meta Phone Number ID"
-                                />
-                                <small className="text-muted">Fetch this from your Meta App Settings</small>
-                            </div>
-
-                            {/* Select Template */}
-                            <div className="col-12">
-                                <label className="form-label fw-bold small text-muted text-uppercase">Message Template</label>
-                                <select
-                                    required
-                                    value={formData.templateName}
-                                    onChange={(e) => handleTemplateChange(e.target.value)}
-                                    className="form-select form-select-lg rounded-3 bg-light border-0"
-                                >
-                                    <option value="">Select a template</option>
-                                    {templates.map(t => (
-                                        <option key={t.id} value={t.name}>{t.name} ({t.language})</option>
-                                    ))}
-                                </select>
-                                <div className="mt-2">
-                                    <button
-                                        type="button"
-                                        onClick={loadData}
-                                        className="btn btn-link btn-sm p-0 text-success text-decoration-none"
-                                    >
-                                        <i className="bi bi-arrow-repeat me-1"></i> Refresh Templates
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Recipients */}
-                            <div className="col-12">
-                                <label className="form-label fw-bold small text-muted text-uppercase">Recipients (Phone Numbers)</label>
-                                <textarea
-                                    required
-                                    rows={4}
-                                    value={formData.recipients}
-                                    onChange={(e) => setFormData({ ...formData, recipients: e.target.value })}
-                                    className="form-control rounded-3 bg-light border-0"
-                                    placeholder="Enter numbers separated by commas (e.g., +1234567890, +0987654321)"
-                                />
-                                <small className="text-muted">Include country code without + or spaces if required by your API settings.</small>
-                            </div>
-                        </div>
-
-                        <div className="mt-5 d-flex justify-content-end gap-2">
-                            <button
-                                type="button"
-                                onClick={() => router.back()}
-                                className="btn btn-light px-4 rounded-pill"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="btn btn-success px-5 rounded-pill shadow-sm"
-                            >
-                                {loading && <span className="spinner-border spinner-border-sm me-2"></span>}
-                                Send Campaign
-                            </button>
-                        </div>
-                    </form>
-                </div>
+        <div className="container py-4">
+            <div className="mb-4">
+                <button
+                    onClick={() => router.back()}
+                    className="btn btn-link text-decoration-none text-muted p-0 mb-2"
+                >
+                    <i className="bi bi-arrow-left me-1"></i> Back to WhatsApp
+                </button>
+                <h1 className="fw-bold h2">Create WhatsApp Campaign</h1>
+                <p className="text-muted">Send bulk messages to your customers</p>
             </div>
+
+            <div className="card border-0 shadow-sm rounded-4">
+                <form onSubmit={handleSubmit} className="card-body p-4 p-md-5">
+                    <div className="row g-4">
+                        {/* Campaign Name */}
+                        <div className="col-12">
+                            <label className="form-label fw-bold small text-muted text-uppercase">Campaign Name</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="form-control form-control-lg rounded-3 bg-light border-0"
+                                placeholder="e.g., Summer Property Launch"
+                            />
+                        </div>
+
+                        {/* Select Account */}
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold small text-muted text-uppercase">WhatsApp Account</label>
+                            <select
+                                required
+                                value={formData.accountId}
+                                onChange={(e) => {
+                                    const acc = accounts.find(a => a.accountId === e.target.value);
+                                    setFormData({
+                                        ...formData,
+                                        accountId: e.target.value,
+                                        phoneNumberId: acc?.metadata?.phoneNumberId || ''
+                                    });
+                                }}
+                                className="form-select form-select-lg rounded-3 bg-light border-0"
+                            >
+                                <option value="">Select Account</option>
+                                {accounts.map(acc => (
+                                    <option key={acc.id} value={acc.accountId}>{acc.accountName}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Phone Number ID */}
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold small text-muted text-uppercase">Phone Number ID</label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.phoneNumberId}
+                                onChange={(e) => setFormData({ ...formData, phoneNumberId: e.target.value })}
+                                className="form-control form-control-lg rounded-3 bg-light border-0"
+                                placeholder="Meta Phone Number ID"
+                            />
+                            <small className="text-muted">Fetch this from your Meta App Settings</small>
+                        </div>
+
+                        {/* Select Template */}
+                        <div className="col-12">
+                            <label className="form-label fw-bold small text-muted text-uppercase">Message Template</label>
+                            <select
+                                required
+                                value={formData.templateName}
+                                onChange={(e) => handleTemplateChange(e.target.value)}
+                                className="form-select form-select-lg rounded-3 bg-light border-0"
+                            >
+                                <option value="">Select a template</option>
+                                {templates.map(t => (
+                                    <option key={t.id} value={t.name}>{t.name} ({t.language})</option>
+                                ))}
+                            </select>
+                            <div className="mt-2">
+                                <button
+                                    type="button"
+                                    onClick={loadData}
+                                    className="btn btn-link btn-sm p-0 text-success text-decoration-none"
+                                >
+                                    <i className="bi bi-arrow-repeat me-1"></i> Refresh Templates
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Recipients */}
+                        <div className="col-12">
+                            <label className="form-label fw-bold small text-muted text-uppercase">Recipients (Phone Numbers)</label>
+                            <textarea
+                                required
+                                rows={4}
+                                value={formData.recipients}
+                                onChange={(e) => setFormData({ ...formData, recipients: e.target.value })}
+                                className="form-control rounded-3 bg-light border-0"
+                                placeholder="Enter numbers separated by commas (e.g., +1234567890, +0987654321)"
+                            />
+                            <small className="text-muted">Include country code without + or spaces if required by your API settings.</small>
+                        </div>
+                    </div>
+
+                    <div className="mt-5 d-flex justify-content-end gap-2">
+                        <button
+                            type="button"
+                            onClick={() => router.back()}
+                            className="btn btn-light px-4 rounded-pill"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn btn-success px-5 rounded-pill shadow-sm"
+                        >
+                            {loading && <span className="spinner-border spinner-border-sm me-2"></span>}
+                            Send Campaign
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+export default function CreateWhatsAppCampaignPage() {
+    return (
+        <MainLayout activePage="social-campaigns">
+            <Suspense fallback={<div className="container py-5 text-center">Loading Campaign Creator...</div>}>
+                <CreateWhatsAppCampaignContent />
+            </Suspense>
         </MainLayout>
     );
 }
+

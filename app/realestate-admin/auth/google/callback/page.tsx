@@ -1,14 +1,19 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { connectedAccountsApi } from '@/lib/api/social';
 
 function GoogleCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const pathname = usePathname();
     const [status, setStatus] = useState('processing');
     const [message, setMessage] = useState('Connecting your Google account...');
+
+    const basePath = pathname.includes('/realestate-owner-admin')
+        ? '/realestate-owner-admin'
+        : '/realestate-admin';
 
     useEffect(() => {
         handleCallback();
@@ -22,34 +27,37 @@ function GoogleCallbackContent() {
             if (error) {
                 setStatus('error');
                 setMessage(`Error: ${error}`);
-                setTimeout(() => router.push('/social/accounts'), 3000);
+                setTimeout(() => router.push(`${basePath}/social/accounts`), 3000);
                 return;
             }
 
             if (!code) {
                 setStatus('error');
                 setMessage('No authorization code received');
-                setTimeout(() => router.push('/social/accounts'), 3000);
+                setTimeout(() => router.push(`${basePath}/social/accounts`), 3000);
                 return;
             }
 
+            // Construct redirectUri (must match what was used in the initial redirect)
+            const redirectUri = `${window.location.origin}${window.location.pathname}`;
+
             // Exchange code for tokens
-            const response = await connectedAccountsApi.exchangeGoogleCode(code);
+            const response = await connectedAccountsApi.exchangeGoogleCode(code, redirectUri);
 
             if (response.success) {
                 setStatus('success');
                 setMessage('Successfully connected your Google account!');
-                setTimeout(() => router.push('/social/accounts'), 2000);
+                setTimeout(() => router.push(`${basePath}/social/accounts`), 2000);
             } else {
                 setStatus('error');
                 setMessage(response.message || 'Failed to connect account');
-                setTimeout(() => router.push('/social/accounts'), 3000);
+                setTimeout(() => router.push(`${basePath}/social/accounts`), 3000);
             }
         } catch (error) {
             console.error('Google callback error:', error);
             setStatus('error');
             setMessage('An error occurred while connecting your account');
-            setTimeout(() => router.push('/social/accounts'), 3000);
+            setTimeout(() => router.push(`${basePath}/social/accounts`), 3000);
         }
     };
 
@@ -86,7 +94,7 @@ function GoogleCallbackContent() {
                         <h2 className="mt-6 text-xl font-semibold text-gray-900">Connection Failed</h2>
                         <p className="mt-2 text-gray-600">{message}</p>
                         <button
-                            onClick={() => router.push('/social/accounts')}
+                            onClick={() => router.push(`${basePath}/social/accounts`)}
                             className="mt-6 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                         >
                             Back to Accounts
