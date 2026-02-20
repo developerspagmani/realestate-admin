@@ -49,7 +49,7 @@ export default function ConnectedAccountsPage() {
         const initFB = () => {
             if (window.FB) {
                 window.FB.init({
-                    appId: process.env.NEXT_PUBLIC_META_APP_ID,
+                    appId: process.env.NEXT_PUBLIC_META_APP_ID || '1163988435719406',
                     cookie: true,
                     xfbml: true,
                     version: 'v18.0'
