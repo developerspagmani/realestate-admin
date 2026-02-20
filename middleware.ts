@@ -83,6 +83,11 @@ export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host');
   const pathname = sanitizePath(request.nextUrl.pathname);
 
+  // PERF: Bypass middleware for public static routes to improve performance
+  if (pathname.startsWith('/legal') || pathname.startsWith('/public') || pathname.startsWith('/_next') || pathname.startsWith('/favicon.ico')) {
+    return NextResponse.next();
+  }
+
   // Custom Domain Routing (Standalone Landing Pages)
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
   const isCustomHost = hostname && hostname !== rootDomain && hostname !== 'localhost:3001' && !hostname.endsWith('.vercel.app') && hostname !== 'app.virpanix.com';

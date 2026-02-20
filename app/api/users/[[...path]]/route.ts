@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { proxyRequest } from '../../proxy-util';
+import { proxyRequest } from '@/app/api/proxy-util';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ path?: string[] }> }) {
     const resolvedParams = await params;

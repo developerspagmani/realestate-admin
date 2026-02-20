@@ -1,7 +1,11 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Data Deletion Instructions | Virpanix',
+    description: 'Instructions on how to request deletion of your data from Virpanix.',
+};
 
 export default function DataDeletion() {
     return (

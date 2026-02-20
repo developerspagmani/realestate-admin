@@ -5,7 +5,7 @@ const API_BASE_URL = '/api';
 // Helper function to get auth headers
 const getAuthHeaders = (): Record<string, string> => {
     if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         return {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` })
@@ -377,6 +377,21 @@ export const whatsappApi = {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(data)
+        });
+        return response.json();
+    },
+
+    // Meta Info
+    getBusinessInfo: async (wabaId: string) => {
+        const response = await fetch(`${API_BASE_URL}/social/whatsapp/business/${wabaId}`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+
+    getPhoneInfo: async (phoneId: string) => {
+        const response = await fetch(`${API_BASE_URL}/social/whatsapp/phone/${phoneId}`, {
+            headers: getAuthHeaders()
         });
         return response.json();
     }

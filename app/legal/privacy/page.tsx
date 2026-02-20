@@ -1,7 +1,11 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Privacy Policy | Virpanix',
+    description: 'Privacy policy and data handling practices for Virpanix.',
+};
 
 export default function PrivacyPolicy() {
     return (

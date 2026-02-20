@@ -1,7 +1,11 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+    title: 'Terms of Service | Virpanix',
+    description: 'Terms and conditions for using the Virpanix Real Estate Platform.',
+};
 
 export default function TermsOfService() {
     return (
