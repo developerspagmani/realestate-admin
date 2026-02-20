@@ -43,7 +43,29 @@ export default function ConnectedAccountsPage() {
 
     useEffect(() => {
         loadAccounts();
+        loadMetaSDK();
     }, []);
+
+    const loadMetaSDK = () => {
+        if (window.FB) return;
+
+        window.fbAsyncInit = function () {
+            window.FB.init({
+                appId: process.env.NEXT_PUBLIC_META_APP_ID,
+                cookie: true,
+                xfbml: true,
+                version: 'v18.0'
+            });
+        };
+
+        (function (d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0] as any;
+            if (d.getElementById(id)) return;
+            js = d.createElement(s) as any; js.id = id;
+            js.src = "https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js, fjs);
+        }(document, 'script', 'facebook-jssdk'));
+    };
 
     const loadAccounts = async () => {
         try {
@@ -67,13 +89,50 @@ export default function ConnectedAccountsPage() {
         }
     };
 
-    const handleConnect = (platform: string) => {
+    const handleConnect = async (platform: string) => {
         const redirectUri = `${window.location.origin}${basePath}/auth/${platform.toLowerCase()}/callback`;
 
         if (platform === 'FACEBOOK') {
-            const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID;
-            const scope = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
-            window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+            if (!window.FB) {
+                alert('Facebook SDK not loaded. Please wait a moment and try again.');
+                return;
+            }
+
+            window.FB.login((response: any) => {
+                if (response.authResponse) {
+                    const accessToken = response.authResponse.accessToken;
+                    const userId = response.authResponse.userID;
+
+                    const connectAccount = async () => {
+                        try {
+                            setLoading(true);
+                            // Using direct storage since we already have the token from the SDK
+                            const res = await connectedAccountsApi.connect({
+                                platform: 'FACEBOOK',
+                                accessToken: accessToken,
+                                accountId: userId,
+                                accountName: 'Facebook User',
+                                metadata: { sdk_login: true }
+                            });
+
+                            if (res.success) {
+                                alert('Facebook connected successfully!');
+                                loadAccounts();
+                            } else {
+                                alert(res.message || 'Failed to connect Facebook');
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            alert('An error occurred while connecting');
+                        } finally {
+                            setLoading(false);
+                        }
+                    };
+
+                    connectAccount();
+                }
+            }, { scope: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish' });
+
         } else if (platform === 'GOOGLE') {
             const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
             const scope = 'https://www.googleapis.com/auth/business.manage https://www.googleapis.com/auth/youtube.upload';
