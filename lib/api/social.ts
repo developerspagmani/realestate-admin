@@ -356,6 +356,23 @@ export const whatsappApi = {
         return response.json();
     },
 
+    updateCampaign: async (id: string, data: any) => {
+        const response = await fetch(`${API_BASE_URL}/social/whatsapp/campaigns/${id}`, {
+            method: 'PATCH',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    },
+
+    deleteCampaign: async (id: string) => {
+        const response = await fetch(`${API_BASE_URL}/social/whatsapp/campaigns/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+
     getCampaignStats: async (id: string) => {
         const response = await fetch(`${API_BASE_URL}/social/whatsapp/campaigns/${id}/stats`, {
             headers: getAuthHeaders()

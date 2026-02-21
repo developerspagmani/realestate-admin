@@ -64,6 +64,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const [mapping, setMapping] = useState<Record<string, string>>({});
     const [importProgress, setImportProgress] = useState(0);
     const [importTotal, setImportTotal] = useState(0);
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
@@ -182,8 +183,22 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         return matchesSearch && matchesType && matchesStatus && matchesProperty;
     });
 
+    const validateForm = () => {
+        const errors: string[] = [];
+        if (!formData.name) errors.push('Unit Code');
+        if (!formData.spaceId) errors.push('Target Property');
+
+        setValidationErrors(errors);
+        return errors.length === 0;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!validateForm()) {
+            const modalBody = document.querySelector('.modal-body');
+            if (modalBody) modalBody.scrollTop = 0;
+            return;
+        }
         try {
             setIsSubmitting(true);
             const token = getAuthToken();
@@ -684,6 +699,19 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                             </div>
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body p-4">
+                                    {validationErrors.length > 0 && (
+                                        <div className="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-3">
+                                            <i className="bi bi-exclamation-triangle-fill fs-4"></i>
+                                            <div>
+                                                <div className="fw-bold mb-1">Please fill in the following required fields:</div>
+                                                <div className="d-flex flex-wrap gap-2">
+                                                    {validationErrors.map((err, i) => (
+                                                        <span key={i} className="badge bg-danger-subtle text-danger border border-danger-subtle">{err}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="row g-4">
                                         <div className="col-md-4">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Unit Code</label>

@@ -19,6 +19,7 @@ interface Campaign {
     createdAt: string;
     publishedAt?: string;
     platformsData?: any[];
+    publishedPosts?: any[];
     property?: {
         id: string;
         title: string;
@@ -58,19 +59,24 @@ function CampaignDetailContent() {
             setLoading(true);
             const res = await scheduledPostsApi.getById(id);
             if (res.success && res.data) {
-                setCampaign(res.data.post || res.data);
+                const campaignData = res.data.post || res.data;
+                setCampaign(campaignData);
 
-                // If already posted, let's pretend we have some metrics or fetch them if available
-                if ((res.data.post || res.data).status === 'POSTED') {
-                    // In a real scenario, we'd fetch specific metrics for this post
-                    setMetrics({
-                        reach: Math.floor(Math.random() * 5000) + 1000,
-                        impressions: Math.floor(Math.random() * 8000) + 2000,
-                        likes: Math.floor(Math.random() * 300) + 50,
-                        comments: Math.floor(Math.random() * 50) + 5,
-                        shares: Math.floor(Math.random() * 40) + 2,
-                        engagements: Math.floor(Math.random() * 400) + 100
-                    });
+                // If already posted, calculate metrics from publishedPosts
+                if (campaignData.status === 'POSTED' && campaignData.publishedPosts) {
+                    const aggregated = campaignData.publishedPosts.reduce((acc: any, post: any) => {
+                        const m = post.metrics || {};
+                        return {
+                            reach: acc.reach + (m.reach || 0),
+                            impressions: acc.impressions + (m.impressions || 0),
+                            likes: acc.likes + (m.likes || 0),
+                            comments: acc.comments + (m.comments || 0),
+                            shares: acc.shares + (m.shares || 0),
+                            engagements: acc.engagements + (m.engagement || m.engagements || 0)
+                        };
+                    }, { reach: 0, impressions: 0, likes: 0, comments: 0, shares: 0, engagements: 0 });
+
+                    setMetrics(aggregated);
                 }
             }
         } catch (error) {
@@ -154,8 +160,20 @@ function CampaignDetailContent() {
                     </div>
                 </div>
                 <div className="d-flex gap-2">
+                    <button
+                        onClick={() => router.push(`${basePath}/social/campaigns/create?repost=${id}`)}
+                        className="btn btn-outline-info rounded-pill px-4"
+                    >
+                        <i className="bi bi-arrow-repeat me-2"></i> Re-post
+                    </button>
                     {campaign.status === 'SCHEDULED' && (
                         <>
+                            <button
+                                onClick={() => router.push(`${basePath}/social/campaigns/${id}/edit`)}
+                                className="btn btn-outline-primary rounded-pill px-4"
+                            >
+                                <i className="bi bi-pencil me-2"></i> Edit
+                            </button>
                             <button onClick={handlePublishNow} className="btn btn-success rounded-pill px-4">
                                 <i className="bi bi-send me-2"></i> Publish Now
                             </button>
@@ -241,7 +259,10 @@ function CampaignDetailContent() {
                                         <p className="text-muted small mb-0">{campaign.property.title} • {campaign.property.city}</p>
                                     </div>
                                 </div>
-                                <button link-target={`${basePath}/properties/${campaign.property.id}`} className="btn btn-outline-primary rounded-pill px-4">
+                                <button
+                                    onClick={() => router.push(`${basePath}/properties/${campaign.property?.id}`)}
+                                    className="btn btn-outline-primary rounded-pill px-4"
+                                >
                                     View Property
                                 </button>
                             </div>
@@ -254,18 +275,32 @@ function CampaignDetailContent() {
                     <div className="card border-0 shadow-sm rounded-4 p-4 mb-4">
                         <h5 className="fw-bold mb-4">Platform Overview</h5>
                         <div className="d-flex flex-column gap-3">
-                            {campaign.platforms.map(platform => (
-                                <div key={platform} className="d-flex align-items-center justify-content-between p-3 bg-light rounded-4">
-                                    <div className="d-flex align-items-center gap-3">
-                                        <i className={`bi bi-${platform.toLowerCase()} fs-4 text-${platform.toLowerCase() === 'facebook' ? 'primary' : 'danger'}`}></i>
-                                        <div>
-                                            <div className="fw-bold text-dark">{platform}</div>
-                                            <div className="text-muted small">Status: {campaign.status}</div>
+                            {campaign.platforms.map(platform => {
+                                const publishedInfo = campaign.publishedPosts?.find(p => p.platform === platform);
+                                const isPublished = !!publishedInfo && publishedInfo.status === 'published';
+                                const isFailed = !!publishedInfo && publishedInfo.status === 'failed';
+
+                                return (
+                                    <div key={platform} className="d-flex align-items-center justify-content-between p-3 bg-light rounded-4">
+                                        <div className="d-flex align-items-center gap-3">
+                                            <i className={`bi bi-${platform.toLowerCase()} fs-4 text-${platform.toLowerCase() === 'facebook' ? 'primary' : 'danger'}`}></i>
+                                            <div>
+                                                <div className="fw-bold text-dark">{platform}</div>
+                                                <div className="text-muted small">
+                                                    {isPublished ? 'Published' : isFailed ? 'Failed' : campaign.status}
+                                                </div>
+                                            </div>
                                         </div>
+                                        {isPublished ? (
+                                            <i className="bi bi-check-circle-fill text-success"></i>
+                                        ) : isFailed ? (
+                                            <i className="bi bi-exclamation-circle-fill text-danger"></i>
+                                        ) : (
+                                            <i className="bi bi-clock-history text-muted"></i>
+                                        )}
                                     </div>
-                                    <i className="bi bi-check-circle-fill text-success"></i>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 

@@ -5,9 +5,10 @@ import { whatsappApi, connectedAccountsApi } from '@/lib/api/social';
 
 interface SetupComponentProps {
     onSuccess: () => void;
+    initialData?: any;
 }
 
-export default function WhatsAppSetup({ onSuccess }: SetupComponentProps) {
+export default function WhatsAppSetup({ onSuccess, initialData }: SetupComponentProps) {
     const [loading, setLoading] = useState(false);
     const [sdkLoaded, setSdkLoaded] = useState(false);
 
@@ -95,8 +96,8 @@ export default function WhatsAppSetup({ onSuccess }: SetupComponentProps) {
             // to discover the WhatsApp Business Account.
 
             // For the demo/implementation, we'll use a simulation or a prompt if ids are missing.
-            const wabaId = prompt("Enter your WhatsApp Business Account (WABA) ID:");
-            const phoneId = prompt("Enter your WhatsApp Phone Number ID:");
+            const wabaId = initialData?.accountId || prompt("Enter your WhatsApp Business Account (WABA) ID:", initialData?.accountId || "");
+            const phoneId = initialData?.metadata?.phoneNumberId || prompt("Enter your WhatsApp Phone Number ID:", initialData?.metadata?.phoneNumberId || "");
 
             if (!wabaId || !phoneId) {
                 alert("Missing WABA ID or Phone ID. Connection cancelled.");
@@ -132,8 +133,8 @@ export default function WhatsAppSetup({ onSuccess }: SetupComponentProps) {
 
     const [showManual, setShowManual] = useState(false);
     const [manualData, setManualData] = useState({
-        wabaId: '',
-        phoneId: '',
+        wabaId: initialData?.accountId || '',
+        phoneId: initialData?.metadata?.phoneNumberId || '',
         token: ''
     });
 

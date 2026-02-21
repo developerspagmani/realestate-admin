@@ -137,11 +137,11 @@ export default function ConnectedAccountsPage() {
 
                         connectAccount();
                     }
-                }, { scope: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish' });
+                }, { scope: 'public_profile,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish' });
             } else {
                 // FALLBACK: OAuth Redirect Flow (Works over HTTP)
                 const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID || '1163988435719406';
-                const scope = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
+                const scope = 'public_profile,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
                 console.log('Using Fallback Redirect Flow due to HTTP protocol');
                 window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
             }

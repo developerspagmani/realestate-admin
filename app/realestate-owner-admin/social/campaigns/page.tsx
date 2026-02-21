@@ -33,6 +33,8 @@ export default function CampaignsListPage() {
         drafts: 0
     });
     const [selectedMonth, setSelectedMonth] = useState(new Date());
+    const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+    const [showModal, setShowModal] = useState(false);
 
     // Determine the base path (either /realestate-admin or /realestate-owner-admin)
     const basePath = pathname.includes('/realestate-owner-admin')
@@ -103,7 +105,10 @@ export default function CampaignsListPage() {
     };
 
     const formatDateKey = (date: Date) => {
-        return date.toISOString().split('T')[0];
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     };
 
     const calendarPosts: Record<string, Campaign[]> = {};
@@ -149,7 +154,7 @@ export default function CampaignsListPage() {
                 {/* Stats Row */}
                 <div className="row g-4 mb-4">
                     <div className="col-md-3">
-                        <StatCard label="Total" value={stats.total} icon="bi-megaphone" color="primary" />
+                        <StatCard label="Total" value={stats.total} icon="bi-megaphone" color="success" />
                     </div>
                     <div className="col-md-3">
                         <StatCard label="Scheduled" value={stats.scheduled} icon="bi-clock-history" color="info" />
@@ -280,12 +285,12 @@ export default function CampaignsListPage() {
                                     return (
                                         <div
                                             key={idx}
-                                            className={`calendar-day border rounded-3 p-2 mb-1 me-1 ${!date ? 'bg-light border-0 opacity-25' : ''} ${isToday ? 'border-primary border-2 bg-primary bg-opacity-5' : ''}`}
+                                            className={`calendar-day border rounded-3 p-2 mb-1 me-1 ${!date ? 'bg-light border-0 opacity-25' : ''} ${isToday ? 'border-success border-2 bg-success bg-opacity-10' : ''}`}
                                             style={{ minHeight: '120px' }}
                                         >
                                             {date && (
                                                 <>
-                                                    <div className={`fw-bold small mb-2 ${isToday ? 'text-primary' : 'text-muted'}`}>
+                                                    <div className={`fw-bold small mb-2 ${isToday ? 'text-success' : 'text-muted'}`}>
                                                         {date.getDate()}
                                                     </div>
                                                     <div className="d-flex flex-column gap-1">
@@ -294,7 +299,11 @@ export default function CampaignsListPage() {
                                                                 key={post.id}
                                                                 className={`p-1 px-2 rounded-2 smaller text-white text-truncate cursor-pointer shadow-sm bg-${getStatusColor(post.status)}`}
                                                                 style={{ fontSize: '10px' }}
-                                                                onClick={() => navigateTo(`/social/campaigns/${post.id}`)}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedCampaign(post);
+                                                                    setShowModal(true);
+                                                                }}
                                                             >
                                                                 <i className={`bi bi-${post.platforms[0]?.toLowerCase()} me-1`}></i>
                                                                 {post.title}
@@ -306,6 +315,79 @@ export default function CampaignsListPage() {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Quick View Modal */}
+                {showModal && selectedCampaign && (
+                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                        <div className="modal-dialog modal-dialog-centered">
+                            <div className="modal-content border-0 rounded-4 shadow-lg">
+                                <div className="modal-header border-0 p-4 pb-0">
+                                    <h5 className="modal-title fw-bold">Campaign Details</h5>
+                                    <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                                </div>
+                                <div className="modal-body p-4">
+                                    <div className="d-flex align-items-center gap-3 mb-4">
+                                        <div className="rounded-4 overflow-hidden" style={{ width: '80px', height: '80px' }}>
+                                            <img
+                                                src={selectedCampaign.mediaUrls?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=200&q=80'}
+                                                className="w-100 h-100 object-fit-cover"
+                                                alt=""
+                                            />
+                                        </div>
+                                        <div>
+                                            <h4 className="fw-bold mb-1">{selectedCampaign.title}</h4>
+                                            <span className={`badge rounded-pill bg-${getStatusColor(selectedCampaign.status)} bg-opacity-10 text-${getStatusColor(selectedCampaign.status)}`}>
+                                                {selectedCampaign.status}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="text-muted smaller fw-bold text-uppercase mb-1 d-block">Schedule</label>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <i className="bi bi-calendar-check text-primary"></i>
+                                            <span>{new Date(selectedCampaign.scheduledDate).toLocaleDateString()} at {selectedCampaign.scheduledTime}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="text-muted smaller fw-bold text-uppercase mb-1 d-block">Description</label>
+                                        <p className="text-dark small mb-0 line-clamp-3">{selectedCampaign.description || 'No description available.'}</p>
+                                    </div>
+
+                                    <div className="d-grid gap-2">
+                                        <button
+                                            className="btn btn-outline-info rounded-pill py-2"
+                                            onClick={() => navigateTo(`/social/campaigns/create?repost=${selectedCampaign.id}`)}
+                                        >
+                                            <i className="bi bi-arrow-repeat me-2"></i> Re-post
+                                        </button>
+                                        {(selectedCampaign.status === 'SCHEDULED' || selectedCampaign.status === 'DRAFT') && (
+                                            <button
+                                                className="btn btn-outline-primary rounded-pill py-2"
+                                                onClick={() => navigateTo(`/social/campaigns/${selectedCampaign.id}/edit`)}
+                                            >
+                                                <i className="bi bi-pencil me-2"></i> Edit Campaign
+                                            </button>
+                                        )}
+                                        <button
+                                            className="btn btn-primary rounded-pill py-2"
+                                            onClick={() => navigateTo(`/social/campaigns/${selectedCampaign.id}`)}
+                                        >
+                                            View Full Campaign
+                                        </button>
+                                        <button
+                                            className="btn btn-light rounded-pill py-2"
+                                            onClick={() => setShowModal(false)}
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

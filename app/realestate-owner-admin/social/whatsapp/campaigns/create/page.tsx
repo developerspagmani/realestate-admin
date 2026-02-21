@@ -49,9 +49,11 @@ function CreateWhatsAppCampaignContent() {
 
     const loadData = async () => {
         try {
-            const [templatesRes, accountsRes] = await Promise.all([
+            const campaignId = searchParams.get('id');
+            const [templatesRes, accountsRes, campaignRes] = await Promise.all([
                 whatsappApi.getTemplates(),
-                connectedAccountsApi.getAll({ platform: 'WHATSAPP' })
+                connectedAccountsApi.getAll({ platform: 'WHATSAPP' }),
+                campaignId ? whatsappApi.getCampaignById(campaignId) : Promise.resolve(null)
             ]);
 
             let loadedTemplates: WhatsAppTemplate[] = [];
@@ -71,7 +73,7 @@ function CreateWhatsAppCampaignContent() {
             if (accountsRes.success) {
                 const waAccounts = accountsRes.data.accounts || [];
                 setAccounts(waAccounts);
-                if (waAccounts.length > 0) {
+                if (waAccounts.length > 0 && !campaignId) {
                     const firstAccount = waAccounts[0];
                     setFormData(prev => ({
                         ...prev,
@@ -79,6 +81,17 @@ function CreateWhatsAppCampaignContent() {
                         phoneNumberId: firstAccount.metadata?.phoneNumberId || ''
                     }));
                 }
+            }
+
+            if (campaignRes?.success) {
+                const campaign = campaignRes.data.campaign;
+                setFormData(prev => ({
+                    ...prev,
+                    name: `${campaign.name} (Copy)`,
+                    accountId: campaign.wabaId,
+                    phoneNumberId: campaign.phoneNumberId,
+                    templateName: campaign.templateName
+                }));
             }
         } catch (error) {
             console.error('Error loading data:', error);

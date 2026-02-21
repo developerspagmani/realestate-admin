@@ -12,7 +12,7 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ label, value, icon, color = 'primary', onClick }) => {
     const colorClasses: Record<string, string> = {
-        primary: 'bg-primary text-primary',
+        primary: 'bg-success text-success',
         success: 'bg-success text-success',
         info: 'bg-info text-info',
         warning: 'bg-warning text-warning',
@@ -35,7 +35,7 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, icon, color = 'primar
                         <div className="text-uppercase small fw-bold mb-1 text-muted">{label}</div>
                         <div className={`display-6 fw-bold mb-0 text-${color}`}>{value}</div>
                     </div>
-                    <div className={`rounded-circle px-3 py-3 ${bgColorClass} bg-opacity-10`} style={{ minWidth: '60px', textAlign: 'center' }}>
+                    <div className={`rounded-5 px-4 py-3 ${bgColorClass} bg-opacity-10`} style={{ minWidth: '60px', textAlign: 'center' }}>
                         <i className={`bi ${icon} fs-3`}></i>
                     </div>
                 </div>

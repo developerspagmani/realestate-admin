@@ -46,6 +46,8 @@ export default function WhatsAppPage() {
         to: '',
         message: ''
     });
+    const [isTokenExpired, setIsTokenExpired] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // Determine the base path (either /realestate-admin or /realestate-owner-admin)
     const basePath = pathname.includes('/realestate-owner-admin')
@@ -86,12 +88,22 @@ export default function WhatsAppPage() {
     const handleSync = async () => {
         try {
             setSyncing(true);
+            setIsTokenExpired(false);
+            setErrorMessage(null);
             const res = await whatsappApi.syncTemplates();
             if (res.success) {
                 alert('Templates synced successfully');
+                setIsTokenExpired(false);
+                setErrorMessage(null);
                 loadData();
             } else {
-                alert(res.message || 'Failed to sync templates');
+                const isExpired = res.message?.toLowerCase().includes('token') || res.message?.toLowerCase().includes('expired');
+                if (isExpired) {
+                    setIsTokenExpired(true);
+                    setErrorMessage('Your WhatsApp connection has expired. Please reconnect to continue.');
+                } else {
+                    alert(res.message || 'Failed to sync templates');
+                }
             }
         } catch (error) {
             console.error('Sync error:', error);
@@ -125,13 +137,40 @@ export default function WhatsAppPage() {
             if (res.success) {
                 alert('Test message sent! Remember: Business-initiated text messages only work if the user has messaged you in the last 24h. Otherwise, use a Template.');
                 setTestData({ ...testData, message: '' });
+                setIsTokenExpired(false);
+                setErrorMessage(null);
                 loadData();
             } else {
-                alert(res.message || 'Failed to send test message');
+                const isExpired = res.message?.toLowerCase().includes('token') || res.message?.toLowerCase().includes('expired');
+                if (isExpired) {
+                    setIsTokenExpired(true);
+                    setErrorMessage('Your WhatsApp connection has expired. Please reconnect to continue.');
+                } else {
+                    alert(res.message || 'Failed to send test message');
+                }
             }
         } catch (error) {
             console.error('Test send error:', error);
             alert('An error occurred during testing.');
+        } finally {
+            setSyncing(false);
+        }
+    };
+
+    const handleDeleteCampaign = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this campaign?')) return;
+
+        try {
+            setSyncing(true);
+            const res = await whatsappApi.deleteCampaign(id);
+            if (res.success) {
+                setCampaigns(campaigns.filter((c: any) => c.id !== id));
+            } else {
+                alert(res.message || 'Failed to delete campaign');
+            }
+        } catch (error) {
+            console.error('Delete campaign error:', error);
+            alert('Failed to delete campaign');
         } finally {
             setSyncing(false);
         }
@@ -150,7 +189,28 @@ export default function WhatsAppPage() {
             if (templatesRes.success) setTemplates(templatesRes.data.templates || []);
             if (campaignsRes.success) setCampaigns(campaignsRes.data.campaigns || []);
             if (messagesRes.success) setMessages(messagesRes.data.messages || []);
-            if (accountsRes.success) setAccounts(accountsRes.data.accounts || []);
+
+            if (accountsRes.success) {
+                const fetchedAccounts = accountsRes.data.accounts || [];
+                setAccounts(fetchedAccounts);
+
+                // Proactively check token health if connected
+                if (fetchedAccounts.length > 0) {
+                    const account = fetchedAccounts[0];
+                    const phoneId = account.metadata?.phoneNumberId;
+                    if (phoneId) {
+                        whatsappApi.getPhoneInfo(phoneId).then(res => {
+                            if (!res.success) {
+                                const isExpired = res.message?.toLowerCase().includes('token') || res.message?.toLowerCase().includes('expired');
+                                if (isExpired) {
+                                    setIsTokenExpired(true);
+                                    setErrorMessage('Your WhatsApp connection has expired. Please reconnect to continue.');
+                                }
+                            }
+                        }).catch(err => console.error('Token health check failed:', err));
+                    }
+                }
+            }
         } catch (error) {
             console.error('Error loading WhatsApp data:', error);
         } finally {
@@ -169,7 +229,7 @@ export default function WhatsAppPage() {
                         <h1 className="fw-bold h2 mb-1">WhatsApp Business</h1>
                         <p className="text-muted small">Manage templates, campaigns, and messages</p>
                     </div>
-                    {isConnected && (
+                    {isConnected && !isTokenExpired && (
                         <div className="d-flex gap-2">
                             <button
                                 onClick={handleSync}
@@ -204,12 +264,56 @@ export default function WhatsAppPage() {
 
                 {!isConnected && !loading && (
                     <div className="mb-4">
-                        <WhatsAppSetup onSuccess={loadData} />
+                        <WhatsAppSetup
+                            onSuccess={() => {
+                                setIsTokenExpired(false);
+                                setErrorMessage(null);
+                                loadData();
+                            }}
+                            initialData={accounts[0]}
+                        />
                     </div>
                 )}
 
-                {/* Tabs */}
-                {isConnected && (
+                {isConnected && isTokenExpired && (
+                    <div className="alert alert-danger rounded-4 border-0 shadow-sm p-4 mb-4 d-flex align-items-center justify-content-between">
+                        <div className="d-flex align-items-center gap-3">
+                            <div className="bg-danger bg-opacity-10 p-3 rounded-circle text-danger">
+                                <i className="bi bi-exclamation-triangle-fill fs-4"></i>
+                            </div>
+                            <div>
+                                <h5 className="fw-bold mb-1">Connection Expired</h5>
+                                <p className="mb-0 opacity-75">{errorMessage || 'Your Meta access token has expired. Please reconnect your account.'}</p>
+                            </div>
+                        </div>
+                        <button
+                            className="btn btn-danger rounded-pill px-4 fw-bold"
+                            onClick={() => {
+                                // We keep isConnected true but show setup
+                                // Actually, we should probably just show the setup component below
+                                setErrorMessage(null);
+                            }}
+                        >
+                            Reconnect Now
+                        </button>
+                    </div>
+                )}
+
+                {isConnected && isTokenExpired && (
+                    <div className="mb-4">
+                        <WhatsAppSetup
+                            onSuccess={() => {
+                                setIsTokenExpired(false);
+                                setErrorMessage(null);
+                                loadData();
+                            }}
+                            initialData={accounts[0]}
+                        />
+                    </div>
+                )}
+
+                {/* Main Dashboard - Only show if connected and token is valid */}
+                {isConnected && !isTokenExpired && (
                     <div className="card border-0 shadow-sm rounded-4">
                         <div className="card-header bg-transparent border-0 p-4 pb-0">
                             <ul className="nav nav-pills gap-2" role="tablist">
@@ -378,14 +482,33 @@ export default function WhatsAppPage() {
                                     {/* Campaigns Tab */}
                                     {activeTab === 'campaigns' && (
                                         <div>
+                                            <div className="d-flex justify-content-between align-items-center mb-4">
+                                                <h2 className="h5 fw-bold mb-0 text-dark">Campaign History</h2>
+                                                <button
+                                                    onClick={() => navigateTo('/social/whatsapp/campaigns/create')}
+                                                    className="btn btn-success rounded-pill px-4 shadow-sm d-flex align-items-center gap-2"
+                                                >
+                                                    <i className="bi bi-plus-lg"></i>
+                                                    Create Campaign
+                                                </button>
+                                            </div>
+
                                             {campaigns.length > 0 ? (
                                                 <div className="d-flex flex-column gap-3">
-                                                    {campaigns.map((campaign) => (
+                                                    {campaigns.map((campaign: any) => (
                                                         <div key={campaign.id} className="card border rounded-4 shadow-sm hvr-float">
                                                             <div className="card-body p-4">
                                                                 <div className="row align-items-center">
                                                                     <div className="col">
-                                                                        <h3 className="h6 fw-bold mb-3">{campaign.name}</h3>
+                                                                        <div className="d-flex align-items-center gap-2 mb-3">
+                                                                            <h3 className="h6 fw-bold mb-0">{campaign.name}</h3>
+                                                                            <span className={`badge rounded-pill ${campaign.status === 'SENT' ? 'bg-success-subtle text-success' :
+                                                                                    campaign.status === 'SCHEDULED' ? 'bg-primary-subtle text-primary' :
+                                                                                        'bg-secondary-subtle text-secondary'
+                                                                                }`}>
+                                                                                {campaign.status}
+                                                                            </span>
+                                                                        </div>
                                                                         <div className="row g-4 text-center">
                                                                             <div className="col-3">
                                                                                 <div className="small text-muted mb-1">Sent</div>
@@ -405,13 +528,27 @@ export default function WhatsAppPage() {
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="col-auto">
+                                                                    <div className="col-auto d-flex gap-2">
                                                                         <button
                                                                             onClick={() => navigateTo(`/social/whatsapp/campaigns/${campaign.id}`)}
                                                                             className="btn btn-light rounded-pill border px-3"
+                                                                            title="View Details"
                                                                         >
-                                                                            <i className="bi bi-eye me-1"></i>
-                                                                            Details
+                                                                            <i className="bi bi-eye"></i>
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => navigateTo(`/social/whatsapp/campaigns/create?id=${campaign.id}`)}
+                                                                            className="btn btn-light rounded-pill border px-3 text-primary"
+                                                                            title="Edit/Clone"
+                                                                        >
+                                                                            <i className="bi bi-pencil-square"></i>
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteCampaign(campaign.id)}
+                                                                            className="btn btn-light rounded-pill border px-3 text-danger"
+                                                                            title="Delete Campaign"
+                                                                        >
+                                                                            <i className="bi bi-trash"></i>
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -420,10 +557,10 @@ export default function WhatsAppPage() {
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="text-center py-5">
+                                                <div className="text-center py-5 card border-dashed rounded-4">
                                                     <i className="bi bi-megaphone display-1 text-success opacity-25 mb-3 d-block"></i>
                                                     <h3 className="h5 fw-bold text-dark mb-2">No campaigns yet</h3>
-                                                    <p className="text-muted small mb-4">Create your first WhatsApp campaign</p>
+                                                    <p className="text-muted small mb-4">Create your first WhatsApp campaign to reach your leads</p>
                                                     <button
                                                         onClick={() => navigateTo('/social/whatsapp/campaigns/create')}
                                                         className="btn btn-success px-4 rounded-pill"

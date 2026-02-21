@@ -59,6 +59,7 @@ export default function PropertyForm({
 
     const [showMediaModal, setShowMediaModal] = useState(false);
     const [mediaModalType, setMediaModalType] = useState<'main' | 'gallery' | 'floorPlan' | 'brochure'>('main');
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
     // Use passed amenities
     const amenityOptions = amenities;
@@ -100,9 +101,27 @@ export default function PropertyForm({
         }
     }, [initialData]);
 
+    const validateForm = () => {
+        const errors: string[] = [];
+        if (!formData.name) errors.push('Property Title');
+        if (!formData.description) errors.push('Description');
+        if (!formData.address) errors.push('Street Address');
+        if (!formData.city) errors.push('City');
+        if (!formData.state) errors.push('State');
+        if (!formData.zipCode) errors.push('Zip Code');
+
+        setValidationErrors(errors);
+        return errors.length === 0;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        if (validateForm()) {
+            onSubmit(formData);
+        } else {
+            const modalBody = document.querySelector('.modal-body');
+            if (modalBody) modalBody.scrollTop = 0;
+        }
     };
 
     const getMediaUrl = (id?: string) => {
@@ -137,6 +156,20 @@ export default function PropertyForm({
                         </div>
                         <form onSubmit={handleSubmit}>
                             <div className="modal-body p-4">
+                                {validationErrors.length > 0 && (
+                                    <div className="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-3">
+                                        <i className="bi bi-exclamation-triangle-fill fs-4"></i>
+                                        <div>
+                                            <div className="fw-bold mb-1">Please fill in the following required fields:</div>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {validationErrors.map((err, i) => (
+                                                    <span key={i} className="badge bg-danger-subtle text-danger border border-danger-subtle">{err}</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <ul className="nav nav-tabs mb-4" id="propertyTab" role="tablist">
                                     <li className="nav-item" role="presentation">
                                         <button className="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-selected="true">Basic Details</button>
@@ -477,29 +510,49 @@ export default function PropertyForm({
 
                                     {/* Amenities Tab */}
                                     <div className="tab-pane fade" id="amenities" role="tabpanel" aria-labelledby="amenities-tab">
-                                        <div className="row g-3">
-                                            {amenityOptions.map((amenity) => (
-                                                <div key={amenity.id} className="col-md-4 col-lg-3">
-                                                    <div
-                                                        className={`card h-100 cursor-pointer transition-all ${formData.amenities?.includes(amenity.id) ? 'border-primary bg-primary-subtle' : 'border-light bg-light'}`}
-                                                        onClick={() => handleAmenityToggle(amenity.id)}
-                                                    >
-                                                        <div className="card-body d-flex align-items-center gap-3 p-3">
-                                                            <div className={`rounded-circle p-2 ${formData.amenities?.includes(amenity.id) ? 'bg-primary text-white' : 'bg-white text-muted'}`}>
-                                                                <i className={`bi ${amenity.icon || 'bi-check-circle'} small`}></i>
+                                        {[
+                                            { id: 1, name: 'Facilities', icon: 'bi-grid-fill' },
+                                            { id: 2, name: 'Technology', icon: 'bi-cpu-fill' },
+                                            { id: 3, name: 'Comfort', icon: 'bi-sun-fill' },
+                                            { id: 4, name: 'Safety', icon: 'bi-shield-fill' },
+                                            { id: 5, name: 'Others', icon: 'bi-plus-circle-fill' }
+                                        ].map((cat) => {
+                                            const catAmenities = amenityOptions.filter(a => (a.category || 5) === cat.id);
+                                            if (catAmenities.length === 0) return null;
+
+                                            return (
+                                                <div key={cat.id} className="mb-4">
+                                                    <h6 className="fw-bold text-uppercase small text-primary mb-3 d-flex align-items-center gap-2">
+                                                        <i className={`bi ${cat.icon}`}></i>
+                                                        {cat.name}
+                                                    </h6>
+                                                    <div className="row g-3">
+                                                        {catAmenities.map((amenity) => (
+                                                            <div key={amenity.id} className="col-md-4 col-lg-3">
+                                                                <div
+                                                                    className={`card h-100 cursor-pointer transition-all border-0 shadow-sm ${formData.amenities?.includes(amenity.id) ? 'bg-primary text-white' : 'bg-light'}`}
+                                                                    onClick={() => handleAmenityToggle(amenity.id)}
+                                                                >
+                                                                    <div className="card-body d-flex align-items-center gap-3 p-3">
+                                                                        <div className={`rounded-circle p-2 d-flex align-items-center justify-content-center ${formData.amenities?.includes(amenity.id) ? 'bg-white text-primary' : 'bg-primary-subtle text-primary'}`} style={{ width: '32px', height: '32px' }}>
+                                                                            <i className={`bi ${amenity.icon || 'bi-check-circle'} small`}></i>
+                                                                        </div>
+                                                                        <span className="fw-medium small">{amenity.name}</span>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                            <span className={`fw-medium ${formData.amenities?.includes(amenity.id) ? 'text-primary' : 'text-dark'}`}>{amenity.name}</span>
-                                                        </div>
+                                                        ))}
                                                     </div>
                                                 </div>
-                                            ))}
-                                            {amenityOptions.length === 0 && (
-                                                <div className="text-center py-5 text-muted">
-                                                    <i className="bi bi-inbox display-4 mb-3 d-block opacity-50"></i>
-                                                    No amenities found for this category.
-                                                </div>
-                                            )}
-                                        </div>
+                                            );
+                                        })}
+                                        {amenityOptions.length === 0 && (
+                                            <div className="text-center py-5 text-muted bg-light rounded-4">
+                                                <i className="bi bi-inbox display-4 mb-3 d-block opacity-50"></i>
+                                                <h5>No Amenities Available</h5>
+                                                <p className="small mb-0">Please add amenities from the Settings/Amenities module first.</p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Location Tab */}
@@ -621,7 +674,6 @@ export default function PropertyForm({
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                             <div className="modal-footer border-0 p-4 pt-0">
                                 <button
@@ -699,4 +751,3 @@ export default function PropertyForm({
         </>
     );
 }
-
