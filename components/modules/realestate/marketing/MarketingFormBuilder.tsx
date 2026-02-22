@@ -23,8 +23,8 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
             title: 'Request a Callback',
             description: 'Fill out the form below and we will get back to you.',
             fields: [
-                { id: 'f1', label: 'Full Name', type: 'text', placeholder: 'Enter your name', required: true },
-                { id: 'f2', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true }
+                { id: 'mkt_f1', label: 'Full Name', type: 'text', placeholder: 'Enter your name', required: true },
+                { id: 'mkt_f2', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true }
             ]
         }
     });
@@ -162,8 +162,8 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                 title: 'Request a Callback',
                 description: 'Fill out the form below and we will get back to you.',
                 fields: [
-                    { id: 'f1', label: 'Full Name', type: 'text', placeholder: 'Enter your name', required: true },
-                    { id: 'f2', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true }
+                    { id: 'mkt_f1', label: 'Full Name', type: 'text', placeholder: 'Enter your name', required: true },
+                    { id: 'mkt_f2', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true }
                 ]
             }
         });

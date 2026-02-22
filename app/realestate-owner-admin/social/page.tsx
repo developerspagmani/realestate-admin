@@ -5,6 +5,15 @@ import { useRouter, usePathname } from 'next/navigation';
 import StatCard from '@/components/StatCard';
 import { analyticsApi, connectedAccountsApi, publishedPostsApi, scheduledPostsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
+import ModuleGuard from '@/components/common/ModuleGuard';
+
+export default function SocialDashboard() {
+    return (
+        <ModuleGuard moduleSlug="social_posts">
+            <DashboardContent />
+        </ModuleGuard>
+    );
+}
 
 interface DashboardStats {
     connectedAccounts: number;
@@ -21,7 +30,7 @@ interface RecentActivity {
     };
 }
 
-export default function SocialDashboard() {
+function DashboardContent() {
     const router = useRouter();
     const pathname = usePathname();
     const [loading, setLoading] = useState(true);
@@ -208,6 +217,3 @@ export default function SocialDashboard() {
         </MainLayout>
     );
 }
-
-
-

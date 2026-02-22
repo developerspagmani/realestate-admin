@@ -118,6 +118,14 @@ export default function WidgetPreview({ formData, tenantType }: WidgetPreviewPro
                 <div className="preview-mock-content p-4">
                     {builder.pageTitle && <h3 className="h6 fw-bold mb-3">{builder.pageTitle}</h3>}
 
+                    {/* Mock Search Bar */}
+                    {builder.showSearch !== false && (
+                        <div className="mock-search-bar mb-4 p-2 bg-light border-0 rounded-4 d-flex gap-2">
+                            <div className="mock-dot bg-secondary-subtle" style={{ width: '60%', height: '14px', borderRadius: '7px' }}></div>
+                            <div className="mock-dot bg-secondary-subtle flex-grow-1" style={{ height: '14px', borderRadius: '7px' }}></div>
+                        </div>
+                    )}
+
                     {/* Mock Listings */}
                     {(isPageBuilder ? builder.showListing !== false : true) && (
                         <div className={`row g-3`}>

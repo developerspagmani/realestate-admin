@@ -12,10 +12,11 @@ interface PageBuilderProps {
     widget: any;
     widgetId: string;
     onSelectProperty: (property: any) => void;
+    onFilter?: (filters: any) => void;
     hideHero?: boolean;
 }
 
-const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, widgetId, onSelectProperty, hideHero = false }) => {
+const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, widgetId, onSelectProperty, onFilter, hideHero = false }) => {
     // If we have specific blocks, use the block-based renderer
     if (config?.blocks && config.blocks.length > 0) {
         return (
@@ -72,6 +73,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                             widgetId={widgetId}
                                             onReset={() => { }}
                                             onSelectProperty={onSelectProperty}
+                                            onFilter={onFilter}
                                         />
                                     </div>
                                 </div>
@@ -171,6 +173,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                             widgetId={widgetId}
                             onReset={() => { }}
                             onSelectProperty={onSelectProperty}
+                            onFilter={onFilter}
                         />
                     </div>
                 </div>

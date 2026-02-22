@@ -20,10 +20,16 @@ interface Owner {
     tenant?: {
         subscriptionStatus: number;
         subscriptionExpiresAt: string | null;
+        plan?: { name: string; slug: string } | null;
     };
     _count?: {
         properties: number;
     };
+    licenseKey?: {
+        key: string;
+        activatedAt: string | null;
+        plan: { name: string; slug: string };
+    } | null;
 }
 
 interface OwnersManagerProps {
@@ -35,6 +41,7 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
     const { activeTenantId } = useManagementContext();
     const [mounted, setMounted] = useState(false);
     const [owners, setOwners] = useState<Owner[]>([]);
+    const [allKeys, setAllKeys] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
@@ -76,16 +83,29 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
             if (!token) return;
 
             const tenantId = activeTenantId || (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            const response = await userService.getOwners(token, { tenantId });
+            const [ownerRes, keyRes] = await Promise.all([
+                userService.getOwners(token, { tenantId }),
+                import('@/app/services/api').then(m => m.licenseKeyService.getAll(token, { status: 2 }))
+            ]);
 
-            if (response.success && response.data) {
-                const ownersList = response.data.users || response.data.owners || (Array.isArray(response.data) ? response.data : []);
-                const mappedOwners = ownersList.map((o: any) => ({
-                    ...o,
-                    _count: {
-                        properties: o._count?.userPropertyAccess || 0
-                    }
-                }));
+            if (ownerRes.success && ownerRes.data) {
+                const ownersList = ownerRes.data.users || ownerRes.data.owners || (Array.isArray(ownerRes.data) ? ownerRes.data : []);
+                const keys: any[] = keyRes.success ? (keyRes.data?.keys || []) : [];
+                setAllKeys(keys);
+
+                // Join keys to owners by tenantId
+                const mappedOwners = ownersList.map((o: any) => {
+                    const matchedKey = keys.find((k: any) => k.tenantId === o.tenantId) || null;
+                    return {
+                        ...o,
+                        _count: { properties: o._count?.userPropertyAccess || 0 },
+                        licenseKey: matchedKey ? {
+                            key: matchedKey.key,
+                            activatedAt: matchedKey.activatedAt,
+                            plan: matchedKey.plan
+                        } : null
+                    };
+                });
                 setOwners(mappedOwners);
             }
         } catch (error) {
@@ -294,6 +314,7 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                                     <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Owner Details</th>
                                     <th className="py-3 text-uppercase small fw-bold text-muted border-0">Contact Info</th>
                                     <th className="py-3 text-uppercase small fw-bold text-muted border-0 text-center">Properties</th>
+                                    <th className="py-3 text-uppercase small fw-bold text-muted border-0">Plan & License</th>
                                     <th className="py-3 text-uppercase small fw-bold text-muted border-0">Status</th>
                                     <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0 text-end">Actions</th>
                                 </tr>
@@ -334,6 +355,34 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                                             <span className="badge bg-info-soft text-info rounded-4 px-3 py-2 fw-bold">
                                                 {owner._count?.properties || 0} Properties
                                             </span>
+                                        </td>
+                                        <td className="py-3">
+                                            {owner.licenseKey ? (
+                                                <div>
+                                                    <span className="badge bg-primary-soft text-primary rounded-3 px-2 py-1 small fw-semibold mb-1 d-block">
+                                                        {owner.licenseKey.plan?.name || 'Unknown Plan'}
+                                                    </span>
+                                                    <div className="font-monospace extra-small text-muted" title={owner.licenseKey.key}>
+                                                        {owner.licenseKey.key?.slice(0, 14)}...
+                                                    </div>
+                                                    {owner.tenant?.subscriptionExpiresAt && (() => {
+                                                        const days = Math.ceil((new Date(owner.tenant!.subscriptionExpiresAt!).getTime() - Date.now()) / 86400000);
+                                                        const color = days < 0 ? 'danger' : days <= 30 ? 'warning' : 'muted';
+                                                        return (
+                                                            <div className={`extra-small text-${color} fw-semibold mt-1`}>
+                                                                {days < 0 ? `Expired ${Math.abs(days)}d ago` : `Exp: ${new Date(owner.tenant!.subscriptionExpiresAt!).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <span className="badge bg-warning-soft text-warning rounded-3 px-2 py-1 small fw-semibold mb-1 d-block">
+                                                        {owner.tenant?.subscriptionStatus === 3 ? 'Trial' : 'No License'}
+                                                    </span>
+                                                    <div className="extra-small text-muted">No key assigned</div>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="py-3">
                                             <span className={`badge rounded-4 px-3 py-2 ${owner.status === 1 ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger'}`}>
@@ -479,6 +528,11 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                 .extra-small { font-size: 11px; }
                 .transition-all { transition: all 0.2s ease; }
                 .table-hover tbody tr:hover { background-color: rgba(0,0,0,0.01); }
+                .bg-primary-soft { background-color: rgba(13,110,253,0.1) !important; }
+                .bg-warning-soft { background-color: rgba(255,193,7,0.1) !important; }
+                .bg-success-soft { background-color: rgba(25,135,84,0.1) !important; }
+                .bg-danger-soft { background-color: rgba(220,53,69,0.1) !important; }
+                .bg-info-soft { background-color: rgba(13,202,240,0.1) !important; }
             `}</style>
 
             {showExtendModal && extendingOwner && (

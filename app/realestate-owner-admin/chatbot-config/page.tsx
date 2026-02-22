@@ -7,7 +7,7 @@ import ModuleGuard from '@/components/common/ModuleGuard';
 export default function ChatbotConfigPage() {
     return (
         <MainLayout activePage="chatbot-config">
-            <ModuleGuard moduleSlug="marketing_hub">
+            <ModuleGuard moduleSlug="discovery">
                 <div className="container-fluid p-4">
                     <div className="mb-4">
                         <h4 className="fw-bold mb-1">Global Chatbot Wizard</h4>

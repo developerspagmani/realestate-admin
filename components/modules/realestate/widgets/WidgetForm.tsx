@@ -264,9 +264,27 @@ export default function WidgetForm({
                                                             </div>
                                                         </div>
                                                         <p className="extra-small text-muted mb-0">Allows users to see the interactive 3D map for property floor plans.</p>
-                                                        {!hasModule('3d_viewer') && (
-                                                            <div className="extra-small text-danger mt-2 fw-bold">Upgrade your plan to unlock 3D touring.</div>
-                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="col-md-12 mt-3">
+                                                    <div className={`card border-0 shadow-sm rounded-4 px-5 py-3 bg-white h-100 ${!hasModule('discovery') ? 'opacity-75 grayscale' : ''}`}>
+                                                        <div className="form-check form-switch p-1 mb-2">
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="checkbox"
+                                                                id="showSearchEnabled"
+                                                                checked={formData.configuration.builder?.showSearch !== false}
+                                                                onChange={(e) => toggleNestedConfig('builder', 'showSearch', e.target.checked)}
+                                                                disabled={!hasModule('discovery')}
+                                                            />
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <label className="form-check-label small fw-bold" htmlFor="showSearchEnabled">Direct Property Search & Filters</label>
+                                                                {!hasModule('discovery') && (
+                                                                    <span className="badge bg-warning-subtle text-warning extra-small border border-warning-subtle">PRO</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <p className="extra-small text-muted mb-0">Enables the premium filter bar (Price, neighborhood, bedrooms) on the listing grid.</p>
                                                     </div>
                                                 </div>
                                             </div>

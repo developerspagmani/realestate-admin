@@ -160,7 +160,7 @@ export default function FormBuilder({ config, onChange }: FormBuilderProps) {
                                     ) : (
                                         <div className="field-list">
                                             {config.fields?.map((field, index) => (
-                                                <div key={field.id} className="field-item border-bottom py-3 mb-2 px-2 hover-bg-light transition-all rounded-2">
+                                                <div key={`${index}-${field.id}`} className="field-item border-bottom py-3 mb-2 px-2 hover-bg-light transition-all rounded-2">
                                                     <div className="d-flex justify-content-between align-items-start mb-2">
                                                         <div className="d-flex align-items-center">
                                                             <span className="badge bg-light text-dark me-2 small fw-normal">{index + 1}</span>

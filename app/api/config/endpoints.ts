@@ -179,6 +179,10 @@ export const adminEndpoints = {
   getSettings: () => '/realestate-admin/settings',
   updateSetting: () => '/realestate-admin/settings',
   extendTrial: () => '/realestate-admin/tenants/extend-trial',
+  setExpiry: () => '/realestate-admin/tenants/set-expiry',
+  revokeKey: () => '/realestate-admin/tenants/revoke-key',
+  getTenantSubscription: (tenantId: string) => `/realestate-admin/tenants/${tenantId}/subscription`,
+  assignLicenseKey: () => '/realestate-admin/license-keys/assign',
 };
 
 // Public Discovery Modules
@@ -409,6 +413,18 @@ export const agentEndpoints = {
   updateMyLeadStatus: (id: string) => `/agents/my/leads/${id}/status`,
 };
 
+// Advanced Analytics Prod endpoints
+export const analyticsProEndpoints = {
+  getRevenueFunnel: (params?: Record<string, any>) =>
+    params ? `/admin/analytics-pro/revenue-funnel?${buildQueryString(params)}` : '/admin/analytics-pro/revenue-funnel',
+  getAgentPerformance: (params?: Record<string, any>) =>
+    params ? `/admin/analytics-pro/agent-performance?${buildQueryString(params)}` : '/admin/analytics-pro/agent-performance',
+  getSearchTrends: (params?: Record<string, any>) =>
+    params ? `/admin/analytics-pro/search-trends?${buildQueryString(params)}` : '/admin/analytics-pro/search-trends',
+  getCampaignStats: (params?: Record<string, any>) =>
+    params ? `/admin/analytics-pro/campaign-stats?${buildQueryString(params)}` : '/admin/analytics-pro/campaign-stats',
+};
+
 // Category endpoints
 export const categoryEndpoints = {
   getAll: (params?: Record<string, any>) =>
@@ -437,9 +453,11 @@ export const subscriptionEndpoints = {
 export const licenseKeyEndpoints = {
   getAll: (params?: Record<string, any>) =>
     params ? `/license-keys?${buildQueryString(params)}` : '/license-keys',
+  getByTenant: (tenantId: string) => `/license-keys?tenantId=${tenantId}`,
   generate: () => '/license-keys/generate',
   validate: () => '/license-keys/validate',
   activate: () => '/license-keys/activate',
+  assign: () => '/license-keys/assign',
 };
 
 // CMS endpoints

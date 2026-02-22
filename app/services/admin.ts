@@ -1,4 +1,4 @@
-import { makeApiCall, adminEndpoints } from '@/app/api/config/endpoints';
+import { makeApiCall, adminEndpoints, licenseKeyEndpoints } from '@/app/api/config/endpoints';
 
 export const adminService = {
     getSystemSettings: async (token: string) => {
@@ -20,6 +20,36 @@ export const adminService = {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ tenantId, days }),
+        });
+    },
+
+    setExpiry: async (token: string, tenantId: string, expiresAt: string) => {
+        return await makeApiCall(adminEndpoints.setExpiry(), {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ tenantId, expiresAt }),
+        });
+    },
+
+    revokeKey: async (token: string, tenantId: string) => {
+        return await makeApiCall(adminEndpoints.revokeKey(), {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ tenantId }),
+        });
+    },
+
+    getTenantSubscription: async (token: string, tenantId: string) => {
+        return await makeApiCall(adminEndpoints.getTenantSubscription(tenantId), {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
+    assignLicenseKey: async (token: string, data: { tenantId: string; keyId: string; expiresAt?: string }) => {
+        return await makeApiCall(adminEndpoints.assignLicenseKey(), {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data),
         });
     },
 };

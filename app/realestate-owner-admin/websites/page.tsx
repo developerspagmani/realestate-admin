@@ -5,7 +5,7 @@ import ModuleGuard from '@/components/common/ModuleGuard';
 
 export default function OwnerWebsitesPage() {
     return (
-        <ModuleGuard moduleSlug="marketing_hub">
+        <ModuleGuard moduleSlug="website_cms">
             <WebsiteManager mode="owner" />
         </ModuleGuard>
     );

@@ -18,42 +18,37 @@ interface PropertiesManagerProps {
 export default function PropertiesManager({ mode }: PropertiesManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
     const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
+    const router = useRouter();
+
     const [mounted, setMounted] = useState(false);
+    const [view, setView] = useState<'list' | 'form'>('list');   // ← replaces modal state
     const [properties, setProperties] = useState<Property[]>([]);
     const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [amenities, setAmenities] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
     const [editingProperty, setEditingProperty] = useState<Property | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
-        type: 'success'
+        type: 'success',
     });
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
     };
 
-    const router = useRouter();
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    useEffect(() => { setMounted(true); }, []);
 
     useEffect(() => {
         if (!mounted) return;
-        if (!isAuthenticated || !user) {
-            router.push('/login');
-            return;
-        }
-
+        if (!isAuthenticated || !user) { router.push('/login'); return; }
         loadData();
     }, [mounted, isAuthenticated, user, router, activeTenantId, activeOwnerId, tenantType]);
+
+    // ── DATA LOADING ──────────────────────────────────────────────────────────
 
     const loadData = async () => {
         try {
@@ -62,7 +57,6 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             if (!token) return;
 
             const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            // Only send industryType if we haven't selected a specific owner/tenant (Global View)
             const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
             console.log('PropertiesManager: Loading data with:', { tenantId, industryType, activeOwnerId, mode });
@@ -71,15 +65,12 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             const propsRes = await propertyService.getProperties(token, {
                 tenantId: tenantId || undefined,
                 industryType,
-                ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
+                ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId }),
             });
-            let loadedProps: Property[] = [];
 
             if (propsRes.success) {
-                // Handle different possible response structures
                 const rawProps = propsRes.data?.properties || propsRes.data || [];
-
-                loadedProps = rawProps.map((p: any) => ({
+                setProperties(rawProps.map((p: any) => ({
                     id: p.id,
                     name: p.title || p.name || 'Untitled Property',
                     slug: p.slug || '',
@@ -103,6 +94,7 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     gallery: p.gallery || [],
                     price: p.price || 0,
                     area: p.area || p.sizeSqft || 0,
+                    floorPlanId: p.floorPlanId || '',
                     brochureId: p.brochureId || '',
                     amenities: p.propertyAmenities ? p.propertyAmenities.map((pa: any) => pa.amenity?.id || pa.amenityId) : [],
                     yearBuilt: p.yearBuilt,
@@ -116,28 +108,21 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     videoUrl: p.videoUrl || '',
                     displayPrice: p.displayPrice !== undefined ? p.displayPrice : true,
                     createdAt: p.createdAt,
-                    updatedAt: p.updatedAt
-                }));
-                setProperties(loadedProps);
+                    updatedAt: p.updatedAt,
+                })));
             }
 
             // Load Media
             const mediaRes = await mediaService.getMedia(token, tenantId ? { tenantId } : undefined);
-            if (mediaRes.success) {
-                setMediaItems(mediaRes.data.media || []);
-            }
+            if (mediaRes.success) setMediaItems(mediaRes.data.media || []);
 
             // Load Amenities
             const amenRes = await amenityService.getAmenities(token);
-            if (amenRes.success) {
-                setAmenities(amenRes.data.amenities || []);
-            }
+            if (amenRes.success) setAmenities(amenRes.data.amenities || []);
 
             // Load Categories
             const catRes = await categoryService.getCategories(token);
-            if (catRes.success) {
-                setCategories(catRes.data.categories || []);
-            }
+            if (catRes.success) setCategories(catRes.data.categories || []);
 
         } catch (error) {
             console.error('Failed to load properties data:', error);
@@ -147,19 +132,33 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
         }
     };
 
+    // ── VIEW TRANSITIONS ──────────────────────────────────────────────────────
+
+    const handleCreate = () => {
+        setEditingProperty(null);
+        setView('form');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const handleEdit = (property: Property) => {
         setEditingProperty(property);
-        setShowModal(true);
+        setView('form');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+
+    const handleBackToList = () => {
+        setView('list');
+        setEditingProperty(null);
+    };
+
+    // ── CRUD ACTIONS ──────────────────────────────────────────────────────────
 
     const handleDelete = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this property?')) return;
-
         try {
             const token = getAuthToken();
             if (!token) return;
             const tenantId = (user as any)?.tenantId;
-
             await propertyService.deleteProperty(token, id, tenantId);
             showToast('Property deleted successfully');
             setProperties(properties.filter(p => p.id !== id));
@@ -175,10 +174,9 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            // Priority: selected company tenant (activeTenantId) -> user's own tenant
-            const tenantId = (mode === 'admin' && activeTenantId) ? activeTenantId : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
-
-            console.log('PropertiesManager: Submitting with tenantId:', tenantId);
+            const tenantId = (mode === 'admin' && activeTenantId)
+                ? activeTenantId
+                : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
 
             if (!tenantId) {
                 showToast('Error: Tenant ID is required. Please select a company first.', 'error');
@@ -186,7 +184,6 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                 return;
             }
 
-            // Map back to API format
             const payload = {
                 tenantId,
                 title: formData.name,
@@ -219,7 +216,8 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                 listingType: formData.listingType,
                 categoryId: (formData as any).categoryId || null,
                 videoUrl: (formData as any).videoUrl || null,
-                displayPrice: (formData as any).displayPrice
+                displayPrice: (formData as any).displayPrice,
+                price: formData.price,
             };
 
             if (editingProperty) {
@@ -230,10 +228,9 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                 showToast('Property registered successfully!');
             }
 
-            await loadData(); // Reload to get fresh data
-
+            await loadData();
             setIsSubmitting(false);
-            handleCloseModal();
+            handleBackToList();
 
         } catch (error) {
             console.error('Failed to save property:', error);
@@ -242,66 +239,95 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
         }
     };
 
-    const handleCloseModal = () => {
-        setShowModal(false);
-        setEditingProperty(null);
-        setSuccessMessage(null);
-    };
-
     const handleNavigateToUnits = (id: string) => {
         const basePath = mode === 'admin' ? '/realestate-admin/units' : '/realestate-owner-admin/units';
         router.push(`${basePath}?propertyId=${id}`);
     };
 
-    const filteredProperties = properties.filter(property =>
-        property.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        property.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        property.state.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredProperties = properties.filter(p =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.state.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (!mounted || !isAuthenticated) return null; // Or loading spinner
+    if (!mounted || !isAuthenticated) return null;
 
+    // ── FORM VIEW ─────────────────────────────────────────────────────────────
+    if (view === 'form') {
+        return (
+            <MainLayout activePage="properties">
+                <div className="container-fluid py-4">
+                    <PropertyForm
+                        initialData={editingProperty}
+                        onSubmit={handleSubmit}
+                        onCancel={handleBackToList}
+                        isSubmitting={isSubmitting}
+                        mediaItems={mediaItems}
+                        amenities={amenities}
+                        categories={categories}
+                        inline={true}
+                    />
+                </div>
+
+                <Toast
+                    show={toast.show}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ ...toast, show: false })}
+                />
+            </MainLayout>
+        );
+    }
+
+    // ── LIST VIEW ─────────────────────────────────────────────────────────────
     return (
         <MainLayout activePage="properties">
-            {/* Search and Header Section */}
             <div className="container-fluid py-4">
+                {/* Header */}
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h1 className="fw-bold text-dark h3">
-                        {mode === 'admin' ? 'All Properties' : 'My Properties'}
-                    </h1>
+                    <div>
+                        <h1 className="fw-bold text-dark h3 mb-0">
+                            {mode === 'admin' ? 'All Properties' : 'My Properties'}
+                        </h1>
+                        <p className="text-muted small mb-0">
+                            {filteredProperties.length} propert{filteredProperties.length !== 1 ? 'ies' : 'y'} found
+                        </p>
+                    </div>
                     <button
+                        id="add-property-btn"
                         className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm"
-                        onClick={() => { setEditingProperty(null); setShowModal(true); }}
+                        onClick={handleCreate}
                     >
                         <i className="bi bi-plus-circle"></i>
                         Add Property
                     </button>
                 </div>
 
+                {/* Search Bar */}
                 <div className="card border-0 shadow-sm mb-4">
-                    <div className="card-body p-4">
-                        <div className="row align-items-center">
-                            <div className="col-md-6">
-                                <div className="input-group">
-                                    <span className="input-group-text bg-light border-0">
-                                        <i className="bi bi-search text-muted"></i>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className="form-control bg-light border-0"
-                                        placeholder="Search properties by name, city or state..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-md-6 text-end">
-                                <span className="text-muted small">Showing {filteredProperties.length} properties</span>
-                            </div>
+                    <div className="card-body p-3">
+                        <div className="input-group">
+                            <span className="input-group-text bg-light border-0">
+                                <i className="bi bi-search text-muted"></i>
+                            </span>
+                            <input
+                                id="property-search"
+                                type="text"
+                                className="form-control bg-light border-0"
+                                placeholder="Search properties by name, city or state..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                            />
+                            {searchTerm && (
+                                <button className="btn btn-light border-0" onClick={() => setSearchTerm('')}>
+                                    <i className="bi bi-x text-muted"></i>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
 
+                {/* Properties List */}
                 <PropertiesList
                     properties={filteredProperties}
                     isLoading={loading}
@@ -312,17 +338,6 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                 />
             </div>
 
-            {showModal && (
-                <PropertyForm
-                    initialData={editingProperty}
-                    onSubmit={handleSubmit}
-                    onCancel={handleCloseModal}
-                    isSubmitting={isSubmitting}
-                    mediaItems={mediaItems}
-                    amenities={amenities}
-                    categories={categories}
-                />
-            )}
             <Toast
                 show={toast.show}
                 message={toast.message}

@@ -414,12 +414,37 @@ export const whatsappApi = {
     }
 };
 
+// Automation Hub API
+export const automationApi = {
+    getStats: async (): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/automation/stats`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+
+    getWorkflows: async (): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/automation/workflows`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+
+    getWaitingLeads: async (): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/automation/waiting-leads`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    }
+};
+
 // Export all APIs
 export default {
     connectedAccounts: connectedAccountsApi,
     scheduledPosts: scheduledPostsApi,
     publishedPosts: publishedPostsApi,
     analytics: analyticsApi,
-    whatsapp: whatsappApi
+    whatsapp: whatsappApi,
+    automation: automationApi
 };
 

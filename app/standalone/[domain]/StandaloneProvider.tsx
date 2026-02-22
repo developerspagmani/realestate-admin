@@ -17,6 +17,8 @@ interface StandaloneContextType {
     identifyLead: (id: string, email?: string) => void;
     trackAction: (type: string, metadata?: any) => Promise<void>;
     slugOrDomain: string;
+    loading: boolean;
+    updateFilters: (filters: any) => Promise<void>;
 }
 
 const StandaloneContext = createContext<StandaloneContextType | null>(null);
@@ -39,6 +41,8 @@ export default function StandaloneProvider({
     slugOrDomain: string;
 }) {
     const [properties, setProperties] = useState(initialData);
+    const [loading, setLoading] = useState(false);
+    const [filters, setFilters] = useState<any>({});
     const [leadIdentity, setLeadIdentity] = useState<{ id?: string, email?: string } | null>(null);
     const [showChat, setShowChat] = useState(false);
     const [chatExpanded, setChatExpanded] = useState(false);
@@ -50,6 +54,31 @@ export default function StandaloneProvider({
     const theme = website.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif' };
     const builder = website.configuration?.builder || {};
     const menus = website.configuration?.menus || { header: [], footer: [] };
+
+    // Fetch properties with filters
+    const updateFilters = async (newFilters: any) => {
+        try {
+            setLoading(true);
+            setFilters(newFilters);
+
+            const params = new URLSearchParams();
+            params.append('tenantId', website.tenantId);
+            Object.entries(newFilters).forEach(([key, value]) => {
+                if (value) params.append(key, String(value));
+            });
+
+            const res = await fetch(`/api/public/properties?${params.toString()}`);
+            const result = await res.json();
+
+            if (result.success) {
+                setProperties(result.data || []);
+            }
+        } catch (error) {
+            console.error('Filter fetch failed:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Helper to darken a color for hover states
     const darkenColor = (hex: string, percent: number) => {
@@ -120,7 +149,9 @@ export default function StandaloneProvider({
             leadIdentity,
             identifyLead,
             trackAction,
-            slugOrDomain
+            slugOrDomain,
+            loading,
+            updateFilters
         }}>
             <div
                 className="standalone-website min-vh-100 bg-white d-flex flex-column"

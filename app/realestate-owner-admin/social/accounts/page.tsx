@@ -5,6 +5,15 @@ import { useRouter, usePathname } from 'next/navigation';
 import { connectedAccountsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
+import ModuleGuard from '@/components/common/ModuleGuard';
+
+export default function ConnectedAccountsPage() {
+    return (
+        <ModuleGuard moduleSlug="social_posts">
+            <AccountsContent />
+        </ModuleGuard>
+    );
+}
 
 interface ConnectedAccount {
     id: string;
@@ -29,7 +38,7 @@ const PLATFORMS = [
     { id: 'WHATSAPP', name: 'WhatsApp Business', color: 'success', icon: 'bi-whatsapp' }
 ];
 
-export default function ConnectedAccountsPage() {
+function AccountsContent() {
     const router = useRouter();
     const pathname = usePathname();
     const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
@@ -63,7 +72,7 @@ export default function ConnectedAccountsPage() {
             return;
         }
 
-        window.fbAsyncInit = function () {
+        (window as any).fbAsyncInit = function () {
             initFB();
         };
 
@@ -359,6 +368,3 @@ export default function ConnectedAccountsPage() {
         </MainLayout>
     );
 }
-
-
-

@@ -52,11 +52,13 @@ export default function OwnerDetailLayout({
     }, [id, isAuthenticated, isAdmin, router, authLoading]);
 
     const tabs = [
-        { label: 'Overview', path: `${basePath}/${id}` },
-        { label: 'Properties', path: `${basePath}/${id}/properties` },
-        { label: 'Units', path: `${basePath}/${id}/units` },
-        { label: 'Bookings', path: `${basePath}/${id}/bookings` },
-        { label: 'Users', path: `${basePath}/${id}/users` },
+        { label: 'Overview', icon: 'bi-speedometer2', path: `${basePath}/${id}` },
+        { label: 'License & Plan', icon: 'bi-key-fill', path: `${basePath}/${id}/license` },
+        { label: 'Modules', icon: 'bi-puzzle-fill', path: `${basePath}/${id}/modules` },
+        { label: 'Properties', icon: 'bi-building', path: `${basePath}/${id}/properties` },
+        { label: 'Units', icon: 'bi-grid-3x3-gap', path: `${basePath}/${id}/units` },
+        { label: 'Bookings', icon: 'bi-calendar-check', path: `${basePath}/${id}/bookings` },
+        { label: 'Users', icon: 'bi-people', path: `${basePath}/${id}/users` },
     ];
 
     if (authLoading) return <div className="vh-100 d-flex align-items-center justify-content-center bg-light"><div className="spinner-border text-primary"></div></div>;
@@ -82,15 +84,16 @@ export default function OwnerDetailLayout({
 
                 <div className="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
                     <div className="card-header bg-white border-0 p-0">
-                        <ul className="nav nav-tabs border-0 px-4 pt-2">
+                        <ul className="nav nav-tabs border-0 px-4 pt-2 flex-nowrap overflow-auto">
                             {tabs.map((tab) => (
-                                <li key={tab.path} className="nav-item">
+                                <li key={tab.path} className="nav-item flex-shrink-0">
                                     <Link
                                         href={tab.path}
-                                        className={`nav-link border-0 py-3 px-4 fw-medium transition-all ${pathname === tab.path ? 'active text-primary border-bottom border-primary border-3' : 'text-muted'
+                                        className={`nav-link border-0 py-3 px-3 fw-medium transition-all d-flex align-items-center gap-2 ${pathname === tab.path ? 'active text-primary border-bottom border-primary border-3' : 'text-muted'
                                             }`}
                                     >
-                                        {tab.label}
+                                        <i className={`bi ${tab.icon}`}></i>
+                                        <span className="d-none d-md-inline">{tab.label}</span>
                                     </Link>
                                 </li>
                             ))}

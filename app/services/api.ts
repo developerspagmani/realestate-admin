@@ -26,3 +26,4 @@ export * from './licenseKey';
 export * from './admin';
 export * from './upgradeRequest';
 export { default as cmsService } from './cms';
+export * from './analyticsPro';
