@@ -84,7 +84,7 @@ function BotBuilderContent() {
     };
 
     const addStep = () => {
-        const newId = `step_${Date.now()}`;
+        const newId = `step_${Math.random().toString(36).substr(2, 9)}`;
         const newStep: BotStep = {
             id: newId,
             type: 'question',
@@ -113,7 +113,7 @@ function BotBuilderContent() {
         if (!step) return;
 
         const newButton = {
-            id: `btn_${Date.now()}`,
+            id: `btn_${Math.random().toString(36).substr(2, 9)}`,
             label: 'New Button',
             nextStepId: ''
         };
@@ -154,7 +154,7 @@ function BotBuilderContent() {
                             <h5 className="fw-bold mb-3">Funnel Overview</h5>
                             <div className="list-group list-group-flush small">
                                 {config.steps.map((step, idx) => (
-                                    <div key={step.id} className={`list-group-item bg-transparent border-0 px-0 d-flex align-items-center gap-2 ${config.startStepId === step.id ? 'text-success fw-bold' : 'text-muted'}`}>
+                                    <div key={step.id || `step-${idx}`} className={`list-group-item bg-transparent border-0 px-0 d-flex align-items-center gap-2 ${config.startStepId === step.id ? 'text-success fw-bold' : 'text-muted'}`}>
                                         <span className="badge bg-light text-dark rounded-circle" style={{ width: '20px' }}>{idx + 1}</span>
                                         <span className="text-truncate" style={{ maxWidth: '150px' }}>{step.id}</span>
                                         {config.startStepId === step.id && <i className="bi bi-play-circle-fill ms-auto"></i>}
@@ -177,7 +177,7 @@ function BotBuilderContent() {
                         ) : (
                             <div className="d-flex flex-column gap-4">
                                 {config.steps.map((step, idx) => (
-                                    <div key={step.id} className={`card border-0 shadow-sm rounded-4 overflow-hidden ${config.startStepId === step.id ? 'border-start border-4 border-success' : ''}`}>
+                                    <div key={step.id || `card-${idx}`} className={`card border-0 shadow-sm rounded-4 overflow-hidden ${config.startStepId === step.id ? 'border-start border-4 border-success' : ''}`}>
                                         <div className="card-header bg-white p-4 border-0 d-flex justify-content-between align-items-center">
                                             <div className="d-flex align-items-center gap-3">
                                                 <div className="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px' }}>{idx + 1}</div>
@@ -232,6 +232,8 @@ function BotBuilderContent() {
                                                             onChange={(e) => updateStep(step.id, { actionType: e.target.value })}
                                                         >
                                                             <option value="SEARCH_PROPERTIES">Search & Show Properties</option>
+                                                            <option value="CHECK_AVAILABILITY">Check Calendar Availability</option>
+                                                            <option value="CREATE_BOOKING">Create System Booking</option>
                                                             <option value="HANDOFF">Handoff to Agent</option>
                                                         </select>
                                                     </div>
@@ -246,7 +248,7 @@ function BotBuilderContent() {
                                                     </div>
                                                     <div className="d-flex flex-column gap-2">
                                                         {step.buttons.map((btn, bIdx) => (
-                                                            <div key={btn.id} className="p-3 bg-light rounded-3 d-flex flex-wrap gap-2 align-items-center">
+                                                            <div key={btn.id || `btn-${idx}-${bIdx}`} className="p-3 bg-light rounded-3 d-flex flex-wrap gap-2 align-items-center">
                                                                 <input
                                                                     type="text"
                                                                     className="form-control form-control-sm border-0 fw-bold"
@@ -271,7 +273,7 @@ function BotBuilderContent() {
                                                                 >
                                                                     <option value="">End Chat</option>
                                                                     {config.steps.filter(s => s.id !== step.id).map(s => (
-                                                                        <option key={s.id} value={s.id}>{s.id}</option>
+                                                                        <option key={s.id || s.id} value={s.id}>{s.id}</option>
                                                                     ))}
                                                                 </select>
                                                                 <select
@@ -288,6 +290,7 @@ function BotBuilderContent() {
                                                                     <option value="location">Save Location</option>
                                                                     <option value="maxPrice">Save Budget</option>
                                                                     <option value="propertyType">Save Property Type</option>
+                                                                    <option value="lastBookingDate">Save Booking Date</option>
                                                                 </select>
                                                                 <button
                                                                     className="btn btn-link btn-sm text-danger p-0"
