@@ -150,7 +150,7 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                                                                 <ul className="dropdown-menu dropdown-menu-end shadow border-0 small">
                                                                     <li><button className="dropdown-item" onClick={() => onEdit(lead)}><i className="bi bi-pencil me-2"></i>Edit</button></li>
                                                                     <li><button className="dropdown-item" onClick={() => onViewInsights(lead)}><i className="bi bi-graph-up me-2"></i>Insights</button></li>
-                                                                    {lead.status === 'converted' && (
+                                                                    {lead.status === 'converted' && !lead.userId && (
                                                                         <>
                                                                             <li><hr className="dropdown-divider" /></li>
                                                                             <li>
@@ -198,7 +198,7 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                                                             ))}
                                                         </div>
 
-                                                        {lead.status === 'converted' && (
+                                                        {lead.status === 'converted' && !lead.userId && (
                                                             <div className="mt-3">
                                                                 <button
                                                                     className="btn btn-primary btn-sm w-100 rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2 py-2 fw-bold"

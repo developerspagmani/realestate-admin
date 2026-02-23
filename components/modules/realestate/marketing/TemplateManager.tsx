@@ -524,7 +524,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
 
                                         <div className="mb-4">
                                             <label className="form-label extra-small fw-bold text-uppercase text-muted">Body Content (HTML allowed)</label>
-                                            <textarea className="form-control border-0 shadow-sm" rows={8} placeholder="<b>Hello!</b>..." value={templateData.content} style={{ fontFamily: 'monospace', fontSize: '13px' }} onChange={e => setTemplateData({ ...templateData, content: e.target.value })}></textarea>
+                                            <textarea className="form-control border-0 shadow-sm" rows={8} placeholder="<b>Hello!</b>..." value={templateData.content || ''} style={{ fontFamily: 'monospace', fontSize: '13px' }} onChange={e => setTemplateData({ ...templateData, content: e.target.value })}></textarea>
                                         </div>
                                     </div>
 

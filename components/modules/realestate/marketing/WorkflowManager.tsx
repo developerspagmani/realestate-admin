@@ -506,7 +506,7 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                                 <div className="mb-3">
                                     <label className="form-label extra-small fw-bold text-muted text-uppercase">Description</label>
                                     <textarea className="form-control bg-light border-0" rows={2} placeholder="Describe the goal..."
-                                        value={currentWorkflow.description} onChange={e => setCurrentWorkflow({ ...currentWorkflow, description: e.target.value })}></textarea>
+                                        value={currentWorkflow.description || ''} onChange={e => setCurrentWorkflow({ ...currentWorkflow, description: e.target.value })}></textarea>
                                 </div>
                                 <div className="mb-0">
                                     <label className="form-label extra-small fw-bold text-muted text-uppercase">Initial Trigger</label>

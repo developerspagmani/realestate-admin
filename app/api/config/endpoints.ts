@@ -423,6 +423,8 @@ export const analyticsProEndpoints = {
     params ? `/admin/analytics-pro/search-trends?${buildQueryString(params)}` : '/admin/analytics-pro/search-trends',
   getCampaignStats: (params?: Record<string, any>) =>
     params ? `/admin/analytics-pro/campaign-stats?${buildQueryString(params)}` : '/admin/analytics-pro/campaign-stats',
+  getMarketingInsights: (params?: Record<string, any>) =>
+    params ? `/admin/analytics-pro/marketing-insights?${buildQueryString(params)}` : '/admin/analytics-pro/marketing-insights',
 };
 
 // Category endpoints

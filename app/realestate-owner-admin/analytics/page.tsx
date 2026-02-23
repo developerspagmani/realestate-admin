@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
-import { analyticsProService } from '@/app/services/api';
+import { analyticsProService, propertyService, marketingService } from '@/app/services/api';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, ComposedChart
@@ -14,27 +14,87 @@ export default function AdvancedAnalyticsPage() {
     const [agentPerformance, setAgentPerformance] = useState<any[]>([]);
     const [searchTrends, setSearchTrends] = useState<any>(null);
     const [campaignStats, setCampaignStats] = useState<any[]>([]);
+    const [marketingInsights, setMarketingInsights] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    // Filters
+    const [availableProperties, setAvailableProperties] = useState<any[]>([]);
+    const [availableCampaigns, setAvailableCampaigns] = useState<any[]>([]);
+    const [filters, setFilters] = useState({
+        dateRange: '30d', // 7d, 30d, custom
+        startDate: '',
+        endDate: '',
+        campaignId: '',
+        propertyId: ''
+    });
+
+    useEffect(() => {
+        fetchInitialData();
+        // fetchData is handled by the useEffect watching filters
+    }, []);
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [filters.dateRange, filters.campaignId, filters.propertyId]);
+
+    const fetchInitialData = async () => {
+        try {
+            const token = localStorage.getItem('authToken') || '';
+            const [propRes, campRes] = await Promise.all([
+                propertyService.getProperties(token, { limit: '1000' }),
+                marketingService.getCampaigns(token, { limit: '1000' })
+            ]);
+            if (propRes.success) {
+                const props = Array.isArray(propRes.data) ? propRes.data : (propRes.data?.properties || []);
+                setAvailableProperties(props);
+            }
+            if (campRes.success) {
+                const camps = Array.isArray(campRes.data) ? campRes.data : (campRes.data?.campaigns || []);
+                setAvailableCampaigns(camps);
+            }
+        } catch (error) {
+            console.error('Error fetching filter data:', error);
+        }
+    };
 
     const fetchData = async () => {
         try {
             setLoading(true);
 
-            const [revRes, agentRes, searchRes, campaignRes] = await Promise.all([
-                analyticsProService.getRevenueFunnel(),
-                analyticsProService.getAgentPerformance(),
-                analyticsProService.getSearchTrends(),
-                analyticsProService.getCampaignStats()
+            // Compute dates based on filter
+            let start = filters.startDate;
+            let end = filters.endDate;
+
+            if (filters.dateRange === '7d') {
+                const d = new Date();
+                d.setDate(d.getDate() - 7);
+                start = d.toISOString().split('T')[0];
+            } else if (filters.dateRange === '30d') {
+                const d = new Date();
+                d.setDate(d.getDate() - 30);
+                start = d.toISOString().split('T')[0];
+            }
+
+            const queryParams = {
+                startDate: start,
+                endDate: end,
+                campaignId: filters.campaignId,
+                propertyId: filters.propertyId
+            };
+
+            const [revRes, agentRes, searchRes, campaignRes, marketingRes] = await Promise.all([
+                analyticsProService.getRevenueFunnel(queryParams),
+                analyticsProService.getAgentPerformance(queryParams),
+                analyticsProService.getSearchTrends(queryParams),
+                analyticsProService.getCampaignStats(queryParams),
+                analyticsProService.getMarketingInsights(queryParams)
             ]);
 
             if (revRes.success) setRevenueFunnel(revRes.data);
             if (agentRes.success) setAgentPerformance(agentRes.data);
             if (searchRes.success) setSearchTrends(searchRes.data);
             if (campaignRes.success) setCampaignStats(campaignRes.data);
+            if (marketingRes.success) setMarketingInsights(marketingRes.data);
 
         } catch (error) {
             console.error('Failed to fetch analytics:', error);
@@ -49,14 +109,85 @@ export default function AdvancedAnalyticsPage() {
         <ModuleGuard moduleSlug="analytics_pro">
             <MainLayout activePage="analytics">
                 <div className="container-fluid py-4">
+                    {/* Header with Refresh */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <div>
                             <h1 className="fw-bold h2 mb-1">Advanced Analytics</h1>
-                            <p className="text-muted small">Deep insights into your business growth and operational efficiency.</p>
+                            <p className="text-muted small">Deep insights into your business growth and market demand.</p>
                         </div>
-                        <button className="btn btn-light rounded-3 shadow-sm" onClick={fetchData}>
-                            <i className="bi bi-arrow-clockwise me-2"></i>Refresh Data
-                        </button>
+                        <div className="d-flex gap-2">
+                            <button className="btn btn-outline-primary rounded-3 shadow-sm" onClick={() => setFilters({ ...filters, dateRange: '30d', campaignId: '', propertyId: '', startDate: '', endDate: '' })}>
+                                <i className="bi bi-x-circle me-2"></i>Clear Filters
+                            </button>
+                            <button className="btn btn-light rounded-3 shadow-sm" onClick={fetchData}>
+                                <i className="bi bi-arrow-clockwise me-2"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Filters Bar */}
+                    <div className="card border-0 shadow-sm rounded-4 mb-4">
+                        <div className="card-body p-3">
+                            <div className="row g-3">
+                                <div className="col-md-2">
+                                    <label className="extra-small text-muted fw-bold text-uppercase mb-1">Date Range</label>
+                                    <select
+                                        className="form-select form-select-sm rounded-3"
+                                        value={filters.dateRange}
+                                        onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+                                    >
+                                        <option value="7d">Last 7 Days</option>
+                                        <option value="30d">Last 30 Days</option>
+                                        <option value="custom">Custom Range</option>
+                                    </select>
+                                </div>
+                                {filters.dateRange === 'custom' && (
+                                    <>
+                                        <div className="col-md-2">
+                                            <label className="extra-small text-muted fw-bold text-uppercase mb-1">Start Date</label>
+                                            <input
+                                                type="date"
+                                                className="form-control form-control-sm rounded-3"
+                                                value={filters.startDate}
+                                                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="col-md-2">
+                                            <label className="extra-small text-muted fw-bold text-uppercase mb-1">End Date</label>
+                                            <input
+                                                type="date"
+                                                className="form-control form-control-sm rounded-3"
+                                                value={filters.endDate}
+                                                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                                                onBlur={fetchData}
+                                            />
+                                        </div>
+                                    </>
+                                )}
+                                <div className="col-md-3">
+                                    <label className="extra-small text-muted fw-bold text-uppercase mb-1">Campaign</label>
+                                    <select
+                                        className="form-select form-select-sm rounded-3"
+                                        value={filters.campaignId}
+                                        onChange={(e) => setFilters({ ...filters, campaignId: e.target.value })}
+                                    >
+                                        <option value="">All Campaigns</option>
+                                        {Array.isArray(availableCampaigns) && availableCampaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="extra-small text-muted fw-bold text-uppercase mb-1">Property</label>
+                                    <select
+                                        className="form-select form-select-sm rounded-3"
+                                        value={filters.propertyId}
+                                        onChange={(e) => setFilters({ ...filters, propertyId: e.target.value })}
+                                    >
+                                        <option value="">All Properties</option>
+                                        {Array.isArray(availableProperties) && availableProperties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {loading ? (
@@ -65,13 +196,227 @@ export default function AdvancedAnalyticsPage() {
                         </div>
                     ) : (
                         <div className="row g-4">
-                            {/* 1. Revenue Over Time */}
+                            {/* Summary Stats ROW */}
+                            <div className="col-md-3">
+                                <div className="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
+                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Avg. Conversion Time</div>
+                                    <div className="h2 fw-bold mb-0 text-primary">{marketingInsights?.avgVelocity || 0} Days</div>
+                                    <div className="small text-success fw-medium mt-1">Lead creation to conversion</div>
+                                </div>
+                            </div>
+                            <div className="col-md-3">
+                                <div className="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
+                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Total Active Leads</div>
+                                    <div className="h2 fw-bold mb-0 text-dark">{revenueFunnel?.funnel ? revenueFunnel.funnel[0]?.count : 0}</div>
+                                    <div className="small text-muted mt-1">Founders pipeline scope</div>
+                                </div>
+                            </div>
+                            <div className="col-md-3">
+                                <div className="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
+                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Engagement Rate</div>
+                                    <div className="h2 fw-bold mb-0 text-info">{campaignStats.length > 0 ? (campaignStats[0]?.engagement || 0).toFixed(1) : 0}%</div>
+                                    <div className="small text-muted mt-1">Cross-channel engagement</div>
+                                </div>
+                            </div>
+                            <div className="col-md-3">
+                                <div className="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
+                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Demand Keywords</div>
+                                    <div className="h2 fw-bold mb-0 text-warning">{marketingInsights?.topSearchKeywords?.length || 0}</div>
+                                    <div className="small text-muted mt-1">Trending search terms</div>
+                                </div>
+                            </div>
+
+                            {/* Forecasting AI Prediction */}
+                            <div className="col-12">
+                                <div className="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10 overflow-hidden border-start border-primary border-5">
+                                    <div className="card-body p-4">
+                                        <div className="d-flex align-items-center mb-3">
+                                            <div className="bg-primary text-white rounded-3 p-2 me-3">
+                                                <i className="bi bi-cpu fs-4"></i>
+                                            </div>
+                                            <div>
+                                                <h5 className="fw-bold mb-0 text-white">Forecasting AI Prediction</h5>
+                                                <p className="text-muted small mb-0">Intelligent insights based on user behavior and inventory gaps.</p>
+                                            </div>
+                                        </div>
+                                        <div className="row g-3">
+                                            {marketingInsights?.forecastingAI?.length > 0 ? (
+                                                marketingInsights.forecastingAI.map((p: any, idx: number) => (
+                                                    <div className="col-md-6" key={idx}>
+                                                        <div className="bg-white p-3 rounded-4 shadow-sm h-100">
+                                                            <div className="d-flex justify-content-between mb-2">
+                                                                <span className={`badge ${p.type === 'INVENTORY_SHORTAGE' ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'} rounded-pill`}>
+                                                                    {p.type.replace('_', ' ')}
+                                                                </span>
+                                                                <span className="extra-small text-muted fw-bold">{p.demandLevel} Demand</span>
+                                                            </div>
+                                                            <h6 className="fw-bold text-dark">{p.location} Optimization</h6>
+                                                            <p className="small text-muted mb-0">{p.recommendation}</p>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="col-12 text-center py-3">
+                                                    <p className="text-muted mb-0">AI is currently analyzing data. No immediate shortages detected.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Acquisition Channels & Growth */}
+                            <div className="col-md-4">
+                                <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                                    <div className="card-header bg-white border-0 p-4 pb-0">
+                                        <h5 className="fw-bold mb-0">Acquisition Channels</h5>
+                                        <p className="text-muted extra-small">Where your leads coming from</p>
+                                    </div>
+                                    <div className="card-body p-4 pt-0">
+                                        <div style={{ height: '250px' }}>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={marketingInsights?.leadSources || []}
+                                                        innerRadius={60}
+                                                        outerRadius={80}
+                                                        paddingAngle={5}
+                                                        dataKey="count"
+                                                        nameKey="source"
+                                                    >
+                                                        {(marketingInsights?.leadSources || []).map((entry: any, index: number) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip />
+                                                    <Legend />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="col-md-8">
                                 <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                                    <div className="card-header bg-white border-0 p-4 pb-0">
+                                        <h5 className="fw-bold mb-0">Lead Generation Growth</h5>
+                                        <p className="text-muted extra-small">Daily lead volume for selected period</p>
+                                    </div>
+                                    <div className="card-body p-4 pt-0">
+                                        <div style={{ height: '250px' }}>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <AreaChart data={marketingInsights?.genTrend || []}>
+                                                    <defs>
+                                                        <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <XAxis dataKey="date" axisLine={false} tickLine={false} />
+                                                    <YAxis axisLine={false} tickLine={false} />
+                                                    <Tooltip
+                                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                                    />
+                                                    <Area type="monotone" dataKey="count" name="New Leads" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" />
+                                                </AreaChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Search Intelligence */}
+                            <div className="col-md-6">
+                                <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                                    <div className="card-header bg-white border-0 p-4">
+                                        <h5 className="fw-bold mb-0">Search Intelligence (Demand Map)</h5>
+                                        <p className="text-muted small">Deep dive into what customers are looking for.</p>
+                                    </div>
+                                    <div className="card-body p-4 pt-0">
+                                        <div className="table-responsive">
+                                            <table className="table table-hover align-middle mb-0">
+                                                <thead className="bg-light">
+                                                    <tr>
+                                                        <th className="border-0 small text-uppercase">Keyword / Feature</th>
+                                                        <th className="border-0 small text-uppercase text-end">Frequency</th>
+                                                        <th className="border-0 small text-uppercase text-end">Level</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {marketingInsights?.topSearchKeywords?.map((k: any, idx: number) => (
+                                                        <tr key={idx}>
+                                                            <td><span className="fw-bold">{k.name}</span></td>
+                                                            <td className="text-end"><span className="badge bg-light text-primary border">{k.count} hits</span></td>
+                                                            <td className="text-end">
+                                                                <div className="d-flex align-items-center justify-content-end gap-2">
+                                                                    <div className="progress rounded-pill flex-grow-1" style={{ height: '6px', maxWidth: '60px' }}>
+                                                                        <div className="progress-bar bg-warning" style={{ width: `${Math.min(k.count * 10, 100)}%` }}></div>
+                                                                    </div>
+                                                                    <span className="extra-small fw-bold">{k.count > 10 ? 'High' : 'Medium'}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Property Interaction Score */}
+                            <div className="col-md-6">
+                                <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                                    <div className="card-header bg-white border-0 p-4 pb-0">
+                                        <h5 className="fw-bold mb-0">Property Interaction Score</h5>
+                                        <p className="text-muted extra-small">Engagement performance per listing</p>
+                                    </div>
+                                    <div className="card-body p-4 pt-0">
+                                        <div style={{ height: '350px' }}>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={marketingInsights?.topProperties || []} layout="vertical" margin={{ left: 50, right: 30 }}>
+                                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                                    <XAxis type="number" hide />
+                                                    <YAxis
+                                                        dataKey="title"
+                                                        type="category"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        width={150}
+                                                        style={{ fontSize: '11px', fontWeight: '600' }}
+                                                        tick={(props) => {
+                                                            const { x, y, payload } = props;
+                                                            return (
+                                                                <g transform={`translate(${x},${y})`}>
+                                                                    <text x={-10} y={0} dy={4} textAnchor="end" fill="#64748b" fontSize="10px">
+                                                                        {(payload.value || '').length > 25 ? `${payload.value.substring(0, 22)}...` : (payload.value || '')}
+                                                                    </text>
+                                                                </g>
+                                                            );
+                                                        }}
+                                                    />
+                                                    <Tooltip cursor={{ fill: 'transparent' }} />
+                                                    <Bar dataKey="views" fill="#6366f1" radius={[0, 10, 10, 0]} barSize={24}>
+                                                        {(marketingInsights?.topProperties || []).map((entry: any, index: number) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Revenue Trend */}
+                            <div className="col-md-8">
+                                <div className="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
                                     <div className="card-header bg-white border-0 p-4">
                                         <h5 className="fw-bold mb-0">Revenue Trend (Last 6 Months)</h5>
                                     </div>
-                                    <div className="card-body p-4 pt-0" style={{ height: '350px' }}>
+                                    <div className="card-body p-4 pt-0" style={{ height: '300px' }}>
                                         <ResponsiveContainer width="100%" height="100%">
                                             <AreaChart data={revenueFunnel?.revenueChart}>
                                                 <defs>
@@ -94,47 +439,38 @@ export default function AdvancedAnalyticsPage() {
                                 </div>
                             </div>
 
-                            {/* 2. Lead Funnel */}
+                            {/* Agent Efficiency */}
                             <div className="col-md-4">
                                 <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-                                    <div className="card-header bg-white border-0 p-4">
-                                        <h5 className="fw-bold mb-0">Lead Funnel</h5>
+                                    <div className="card-header bg-white border-0 p-4 pb-0">
+                                        <h5 className="fw-bold mb-0">Lead Quality Index</h5>
+                                        <p className="text-muted extra-small">Distribution of lead potential</p>
                                     </div>
                                     <div className="card-body p-4 pt-0">
-                                        {revenueFunnel?.funnel.map((step: any, idx: number) => (
-                                            <div key={idx} className="mb-3">
-                                                <div className="d-flex justify-content-between mb-1">
-                                                    <span className="small text-muted fw-bold">{step.label}</span>
-                                                    <span className="small fw-bold">{step.count}</span>
-                                                </div>
-                                                <div className="progress rounded-pill overflow-hidden" style={{ height: '12px', backgroundColor: '#f1f5f9' }}>
-                                                    <div
-                                                        className="progress-bar rounded-pill"
-                                                        style={{
-                                                            width: `${(step.count / Math.max(...revenueFunnel.funnel.map((s: any) => s.count)) * 100) || 0}%`,
-                                                            backgroundColor: COLORS[idx % COLORS.length]
-                                                        }}
-                                                    ></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <div className="mt-4 p-3 bg-light rounded-4 text-center">
-                                            <div className="h4 fw-bold mb-0 text-success">
-                                                {revenueFunnel?.funnel[0]?.count > 0
-                                                    ? ((revenueFunnel?.funnel[3]?.count / revenueFunnel?.funnel[0]?.count) * 100).toFixed(1)
-                                                    : 0}%
-                                            </div>
-                                            <div className="extra-small text-muted text-uppercase fw-bold">Conversion Rate</div>
+                                        <div style={{ height: '300px' }}>
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <BarChart data={marketingInsights?.qualityDist || []}>
+                                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                                    <XAxis dataKey="range" axisLine={false} tickLine={false} />
+                                                    <YAxis axisLine={false} tickLine={false} />
+                                                    <Tooltip />
+                                                    <Bar dataKey="count" name="Leads" radius={[10, 10, 0, 0]}>
+                                                        {(marketingInsights?.qualityDist || []).map((entry: any, index: number) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* 3. Agent Performance */}
+                            {/* Agent Table */}
                             <div className="col-12">
-                                <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                                <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
                                     <div className="card-header bg-white border-0 p-4">
-                                        <h5 className="fw-bold mb-0">Agent Efficiency</h5>
+                                        <h5 className="fw-bold mb-0">Agent Performance Analysis</h5>
                                     </div>
                                     <div className="card-body p-0">
                                         <div className="table-responsive">
@@ -142,10 +478,8 @@ export default function AdvancedAnalyticsPage() {
                                                 <thead className="bg-light">
                                                     <tr>
                                                         <th className="px-4 py-3 border-0 small text-uppercase">Agent Name</th>
-                                                        <th className="py-3 border-0 small text-uppercase">Assigned Leads</th>
-                                                        <th className="py-3 border-0 small text-uppercase">Conversions</th>
-                                                        <th className="py-3 border-0 small text-uppercase">Conversion Rate</th>
-                                                        <th className="py-3 border-0 small text-uppercase">Contribution</th>
+                                                        <th className="py-3 border-0 small text-uppercase">Leads</th>
+                                                        <th className="py-3 border-0 small text-uppercase">Conv. Rate</th>
                                                         <th className="px-4 py-3 border-0 small text-uppercase text-end">Total Revenue</th>
                                                     </tr>
                                                 </thead>
@@ -154,23 +488,17 @@ export default function AdvancedAnalyticsPage() {
                                                         <tr key={agent.id}>
                                                             <td className="px-4 py-3">
                                                                 <div className="d-flex align-items-center gap-2">
-                                                                    <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                                                                    <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '32px', height: '32px' }}>
                                                                         {agent.name.charAt(0)}
                                                                     </div>
                                                                     <span className="fw-bold">{agent.name}</span>
                                                                 </div>
                                                             </td>
                                                             <td className="py-3">{agent.totalLeads}</td>
-                                                            <td className="py-3">{agent.conversions}</td>
                                                             <td className="py-3">
                                                                 <span className={`badge ${agent.conversionRate > 20 ? 'bg-success-subtle text-success' : 'bg-light text-muted'} rounded-pill fw-bold`}>
                                                                     {agent.conversionRate.toFixed(1)}%
                                                                 </span>
-                                                            </td>
-                                                            <td className="py-3" style={{ width: '150px' }}>
-                                                                <div className="progress rounded-pill" style={{ height: '6px' }}>
-                                                                    <div className="progress-bar bg-info" style={{ width: `${agent.conversionRate}%` }}></div>
-                                                                </div>
                                                             </td>
                                                             <td className="px-4 py-3 text-end fw-bold text-primary">${agent.revenue.toLocaleString()}</td>
                                                         </tr>
@@ -181,91 +509,9 @@ export default function AdvancedAnalyticsPage() {
                                     </div>
                                 </div>
                             </div>
-
-                            {/* 4. Search Trends & 5. Campaign Stats */}
-                            <div className="col-md-6">
-                                <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-                                    <div className="card-header bg-white border-0 p-4">
-                                        <h5 className="fw-bold mb-0">Market Demand (Search Trends)</h5>
-                                    </div>
-                                    <div className="card-body p-4 pt-0">
-                                        <div className="row">
-                                            <div className="col-6">
-                                                <h6 className="extra-small text-muted text-uppercase fw-bold mb-3">Top Keywords</h6>
-                                                {searchTrends?.topKeywords.map((k: any, idx: number) => (
-                                                    <div key={idx} className="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded-3">
-                                                        <span className="small fw-bold">{k.name}</span>
-                                                        <span className="badge bg-white text-primary border">{k.count}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="col-6">
-                                                <h6 className="extra-small text-muted text-uppercase fw-bold mb-3">Geo-Demand (Cities)</h6>
-                                                <ResponsiveContainer width="100%" height={200}>
-                                                    <PieChart>
-                                                        <Pie
-                                                            data={searchTrends?.topCities}
-                                                            innerRadius={60}
-                                                            outerRadius={80}
-                                                            paddingAngle={5}
-                                                            dataKey="count"
-                                                        >
-                                                            {searchTrends?.topCities.map((entry: any, index: number) => (
-                                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                            ))}
-                                                        </Pie>
-                                                        <Tooltip />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="col-md-6">
-                                <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
-                                    <div className="card-header bg-white border-0 p-4">
-                                        <h5 className="fw-bold mb-0">Campaign ROI</h5>
-                                    </div>
-                                    <div className="card-body p-4 pt-0">
-                                        <div className="table-responsive">
-                                            <table className="table table-sm align-middle mb-0">
-                                                <thead>
-                                                    <tr className="small text-muted text-uppercase">
-                                                        <th className="border-0">Campaign</th>
-                                                        <th className="border-0">Reach</th>
-                                                        <th className="border-0">Engagement</th>
-                                                        <th className="border-0 text-end">ROI %</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {campaignStats.map((c) => (
-                                                        <tr key={c.id}>
-                                                            <td className="py-2 small fw-bold">{c.name}</td>
-                                                            <td className="py-2 small">{c.sent}</td>
-                                                            <td className="py-2 small">{c.interactions}</td>
-                                                            <td className="py-2 text-end">
-                                                                <span className="badge bg-info-subtle text-info rounded-pill">{c.engagement.toFixed(1)}%</span>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
                     )}
                 </div>
-
-                <style jsx>{`
-                    .extra-small { font-size: 0.75rem; }
-                    .card { transition: all 0.3s ease; }
-                    .progress-bar { transition: width 1s ease-in-out; }
-                `}</style>
             </MainLayout>
         </ModuleGuard>
     );

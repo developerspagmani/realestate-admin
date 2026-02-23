@@ -13,4 +13,7 @@ export const analyticsProService = {
     getCampaignStats: async (params?: any) => {
         return await makeApiCall(analyticsProEndpoints.getCampaignStats(params));
     },
+    getMarketingInsights: async (params?: any) => {
+        return await makeApiCall(analyticsProEndpoints.getMarketingInsights(params));
+    },
 };

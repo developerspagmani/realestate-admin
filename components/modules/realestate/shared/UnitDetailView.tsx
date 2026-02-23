@@ -208,14 +208,14 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                     <FormRenderer
                                         config={widget.configuration.inquiryForm}
                                         primaryColor={theme.primaryColor}
-                                        onSubmit={async (formData) => {
+                                        onSubmit={async (formData, configUsed) => {
                                             const leadPayload: any = {
                                                 source: 1,
                                                 propertyId: selectedProperty.id,
-                                                notes: `Unit Specific Inquiry: ${selectedUnit.unitCode}\n${widget.configuration.inquiryForm.fields.map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
+                                                notes: `Unit Specific Inquiry: ${selectedUnit.unitCode}\n${(configUsed.fields || []).map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
                                             };
 
-                                            widget.configuration.inquiryForm.fields.forEach((field: any) => {
+                                            (configUsed.fields || []).forEach((field: any) => {
                                                 const val = formData[field.id];
                                                 if (!val) return;
                                                 if (field.type === 'email' && !leadPayload.email) leadPayload.email = val;

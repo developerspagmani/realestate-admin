@@ -10,10 +10,19 @@ export default function HomePageClient() {
     const { website, properties, builder, theme, slugOrDomain, trackAction, updateFilters, loading } = useStandalone();
     const router = useRouter();
 
-    const onSelectProperty = (property: any) => {
-        if (trackAction) trackAction('PROPERTY_VIEW', { propertyId: property.id });
+    const onSelectProperty = React.useCallback(async (property: any) => {
+        // Track the general view
+        await trackAction('PROPERTY_VIEW', {
+            propertyId: property.id,
+            propertyTitle: property.title
+        });
         router.push(`/standalone/${slugOrDomain}/p/${property.slug || property.id}`);
-    };
+    }, [trackAction, router, slugOrDomain]);
+
+    const handleFilter = React.useCallback((filters: any) => {
+        trackAction('SEARCH_FILTER', filters);
+        updateFilters(filters);
+    }, [trackAction, updateFilters]);
 
     return (
         <div className={loading ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
@@ -25,7 +34,8 @@ export default function HomePageClient() {
                     widget={website}
                     widgetId={website.id}
                     onSelectProperty={onSelectProperty}
-                    onFilter={updateFilters}
+                    onFilter={handleFilter}
+                    trackAction={trackAction}
                 />
             ) : (
                 <ListingView
@@ -34,9 +44,10 @@ export default function HomePageClient() {
                     theme={theme}
                     widget={website}
                     widgetId={website.id}
-                    onReset={() => updateFilters({})}
+                    onReset={() => handleFilter({})}
                     onSelectProperty={onSelectProperty}
-                    onFilter={updateFilters}
+                    onFilter={handleFilter}
+                    trackAction={trackAction}
                     colClass={builder.gridStrategy === 'list' ? 'col-12' : ''}
                 />
             )}

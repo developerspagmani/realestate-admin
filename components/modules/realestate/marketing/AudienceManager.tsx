@@ -357,7 +357,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                             <div key={group.id} className="col-md-6 col-lg-4">
                                 <div className="card border-0 shadow-sm rounded-4 p-4 h-100 group-card">
                                     <div className="d-flex justify-content-between align-items-start mb-3">
-                                        <div className={`p-3 rounded-4 ${group.isDynamic ? 'bg-info text-info' : 'bg-primary text-primary'} bg-opacity-10`}>
+                                        <div className={`p-3 rounded-4 ${group.isDynamic ? 'bg-info text-info' : 'bg-primary text-white'} bg-opacity-10`}>
                                             <i className={`bi ${group.isDynamic ? 'bi-lightning-charge-fill' : 'bi-people-fill'} fs-4`}></i>
                                         </div>
                                         <div className="dropdown">
@@ -477,7 +477,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                 </div>
                                 <div className="mb-4">
                                     <label className="form-label small fw-bold text-muted">Description</label>
-                                    <textarea className="form-control bg-light border-0" rows={2} placeholder="Leads interested in properties above $5M" value={groupData.description} onChange={e => setGroupData({ ...groupData, description: e.target.value })}></textarea>
+                                    <textarea className="form-control bg-light border-0" rows={2} placeholder="Leads interested in properties above $5M" value={groupData.description || ''} onChange={e => setGroupData({ ...groupData, description: e.target.value })}></textarea>
                                 </div>
                                 <div className="mb-4">
                                     <label className="form-label small fw-bold text-muted">Associated Property Listing</label>
@@ -510,11 +510,11 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                         <div className="lead-list bg-light rounded-3 p-2 custom-scrollbar" style={{ maxHeight: '200px', overflowY: 'auto' }}>
                                             {selectableLeads.map(lead => (
                                                 <div key={lead.id}
-                                                    className={`d-flex align-items-center justify-content-between p-2 rounded-2 mb-1 cursor-pointer transition-all ${groupData.leadIds.includes(lead.id) ? 'bg-primary bg-opacity-10' : 'hover-bg-white'}`}
+                                                    className={`d-flex align-items-center justify-content-between p-2 rounded-2 mb-1 cursor-pointer transition-all ${groupData.leadIds.includes(lead.id) ? 'bg-success bg-opacity-10' : 'hover-bg-white'}`}
                                                     onClick={() => toggleLeadSelection(lead.id)}
                                                 >
                                                     <div className="d-flex align-items-center gap-2">
-                                                        <div className={`avatar-xs rounded-circle d-flex align-items-center justify-content-center fw-bold extra-small ${groupData.leadIds.includes(lead.id) ? 'bg-primary text-white' : 'bg-white text-primary border'}`} style={{ width: '24px', height: '24px' }}>
+                                                        <div className={`avatar-xs rounded-circle d-flex align-items-center justify-content-center fw-bold extra-small ${groupData.leadIds.includes(lead.id) ? 'bg-success text-white' : 'bg-white text-primary border'}`} style={{ width: '24px', height: '24px' }}>
                                                             {lead.name.charAt(0)}
                                                         </div>
                                                         <div className="small fw-medium">{lead.name}</div>

@@ -204,7 +204,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                                     type="text"
                                     className="form-control bg-light border-0 py-2"
                                     placeholder="e.g. Website Contact Form"
-                                    value={currentForm.name}
+                                    value={currentForm.name || ''}
                                     onChange={e => setCurrentForm({ ...currentForm, name: e.target.value })}
                                 />
                             </div>
@@ -227,7 +227,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                                 <input
                                     type="text"
                                     className="form-control bg-light border-0 py-2"
-                                    value={currentForm.configuration.title}
+                                    value={currentForm.configuration.title || ''}
                                     onChange={e => setCurrentForm({ ...currentForm, configuration: { ...currentForm.configuration, title: e.target.value } })}
                                 />
                             </div>
@@ -254,7 +254,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                                                     type="text"
                                                     className="form-control form-control-sm border-0 shadow-none bg-white"
                                                     placeholder="Label"
-                                                    value={field.label}
+                                                    value={field.label || ''}
                                                     onChange={e => updateField(field.id, { label: e.target.value })}
                                                 />
                                             </div>

@@ -187,6 +187,14 @@ export default function WhatsAppPage() {
                                     <i className="bi bi-chat-left-text me-2"></i> Messages
                                 </button>
                             </li>
+                            <li className="nav-item">
+                                <button
+                                    className="nav-link rounded-pill px-4 fw-bold text-muted border-0 bg-transparent"
+                                    onClick={() => navigateTo('/social/whatsapp/webhooks')}
+                                >
+                                    <i className="bi bi-gear me-2"></i> Webhooks
+                                </button>
+                            </li>
                         </ul>
                     </div>
 

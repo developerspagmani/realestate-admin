@@ -115,12 +115,19 @@ export default function StandaloneProvider({
         localStorage.setItem(`website_lead_${website.id}`, JSON.stringify(identity));
     };
 
-    const trackAction = async (type: string, metadata: any = {}) => {
-        if (!leadIdentity) return;
+    const trackAction = async (type: string, metadata: any = {}, identityOverride?: { id?: string, email?: string }) => {
+        const identity = identityOverride || leadIdentity;
+        if (!identity) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`[Tracking Skipped] Anonymous interaction: ${type}`, metadata);
+            }
+            return;
+        }
+
         try {
             await marketingService.trackInteraction({
-                leadId: leadIdentity.id,
-                email: leadIdentity.email,
+                leadId: identity.id,
+                email: identity.email,
                 type,
                 metadata: { websiteId: website.id, ...metadata }
             });

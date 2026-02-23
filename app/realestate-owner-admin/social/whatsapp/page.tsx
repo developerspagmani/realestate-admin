@@ -232,6 +232,11 @@ function WhatsAppContent() {
                                 <li className="nav-item">
                                     <button className={`nav-link rounded-pill px-4 fw-bold ${activeTab === 'test' ? 'active bg-primary' : 'text-muted'}`} onClick={() => setActiveTab('test')}>Test Chat</button>
                                 </li>
+                                <li className="nav-item">
+                                    <button className="nav-link rounded-pill px-4 fw-bold text-muted" onClick={() => navigateTo('/social/whatsapp/webhooks')}>
+                                        <i className="bi bi-gear me-1"></i> Webhooks
+                                    </button>
+                                </li>
                             </ul>
                         </div>
 

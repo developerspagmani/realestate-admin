@@ -108,7 +108,7 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
                                         type="text"
                                         className="form-control bg-light border-0 py-2"
                                         placeholder="e.g. Summer Property Sale 2024"
-                                        value={campaignData.name}
+                                        value={campaignData.name || ''}
                                         onChange={e => setCampaignData({ ...campaignData, name: e.target.value })}
                                     />
                                 </div>
@@ -117,7 +117,7 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
                                     <input
                                         type="datetime-local"
                                         className="form-control bg-light border-0 py-2"
-                                        value={campaignData.scheduledAt}
+                                        value={campaignData.scheduledAt || ''}
                                         onChange={e => setCampaignData({ ...campaignData, scheduledAt: e.target.value })}
                                     />
                                 </div>

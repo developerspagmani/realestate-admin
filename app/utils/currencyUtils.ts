@@ -4,6 +4,7 @@ export const countryToCurrency: Record<string, { symbol: string, code: string }>
     'United Kingdom': { symbol: '£', code: 'GBP' },
     'UK': { symbol: '£', code: 'GBP' },
     'India': { symbol: '₹', code: 'INR' },
+    'IN': { symbol: '₹', code: 'INR' },
     'Canada': { symbol: '$', code: 'CAD' },
     'Australia': { symbol: '$', code: 'AUD' },
     'Germany': { symbol: '€', code: 'EUR' },

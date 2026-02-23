@@ -141,6 +141,7 @@ export default function WidgetForm({
                                                             required
                                                         >
                                                             <option value="">Choose {tenantType === 1 ? 'Property' : 'Workspace'}...</option>
+                                                            <option value="global">Global Property (All Properties)</option>
                                                             {properties.map(p => (
                                                                 <option key={p.id} value={p.id}>{p.title}</option>
                                                             ))}

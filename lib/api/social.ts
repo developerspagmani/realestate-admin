@@ -411,28 +411,81 @@ export const whatsappApi = {
             headers: getAuthHeaders()
         });
         return response.json();
+    },
+
+    getWebhookInfo: async () => {
+        const response = await fetch(`${API_BASE_URL}/social/whatsapp/webhook/info`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
     }
 };
 
 // Automation Hub API
 export const automationApi = {
-    getStats: async (): Promise<any> => {
-        const response = await fetch(`${API_BASE_URL}/social/automation/stats`, {
+    getStats: async (params?: any): Promise<any> => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${API_BASE_URL}/social/automation/stats${query}`, {
             headers: getAuthHeaders()
         });
         return response.json();
     },
 
-    getWorkflows: async (): Promise<any> => {
+    getWorkflows: async (params?: any): Promise<any> => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${API_BASE_URL}/social/automation/workflows${query}`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+
+    getWaitingLeads: async (params?: any): Promise<any> => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${API_BASE_URL}/social/automation/waiting-leads${query}`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+
+    createWorkflow: async (data: any): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/social/automation/workflows`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    },
+
+    updateWorkflow: async (id: string, data: any): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/automation/workflows/${id}`, {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    },
+
+    deleteWorkflow: async (id: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/automation/workflows/${id}`, {
+            method: 'DELETE',
             headers: getAuthHeaders()
         });
         return response.json();
     },
 
-    getWaitingLeads: async (): Promise<any> => {
-        const response = await fetch(`${API_BASE_URL}/social/automation/waiting-leads`, {
+    toggleWorkflowStatus: async (id: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/automation/workflows/${id}/toggle`, {
+            method: 'POST',
             headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+
+    forceMatch: async (leadId: string, tenantId?: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/automation/force-match`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ leadId, tenantId })
         });
         return response.json();
     }

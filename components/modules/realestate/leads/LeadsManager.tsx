@@ -30,6 +30,7 @@ export interface Lead {
     updatedAt: string;
     lastContacted: string | null;
     tags?: string[];
+    userId?: string;
 }
 
 interface LeadsManagerProps {
@@ -132,7 +133,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     createdAt: l.createdAt,
                     updatedAt: l.updatedAt || l.createdAt,
                     lastContacted: l.lastContacted || null,
-                    tags: l.preferences?.tags || []
+                    tags: l.preferences?.tags || [],
+                    userId: l.userId
                 }));
 
                 // Only update state if leads have actually changed or it's first load

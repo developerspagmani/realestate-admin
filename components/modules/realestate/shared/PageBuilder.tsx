@@ -13,10 +13,11 @@ interface PageBuilderProps {
     widgetId: string;
     onSelectProperty: (property: any) => void;
     onFilter?: (filters: any) => void;
+    trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
     hideHero?: boolean;
 }
 
-const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, widgetId, onSelectProperty, onFilter, hideHero = false }) => {
+const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, widgetId, onSelectProperty, onFilter, trackAction, hideHero = false }) => {
     // If we have specific blocks, use the block-based renderer
     if (config?.blocks && config.blocks.length > 0) {
         return (
@@ -74,6 +75,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                             onReset={() => { }}
                                             onSelectProperty={onSelectProperty}
                                             onFilter={onFilter}
+                                            trackAction={trackAction}
                                         />
                                     </div>
                                 </div>

@@ -24,7 +24,7 @@ export default function PropertyDetailClient({ propertySlug }: { propertySlug: s
 
     if (!property) return <div className="p-5 text-center">Property not found.</div>;
 
-    const country = website?.tenant?.country || 'USA';
+    const country = property?.country || website?.tenant?.country || 'USA';
     const currencyConfig = getCurrencyConfig(country);
     const currencySymbol = currencyConfig?.symbol || '$';
 

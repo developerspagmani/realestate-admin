@@ -26,26 +26,84 @@ function AutomationContent() {
     });
 
     const [workflows, setWorkflows] = useState<any[]>([]);
+    const [showModal, setShowModal] = useState(false);
+    const [editingWorkflow, setEditingWorkflow] = useState<any>(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        trigger: 'LEAD_CREATED',
+        type: 'WhatsApp',
+        status: 'Active'
+    });
+
+    const fetchData = async () => {
+        if (!user?.tenantId) return;
+        setLoading(true);
+        try {
+            const [statsRes, workflowsRes] = await Promise.all([
+                automationApi.getStats({ tenantId: user.tenantId }),
+                automationApi.getWorkflows({ tenantId: user.tenantId })
+            ]);
+
+            if (statsRes.success) setStats(statsRes.data);
+            if (workflowsRes.success) setWorkflows(workflowsRes.data);
+        } catch (error) {
+            console.error('Failed to fetch automation data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [statsRes, workflowsRes] = await Promise.all([
-                    automationApi.getStats(),
-                    automationApi.getWorkflows()
-                ]);
+        if (user?.tenantId) {
+            fetchData();
+        }
+    }, [user?.tenantId]);
 
-                if (statsRes.success) setStats(statsRes.data);
-                if (workflowsRes.success) setWorkflows(workflowsRes.data);
-            } catch (error) {
-                console.error('Failed to fetch automation data:', error);
-            } finally {
-                setLoading(false);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            let res;
+            const payload = { ...formData, tenantId: user?.tenantId };
+
+            if (editingWorkflow) {
+                res = await automationApi.updateWorkflow(editingWorkflow.id, payload);
+            } else {
+                res = await automationApi.createWorkflow(payload);
             }
-        };
 
-        fetchData();
-    }, []);
+            if (res.success) {
+                setShowModal(false);
+                setEditingWorkflow(null);
+                setFormData({ name: '', trigger: 'LEAD_CREATED', type: 'WhatsApp', status: 'Active' });
+                fetchData();
+            } else {
+                alert(res.message + (res.details ? `: ${res.details}` : ''));
+            }
+        } catch (error: any) {
+            console.error('Failed to save workflow:', error);
+            alert('Failed to save automation: ' + (error.message || 'Unknown error'));
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (confirm('Are you sure you want to delete this automation?')) {
+            try {
+                const res = await automationApi.deleteWorkflow(id);
+                if (res.success) fetchData();
+            } catch (error) {
+                console.error('Failed to delete workflow:', error);
+            }
+        }
+    };
+
+    const handleToggleStatus = async (id: string) => {
+        try {
+            const res = await automationApi.toggleWorkflowStatus(id);
+            if (res.success) fetchData();
+        } catch (error) {
+            console.error('Failed to toggle status:', error);
+        }
+    };
 
     return (
         <MainLayout activePage="social-automation">
@@ -55,7 +113,14 @@ function AutomationContent() {
                         <h2 className="fw-bold text-dark">Unified Automation Hub</h2>
                         <p className="text-muted">Manage your Lead Nurturing sequences and AI matching engine.</p>
                     </div>
-                    <button className="btn btn-primary d-flex align-items-center gap-2">
+                    <button
+                        className="btn btn-primary d-flex align-items-center gap-2"
+                        onClick={() => {
+                            setEditingWorkflow(null);
+                            setFormData({ name: '', trigger: 'LEAD_CREATED', type: 'WhatsApp', status: 'Active' });
+                            setShowModal(true);
+                        }}
+                    >
                         <i className="bi bi-plus-lg"></i> Create Automation
                     </button>
                 </div>
@@ -116,30 +181,63 @@ function AutomationContent() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {workflows.map(wf => (
-                                            <tr key={wf.id}>
-                                                <td className="px-4">
-                                                    <div className="fw-semibold">{wf.name}</div>
-                                                </td>
-                                                <td><span className="badge bg-light text-dark border">{wf.trigger}</span></td>
-                                                <td>
-                                                    {wf.type === 'WhatsApp' && <i className="bi bi-whatsapp text-success me-2"></i>}
-                                                    {wf.type === 'Email' && <i className="bi bi-envelope text-primary me-2"></i>}
-                                                    {wf.type === 'Omni-channel' && <i className="bi bi-shuffle text-info me-2"></i>}
-                                                    {wf.type}
-                                                </td>
-                                                <td>{wf.sent}</td>
-                                                <td>
-                                                    <span className={`badge rounded-pill ${wf.status === 'Active' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'}`}>
-                                                        {wf.status}
-                                                    </span>
-                                                </td>
-                                                <td className="text-end px-4">
-                                                    <button className="btn btn-sm btn-light-primary me-2"><i className="bi bi-pencil"></i></button>
-                                                    <button className="btn btn-sm btn-light-danger"><i className="bi bi-trash"></i></button>
-                                                </td>
+                                        {workflows.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="text-center py-4 text-muted">No automation workflows found.</td>
                                             </tr>
-                                        ))}
+                                        ) : (
+                                            workflows.map(wf => (
+                                                <tr key={wf.id}>
+                                                    <td className="px-4">
+                                                        <div className="fw-semibold">{wf.name}</div>
+                                                    </td>
+                                                    <td><span className="badge bg-light text-dark border">{wf.trigger}</span></td>
+                                                    <td>
+                                                        {wf.type === 'WhatsApp' && <i className="bi bi-whatsapp text-success me-2"></i>}
+                                                        {wf.type === 'Email' && <i className="bi bi-envelope text-primary me-2"></i>}
+                                                        {wf.type === 'Omni-channel' && <i className="bi bi-shuffle text-info me-2"></i>}
+                                                        {wf.type}
+                                                    </td>
+                                                    <td>{wf.sent || 0}</td>
+                                                    <td>
+                                                        <div className="form-check form-switch">
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="checkbox"
+                                                                checked={wf.status === 'Active'}
+                                                                onChange={() => handleToggleStatus(wf.id)}
+                                                            />
+                                                            <span className={`small ms-1 ${wf.status === 'Active' ? 'text-success' : 'text-muted'}`}>
+                                                                {wf.status}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-end px-4">
+                                                        <button
+                                                            className="btn btn-sm btn-light-primary me-2"
+                                                            onClick={() => {
+                                                                setEditingWorkflow(wf);
+                                                                setFormData({
+                                                                    name: wf.name,
+                                                                    trigger: wf.trigger,
+                                                                    type: wf.type,
+                                                                    status: wf.status
+                                                                });
+                                                                setShowModal(true);
+                                                            }}
+                                                        >
+                                                            <i className="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-sm btn-light-danger"
+                                                            onClick={() => handleDelete(wf.id)}
+                                                        >
+                                                            <i className="bi bi-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -193,6 +291,77 @@ function AutomationContent() {
                     </div>
                 </div>
             </div>
+
+            {/* Create/Edit Modal */}
+            {showModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content border-0 rounded-4 shadow">
+                            <div className="modal-header border-0 p-4 pb-0">
+                                <h5 className="fw-bold mb-0">{editingWorkflow ? 'Edit' : 'Create'} Automation</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
+                            </div>
+                            <form onSubmit={handleSubmit}>
+                                <div className="modal-body p-4">
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold">Workflow Name</label>
+                                        <input
+                                            type="text"
+                                            className="form-control rounded-3"
+                                            placeholder="e.g. New Lead Welcome"
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold">Trigger Event</label>
+                                        <select
+                                            className="form-select rounded-3"
+                                            value={formData.trigger}
+                                            onChange={e => setFormData({ ...formData, trigger: e.target.value })}
+                                        >
+                                            <option value="LEAD_CREATED">New Lead</option>
+                                            <option value="MATCH_FOUND">Match Found</option>
+                                            <option value="STATUS_CHANGED">Status Changed</option>
+                                            <option value="PROPERTY_ADDED">Property Added</option>
+                                        </select>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold">Channel</label>
+                                        <select
+                                            className="form-select rounded-3"
+                                            value={formData.type}
+                                            onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                        >
+                                            <option value="WhatsApp">WhatsApp</option>
+                                            <option value="Email">Email</option>
+                                            <option value="Omni-channel">Omni-channel</option>
+                                        </select>
+                                    </div>
+                                    <div className="mb-0">
+                                        <label className="form-label small fw-bold">Initial Status</label>
+                                        <select
+                                            className="form-select rounded-3"
+                                            value={formData.status}
+                                            onChange={e => setFormData({ ...formData, status: e.target.value })}
+                                        >
+                                            <option value="Active">Active</option>
+                                            <option value="Inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="modal-footer border-0 p-4 pt-0">
+                                    <button type="button" className="btn btn-light rounded-3 px-4" onClick={() => setShowModal(false)}>Cancel</button>
+                                    <button type="submit" className="btn btn-primary rounded-3 px-4">
+                                        {editingWorkflow ? 'Update' : 'Create'} Workflow
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </MainLayout>
     );
 }
