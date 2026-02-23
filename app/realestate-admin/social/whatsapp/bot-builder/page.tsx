@@ -5,7 +5,7 @@ import { whatsappApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
 import { useRouter } from 'next/navigation';
-import { toast } from 'react-hot-toast';
+import Toast from '@/components/common/Toast';
 
 export default function WhatsAppBotBuilderPage() {
     return (
@@ -43,6 +43,16 @@ function BotBuilderContent() {
         startStepId: ''
     });
 
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success',
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
     useEffect(() => {
         loadConfig();
     }, []);
@@ -66,10 +76,10 @@ function BotBuilderContent() {
         try {
             const res = await (whatsappApi as any).updateBotConfig(config);
             if (res.success) {
-                toast.success('Chatbot configuration saved!');
+                showToast('Chatbot configuration saved!', 'success');
             }
         } catch (error) {
-            toast.error('Failed to save configuration');
+            showToast('Failed to save configuration', 'error');
         }
     };
 
@@ -301,6 +311,13 @@ function BotBuilderContent() {
                     </div>
                 </div>
             </div>
+
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
 
             <style jsx>{`
                 .extra-small { font-size: 0.7rem; }
