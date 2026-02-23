@@ -418,6 +418,23 @@ export const whatsappApi = {
             headers: getAuthHeaders()
         });
         return response.json();
+    },
+    getBotConfig: async () => {
+        const response = await fetch(`${API_BASE_URL}/social/whatsapp/bot-config`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+    updateBotConfig: async (config: any) => {
+        const response = await fetch(`${API_BASE_URL}/social/whatsapp/bot-config`, {
+            method: 'PUT',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        return response.json();
     }
 };
 

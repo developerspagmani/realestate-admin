@@ -190,6 +190,14 @@ export default function WhatsAppPage() {
                             <li className="nav-item">
                                 <button
                                     className="nav-link rounded-pill px-4 fw-bold text-muted border-0 bg-transparent"
+                                    onClick={() => navigateTo('/social/whatsapp/bot-builder')}
+                                >
+                                    <i className="bi bi-robot me-2"></i> Bot Funnel
+                                </button>
+                            </li>
+                            <li className="nav-item">
+                                <button
+                                    className="nav-link rounded-pill px-4 fw-bold text-muted border-0 bg-transparent"
                                     onClick={() => navigateTo('/social/whatsapp/webhooks')}
                                 >
                                     <i className="bi bi-gear me-2"></i> Webhooks

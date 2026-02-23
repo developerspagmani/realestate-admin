@@ -230,6 +230,11 @@ function WhatsAppContent() {
                                     <button className={`nav-link rounded-pill px-4 fw-bold ${activeTab === 'messages' ? 'active bg-success' : 'text-muted'}`} onClick={() => setActiveTab('messages')}>Recent Chat</button>
                                 </li>
                                 <li className="nav-item">
+                                    <button className="nav-link rounded-pill px-4 fw-bold text-muted border-0 bg-transparent" onClick={() => navigateTo('/social/whatsapp/bot-builder')}>
+                                        <i className="bi bi-robot me-1"></i> Bot Funnel
+                                    </button>
+                                </li>
+                                <li className="nav-item">
                                     <button className={`nav-link rounded-pill px-4 fw-bold ${activeTab === 'test' ? 'active bg-primary' : 'text-muted'}`} onClick={() => setActiveTab('test')}>Test Chat</button>
                                 </li>
                                 <li className="nav-item">
