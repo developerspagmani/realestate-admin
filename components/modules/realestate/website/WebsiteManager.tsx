@@ -60,7 +60,21 @@ const INITIAL_FORM_DATA = {
             enable3D: true,
             enableTour: true,
             enableBooking: true,
-            detailViewType: 'tabs' // tabs | scrolling
+            detailViewType: 'tabs', // tabs | scrolling
+            modules: [] // [{ id, type, data: { ... } }]
+        },
+        footer: {
+            copyright: `© ${new Date().getFullYear()} Real Estate Portal`,
+            footerText: '',
+            backgroundColor: '#f8f9fa',
+            textColor: '#212529',
+            socials: {
+                facebook: '',
+                instagram: '',
+                twitter: '',
+                linkedin: '',
+                youtube: ''
+            }
         },
         inquiryForm: {
             enabled: false,

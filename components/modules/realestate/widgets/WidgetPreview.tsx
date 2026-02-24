@@ -120,70 +120,150 @@ export default function WidgetPreview({ formData, tenantType, deviceMode: extern
                 )}
 
                 {/* Main Content Area */}
-                <div className="preview-mock-content p-4">
-                    {builder.pageTitle && <h3 className="h6 fw-bold mb-3">{builder.pageTitle}</h3>}
+                <div className="preview-mock-content p-0">
+                    {builder.pageTitle && <div className="p-4"><h3 className="h6 fw-bold mb-0">{builder.pageTitle}</h3></div>}
 
-                    {/* Mock Search Bar */}
-                    {builder.showSearch !== false && (
-                        <div className="mock-search-bar mb-4 p-2 bg-light border-0 rounded-4 d-flex gap-2">
-                            <div className="mock-dot bg-secondary-subtle" style={{ width: '60%', height: '14px', borderRadius: '7px' }}></div>
-                            <div className="mock-dot bg-secondary-subtle flex-grow-1" style={{ height: '14px', borderRadius: '7px' }}></div>
-                        </div>
-                    )}
+                    {/* Rendering Modular Sections */}
+                    {(builder.modules || []).map((module: any) => (
+                        <div key={module.id} className="modular-section border-bottom" style={{
+                            backgroundColor: module.data?.bgColor || 'transparent',
+                            color: module.data?.textColor || 'inherit'
+                        }}>
+                            {module.type === 'full-width-image' && (
+                                <div className="w-100 position-relative" style={{ height: '160px', overflow: 'hidden' }}>
+                                    {module.data?.imageUrl ? (
+                                        <img src={module.data.imageUrl} className="w-100 h-100 shadow-sm" style={{ objectFit: 'cover' }} alt="Visual" />
+                                    ) : (
+                                        <div className="w-100 h-100 bg-light d-flex align-items-center justify-content-center text-muted small">Full Width Image</div>
+                                    )}
+                                </div>
+                            )}
 
-                    {/* Mock Listings */}
-                    {(isPageBuilder ? builder.showListing !== false : true) && (
-                        <div className={`row g-3`}>
-                            {Array.from({ length: display.columns === 1 ? 2 : display.columns * 2 }).slice(0, 6).map((_, i) => (
-                                <div key={i} className={display.columns === 1 ? 'col-12' : display.columns === 2 ? 'col-6' : 'col-4'}>
-                                    <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
-                                        <div className="mock-img bg-light" style={{ height: '80px' }}></div>
-                                        <div className="p-2">
-                                            <div className="mock-line bg-light mb-2 w-75" style={{ height: '8px', borderRadius: '4px' }}></div>
-                                            <div className="mock-line bg-light w-50" style={{ height: '6px', borderRadius: '4px' }}></div>
-                                            <div
-                                                className="mock-btn mt-3 rounded-4"
-                                                style={{ height: '20px', backgroundColor: theme.primaryColor, opacity: 0.1 }}
-                                            ></div>
-                                        </div>
+                            {module.type === 'text-image' && (
+                                <div className="p-4 d-flex gap-3 align-items-center">
+                                    <div className="flex-grow-1">
+                                        <div className="fw-bold extra-small mb-1">{module.data?.title || 'Section Heading'}</div>
+                                        <div className="opacity-75" style={{ fontSize: '0.65rem' }}>{module.data?.description || 'Section description and details go here.'}</div>
+                                    </div>
+                                    <div className="flex-shrink-0 bg-light rounded-3" style={{ width: '80px', height: '60px', overflow: 'hidden' }}>
+                                        {module.data.imageUrl && <img src={module.data.imageUrl} className="w-100 h-100" style={{ objectFit: 'cover' }} />}
                                     </div>
                                 </div>
-                            ))}
+                            )}
+
+                            {module.type === 'image-text' && (
+                                <div className="p-4 d-flex gap-3 align-items-center">
+                                    <div className="flex-shrink-0 bg-light rounded-3" style={{ width: '80px', height: '60px', overflow: 'hidden' }}>
+                                        {module.data.imageUrl && <img src={module.data.imageUrl} className="w-100 h-100" style={{ objectFit: 'cover' }} />}
+                                    </div>
+                                    <div className="flex-grow-1">
+                                        <div className="fw-bold extra-small mb-1">{module.data?.title || 'Section Heading'}</div>
+                                        <div className="opacity-75" style={{ fontSize: '0.65rem' }}>{module.data?.description || 'Section description and details go here.'}</div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {module.type === 'typography' && (
+                                <div className="p-4 text-center">
+                                    <h4 className="fw-bold mb-2" style={{ fontSize: '1rem' }}>{module.data?.title || 'Custom Heading'}</h4>
+                                    <p className="mb-0 opacity-75 mx-auto" style={{ fontSize: '0.7rem', maxWidth: '80%' }}>{module.data?.description || 'This is a dedicated text block for highlighting important messages.'}</p>
+                                </div>
+                            )}
+
+                            {module.type === 'property-slider' && (
+                                <div className="p-4 bg-light bg-opacity-50">
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <div className="fw-bold extra-small">Featured Collection</div>
+                                        <div className="d-flex gap-1">
+                                            <div className="bg-white border rounded-circle" style={{ width: '20px', height: '20px' }}></div>
+                                            <div className="bg-white border rounded-circle" style={{ width: '20px', height: '20px' }}></div>
+                                        </div>
+                                    </div>
+                                    <div className="d-flex gap-3 overflow-hidden">
+                                        {[1, 2].map(i => (
+                                            <div key={i} className="bg-white rounded-3 shadow-sm border p-1" style={{ width: '140px', flexShrink: 0 }}>
+                                                <div className="bg-light rounded-2 mb-2" style={{ height: '60px' }}></div>
+                                                <div className="bg-light w-75 mb-1" style={{ height: '6px', borderRadius: '3px' }}></div>
+                                                <div className="bg-light w-50" style={{ height: '4px', borderRadius: '2px' }}></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    ))}
 
-                    {/* Mock Inquiry Form */}
-                    {(isPageBuilder ? builder.showInquiry !== false : true) && (
-                        <div className="mt-5 p-4 bg-light rounded-4 border-dashed">
-                            <div className="mock-line bg-secondary-subtle mb-3 mx-auto" style={{ height: '10px', width: '40%', borderRadius: '5px' }}></div>
-                            <div className="mock-line bg-secondary-subtle mb-2" style={{ height: '8px', borderRadius: '4px' }}></div>
-                            <div className="mock-line bg-secondary-subtle mb-4" style={{ height: '8px', width: '80%', borderRadius: '4px' }}></div>
-
-                            <div className="bg-white p-3 rounded-3 shadow-sm">
-                                <div className="mock-line bg-light mb-3" style={{ height: '25px', borderRadius: '5px' }}></div>
-                                <div className="mock-line bg-light mb-3" style={{ height: '25px', borderRadius: '5px' }}></div>
-                                <div
-                                    className="mock-btn w-100 rounded-4"
-                                    style={{ height: '35px', backgroundColor: theme.primaryColor }}
-                                ></div>
+                    {/* Original Search Mock */}
+                    <div className="p-4">
+                        {builder.showSearch !== false && (
+                            <div className="mock-search-bar mb-4 p-2 bg-light border-0 rounded-4 d-flex gap-2">
+                                <div className="mock-dot bg-secondary-subtle" style={{ width: '60%', height: '14px', borderRadius: '7px' }}></div>
+                                <div className="mock-dot bg-secondary-subtle flex-grow-1" style={{ height: '14px', borderRadius: '7px' }}></div>
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {/* Mock Listings */}
+                        {(isPageBuilder ? builder.showListing !== false : true) && (
+                            <div className={`row g-2`}>
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <div key={i} className={'col-6'}>
+                                        <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+                                            <div className="mock-img bg-light" style={{ height: '70px' }}></div>
+                                            <div className="p-2">
+                                                <div className="mock-line bg-light mb-1 w-75" style={{ height: '6px', borderRadius: '3px' }}></div>
+                                                <div className="mock-line bg-light w-50" style={{ height: '4px', borderRadius: '2px' }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Mock Inquiry Form */}
+                        {(isPageBuilder ? builder.showInquiry !== false : true) && (
+                            <div className="mt-4 p-3 bg-light rounded-4 border-dashed">
+                                <div className="bg-white p-2 rounded-3 shadow-sm">
+                                    <div className="mock-line bg-light mb-2" style={{ height: '20px', borderRadius: '4px' }}></div>
+                                    <div className="mock-btn w-100 rounded-4" style={{ height: '25px', backgroundColor: theme.primaryColor }}></div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Mock Footer */}
                 {isPageBuilder && builder.showFooter && (
-                    <div className="preview-mock-footer p-4 border-top mt-5 text-center bg-light position-relative">
-                        <div className="mock-line bg-secondary-subtle mb-2 mx-auto w-25" style={{ height: '6px', borderRadius: '3px' }}></div>
-                        <p className="extra-small text-muted mb-0" style={{ fontSize: '0.6rem' }}>
-                            {builder.footerText || '© 2026 Your Company'}
-                        </p>
+                    <div className="preview-mock-footer p-4 border-top mt-auto text-center position-relative shadow-sm" style={{
+                        backgroundColor: (formData.configuration?.footer?.backgroundColor || '#f8f9fa'),
+                        color: (formData.configuration?.footer?.textColor || '#212529')
+                    }}>
+                        {formData.configuration?.footer?.footerText && <p className="extra-small mb-3">{formData.configuration.footer.footerText}</p>}
+
+                        {/* Social Icons Mockup */}
+                        <div className="social-icons-mock d-flex justify-content-center gap-3 mb-3">
+                            {Object.entries(formData.configuration?.footer?.socials || {}).map(([key, value]) => {
+                                if (!value) return null;
+                                const icons: any = {
+                                    facebook: 'bi-facebook',
+                                    instagram: 'bi-instagram',
+                                    twitter: 'bi-twitter-x',
+                                    linkedin: 'bi-linkedin',
+                                    youtube: 'bi-youtube'
+                                };
+                                return <i key={key} className={`bi ${icons[key]} opacity-75`} style={{ fontSize: '0.8rem' }}></i>;
+                            })}
+                        </div>
+
+                        <div className="extra-small opacity-50 mb-4" style={{ fontSize: '0.6rem' }}>
+                            {formData.configuration?.footer?.copyright || `© ${new Date().getFullYear()} Real Estate Portal`}
+                        </div>
+
                         {/* Non-removable Watermark */}
                         <div
-                            className="position-absolute bottom-0 start-50 translate-middle-x mb-2 text-decoration-none d-flex align-items-center"
+                            className="position-absolute bottom-0 start-50 translate-middle-x mb-2 text-decoration-none d-flex align-items-center w-100 justify-content-center"
                             style={{
                                 fontSize: '8px',
-                                color: 'rgba(0,0,0,0.3)',
+                                color: 'rgba(0,0,0,0.2)',
                                 userSelect: 'none',
                                 pointerEvents: 'none'
                             }}
@@ -191,7 +271,7 @@ export default function WidgetPreview({ formData, tenantType, deviceMode: extern
                             <img
                                 src="/images/Virpnix-logo-icon-svg.svg"
                                 alt="Virpanix"
-                                style={{ height: '8px', width: 'auto', marginRight: '3px', opacity: 0.3 }}
+                                style={{ height: '8px', width: 'auto', marginRight: '3px', opacity: 0.2 }}
                             />
                             Powered by Virpanix
                         </div>

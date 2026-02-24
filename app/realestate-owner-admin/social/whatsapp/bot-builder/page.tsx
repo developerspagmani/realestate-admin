@@ -35,10 +35,14 @@ function BotBuilderContent() {
     const [config, setConfig] = useState<{
         id?: string;
         isActive: boolean;
+        upsellEnabled: boolean;
+        crossSellEnabled: boolean;
         steps: BotStep[];
         startStepId: string;
     }>({
         isActive: true,
+        upsellEnabled: true,
+        crossSellEnabled: true,
         steps: [],
         startStepId: ''
     });
@@ -132,7 +136,7 @@ function BotBuilderContent() {
                         <h1 className="fw-bold h3 mb-1">WhatsApp Chatbot Funnel</h1>
                         <p className="text-muted small mb-0">Design your automated conversation flow</p>
                     </div>
-                    <div className="d-flex gap-2">
+                    <div className="d-flex gap-2 flex-wrap">
                         <div className="form-check form-switch bg-white p-2 px-3 rounded-pill shadow-sm border d-flex align-items-center gap-2">
                             <input
                                 className="form-check-input ms-0"
@@ -141,6 +145,24 @@ function BotBuilderContent() {
                                 onChange={(e) => setConfig({ ...config, isActive: e.target.checked })}
                             />
                             <label className="form-check-label fw-bold small text-muted">Bot Active</label>
+                        </div>
+                        <div className="form-check form-switch bg-white p-2 px-3 rounded-pill shadow-sm border d-flex align-items-center gap-2">
+                            <input
+                                className="form-check-input ms-0"
+                                type="checkbox"
+                                checked={config.upsellEnabled}
+                                onChange={(e) => setConfig({ ...config, upsellEnabled: e.target.checked })}
+                            />
+                            <label className="form-check-label fw-bold small text-muted">Upsell</label>
+                        </div>
+                        <div className="form-check form-switch bg-white p-2 px-3 rounded-pill shadow-sm border d-flex align-items-center gap-2">
+                            <input
+                                className="form-check-input ms-0"
+                                type="checkbox"
+                                checked={config.crossSellEnabled}
+                                onChange={(e) => setConfig({ ...config, crossSellEnabled: e.target.checked })}
+                            />
+                            <label className="form-check-label fw-bold small text-muted">Cross-sell</label>
                         </div>
                         <button className="btn btn-success rounded-pill px-4" onClick={handleSave}>
                             <i className="bi bi-cloud-check me-2"></i> Save Funnel

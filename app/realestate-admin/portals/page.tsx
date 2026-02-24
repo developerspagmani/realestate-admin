@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import { portalService } from '@/app/services/api';
-import { toast } from 'react-hot-toast';
+import Toast from '@/components/common/Toast';
 
 interface PortalListing {
     id: string;
@@ -22,6 +22,17 @@ export default function PortalsPage() {
     const [listings, setListings] = useState<PortalListing[]>([]);
     const [loading, setLoading] = useState(true);
     const [syncing, setSyncing] = useState(false);
+
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success',
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
 
     useEffect(() => {
         fetchListings();
@@ -45,10 +56,10 @@ export default function PortalsPage() {
         try {
             const response = await portalService.syncLeads(portal);
             if (response.success) {
-                toast.success(response.message);
+                showToast(response.message);
             }
         } catch (error) {
-            toast.error('Failed to sync leads');
+            showToast('Failed to sync leads', 'error');
         } finally {
             setSyncing(false);
         }
@@ -180,6 +191,13 @@ export default function PortalsPage() {
                     </div>
                 </div>
             </div>
+
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
 
             <style jsx>{`
                 .bg-soft-info { background-color: rgba(13, 202, 240, 0.1); }

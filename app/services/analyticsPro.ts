@@ -7,9 +7,6 @@ export const analyticsProService = {
     getAgentPerformance: async (params?: any) => {
         return await makeApiCall(analyticsProEndpoints.getAgentPerformance(params));
     },
-    getSearchTrends: async (params?: any) => {
-        return await makeApiCall(analyticsProEndpoints.getSearchTrends(params));
-    },
     getCampaignStats: async (params?: any) => {
         return await makeApiCall(analyticsProEndpoints.getCampaignStats(params));
     },

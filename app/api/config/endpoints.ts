@@ -419,8 +419,6 @@ export const analyticsProEndpoints = {
     params ? `/admin/analytics-pro/revenue-funnel?${buildQueryString(params)}` : '/admin/analytics-pro/revenue-funnel',
   getAgentPerformance: (params?: Record<string, any>) =>
     params ? `/admin/analytics-pro/agent-performance?${buildQueryString(params)}` : '/admin/analytics-pro/agent-performance',
-  getSearchTrends: (params?: Record<string, any>) =>
-    params ? `/admin/analytics-pro/search-trends?${buildQueryString(params)}` : '/admin/analytics-pro/search-trends',
   getCampaignStats: (params?: Record<string, any>) =>
     params ? `/admin/analytics-pro/campaign-stats?${buildQueryString(params)}` : '/admin/analytics-pro/campaign-stats',
   getMarketingInsights: (params?: Record<string, any>) =>

@@ -82,17 +82,15 @@ export default function AdvancedAnalyticsPage() {
                 propertyId: filters.propertyId
             };
 
-            const [revRes, agentRes, searchRes, campaignRes, marketingRes] = await Promise.all([
+            const [revRes, agentRes, campaignRes, marketingRes] = await Promise.all([
                 analyticsProService.getRevenueFunnel(queryParams),
                 analyticsProService.getAgentPerformance(queryParams),
-                analyticsProService.getSearchTrends(queryParams),
                 analyticsProService.getCampaignStats(queryParams),
                 analyticsProService.getMarketingInsights(queryParams)
             ]);
 
             if (revRes.success) setRevenueFunnel(revRes.data);
             if (agentRes.success) setAgentPerformance(agentRes.data);
-            if (searchRes.success) setSearchTrends(searchRes.data);
             if (campaignRes.success) setCampaignStats(campaignRes.data);
             if (marketingRes.success) setMarketingInsights(marketingRes.data);
 

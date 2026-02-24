@@ -33,14 +33,52 @@ export default function WebsiteForm({
 }: WebsiteFormProps) {
     const router = useRouter();
     const { hasModule } = useAuthContext();
-    const [activeTab, setActiveTab] = useState<'basics' | 'domain' | 'style' | 'builder' | 'modules' | 'navigation'>('basics');
+    const [activeTab, setActiveTab] = useState<'basics' | 'domain' | 'style' | 'builder' | 'footer' | 'modules' | 'navigation'>('basics');
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
     const [showMediaSelector, setShowMediaSelector] = useState(false);
     const [mediaTarget, setMediaTarget] = useState<'logoUrl' | 'heroBgUrl' | null>(null);
     const [cacheClearing, setCacheClearing] = useState(false);
     const [cacheClearStatus, setCacheClearStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [modularMediaIndex, setModularMediaIndex] = useState<number | null>(null);
 
     const [verificationStatus, setVerificationStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+
+    // Helper to manage modular blocks
+    const addModule = (type: string) => {
+        const currentModules = formData.configuration.builder?.modules || [];
+        const newModule = {
+            id: `mod-${Date.now()}`,
+            type,
+            data: {
+                title: type === 'typography' ? 'Custom Section' : '',
+                description: '',
+                imageUrl: '',
+                bgColor: '#ffffff',
+                textColor: '#000000'
+            }
+        };
+        toggleNestedConfig('builder', 'modules', [...currentModules, newModule]);
+    };
+
+    const updateModule = (index: number, data: any) => {
+        const modules = [...(formData.configuration.builder?.modules || [])];
+        modules[index] = { ...modules[index], data };
+        toggleNestedConfig('builder', 'modules', modules);
+    };
+
+    const removeModule = (index: number) => {
+        const modules = [...(formData.configuration.builder?.modules || [])];
+        modules.splice(index, 1);
+        toggleNestedConfig('builder', 'modules', modules);
+    };
+
+    const moveModule = (index: number, direction: 'up' | 'down') => {
+        const modules = [...(formData.configuration.builder?.modules || [])];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= modules.length) return;
+        [modules[index], modules[targetIndex]] = [modules[targetIndex], modules[index]];
+        toggleNestedConfig('builder', 'modules', modules);
+    };
 
     const checkDNS = async () => {
         if (!formData.customDomain) return;
@@ -96,11 +134,18 @@ export default function WebsiteForm({
     };
 
     const handleMediaSelect = (media: any) => {
-        if (media && mediaTarget) {
-            toggleNestedConfig('builder', mediaTarget, media.url);
+        if (media) {
+            if (mediaTarget) {
+                toggleNestedConfig('builder', mediaTarget, media.url);
+            } else if (modularMediaIndex !== null) {
+                const modules = [...(formData.configuration.builder?.modules || [])];
+                modules[modularMediaIndex].data.imageUrl = media.url;
+                toggleNestedConfig('builder', 'modules', modules);
+            }
         }
         setShowMediaSelector(false);
         setMediaTarget(null);
+        setModularMediaIndex(null);
     };
 
     const toggleNestedConfig = (parent: string, child: string, value: any) => {
@@ -122,6 +167,7 @@ export default function WebsiteForm({
         { id: 'style', label: 'Style', icon: 'bi-palette-fill' },
         { id: 'navigation', label: 'Menus', icon: 'bi-menu-button-wide-fill' },
         { id: 'builder', label: 'Page Builder', icon: 'bi-layout-text-window-reverse' },
+        { id: 'footer', label: 'Footer', icon: 'bi-layout-sidebar' },
         { id: 'modules', label: 'Integrations', icon: 'bi-plug-fill' },
     ];
 
@@ -436,8 +482,8 @@ export default function WebsiteForm({
                                                 <button
                                                     type="button"
                                                     className={`btn btn-sm rounded-4 px-3 fw-bold flex-shrink-0 ms-3 ${cacheClearStatus === 'success' ? 'btn-success' :
-                                                            cacheClearStatus === 'error' ? 'btn-danger' :
-                                                                'btn-warning'
+                                                        cacheClearStatus === 'error' ? 'btn-danger' :
+                                                            'btn-warning'
                                                         }`}
                                                     onClick={clearWebsiteCache}
                                                     disabled={cacheClearing || !editingWebsite}
@@ -566,6 +612,206 @@ export default function WebsiteForm({
                                                 <option value="tabs">Organized Tabs</option>
                                                 <option value="scrolling">Single Page Continuous Scroll</option>
                                             </select>
+                                        </div>
+
+                                        <div className="col-12 mt-5">
+                                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 className="fw-bold text-secondary text-uppercase extra-small mb-0">Modular Page Sections</h6>
+                                                <div className="dropdown">
+                                                    <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                        <i className="bi bi-plus-lg me-1"></i> Add Section
+                                                    </button>
+                                                    <ul className="dropdown-menu dropdown-menu-end shadow-lg rounded-4 border-0 p-2">
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('text-image')}><i className="bi bi-layout-split me-2 text-primary"></i> Text & Image</button></li>
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('image-text')}><i className="bi bi-layout-split me-2 text-primary"></i> Image & Text</button></li>
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('property-slider')}><i className="bi bi-collection-play me-2 text-primary"></i> Properties Slider</button></li>
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('full-width-image')}><i className="bi bi-image-fill me-2 text-primary"></i> Full Width Image</button></li>
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('typography')}><i className="bi bi-type me-2 text-primary"></i> Heading & Text</button></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+
+                                            <div className="modular-builder-list">
+                                                {(formData.configuration.builder?.modules || []).length === 0 ? (
+                                                    <div className="text-center py-5 border-2 border-dashed rounded-4 bg-light bg-opacity-50">
+                                                        <i className="bi bi-layers text-muted display-6 opacity-25"></i>
+                                                        <p className="text-muted small mt-2">No custom sections added. Start building your page!</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="d-flex flex-column gap-3">
+                                                        {(formData.configuration.builder?.modules || []).map((module: any, index: number) => (
+                                                            <div key={module.id} className="card border border-light-subtle rounded-4 shadow-sm overflow-hidden animate-fade-in">
+                                                                <div className="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                                                                    <div className="d-flex align-items-center gap-3">
+                                                                        <div className="bg-primary bg-opacity-10 text-primary p-2 rounded-3">
+                                                                            <i className={`bi ${module.type === 'text-image' || module.type === 'image-text' ? 'bi-layout-split' : module.type === 'property-slider' ? 'bi-collection-play' : module.type === 'full-width-image' ? 'bi-image-fill' : 'bi-type'}`}></i>
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="fw-bold small text-capitalize">{module.type.replace(/-/g, ' ')}</div>
+                                                                            <div className="extra-small text-muted">Section {index + 1}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="d-flex gap-1">
+                                                                        <button type="button" className="btn btn-sm btn-light rounded-circle p-2" onClick={() => moveModule(index, 'up')} disabled={index === 0}><i className="bi bi-arrow-up"></i></button>
+                                                                        <button type="button" className="btn btn-sm btn-light rounded-circle p-2" onClick={() => moveModule(index, 'down')} disabled={index === (formData.configuration.builder?.modules || []).length - 1}><i className="bi bi-arrow-down"></i></button>
+                                                                        <button type="button" className="btn btn-sm btn-outline-danger border-0 rounded-circle p-2" onClick={() => removeModule(index)}><i className="bi bi-trash"></i></button>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="card-body p-3 bg-light bg-opacity-25">
+                                                                    <div className="row g-3">
+                                                                        {(module.type === 'text-image' || module.type === 'image-text' || module.type === 'typography') && (
+                                                                            <div className="col-12">
+                                                                                <label className="form-label extra-small fw-bold">Heading</label>
+                                                                                <input
+                                                                                    type="text"
+                                                                                    className="form-control form-control-sm rounded-3"
+                                                                                    value={module.data?.title || ''}
+                                                                                    onChange={(e) => updateModule(index, { ...module.data, title: e.target.value })}
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                        {(module.type === 'text-image' || module.type === 'image-text' || module.type === 'typography') && (
+                                                                            <div className="col-12">
+                                                                                <label className="form-label extra-small fw-bold">Description</label>
+                                                                                <textarea
+                                                                                    className="form-control form-control-sm rounded-3"
+                                                                                    rows={2}
+                                                                                    value={module.data?.description || ''}
+                                                                                    onChange={(e) => updateModule(index, { ...module.data, description: e.target.value })}
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                        {(module.type === 'text-image' || module.type === 'image-text' || module.type === 'full-width-image') && (
+                                                                            <div className="col-12">
+                                                                                <label className="form-label extra-small fw-bold">Image URL</label>
+                                                                                <div className="input-group input-group-sm">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        className="form-control rounded-start-3"
+                                                                                        value={module.data?.imageUrl || ''}
+                                                                                        onChange={(e) => updateModule(index, { ...module.data, imageUrl: e.target.value })}
+                                                                                    />
+                                                                                    <button type="button" className="btn btn-outline-secondary rounded-end-3" onClick={() => {
+                                                                                        setMediaTarget(null);
+                                                                                        setModularMediaIndex(index);
+                                                                                        setShowMediaSelector(true);
+                                                                                    }}>
+                                                                                        <i className="bi bi-image"></i>
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        {module.type === 'typography' && (
+                                                                            <>
+                                                                                <div className="col-md-6">
+                                                                                    <label className="form-label extra-small fw-bold">Background Color</label>
+                                                                                    <input
+                                                                                        type="color"
+                                                                                        className="form-control form-control-color border-0 w-100 bg-transparent"
+                                                                                        value={module.data?.bgColor || '#ffffff'}
+                                                                                        onChange={(e) => updateModule(index, { ...module.data, bgColor: e.target.value })}
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="col-md-6">
+                                                                                    <label className="form-label extra-small fw-bold">Text Color</label>
+                                                                                    <input
+                                                                                        type="color"
+                                                                                        className="form-control form-control-color border-0 w-100 bg-transparent"
+                                                                                        value={module.data?.textColor || '#000000'}
+                                                                                        onChange={(e) => updateModule(index, { ...module.data, textColor: e.target.value })}
+                                                                                    />
+                                                                                </div>
+                                                                            </>
+                                                                        )}
+                                                                        {module.type === 'property-slider' && (
+                                                                            <div className="col-12">
+                                                                                <div className="p-3 bg-white border border-info border-opacity-25 rounded-3">
+                                                                                    <p className="extra-small text-info mb-0 fw-bold"><i className="bi bi-info-circle-fill me-2"></i> This section automatically pulls properties from your selected source portfolio.</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* TAB: Footer Settings */}
+                                {activeTab === 'footer' && (
+                                    <div className="row g-4 animate-fade-in">
+                                        <div className="col-12">
+                                            <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Footer Customization</h6>
+                                            <p className="text-muted small">Style your website footer and add essential links.</p>
+                                        </div>
+
+                                        <div className="col-md-6">
+                                            <label className="form-label small fw-bold">Footer Background Color</label>
+                                            <div className="d-flex gap-2 align-items-center p-2 border rounded-3 bg-white">
+                                                <input
+                                                    type="color"
+                                                    className="form-control-color border-0 bg-transparent cursor-pointer"
+                                                    value={formData.configuration?.footer?.backgroundColor || '#f8f9fa'}
+                                                    onChange={(e) => toggleNestedConfig('footer', 'backgroundColor', e.target.value)}
+                                                />
+                                                <span className="small font-monospace text-uppercase text-muted">{formData.configuration?.footer?.backgroundColor || '#f8f9fa'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <label className="form-label small fw-bold">Footer Text Color</label>
+                                            <div className="d-flex gap-2 align-items-center p-2 border rounded-3 bg-white">
+                                                <input
+                                                    type="color"
+                                                    className="form-control-color border-0 bg-transparent cursor-pointer"
+                                                    value={formData.configuration?.footer?.textColor || '#212529'}
+                                                    onChange={(e) => toggleNestedConfig('footer', 'textColor', e.target.value)}
+                                                />
+                                                <span className="small font-monospace text-uppercase text-muted">{formData.configuration?.footer?.textColor || '#212529'}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="col-12">
+                                            <label className="form-label small fw-bold">Copyright Text</label>
+                                            <input
+                                                type="text"
+                                                className="form-control rounded-3"
+                                                placeholder="© 2026 Your Real Estate Company"
+                                                value={formData.configuration?.footer?.copyright || ''}
+                                                onChange={(e) => toggleNestedConfig('footer', 'copyright', e.target.value)}
+                                            />
+                                        </div>
+
+                                        <div className="col-12 mt-4">
+                                            <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Social Media URLs</h6>
+                                            <div className="row g-3">
+                                                {[
+                                                    { id: 'facebook', label: 'Facebook', icon: 'bi-facebook' },
+                                                    { id: 'instagram', label: 'Instagram', icon: 'bi-instagram' },
+                                                    { id: 'twitter', label: 'X (Twitter)', icon: 'bi-twitter-x' },
+                                                    { id: 'linkedin', label: 'LinkedIn', icon: 'bi-linkedin' },
+                                                    { id: 'youtube', label: 'YouTube', icon: 'bi-youtube' },
+                                                ].map(platform => (
+                                                    <div key={platform.id} className="col-md-6">
+                                                        <label className="form-label extra-small fw-bold">
+                                                            <i className={`bi ${platform.icon} me-1`}></i> {platform.label}
+                                                        </label>
+                                                        <input
+                                                            type="url"
+                                                            className="form-control form-control-sm rounded-3"
+                                                            placeholder="https://..."
+                                                            value={formData.configuration?.footer?.socials?.[platform.id] || ''}
+                                                            onChange={(e) => {
+                                                                const socials = formData.configuration.footer?.socials || {};
+                                                                toggleNestedConfig('footer', 'socials', { ...socials, [platform.id]: e.target.value });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
                                 )}

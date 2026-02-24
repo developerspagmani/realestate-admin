@@ -210,16 +210,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               { href: '/realestate-owner-admin/cms', label: 'CMS', icon: 'bi-layers-fill', active: activePage === 'cms' },
             ] : []),
             ...(hasModule('discovery') ? [
-              {
-                href: '/realestate-owner-admin/discovery',
-                label: 'Discovery Portal',
-                icon: 'bi-search',
-                active: activePage === 'discovery' || activePage === 'chatbot-config',
-                children: [
-                  { href: '/realestate-owner-admin/discovery', label: 'Search Insights', icon: 'bi-graph-up', active: activePage === 'discovery' },
-                  { href: '/realestate-owner-admin/chatbot-config', label: 'AI Agent Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
-                ]
-              },
+              { href: '/realestate-owner-admin/chatbot-config', label: 'AI Agent Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
             ] : []),
             ...(hasModule('widget_creator') ? [
               { href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' },
