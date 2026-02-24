@@ -361,26 +361,45 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             if (!token) return;
             const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
             const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
+            const statusLabels = { available: 'Available', occupied: 'Reserved', maintenance: 'Maintenance', sold: 'Sold Out' };
             await unitService.updateUnit(token, id, { status: statusMap[newStatus] }, tenantId);
+            showToast(`Unit marked as ${statusLabels[newStatus]}`);
             loadData();
         } catch (error) {
             console.error('Status update error:', error);
+            showToast('Error updating status', 'error');
         }
     };
 
     // ── EXPORT ────────────────────────────────────────────────────────────────
 
     const handleExport = () => {
-        if (units.length === 0) { showToast('No units to export', 'error'); return; }
+        const exportList = selectedUnits.length > 0
+            ? filteredUnits.filter(u => selectedUnits.includes(u.id))
+            : filteredUnits;
+        if (exportList.length === 0) { showToast('No units to export', 'error'); return; }
         const headers = ['Unit Code', 'Property', 'Type', 'Price', 'Monthly Rent', 'Sqft', 'Floor', 'Bedrooms', 'Bathrooms', 'Status'];
-        const rows = units.map(u => [u.name, u.space?.name || '', u.type, u.price || 0, u.monthlyRate || 0, u.sizeSqft || 0, u.floorNo || 0, u.bedrooms || 0, u.bathrooms || 0, u.status]);
+        const rows = exportList.map(u => [
+            `"${u.name}"`,
+            `"${u.space?.name || ''}"`,
+            u.type,
+            u.price || 0,
+            u.monthlyRate || 0,
+            u.sizeSqft || 0,
+            u.floorNo || 0,
+            u.bedrooms || 0,
+            u.bathrooms || 0,
+            u.status
+        ]);
         const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `units_export_${new Date().toISOString().split('T')[0]}.csv`; a.click();
+        a.href = url;
+        a.download = `units_export_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
         window.URL.revokeObjectURL(url);
-        showToast('Units exported successfully');
+        showToast(`${exportList.length} unit${exportList.length !== 1 ? 's' : ''} exported successfully`);
     };
 
     // ── CSV IMPORT ────────────────────────────────────────────────────────────
@@ -789,6 +808,15 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     // ── LIST VIEW ─────────────────────────────────────────────────────────────
     // ══════════════════════════════════════════════════════════════════════════
 
+    // ── STATS ─────────────────────────────────────────────────────────────────
+    const unitStats = {
+        total: units.length,
+        available: units.filter(u => u.status === 'available').length,
+        occupied: units.filter(u => u.status === 'occupied').length,
+        maintenance: units.filter(u => u.status === 'maintenance').length,
+        sold: units.filter(u => u.status === 'sold').length,
+    };
+
     return (
         <MainLayout activePage="units">
             <div className="container-fluid py-4">
@@ -797,12 +825,14 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h1 className="h3 fw-bold mb-1">Units</h1>
-                        <p className="text-muted small mb-0">{filteredUnits.length} unit{filteredUnits.length !== 1 ? 's' : ''} found</p>
+                        <p className="text-muted small mb-0">{filteredUnits.length} unit{filteredUnits.length !== 1 ? 's' : ''} found
+                            {selectedUnits.length > 0 && <span className="ms-2 badge bg-primary rounded-pill">{selectedUnits.length} selected</span>}
+                        </p>
                     </div>
                     <div className="d-flex gap-2">
                         <button className="btn btn-light d-flex align-items-center gap-2 px-3 shadow-sm border" onClick={handleExport}>
                             <i className="bi bi-download"></i>
-                            <span className="d-none d-md-inline">Export</span>
+                            <span className="d-none d-md-inline">Export{selectedUnits.length > 0 ? ` (${selectedUnits.length})` : ''}</span>
                         </button>
                         <button className="btn btn-light d-flex align-items-center gap-2 px-3 shadow-sm border" onClick={() => setShowImportModal(true)}>
                             <i className="bi bi-upload"></i>
@@ -812,6 +842,62 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                             <i className="bi bi-plus-circle-fill"></i>
                             <span>Add Unit</span>
                         </button>
+                    </div>
+                </div>
+
+                {/* Stats Cards */}
+                <div className="row g-3 mb-4">
+                    <div className="col-6 col-md-3">
+                        <div className="card border-0 shadow-sm rounded-4 h-100">
+                            <div className="card-body p-3 d-flex align-items-center gap-3">
+                                <div className="rounded-3 bg-primary-soft d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 44, height: 44 }}>
+                                    <i className="bi bi-building text-primary fs-5"></i>
+                                </div>
+                                <div>
+                                    <div className="h4 fw-bold mb-0">{unitStats.total}</div>
+                                    <div className="small text-muted">Total Units</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-6 col-md-3">
+                        <div className="card border-0 shadow-sm rounded-4 h-100">
+                            <div className="card-body p-3 d-flex align-items-center gap-3">
+                                <div className="rounded-3 bg-success-soft d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 44, height: 44 }}>
+                                    <i className="bi bi-check-circle text-success fs-5"></i>
+                                </div>
+                                <div>
+                                    <div className="h4 fw-bold mb-0 text-success">{unitStats.available}</div>
+                                    <div className="small text-muted">Available</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-6 col-md-3">
+                        <div className="card border-0 shadow-sm rounded-4 h-100">
+                            <div className="card-body p-3 d-flex align-items-center gap-3">
+                                <div className="rounded-3 bg-warning-soft d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 44, height: 44 }}>
+                                    <i className="bi bi-clock-history text-warning fs-5"></i>
+                                </div>
+                                <div>
+                                    <div className="h4 fw-bold mb-0 text-warning">{unitStats.occupied}</div>
+                                    <div className="small text-muted">Reserved</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-6 col-md-3">
+                        <div className="card border-0 shadow-sm rounded-4 h-100">
+                            <div className="card-body p-3 d-flex align-items-center gap-3">
+                                <div className="rounded-3 bg-danger-soft d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 44, height: 44 }}>
+                                    <i className="bi bi-tag text-danger fs-5"></i>
+                                </div>
+                                <div>
+                                    <div className="h4 fw-bold mb-0 text-danger">{unitStats.sold}</div>
+                                    <div className="small text-muted">Sold Out</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -922,14 +1008,17 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                                         <i className="bi bi-three-dots-vertical"></i>
                                                     </button>
                                                     <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                                        <li><button className="dropdown-item" onClick={() => openEdit(unit)}><i className="bi bi-pencil me-2 text-primary"></i>Edit</button></li>
-                                                        <li><button className="dropdown-item" onClick={() => handleDuplicate(unit)}><i className="bi bi-files me-2 text-secondary"></i>Duplicate</button></li>
+                                                        <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Actions</h6></li>
+                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => openEdit(unit)}><i className="bi bi-pencil text-primary"></i>Edit Details</button></li>
+                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleDuplicate(unit)}><i className="bi bi-files text-secondary"></i>Duplicate Unit</button></li>
                                                         <li><hr className="dropdown-divider" /></li>
-                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(unit.id, 'available')}>Set Available</button></li>
-                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(unit.id, 'occupied')}>Set Reserved</button></li>
-                                                        <li><button className="dropdown-item" onClick={() => handleStatusChange(unit.id, 'sold')}>Set Sold Out</button></li>
+                                                        <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Set Status</h6></li>
+                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'available')} disabled={unit.status === 'available'}><i className="bi bi-check-circle text-success"></i>Available</button></li>
+                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'occupied')} disabled={unit.status === 'occupied'}><i className="bi bi-clock-history text-warning"></i>Reserved</button></li>
+                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'maintenance')} disabled={unit.status === 'maintenance'}><i className="bi bi-tools text-secondary"></i>Maintenance</button></li>
+                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'sold')} disabled={unit.status === 'sold'}><i className="bi bi-tag text-danger"></i>Sold Out</button></li>
                                                         <li><hr className="dropdown-divider" /></li>
-                                                        <li><button className="dropdown-item text-danger" onClick={() => handleDelete(unit.id)}><i className="bi bi-trash me-2"></i>Delete</button></li>
+                                                        <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={() => handleDelete(unit.id)}><i className="bi bi-trash"></i>Delete</button></li>
                                                     </ul>
                                                 </div>
                                             </td>
@@ -1007,10 +1096,13 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             )}
 
             <style jsx>{`
+                .bg-primary-soft { background-color: rgba(13,110,253,.1); }
                 .bg-success-soft { background-color: rgba(25,135,84,.1); }
                 .bg-warning-soft { background-color: rgba(255,193,7,.1); }
+                .bg-danger-soft { background-color: rgba(220,53,69,.1); }
                 .bg-secondary-soft { background-color: rgba(108,117,125,.1); }
                 .cursor-pointer { cursor: pointer; }
+                .dropdown-item:disabled, .dropdown-item[disabled] { opacity: 0.45; pointer-events: none; }
             `}</style>
 
             <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />

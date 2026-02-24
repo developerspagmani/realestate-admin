@@ -287,6 +287,14 @@ export const analyticsApi = {
             headers: getAuthHeaders()
         });
         return response.json();
+    },
+
+    // AI Forecast: linear regression on last 30 days to project next 14 days
+    getForecast: async (): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/analytics/forecast`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
     }
 };
 

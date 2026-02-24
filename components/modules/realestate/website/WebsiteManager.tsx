@@ -219,9 +219,15 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
             }
 
             if (response.success) {
-                setShowForm(false);
-                setEditingWebsite(null);
-                setFormData(INITIAL_FORM_DATA);
+                if (!editingWebsite) {
+                    setShowForm(false);
+                    setEditingWebsite(null);
+                    setFormData(INITIAL_FORM_DATA);
+                } else {
+                    // Update editingWebsite state with the new data from finalData if needed
+                    // or just leave it as is if websiteService doesn't return the full updated object
+                    // The list refresh will handle the main state
+                }
                 loadWebsites();
                 showToast(editingWebsite ? 'Website updated successfully' : 'Website created successfully');
             } else {

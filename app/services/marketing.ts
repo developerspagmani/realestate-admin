@@ -200,6 +200,12 @@ export const marketingService = {
         });
     },
 
+    getWorkflowEnrollmentLogs: async (token: string, enrollmentId: string) => {
+        return await makeApiCall(`/marketing/workflows/enrollments/${enrollmentId}/logs`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
     getRecommendations: async (token: string, leadId: string) => {
         return await makeApiCall(`/marketing/recommendations/${leadId}`, {
             headers: { 'Authorization': `Bearer ${token}` },
@@ -210,6 +216,13 @@ export const marketingService = {
         return await makeApiCall(`/marketing/recommendations/${leadId}/send`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+    testWorkflow: async (token: string, workflow: any, testLead: any) => {
+        return await makeApiCall('/marketing/workflows/test', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ workflow, testLead }),
         });
     },
 };

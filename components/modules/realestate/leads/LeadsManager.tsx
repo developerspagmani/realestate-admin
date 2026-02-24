@@ -31,6 +31,7 @@ export interface Lead {
     lastContacted: string | null;
     tags?: string[];
     userId?: string;
+    enrollments?: Array<{ workflow: { name: string } }>;
 }
 
 interface LeadsManagerProps {
@@ -62,6 +63,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterSource, setFilterSource] = useState<string>('all');
+    const [filterTag, setFilterTag] = useState<string>('all');
     const [filterBudget, setFilterBudget] = useState<number | ''>('');
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [groupName, setGroupName] = useState('');
@@ -107,35 +109,41 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             });
 
             if (response.success && response.data && response.data.leads) {
-                const mappedLeads: Lead[] = response.data.leads.map((l: any) => ({
-                    id: l.id,
-                    name: l.name || 'Anonymous',
-                    email: l.email || '',
-                    phone: l.phone || '',
-                    company: l.company || '',
-                    source: l.source === 1 ? 'website' :
-                        l.source === 2 ? 'email' :
-                            l.source === 3 ? 'phone' :
-                                l.source === 4 ? 'social' :
-                                    l.source === 5 ? 'referral' :
-                                        l.source === 7 ? 'chatbot' : 'other',
-                    status: l.status === 1 ? 'new' :
-                        l.status === 2 ? 'contacted' :
-                            l.status === 3 ? 'qualified' :
-                                l.status === 4 ? 'converted' : 'lost',
-                    budget: l.budget ? Number(l.budget) : 0,
-                    requirements: l.message || '',
-                    notes: l.notes || '',
-                    assignedTo: l.assignedTo || '',
-                    assignedAgent: l.agent, // Map agent relation
-                    priority: l.priority || 2,
-                    leadScore: l.leadScore || 0,
-                    createdAt: l.createdAt,
-                    updatedAt: l.updatedAt || l.createdAt,
-                    lastContacted: l.lastContacted || null,
-                    tags: l.preferences?.tags || [],
-                    userId: l.userId
-                }));
+                const mappedLeads: Lead[] = response.data.leads.map((l: any) => {
+                    const dbTags = l.tags ? l.tags.split(',').filter(Boolean) : [];
+                    const workflowTags = l.enrollments?.map((e: any) => `Workflow: ${e.workflow?.name}`) || [];
+
+                    return {
+                        id: l.id,
+                        name: l.name || 'Anonymous',
+                        email: l.email || '',
+                        phone: l.phone || '',
+                        company: l.company || '',
+                        source: l.source === 1 ? 'website' :
+                            l.source === 2 ? 'email' :
+                                l.source === 3 ? 'phone' :
+                                    l.source === 4 ? 'social' :
+                                        l.source === 5 ? 'referral' :
+                                            l.source === 7 ? 'chatbot' : 'other',
+                        status: l.status === 1 ? 'new' :
+                            l.status === 2 ? 'contacted' :
+                                l.status === 3 ? 'qualified' :
+                                    l.status === 4 ? 'converted' : 'lost',
+                        budget: l.budget ? Number(l.budget) : 0,
+                        requirements: l.message || '',
+                        notes: l.notes || '',
+                        assignedTo: l.assignedTo || '',
+                        assignedAgent: l.agent,
+                        priority: l.priority || 2,
+                        leadScore: l.leadScore || 0,
+                        createdAt: l.createdAt,
+                        updatedAt: l.updatedAt || l.createdAt,
+                        lastContacted: l.lastContacted || null,
+                        tags: [...dbTags, ...workflowTags],
+                        userId: l.userId,
+                        enrollments: l.enrollments
+                    };
+                });
 
                 // Only update state if leads have actually changed or it's first load
                 setLeads(prevLeads => {
@@ -181,14 +189,17 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         return () => clearInterval(pollInterval);
     }, [user, isAuthenticated, mounted, router, activeTenantId, activeOwnerId, tenantType]);
 
+    const allTags = Array.from(new Set(leads.flatMap(l => l.tags || []))).sort();
+
     const filteredLeads = leads.filter((lead: Lead) => {
         const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             lead.company?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
         const matchesSource = filterSource === 'all' || lead.source === filterSource;
+        const matchesTag = filterTag === 'all' || lead.tags?.includes(filterTag);
         const matchesBudget = filterBudget === '' || lead.budget <= Number(filterBudget);
-        return matchesSearch && matchesStatus && matchesSource && matchesBudget;
+        return matchesSearch && matchesStatus && matchesSource && matchesTag && matchesBudget;
     });
 
     const handleSaveAsGroup = async () => {
@@ -513,7 +524,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                 <div className="card border-0 shadow-sm mb-4 rounded-4">
                     <div className="card-body p-3">
                         <div className="row g-3">
-                            <div className="col-md-4">
+                            <div className="col-md-3">
                                 <div className="input-group">
                                     <span className="input-group-text bg-light border-0"><i className="bi bi-search text-muted"></i></span>
                                     <input type="text" className="form-control bg-light border-0" placeholder="Search leads..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -541,15 +552,22 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                     <option value="other">Other</option>
                                 </select>
                             </div>
-                            <div className="col-md-3">
-                                <div className="px-2">
+                            <div className="col-md-2">
+                                <select className="form-select bg-light border-0" value={filterTag} onChange={(e) => setFilterTag(e.target.value)}>
+                                    <option value="all">Tag: All</option>
+                                    {allTags.map(tag => (
+                                        <option key={tag} value={tag}>{tag}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-md-2">
+                                <div className="px-1">
                                     <div className="d-flex justify-content-between align-items-center mb-1">
-                                        <label className="form-label extra-small text-muted fw-bold text-uppercase mb-0">Budget Limit</label>
-                                        <div className="input-group input-group-sm rounded-3 shadow-none border" style={{ width: '140px' }}>
-                                            <span className="input-group-text bg-transparent border-0 pe-1 text-muted small"><i className="bi bi-currency-dollar"></i></span>
+                                        <label className="form-label extra-small text-muted fw-bold text-uppercase mb-0">Budget</label>
+                                        <div className="input-group input-group-sm rounded-3 shadow-none border" style={{ width: '80px' }}>
                                             <input
                                                 type="number"
-                                                className="form-control border-0 bg-transparent p-1 small"
+                                                className="form-control border-0 bg-transparent p-0 ps-1 small"
                                                 placeholder="Any"
                                                 value={filterBudget}
                                                 onChange={(e) => setFilterBudget(e.target.value ? Number(e.target.value) : '')}
@@ -561,13 +579,13 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                         className="form-range"
                                         min="0"
                                         max="1000000"
-                                        step="100"
+                                        step="1000"
                                         value={filterBudget === '' ? 1000000 : filterBudget}
                                         onChange={(e) => setFilterBudget(e.target.value === '1000000' ? '' : Number(e.target.value))}
                                     />
                                 </div>
                             </div>
-                            <div className="col-md-1 d-flex align-items-center justify-content-end px-4">
+                            <div className="col-md-1 d-flex align-items-center justify-content-end">
                                 <span className="fw-bold text-primary">{filteredLeads.length}</span>
                             </div>
                         </div>
@@ -680,7 +698,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                             <td className="py-3">
                                                 <div className="d-flex flex-wrap gap-1">
                                                     {lead.tags?.map(tag => (
-                                                        <span key={tag} className="badge bg-primary bg-opacity-10 text-primary border-primary border-opacity-10 rounded-4 extra-small-badge">
+                                                        <span key={tag} className={`badge ${tag.startsWith('Workflow:') ? 'bg-purple-soft text-purple border-purple' : 'bg-primary bg-opacity-10 text-white border-primary'} border-opacity-10 rounded-4 extra-small-badge`}>
                                                             {tag}
                                                         </span>
                                                     ))}
@@ -731,6 +749,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                         onDelete={handleDelete}
                         onViewInsights={(lead) => setSelectedLeadForInsights(lead)}
                         isStale={isStale}
+                        currencySymbol={currencySymbol}
                     />
                 )}
             </div>
@@ -843,6 +862,9 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
             .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
             .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
+            .bg-purple-soft { background-color: rgba(111, 66, 193, 0.1); }
+            .text-purple { color: #6f42c1; }
+            .border-purple { border-color: rgba(111, 66, 193, 0.2) !important; }
             .pulse-ai { animation: pulse-purple 2s infinite; cursor: pointer; }
             .btn-white { background-color: #fff; border: 1px solid #dee2e6; }
             .btn-white:hover { background-color: #f8f9fa; }

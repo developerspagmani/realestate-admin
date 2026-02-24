@@ -11,6 +11,7 @@ interface LeadsKanbanProps {
     onDelete: (id: string) => void;
     onViewInsights: (lead: Lead) => void;
     isStale: (lead: Lead) => boolean;
+    currencySymbol?: string;
 }
 
 const COLUMNS: { id: Lead['status']; title: string; color: string }[] = [
@@ -21,7 +22,7 @@ const COLUMNS: { id: Lead['status']; title: string; color: string }[] = [
     { id: 'lost', title: 'Lost', color: '#dc3545' }
 ];
 
-export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, onEdit, onDelete, onViewInsights, isStale }: LeadsKanbanProps) {
+export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, onEdit, onDelete, onViewInsights, isStale, currencySymbol = '$' }: LeadsKanbanProps) {
     const [draggedLeadId, setDraggedLeadId] = useState<string | null>(null);
     const [activeDropColumn, setActiveDropColumn] = useState<Lead['status'] | null>(null);
     const [animationLead, setAnimationLead] = useState<{ id: string, type: 'blast' | 'shake' } | null>(null);
@@ -115,7 +116,7 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                                         </div>
                                         {totalBudget > 0 && (
                                             <div className="small text-muted fw-medium">
-                                                ${totalBudget.toLocaleString()}
+                                                {currencySymbol}{totalBudget.toLocaleString()}
                                             </div>
                                         )}
                                     </div>
@@ -192,7 +193,7 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                                                         <p className="small text-muted mb-2 text-truncate">{lead.company || 'Private Lead'}</p>
                                                         <div className="d-flex flex-wrap gap-1 mb-2">
                                                             {lead.tags?.map(tag => (
-                                                                <span key={tag} className="badge bg-primary bg-opacity-10 text-primary border-primary border-opacity-10 rounded-4 extra-small-badge" style={{ fontSize: '0.65rem' }}>
+                                                                <span key={tag} className={`badge ${tag.startsWith('Workflow:') ? 'bg-purple-soft text-purple border-purple' : 'bg-primary bg-opacity-10 text-white border-primary'} border-opacity-10 rounded-4 extra-small-badge`} style={{ fontSize: '0.65rem' }}>
                                                                     {tag}
                                                                 </span>
                                                             ))}
@@ -294,6 +295,9 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                 .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
                 .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
                 .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
+                .bg-purple-soft { background-color: rgba(111, 66, 193, 0.1); }
+                .text-purple { color: #6f42c1; }
+                .border-purple { border-color: rgba(111, 66, 193, 0.2) !important; }
                 
                 .kanban-column {
                     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);

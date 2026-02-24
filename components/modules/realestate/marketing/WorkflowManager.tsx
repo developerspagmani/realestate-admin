@@ -61,14 +61,15 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
             }
 
             const aRes = await agentService.getAgents(token, { tenantId });
-            if (aRes.success && Array.isArray(aRes.data)) {
+            if (aRes.success && aRes.data) {
+                const fetchedAgents = Array.isArray(aRes.data) ? aRes.data : (aRes.data.agents || []);
                 setAgents([
                     { id: 'auto', name: 'Auto-Assign (Round Robin)' },
-                    ...aRes.data.map((a: any) => ({ id: a.id, name: a.name || a.email || 'Unnamed Agent' }))
+                    ...fetchedAgents.map((a: any) => ({
+                        id: a.id,
+                        name: a.user?.name || a.name || a.user?.email || a.email || 'Unnamed Agent'
+                    }))
                 ]);
-            } else if (aRes.success) {
-                // If success but no agents array, just keep the default
-                setAgents([{ id: 'auto', name: 'Auto-Assign (Round Robin)' }]);
             }
 
             const fRes = await marketingService.getForms(token, { tenantId });
@@ -130,6 +131,10 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
         }
     };
 
+    const [showTestModal, setShowTestModal] = useState(false);
+    const [testLead, setTestLead] = useState({ email: 'test@example.com', budget: '1500000', name: 'James Smith' });
+    const [testLogs, setTestLogs] = useState<any[]>([]);
+
     const handleTestWorkflow = async () => {
         // Validation logic
         const validateSteps = (steps: any[]): string[] => {
@@ -154,12 +159,26 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
             return;
         }
 
+        setShowTestModal(true);
+        setTestLogs([]);
+    };
+
+    const runSimulation = async () => {
         setProcessing(true);
-        // Simulate a test run
-        setTimeout(() => {
+        setTestLogs([]);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.testWorkflow(token, currentWorkflow, testLead);
+            if (res.success) {
+                setTestLogs(res.logs || []);
+            }
+        } catch (error: any) {
+            console.error('Simulation error:', error);
+            showToast(error.message || 'Simulation failed', 'error');
+        } finally {
             setProcessing(false);
-            showToast('Workflow simulation successful! All paths are valid.', 'success');
-        }, 1500);
+        }
     };
 
     const handleDelete = async (id: string, name: string) => {
@@ -785,6 +804,68 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                             </div>
                             <div className="modal-footer border-0 p-4 pt-0">
                                 <button className="btn btn-light rounded-4 px-4 fw-bold" onClick={() => setShowTemplatesModal(false)}>Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showTestModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1060 }}>
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content border-0 shadow-lg rounded-4">
+                            <div className="modal-header border-0 p-4 pb-0">
+                                <h5 className="fw-bold mb-0">Workflow Logic Tester</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowTestModal(false)}></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                <div className="row g-4">
+                                    <div className="col-md-5">
+                                        <div className="bg-light p-4 rounded-4 h-100">
+                                            <h6 className="fw-bold mb-3"><i className="bi bi-person-fill me-2 text-primary"></i>Simulated Lead Data</h6>
+                                            <div className="mb-3">
+                                                <label className="extra-small fw-bold text-muted text-uppercase mb-1">Full Name</label>
+                                                <input type="text" className="form-control bg-white border-0" value={testLead.name} onChange={e => setTestLead({ ...testLead, name: e.target.value })} />
+                                            </div>
+                                            <div className="mb-3">
+                                                <label className="extra-small fw-bold text-muted text-uppercase mb-1">Email Address</label>
+                                                <input type="email" className="form-control bg-white border-0" value={testLead.email} onChange={e => setTestLead({ ...testLead, email: e.target.value })} />
+                                            </div>
+                                            <div className="mb-0">
+                                                <label className="extra-small fw-bold text-muted text-uppercase mb-1">Lead Budget ($)</label>
+                                                <input type="number" className="form-control bg-white border-0" value={testLead.budget} onChange={e => setTestLead({ ...testLead, budget: e.target.value })} />
+                                                <div className="extra-small text-muted mt-2">Test how conditions evaluate based on this budget.</div>
+                                            </div>
+                                            <button className="btn btn-primary w-100 rounded-4 fw-bold mt-4 shadow-sm" onClick={runSimulation} disabled={processing}>
+                                                {processing ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-play-fill me-2"></i>}
+                                                Run Simulation
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-7">
+                                        <h6 className="fw-bold mb-3"><i className="bi bi-terminal-fill me-2 text-muted"></i>Execution Logs</h6>
+                                        <div className="bg-dark text-white p-3 rounded-4 overflow-auto custom-scrollbar" style={{ height: '300px', fontFamily: 'monospace', fontSize: '11px' }}>
+                                            {testLogs.length === 0 ? (
+                                                <div className="text-secondary opacity-50 text-center py-5">
+                                                    <i className="bi bi-activity display-6 mb-2 d-block"></i>
+                                                    Simulation not started.
+                                                </div>
+                                            ) : (
+                                                <div className="simulation-log">
+                                                    {testLogs.map((log, i) => (
+                                                        <div key={i} className={`mb-2 ${log.type === 'ERROR' ? 'text-danger' : log.type === 'WARNING' ? 'text-warning' : 'text-info'}`}>
+                                                            <span className="opacity-50">[{new Date(log.occurredAt).toLocaleTimeString()}]</span> {log.message || `${log.type}: ${log.stepId}`}
+                                                            {log.status === 'EXECUTED' && <i className="bi bi-check-circle-fill text-success ms-2"></i>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer border-0 p-4 pt-0">
+                                <button className="btn btn-light rounded-4 px-4 fw-bold" onClick={() => setShowTestModal(false)}>Close</button>
                             </div>
                         </div>
                     </div>

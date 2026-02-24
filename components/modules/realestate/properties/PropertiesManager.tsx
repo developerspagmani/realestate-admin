@@ -17,7 +17,7 @@ interface PropertiesManagerProps {
 
 export default function PropertiesManager({ mode }: PropertiesManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
-    const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
+    const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
     const router = useRouter();
 
     const [mounted, setMounted] = useState(false);

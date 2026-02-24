@@ -269,7 +269,52 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                                                     <option value="tel">Phone Number</option>
                                                     <option value="textarea">Long Text</option>
                                                     <option value="date">Date Picker</option>
+                                                    <option value="select">Dropdown / Select</option>
                                                 </select>
+                                            </div>
+                                            <div className="col-12 mt-2">
+                                                {field.type === 'select' && (
+                                                    <div className="mt-2 p-2 bg-white rounded-3 border">
+                                                        <label className="extra-small fw-bold text-muted d-block mb-1 text-uppercase">Dropdown Options</label>
+                                                        <div className="d-flex flex-wrap gap-1 mb-2">
+                                                            {(field.options || []).map((opt: string, optIdx: number) => (
+                                                                <span key={optIdx} className="badge bg-light text-dark border d-flex align-items-center gap-1">
+                                                                    {opt}
+                                                                    <i className="bi bi-x cursor-pointer" onClick={() => {
+                                                                        const newOpts = [...(field.options || [])];
+                                                                        newOpts.splice(optIdx, 1);
+                                                                        updateField(field.id, { options: newOpts });
+                                                                    }}></i>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <div className="input-group input-group-sm">
+                                                            <input
+                                                                type="text"
+                                                                className="form-control border-0 bg-light"
+                                                                placeholder="Add option..."
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        e.preventDefault();
+                                                                        const val = e.currentTarget.value.trim();
+                                                                        if (val) {
+                                                                            updateField(field.id, { options: [...(field.options || []), val] });
+                                                                            e.currentTarget.value = '';
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <button className="btn btn-outline-primary" type="button" onClick={(e) => {
+                                                                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                                                const val = input.value.trim();
+                                                                if (val) {
+                                                                    updateField(field.id, { options: [...(field.options || []), val] });
+                                                                    input.value = '';
+                                                                }
+                                                            }}>Add</button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="col-12 text-end">
                                                 <div className="form-check form-switch d-inline-flex align-items-center gap-2 m-0 p-0">

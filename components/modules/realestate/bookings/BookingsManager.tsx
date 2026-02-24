@@ -15,7 +15,7 @@ interface BookingsManagerProps {
 
 export default function BookingsManager({ mode }: BookingsManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
-    const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
+    const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
     const [mounted, setMounted] = useState(false);
     const [bookings, setBookings] = useState<any[]>([]);
     const [users, setUsers] = useState<User[]>([]);

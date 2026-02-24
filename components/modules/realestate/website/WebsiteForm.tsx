@@ -37,6 +37,8 @@ export default function WebsiteForm({
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
     const [showMediaSelector, setShowMediaSelector] = useState(false);
     const [mediaTarget, setMediaTarget] = useState<'logoUrl' | 'heroBgUrl' | null>(null);
+    const [cacheClearing, setCacheClearing] = useState(false);
+    const [cacheClearStatus, setCacheClearStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
     const [verificationStatus, setVerificationStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
 
@@ -68,6 +70,28 @@ export default function WebsiteForm({
         } catch (error) {
             console.error('DNS check failed', error);
             setVerificationStatus('invalid');
+        }
+    };
+
+    const clearWebsiteCache = async () => {
+        const slug = editingWebsite?.slug || formData?.slug;
+        if (!slug) return;
+        setCacheClearing(true);
+        setCacheClearStatus('idle');
+        try {
+            const res = await fetch('/api/revalidate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug }),
+            });
+            const data = await res.json();
+            setCacheClearStatus(data.success ? 'success' : 'error');
+        } catch {
+            setCacheClearStatus('error');
+        } finally {
+            setCacheClearing(false);
+            // Auto-reset the status badge after 4 seconds
+            setTimeout(() => setCacheClearStatus('idle'), 4000);
         }
     };
 
@@ -398,6 +422,40 @@ export default function WebsiteForm({
                                 {/* TAB 4: Expanded Page Builder */}
                                 {activeTab === 'builder' && (
                                     <div className="row g-4 animate-fade-in overflow-auto max-vh-60 pe-2">
+
+                                        {/* Cache Clear Banner */}
+                                        <div className="col-12">
+                                            <div className="d-flex align-items-center justify-content-between p-3 rounded-4 border border-warning-subtle bg-warning-subtle">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <i className="bi bi-lightning-charge-fill text-warning fs-5"></i>
+                                                    <div>
+                                                        <div className="fw-bold small">Clear Public Site Cache</div>
+                                                        <div className="extra-small text-muted">Force refresh the live website to apply your latest changes (currency, theme, content).</div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className={`btn btn-sm rounded-4 px-3 fw-bold flex-shrink-0 ms-3 ${cacheClearStatus === 'success' ? 'btn-success' :
+                                                            cacheClearStatus === 'error' ? 'btn-danger' :
+                                                                'btn-warning'
+                                                        }`}
+                                                    onClick={clearWebsiteCache}
+                                                    disabled={cacheClearing || !editingWebsite}
+                                                    title={!editingWebsite ? 'Save the website first to enable cache clearing' : ''}
+                                                >
+                                                    {cacheClearing ? (
+                                                        <><span className="spinner-border spinner-border-sm me-2" role="status"></span>Clearing...</>
+                                                    ) : cacheClearStatus === 'success' ? (
+                                                        <><i className="bi bi-check-circle-fill me-2"></i>Cache Cleared!</>
+                                                    ) : cacheClearStatus === 'error' ? (
+                                                        <><i className="bi bi-x-circle-fill me-2"></i>Failed – Retry</>
+                                                    ) : (
+                                                        <><i className="bi bi-arrow-clockwise me-2"></i>Clear Cache</>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <div className="col-12">
                                             <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Header & Hero Content</h6>
                                         </div>

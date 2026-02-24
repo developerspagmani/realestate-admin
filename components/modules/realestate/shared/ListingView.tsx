@@ -45,9 +45,13 @@ const ListingView: React.FC<ListingViewProps> = ({
                 gridCols === 3 ? 'col-md-6 col-lg-4' :
                     'col-md-6 col-lg-3');
 
-    const getSymbol = (propertyCountry?: string) => {
+    const getSymbol = (_propertyCountry?: string) => {
+        // Priority: 1) Tenant's explicit currency setting, 2) Tenant's country, 3) Property country (last resort)
+        // We intentionally do NOT use propertyCountry as the primary source — it caused issues
+        // when a property in Germany showed €, even though the tenant had configured AED/INR/etc.
         const baseCurrency = widget?.tenant?.settings?.general?.currency;
-        const input = propertyCountry || baseCurrency || widget?.tenant?.country || 'USA';
+        const tenantCountry = widget?.tenant?.country;
+        const input = baseCurrency || tenantCountry || _propertyCountry || 'USA';
         const config = getCurrencyConfig(input);
         return config?.symbol || '$';
     };

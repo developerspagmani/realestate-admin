@@ -48,6 +48,7 @@ export default function StandaloneProvider({
     const [showChat, setShowChat] = useState(false);
     const [chatExpanded, setChatExpanded] = useState(false);
     const [showBookingModal, setShowBookingModal] = useState(false);
+    const [showInquiryModal, setShowInquiryModal] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
@@ -205,6 +206,14 @@ export default function StandaloneProvider({
                                         {item.label}
                                     </Link>
                                 ))}
+                                {builder.showInquiry !== false && website.configuration?.inquiryForm?.enabled !== false && (
+                                    <button
+                                        className="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold small border-2"
+                                        onClick={() => setShowInquiryModal(true)}
+                                    >
+                                        <i className="bi bi-envelope-fill me-2"></i>INQUIRY
+                                    </button>
+                                )}
                                 {(website.configuration?.bookingForm?.enabled || website.configuration?.builder?.enableBooking) && (
                                     <button
                                         className="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-bold small"
@@ -234,6 +243,14 @@ export default function StandaloneProvider({
                                             {item.label}
                                         </Link>
                                     ))}
+                                    {builder.showInquiry !== false && website.configuration?.inquiryForm?.enabled !== false && (
+                                        <button
+                                            className="btn btn-outline-dark rounded-pill px-4 py-3 shadow-sm fw-bold h5 mt-3"
+                                            onClick={() => { setShowInquiryModal(true); setShowMobileMenu(false); }}
+                                        >
+                                            <i className="bi bi-envelope-fill me-2"></i>INQUIRY
+                                        </button>
+                                    )}
                                     {(website.configuration?.bookingForm?.enabled || website.configuration?.builder?.enableBooking) && (
                                         <button
                                             className="btn btn-primary rounded-pill px-4 py-3 shadow-lg fw-bold h5 mt-4"
@@ -252,16 +269,28 @@ export default function StandaloneProvider({
                 <main className="flex-grow-1 animate-fade-in">
                     {children}
 
-                    {/* Inquiry Form Section for Front Pages */}
-                    {builder.showInquiry && isHome && (
+                    {/* Inquiry Form Section — shows on ALL pages when enabled */}
+                    {builder.showInquiry !== false && (
                         <section className="py-5 bg-light border-top">
-                            <div className="container" style={{ maxWidth: '600px' }}>
+                            <div className="container" style={{ maxWidth: '640px' }}>
                                 <div className="text-center mb-4">
-                                    <h2 className="fw-black h3 mb-2">Get in Touch</h2>
-                                    <p className="text-muted small">Have questions about our properties? We're here to help.</p>
+                                    <div className="mb-3">
+                                        <span className="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fw-bold extra-small text-uppercase">
+                                            <i className="bi bi-envelope-open-fill me-2"></i>Contact Us
+                                        </span>
+                                    </div>
+                                    <h2 className="fw-black h3 mb-2">Have a Question?</h2>
+                                    <p className="text-muted small">Fill in the form below and our team will get back to you shortly.</p>
                                 </div>
                                 <FormRenderer
-                                    config={website.configuration?.inquiryForm || { enabled: true }}
+                                    config={website.configuration?.inquiryForm || {
+                                        enabled: true, title: 'Send an Inquiry', description: 'Let us help you find the perfect property.', fields: [
+                                            { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Your full name', required: true },
+                                            { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true },
+                                            { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+1 (555) 000-0000', required: false },
+                                            { id: 'message', label: 'Message', type: 'textarea', placeholder: 'Tell us what you are looking for...', required: false },
+                                        ]
+                                    }}
                                     primaryColor={theme.primaryColor}
                                     onSubmit={async (formData, config) => {
                                         try {
@@ -436,6 +465,63 @@ export default function StandaloneProvider({
                             </div>
                         )}
                     </>
+                )}
+
+                {/* ── Inquiry Popup Modal ─────────────────────────────── */}
+                {showInquiryModal && (
+                    <div
+                        className="modal d-block animate-fade-in"
+                        tabIndex={-1}
+                        style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', zIndex: 1055 }}
+                        onClick={(e) => { if (e.target === e.currentTarget) setShowInquiryModal(false); }}
+                    >
+                        <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '560px' }}>
+                            <div className="modal-content border-0 shadow-2xl rounded-4 overflow-hidden animate-fade-in">
+                                <div className="modal-header border-0 pb-0 pt-4 px-4">
+                                    <div>
+                                        <h5 className="fw-black mb-1">Get in Touch</h5>
+                                        <p className="extra-small text-muted mb-0">Our team typically responds within 24 hours.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="btn-close ms-auto"
+                                        onClick={() => setShowInquiryModal(false)}
+                                        aria-label="Close"
+                                    />
+                                </div>
+                                <div className="modal-body p-4">
+                                    <FormRenderer
+                                        config={website.configuration?.inquiryForm || {
+                                            enabled: true, title: 'Send an Inquiry', description: '', fields: [
+                                                { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Your full name', required: true },
+                                                { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true },
+                                                { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+1 (555) 000-0000', required: false },
+                                                { id: 'message', label: 'Message', type: 'textarea', placeholder: 'Tell us what you are looking for...', required: false },
+                                            ]
+                                        }}
+                                        primaryColor={theme.primaryColor}
+                                        onSubmit={async (fd, config) => {
+                                            try {
+                                                const res = await websiteService.createPublicLead(website.id, {
+                                                    ...fd,
+                                                    source: 'website_inquiry',
+                                                    notes: `Popup inquiry from ${website.name} portal.`
+                                                });
+                                                if (res.success) {
+                                                    const leadId = res.data?.id || res.id;
+                                                    identifyLead(leadId, fd.email);
+                                                    trackAction('INQUIRY_SUBMIT', { formId: config.marketingFormId || 'custom', source: 'popup' });
+                                                    setTimeout(() => setShowInquiryModal(false), 2500);
+                                                }
+                                            } catch (err) {
+                                                console.error('Inquiry popup fail:', err);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
 
                 <BookingModal

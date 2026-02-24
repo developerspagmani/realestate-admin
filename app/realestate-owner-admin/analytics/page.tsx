@@ -35,7 +35,7 @@ export default function AdvancedAnalyticsPage() {
 
     useEffect(() => {
         fetchData();
-    }, [filters.dateRange, filters.campaignId, filters.propertyId]);
+    }, [filters.dateRange, filters.campaignId, filters.propertyId, filters.startDate, filters.endDate]);
 
     const fetchInitialData = async () => {
         try {
@@ -116,6 +116,9 @@ export default function AdvancedAnalyticsPage() {
                             <p className="text-muted small">Deep insights into your business growth and market demand.</p>
                         </div>
                         <div className="d-flex gap-2">
+                            <a href="/realestate-owner-admin/analytics/forecasting" className="btn btn-primary rounded-3 shadow-sm">
+                                <i className="bi bi-robot me-2"></i>Forecasting AI
+                            </a>
                             <button className="btn btn-outline-primary rounded-3 shadow-sm" onClick={() => setFilters({ ...filters, dateRange: '30d', campaignId: '', propertyId: '', startDate: '', endDate: '' })}>
                                 <i className="bi bi-x-circle me-2"></i>Clear Filters
                             </button>
@@ -159,7 +162,6 @@ export default function AdvancedAnalyticsPage() {
                                                 className="form-control form-control-sm rounded-3"
                                                 value={filters.endDate}
                                                 onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                                                onBlur={fetchData}
                                             />
                                         </div>
                                     </>
@@ -207,15 +209,23 @@ export default function AdvancedAnalyticsPage() {
                             <div className="col-md-3">
                                 <div className="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
                                     <div className="extra-small text-muted text-uppercase fw-bold mb-1">Total Active Leads</div>
-                                    <div className="h2 fw-bold mb-0 text-dark">{revenueFunnel?.funnel ? revenueFunnel.funnel[0]?.count : 0}</div>
-                                    <div className="small text-muted mt-1">Founders pipeline scope</div>
+                                    <div className="h2 fw-bold mb-0 text-dark">
+                                        {revenueFunnel?.funnel
+                                            ? revenueFunnel.funnel.filter((s: any) => s.label !== 'Lost').reduce((sum: number, s: any) => sum + (s.count || 0), 0)
+                                            : 0}
+                                    </div>
+                                    <div className="small text-muted mt-1">Active pipeline (excl. lost)</div>
                                 </div>
                             </div>
                             <div className="col-md-3">
                                 <div className="card border-0 shadow-sm rounded-4 p-4 text-center h-100">
-                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Engagement Rate</div>
-                                    <div className="h2 fw-bold mb-0 text-info">{campaignStats.length > 0 ? (campaignStats[0]?.engagement || 0).toFixed(1) : 0}%</div>
-                                    <div className="small text-muted mt-1">Cross-channel engagement</div>
+                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Avg Engagement Rate</div>
+                                    <div className="h2 fw-bold mb-0 text-info">
+                                        {campaignStats.length > 0
+                                            ? (campaignStats.reduce((sum: number, c: any) => sum + (c.engagement || 0), 0) / campaignStats.length).toFixed(1)
+                                            : 0}%
+                                    </div>
+                                    <div className="small text-muted mt-1">Avg across all campaigns</div>
                                 </div>
                             </div>
                             <div className="col-md-3">
@@ -489,9 +499,9 @@ export default function AdvancedAnalyticsPage() {
                                                             <td className="px-4 py-3">
                                                                 <div className="d-flex align-items-center gap-2">
                                                                     <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '32px', height: '32px' }}>
-                                                                        {agent.name.charAt(0)}
+                                                                        {(agent.name || '?').charAt(0)}
                                                                     </div>
-                                                                    <span className="fw-bold">{agent.name}</span>
+                                                                    <span className="fw-bold">{agent.name || 'Unknown Agent'}</span>
                                                                 </div>
                                                             </td>
                                                             <td className="py-3">{agent.totalLeads}</td>

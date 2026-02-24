@@ -16,4 +16,7 @@ export const analyticsProService = {
     getMarketingInsights: async (params?: any) => {
         return await makeApiCall(analyticsProEndpoints.getMarketingInsights(params));
     },
+    getDemandIntelligence: async (params?: any) => {
+        return await makeApiCall(analyticsProEndpoints.getDemandIntelligence(params));
+    },
 };

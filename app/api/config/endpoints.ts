@@ -425,6 +425,8 @@ export const analyticsProEndpoints = {
     params ? `/admin/analytics-pro/campaign-stats?${buildQueryString(params)}` : '/admin/analytics-pro/campaign-stats',
   getMarketingInsights: (params?: Record<string, any>) =>
     params ? `/admin/analytics-pro/marketing-insights?${buildQueryString(params)}` : '/admin/analytics-pro/marketing-insights',
+  getDemandIntelligence: (params?: Record<string, any>) =>
+    params ? `/admin/analytics-pro/demand-intelligence?${buildQueryString(params)}` : '/admin/analytics-pro/demand-intelligence',
 };
 
 // Category endpoints

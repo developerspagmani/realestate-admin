@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { marketingService, getAuthToken } from '@/app/services/api';
+import { useState, useEffect, useRef } from 'react';
+import { marketingService, propertyService, getAuthToken } from '@/app/services/api';
+import { Property } from '@/app/services/types';
 
 const DEFAULT_THEMES = [
     {
@@ -163,6 +164,138 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
     const [testEmail, setTestEmail] = useState('');
     const [sendingTest, setSendingTest] = useState(false);
     const [showTestInput, setShowTestInput] = useState(false);
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [loadingProperties, setLoadingProperties] = useState(false);
+    const [showPropertyPicker, setShowPropertyPicker] = useState(false);
+    const [pickerMode, setPickerMode] = useState<'single' | 'grid'>('single');
+    const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([]);
+    const contentRef = useRef<HTMLTextAreaElement>(null);
+
+    const loadProperties = async () => {
+        setLoadingProperties(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await propertyService.getProperties(token, { tenantId });
+            if (res.success) {
+                // The API might return data directly or wrapped in data.properties
+                const propList = res.data.properties || res.data || [];
+                setProperties(propList);
+            }
+        } catch (error) {
+            console.error('Failed to load properties:', error);
+        } finally {
+            setLoadingProperties(false);
+        }
+    };
+
+    const addPropertyToTemplate = (property: Property) => {
+        const baseUrl = process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : 'https://virpanix.com';
+        const propertyHtml = `
+            <div style="margin-top: 30px; text-align: center; margin-bottom: 20px;">
+                <h2 style="font-size: 20px; color: ${design.primaryColor}; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Featured Property</h2>
+                <div style="width: 40px; height: 2px; background-color: ${design.primaryColor}; margin: 10px auto;"></div>
+            </div>
+            <div style="margin-bottom: 30px; border: 1px solid #eeeeee; border-radius: 12px; overflow: hidden; background-color: #ffffff; font-family: 'Helvetica', Arial, sans-serif;">
+                ${property.mainImage?.url ? `
+                <div style="height: 240px; overflow: hidden;">
+                    <img src="${property.mainImage.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="${property.title}" />
+                </div>` : ''}
+                <div style="padding: 25px;">
+                    <div style="margin-bottom: 15px;">
+                        <span style="background-color: ${design.primaryColor}; color: #ffffff; padding: 3px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; display: inline-block; margin-bottom: 5px;">
+                            ${property.listingType || 'LATEST RELEASE'}
+                        </span>
+                        <h3 style="margin: 0; color: #111111; font-size: 22px; font-weight: 700;">${property.title}</h3>
+                    </div>
+                    <p style="margin: 0 0 20px 0; color: #666666; font-size: 14px; line-height: 1.6;">${property.description?.substring(0, 160)}${(property.description?.length || 0) > 160 ? '...' : ''}</p>
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fcfcfc; border-radius: 8px; border: 1px solid #f0f0f0;">
+                        <tr>
+                            <td style="padding: 15px;">
+                                <div style="font-weight: 700; color: ${design.primaryColor}; font-size: 24px;">$${Number(property.price || 0).toLocaleString()}</div>
+                                <div style="font-size: 11px; color: #999999; text-transform: uppercase; margin-top: 2px;">${property.city || 'Prime Location'}</div>
+                            </td>
+                            <td style="padding: 15px; text-align: right;">
+                                <a href="${baseUrl}/properties/${property.slug}" style="background-color: ${design.primaryColor}; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: bold; display: inline-block;">VIEW DETAILS</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        `;
+        insertHtmlAtCursor(propertyHtml);
+        setShowPropertyPicker(false);
+    };
+
+    const addPropertyGridToTemplate = (selectedProperties: Property[]) => {
+        const baseUrl = process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : 'https://virpanix.com';
+
+        // Split into chunks of 2 for rows
+        const rows: Property[][] = [];
+        for (let i = 0; i < selectedProperties.length; i += 2) {
+            rows.push(selectedProperties.slice(i, i + 2));
+        }
+
+        let gridHtml = `
+            <div style="margin-top: 30px; text-align: center; margin-bottom: 25px;">
+                <h2 style="font-size: 18px; color: ${design.primaryColor}; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Properties for You</h2>
+                <div style="width: 40px; height: 1px; background-color: #ddd; margin: 10px auto;"></div>
+            </div>
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-family: Arial, sans-serif;">
+        `;
+
+        rows.forEach(row => {
+            gridHtml += `<tr>`;
+            row.forEach((prop, idx) => {
+                gridHtml += `
+                    <td width="50%" align="center" valign="top" style="padding: ${idx === 0 ? '0 10px 20px 0' : '0 0 20px 10px'};">
+                        <div style="border: 1px solid #eeeeee; border-radius: 8px; overflow: hidden; background-color: #ffffff; text-align: left;">
+                            ${prop.mainImage?.url ? `
+                            <div style="height: 140px; overflow: hidden;">
+                                <img src="${prop.mainImage.url}" style="width: 100%; height: 100%; object-fit: cover;" alt="${prop.title}" />
+                            </div>` : ''}
+                            <div style="padding: 15px;">
+                                <h4 style="margin: 0 0 5px 0; color: #111111; font-size: 14px; font-weight: bold; height: 34px; overflow: hidden;">${prop.title}</h4>
+                                <div style="color: ${design.primaryColor}; font-weight: bold; font-size: 16px; margin-bottom: 10px;">$${Number(prop.price || 0).toLocaleString()}</div>
+                                <a href="${baseUrl}/properties/${prop.slug}" style="display: block; text-align: center; background-color: ${design.primaryColor}10; color: ${design.primaryColor}; padding: 8px; text-decoration: none; border-radius: 4px; font-size: 11px; font-weight: bold;">VIEW PROPERTY</a>
+                            </div>
+                        </div>
+                    </td>
+                `;
+            });
+            // If row only has 1 item, add empty spacer
+            if (row.length === 1) {
+                gridHtml += `<td width="50%">&nbsp;</td>`;
+            }
+            gridHtml += `</tr>`;
+        });
+
+        gridHtml += `</table>`;
+        insertHtmlAtCursor(gridHtml);
+        setShowPropertyPicker(false);
+        setSelectedPropertyIds([]);
+    };
+
+    const insertHtmlAtCursor = (html: string) => {
+        if (contentRef.current) {
+            const textarea = contentRef.current;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            const before = text.substring(0, start);
+            const after = text.substring(end);
+            const newContent = before + html + after;
+
+            setTemplateData({ ...templateData, content: newContent });
+
+            setTimeout(() => {
+                textarea.focus();
+                textarea.setSelectionRange(start + html.length, start + html.length);
+            }, 10);
+        } else {
+            setTemplateData({ ...templateData, content: templateData.content + html });
+        }
+    };
     const loadTemplates = async () => {
         setLoading(true);
         try {
@@ -181,6 +314,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
 
     useEffect(() => {
         loadTemplates();
+        loadProperties();
     }, [tenantId]);
 
     const handleSave = async () => {
@@ -523,8 +657,101 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                         ) : null}
 
                                         <div className="mb-4">
-                                            <label className="form-label extra-small fw-bold text-uppercase text-muted">Body Content (HTML allowed)</label>
-                                            <textarea className="form-control border-0 shadow-sm" rows={8} placeholder="<b>Hello!</b>..." value={templateData.content || ''} style={{ fontFamily: 'monospace', fontSize: '13px' }} onChange={e => setTemplateData({ ...templateData, content: e.target.value })}></textarea>
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <label className="form-label extra-small fw-bold text-uppercase text-muted mb-0">Body Content</label>
+                                                <div className="position-relative">
+                                                    <button
+                                                        className="btn btn-link btn-sm p-0 extra-small fw-bold text-primary text-decoration-none dropdown-toggle"
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); setShowPropertyPicker(!showPropertyPicker); }}
+                                                    >
+                                                        <i className="bi bi-plus-circle me-1"></i> Add Property
+                                                    </button>
+                                                    {showPropertyPicker && (
+                                                        <div className="position-absolute end-0 shadow-lg border-0 rounded-4 p-3 bg-white overflow-auto" style={{ zIndex: 100, top: '25px', maxHeight: '420px', width: '320px' }}>
+                                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                <small className="fw-bold text-muted text-uppercase" style={{ fontSize: '10px' }}>Insert Property</small>
+                                                                <i className="bi bi-x-circle cursor-pointer text-muted" onClick={() => setShowPropertyPicker(false)}></i>
+                                                            </div>
+
+                                                            <div className="btn-group w-100 btn-group-sm mb-3 rounded-3 overflow-hidden" style={{ border: '1px solid #eee' }}>
+                                                                <button className={`btn ${pickerMode === 'single' ? 'btn-primary' : 'btn-light'}`} onClick={() => setPickerMode('single')}>Single Block</button>
+                                                                <button className={`btn ${pickerMode === 'grid' ? 'btn-primary' : 'btn-light'}`} onClick={() => { setPickerMode('grid'); setSelectedPropertyIds([]); }}>2-Col Grid</button>
+                                                            </div>
+
+                                                            {loadingProperties ? (
+                                                                <div className="text-center py-4"><div className="spinner-border spinner-border-sm text-primary"></div></div>
+                                                            ) : properties.length === 0 ? (
+                                                                <div className="px-3 py-3 text-center text-muted small">No properties available.</div>
+                                                            ) : (
+                                                                <>
+                                                                    <div className="list-group list-group-flush mb-3" style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                                                                        {properties.map(prop => {
+                                                                            const isSelected = selectedPropertyIds.includes(prop.id);
+                                                                            return (
+                                                                                <div
+                                                                                    key={prop.id}
+                                                                                    className={`list-group-item list-group-item-action border-0 rounded-3 py-2 d-flex align-items-center gap-2 mb-1 cursor-pointer ${isSelected ? 'bg-primary bg-opacity-10' : ''}`}
+                                                                                    onClick={() => {
+                                                                                        if (pickerMode === 'single') {
+                                                                                            addPropertyToTemplate(prop);
+                                                                                        } else {
+                                                                                            setSelectedPropertyIds(prev =>
+                                                                                                prev.includes(prop.id) ? prev.filter(id => id !== prop.id) : [...prev, prop.id]
+                                                                                            );
+                                                                                        }
+                                                                                    }}
+                                                                                >
+                                                                                    {pickerMode === 'grid' && (
+                                                                                        <div className={`form-check-input m-0 ${isSelected ? 'checked' : ''}`} style={{ width: '16px', height: '16px' }}>
+                                                                                            <input type="checkbox" checked={isSelected} readOnly style={{ display: 'none' }} />
+                                                                                            {isSelected && <i className="bi bi-check-lg text-primary extra-small"></i>}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {prop.mainImage?.url ? (
+                                                                                        <img src={prop.mainImage.url} width="32" height="32" className="rounded object-fit-cover" alt="" />
+                                                                                    ) : (
+                                                                                        <div className="bg-light rounded d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                                                                                            <i className="bi bi-house text-muted" style={{ fontSize: '14px' }}></i>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    <div className="text-truncate">
+                                                                                        <div className="fw-bold extra-small text-dark">{prop.title}</div>
+                                                                                        <div style={{ fontSize: '9px' }} className="text-muted fw-bold">$ {Number(prop.price || 0).toLocaleString()}</div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+
+                                                                    {pickerMode === 'grid' && (
+                                                                        <button
+                                                                            className="btn btn-primary w-100 btn-sm rounded-3 fw-bold shadow-sm"
+                                                                            disabled={selectedPropertyIds.length === 0}
+                                                                            onClick={() => {
+                                                                                const propsToInsert = properties.filter(p => selectedPropertyIds.includes(p.id));
+                                                                                addPropertyGridToTemplate(propsToInsert);
+                                                                            }}
+                                                                        >
+                                                                            Insert Grid ({selectedPropertyIds.length} items)
+                                                                        </button>
+                                                                    )}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <textarea
+                                                ref={contentRef}
+                                                className="form-control border-0 shadow-sm"
+                                                rows={10}
+                                                placeholder="<b>Hello!</b>..."
+                                                value={templateData.content || ''}
+                                                style={{ fontFamily: 'monospace', fontSize: '13px' }}
+                                                onChange={e => setTemplateData({ ...templateData, content: e.target.value })}
+                                                onClick={() => setShowPropertyPicker(false)}
+                                            ></textarea>
                                         </div>
                                     </div>
 

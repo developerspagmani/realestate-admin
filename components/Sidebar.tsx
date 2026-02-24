@@ -168,7 +168,16 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               { href: '/realestate-owner-admin/marketing', label: 'Email Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
             ] : []),
             ...(hasModule('analytics_pro') ? [
-              { href: '/realestate-owner-admin/analytics', label: 'Advanced Analytics', icon: 'bi-bar-chart-line-fill', active: activePage === 'analytics' },
+              {
+                href: '/realestate-owner-admin/analytics',
+                label: 'Advanced Analytics',
+                icon: 'bi-bar-chart-line-fill',
+                active: activePage === 'analytics' || activePage === 'analytics-forecasting',
+                children: [
+                  { href: '/realestate-owner-admin/analytics', label: 'Performance Reports', icon: 'bi-grid-fill', active: activePage === 'analytics' },
+                  { href: '/realestate-owner-admin/analytics/forecasting', label: 'AI Demand Forecasting', icon: 'bi-robot', active: activePage === 'analytics-forecasting' }
+                ]
+              },
             ] : []),
             ...(hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') ? [
               {

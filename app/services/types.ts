@@ -61,6 +61,9 @@ export interface Property {
     title: string;
     description?: string;
     propertyType: number; // 1: residential, 2: commercial, 3: industrial, 4: mixed
+    listingType?: string;
+    price?: number | string;
+    slug?: string;
     addressLine1: string;
     addressLine2?: string;
     city: string;
@@ -71,6 +74,10 @@ export interface Property {
     tenantId?: string;
     createdAt: string;
     updatedAt: string;
+    mainImage?: {
+        url: string;
+        id?: string;
+    };
     _count?: {
         units: number;
         leads: number;
