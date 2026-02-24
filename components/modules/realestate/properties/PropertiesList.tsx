@@ -115,13 +115,23 @@ export default function PropertiesList({
                                                     <i className="bi bi-map"></i>
                                                 </Link>
                                                 <button
-                                                    className="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center"
+                                                    className="btn btn-sm btn-outline-success rounded-circle p-0 d-flex align-items-center justify-content-center"
                                                     style={{ width: '32px', height: '32px' }}
-                                                    onClick={() => onNavigateToUnits(property.id)}
+                                                    onClick={() => onNavigateToUnits(property.id)} // We should ideally add a New prop for onPublish
                                                     title="Manage Units"
                                                 >
                                                     <i className="bi bi-layout-three-columns"></i>
                                                 </button>
+
+                                                {/* 🆕 Portal Publish Button */}
+                                                <Link
+                                                    href={`/realestate-admin/social/portals?propertyId=${property.id}`}
+                                                    className="btn btn-sm btn-outline-dark rounded-circle p-0 d-flex align-items-center justify-content-center"
+                                                    style={{ width: '32px', height: '32px' }}
+                                                    title="Connect to External Portals"
+                                                >
+                                                    <i className="bi bi-share"></i>
+                                                </Link>
                                             </div>
                                         </td>
                                     </tr>
