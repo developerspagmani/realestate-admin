@@ -149,7 +149,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
 
         switch (currentView) {
             case 'LISTING':
-                return builder.showHero ? (
+                return (builder.showHero !== false || (builder.modules && builder.modules.length > 0)) ? (
                     <PageBuilder
                         config={builder}
                         data={filteredData}
@@ -354,24 +354,27 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
 
             {/* Premium Smart Footer */}
             {builder.showFooter !== false && (
-                <footer className="py-5 bg-dark text-white mt-auto">
+                <footer className="py-5 mt-auto position-relative border-top" style={{
+                    backgroundColor: website.configuration?.footer?.backgroundColor || '#212529',
+                    color: website.configuration?.footer?.textColor || '#ffffff'
+                }}>
                     <div className="container">
                         <div className="row g-5">
                             <div className="col-md-4">
                                 <h5 className="fw-bold mb-4">{website.name}</h5>
-                                <p className="small text-muted opacity-75">
-                                    {builder.footerText || 'A next-generation real estate experience powered by Antigravity OS.'}
+                                <p className="small opacity-75">
+                                    {builder.footerText || website.configuration?.footer?.footerText || 'A next-generation real estate experience powered by Antigravity OS.'}
                                 </p>
                             </div>
                             <div className="col-md-3">
-                                <h6 className="fw-bold mb-3 small">RESOURCES</h6>
+                                <h6 className="fw-bold mb-3 small opacity-50">RESOURCES</h6>
                                 <ul className="list-group list-group-flush bg-transparent gap-2">
                                     {website.configuration?.menus?.footer?.map((item: any) => (
                                         <li key={item.id} className="list-group-item bg-transparent border-0 p-0">
                                             <a
                                                 href={item.url || '#'}
                                                 target={item.target || '_self'}
-                                                className="extra-small text-muted text-decoration-none hover-text-white transition-all"
+                                                className="extra-small text-inherit text-decoration-none opacity-75 hover-opacity-100 transition-all"
                                             >
                                                 {item.label}
                                             </a>
@@ -379,19 +382,31 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                     ))}
                                     {!website.configuration?.menus?.footer?.length && (
                                         <>
-                                            <li className="list-group-item bg-transparent border-0 p-0 extra-small text-muted">Privacy Policy</li>
-                                            <li className="list-group-item bg-transparent border-0 p-0 extra-small text-muted">Terms of Service</li>
+                                            <li className="list-group-item bg-transparent border-0 p-0 extra-small opacity-50">Privacy Policy</li>
+                                            <li className="list-group-item bg-transparent border-0 p-0 extra-small opacity-50">Terms of Service</li>
                                         </>
                                     )}
                                 </ul>
                             </div>
-                            <div className="col-md-6 text-md-end">
-                                <div className="d-flex gap-3 justify-content-md-end mb-4">
-                                    <i className="bi bi-facebook fs-5 opacity-50 hover-opacity-100 transition-all cursor-pointer"></i>
-                                    <i className="bi bi-instagram fs-5 opacity-50 hover-opacity-100 transition-all cursor-pointer"></i>
-                                    <i className="bi bi-linkedin fs-5 opacity-50 hover-opacity-100 transition-all cursor-pointer"></i>
+                            <div className="col-md-5 text-md-end">
+                                <div className="d-flex gap-4 justify-content-md-end mb-4">
+                                    {Object.entries(website.configuration?.footer?.socials || {}).map(([key, value]) => {
+                                        if (!value) return null;
+                                        const icons: any = {
+                                            facebook: 'bi-facebook',
+                                            instagram: 'bi-instagram',
+                                            twitter: 'bi-twitter-x',
+                                            linkedin: 'bi-linkedin',
+                                            youtube: 'bi-youtube'
+                                        };
+                                        return (
+                                            <a key={key} href={value as string} target="_blank" rel="noopener noreferrer" className="text-inherit opacity-50 hover-opacity-100 transition-all">
+                                                <i className={`bi ${icons[key]} fs-5`}></i>
+                                            </a>
+                                        );
+                                    })}
                                 </div>
-                                <p className="extra-small text-muted mb-0">© {new Date().getFullYear()} {website.name}. All rights reserved.</p>
+                                <p className="extra-small opacity-50 mb-0">© {new Date().getFullYear()} {website.name}. All rights reserved.</p>
                             </div>
                         </div>
                     </div>

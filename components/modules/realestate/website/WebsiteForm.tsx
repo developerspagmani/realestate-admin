@@ -40,6 +40,7 @@ export default function WebsiteForm({
     const [cacheClearing, setCacheClearing] = useState(false);
     const [cacheClearStatus, setCacheClearStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [modularMediaIndex, setModularMediaIndex] = useState<number | null>(null);
+    const [modularSlideIndex, setModularSlideIndex] = useState<number | null>(null);
 
     const [verificationStatus, setVerificationStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
 
@@ -50,11 +51,12 @@ export default function WebsiteForm({
             id: `mod-${Date.now()}`,
             type,
             data: {
-                title: type === 'typography' ? 'Custom Section' : '',
+                title: type === 'typography' || type === 'search' ? '' : '',
                 description: '',
                 imageUrl: '',
                 bgColor: '#ffffff',
-                textColor: '#000000'
+                textColor: '#000000',
+                slides: type === 'hero-slider' ? [{ title: '', subtitle: '', imageUrl: '' }] : undefined
             }
         };
         toggleNestedConfig('builder', 'modules', [...currentModules, newModule]);
@@ -139,13 +141,22 @@ export default function WebsiteForm({
                 toggleNestedConfig('builder', mediaTarget, media.url);
             } else if (modularMediaIndex !== null) {
                 const modules = [...(formData.configuration.builder?.modules || [])];
-                modules[modularMediaIndex].data.imageUrl = media.url;
+                if (modularSlideIndex !== null) {
+                    const slides = [...(modules[modularMediaIndex].data.slides || [])];
+                    if (slides[modularSlideIndex]) {
+                        slides[modularSlideIndex].imageUrl = media.url;
+                        modules[modularMediaIndex].data.slides = slides;
+                    }
+                } else {
+                    modules[modularMediaIndex].data.imageUrl = media.url;
+                }
                 toggleNestedConfig('builder', 'modules', modules);
             }
         }
         setShowMediaSelector(false);
         setMediaTarget(null);
         setModularMediaIndex(null);
+        setModularSlideIndex(null);
     };
 
     const toggleNestedConfig = (parent: string, child: string, value: any) => {
@@ -622,11 +633,15 @@ export default function WebsiteForm({
                                                         <i className="bi bi-plus-lg me-1"></i> Add Section
                                                     </button>
                                                     <ul className="dropdown-menu dropdown-menu-end shadow-lg rounded-4 border-0 p-2">
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('hero-slider')}><i className="bi bi-images me-2 text-primary"></i> Hero Slider</button></li>
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('search')}><i className="bi bi-search me-2 text-primary"></i> Search Filters</button></li>
                                                         <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('text-image')}><i className="bi bi-layout-split me-2 text-primary"></i> Text & Image</button></li>
                                                         <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('image-text')}><i className="bi bi-layout-split me-2 text-primary"></i> Image & Text</button></li>
                                                         <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('property-slider')}><i className="bi bi-collection-play me-2 text-primary"></i> Properties Slider</button></li>
                                                         <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('full-width-image')}><i className="bi bi-image-fill me-2 text-primary"></i> Full Width Image</button></li>
                                                         <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('typography')}><i className="bi bi-type me-2 text-primary"></i> Heading & Text</button></li>
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('LISTING')}><i className="bi bi-grid-3x3-gap me-2 text-primary"></i> Full Property Listing</button></li>
+                                                        <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('inquiry')}><i className="bi bi-envelope-at me-2 text-primary"></i> Inquiry Form</button></li>
                                                     </ul>
                                                 </div>
                                             </div>
@@ -644,7 +659,15 @@ export default function WebsiteForm({
                                                                 <div className="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
                                                                     <div className="d-flex align-items-center gap-3">
                                                                         <div className="bg-primary bg-opacity-10 text-primary p-2 rounded-3">
-                                                                            <i className={`bi ${module.type === 'text-image' || module.type === 'image-text' ? 'bi-layout-split' : module.type === 'property-slider' ? 'bi-collection-play' : module.type === 'full-width-image' ? 'bi-image-fill' : 'bi-type'}`}></i>
+                                                                            <i className={`bi ${module.type === 'hero-slider' ? 'bi-images' :
+                                                                                module.type === 'search' ? 'bi-search' :
+                                                                                    module.type === 'text-image' || module.type === 'image-text' ? 'bi-layout-split' :
+                                                                                        module.type === 'property-slider' ? 'bi-collection-play' :
+                                                                                            module.type === 'full-width-image' ? 'bi-image-fill' :
+                                                                                                module.type === 'LISTING' ? 'bi-grid-3x3-gap' :
+                                                                                                    module.type === 'inquiry' ? 'bi-envelope-at' :
+                                                                                                        'bi-type'
+                                                                                }`}></i>
                                                                         </div>
                                                                         <div>
                                                                             <div className="fw-bold small text-capitalize">{module.type.replace(/-/g, ' ')}</div>
@@ -659,6 +682,88 @@ export default function WebsiteForm({
                                                                 </div>
                                                                 <div className="card-body p-3 bg-light bg-opacity-25">
                                                                     <div className="row g-3">
+                                                                        {module.type === 'hero-slider' && (
+                                                                            <div className="col-12">
+                                                                                <label className="form-label extra-small fw-bold">Hero Slides</label>
+                                                                                <div className="d-flex flex-column gap-2">
+                                                                                    {(module.data?.slides || [{ title: '', subtitle: '', imageUrl: '' }]).map((slide: any, sIdx: number) => (
+                                                                                        <div key={sIdx} className="p-3 border rounded-4 bg-white shadow-sm">
+                                                                                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                                                                                <span className="badge bg-primary rounded-pill small">Slide {sIdx + 1}</span>
+                                                                                                <button type="button" className="btn btn-sm btn-outline-danger border-0 rounded-circle" onClick={() => {
+                                                                                                    const slides = [...(module.data.slides || [])];
+                                                                                                    slides.splice(sIdx, 1);
+                                                                                                    updateModule(index, { ...module.data, slides });
+                                                                                                }}><i className="bi bi-trash"></i></button>
+                                                                                            </div>
+                                                                                            <div className="row g-3">
+                                                                                                <div className="col-12">
+                                                                                                    <label className="form-label extra-small fw-bold text-muted">Slide Heading</label>
+                                                                                                    <input type="text" className="form-control form-control-sm rounded-3 shadow-sm" placeholder="Main Title" value={slide.title} onChange={(e) => {
+                                                                                                        const slides = [...(module.data.slides || [])];
+                                                                                                        slides[sIdx].title = e.target.value;
+                                                                                                        updateModule(index, { ...module.data, slides });
+                                                                                                    }} />
+                                                                                                </div>
+                                                                                                <div className="col-12">
+                                                                                                    <label className="form-label extra-small fw-bold text-muted">Sub-heading / Description</label>
+                                                                                                    <textarea className="form-control form-control-sm rounded-3 shadow-sm" rows={2} placeholder="Brief details..." value={slide.subtitle} onChange={(e) => {
+                                                                                                        const slides = [...(module.data.slides || [])];
+                                                                                                        slides[sIdx].subtitle = e.target.value;
+                                                                                                        updateModule(index, { ...module.data, slides });
+                                                                                                    }} />
+                                                                                                </div>
+                                                                                                <div className="col-12">
+                                                                                                    <label className="form-label extra-small fw-bold text-muted">Slide Image URL</label>
+                                                                                                    <div className="input-group input-group-sm shadow-sm">
+                                                                                                        <input type="text" className="form-control rounded-start-3" placeholder="https://..." value={slide.imageUrl} onChange={(e) => {
+                                                                                                            const slides = [...(module.data.slides || [])];
+                                                                                                            slides[sIdx].imageUrl = e.target.value;
+                                                                                                            updateModule(index, { ...module.data, slides });
+                                                                                                        }} />
+                                                                                                        <button type="button" className="btn btn-outline-secondary rounded-end-3" onClick={() => {
+                                                                                                            setMediaTarget(null);
+                                                                                                            setModularMediaIndex(index);
+                                                                                                            setModularSlideIndex(sIdx);
+                                                                                                            setShowMediaSelector(true);
+                                                                                                        }}>
+                                                                                                            <i className="bi bi-image"></i>
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                    <button type="button" className="btn btn-sm btn-outline-primary rounded-4 fw-bold py-2 mt-2 bg-white" onClick={() => {
+                                                                                        const slides = module.data.slides || [];
+                                                                                        updateModule(index, { ...module.data, slides: [...slides, { title: '', subtitle: '', imageUrl: '' }] });
+                                                                                    }}>
+                                                                                        <i className="bi bi-plus-circle me-1"></i> Add New Slide
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {module.type === 'search' && (
+                                                                            <div className="col-12 text-center py-3">
+                                                                                <div className="p-4 bg-primary bg-opacity-10 border border-primary border-dashed rounded-4">
+                                                                                    <i className="bi bi-search h3 text-primary d-block mb-3"></i>
+                                                                                    <h6 className="fw-bold">Dynamic Search Section</h6>
+                                                                                    <p className="extra-small text-muted mb-4 px-3">Enables real-time property filtering on your landing page.</p>
+                                                                                    <div className="text-start">
+                                                                                        <label className="form-label extra-small fw-bold">Section Heading (Optional)</label>
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            className="form-control form-control-sm rounded-3 shadow-sm"
+                                                                                            placeholder="Find Your Dream Home"
+                                                                                            value={module.data?.title || ''}
+                                                                                            onChange={(e) => updateModule(index, { ...module.data, title: e.target.value })}
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
                                                                         {(module.type === 'text-image' || module.type === 'image-text' || module.type === 'typography') && (
                                                                             <div className="col-12">
                                                                                 <label className="form-label extra-small fw-bold">Heading</label>
@@ -727,6 +832,27 @@ export default function WebsiteForm({
                                                                             <div className="col-12">
                                                                                 <div className="p-3 bg-white border border-info border-opacity-25 rounded-3">
                                                                                     <p className="extra-small text-info mb-0 fw-bold"><i className="bi bi-info-circle-fill me-2"></i> This section automatically pulls properties from your selected source portfolio.</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        {module.type === 'LISTING' && (
+                                                                            <div className="col-12">
+                                                                                <div className="p-3 bg-white border border-primary border-opacity-25 rounded-3">
+                                                                                    <p className="extra-small text-primary mb-0 fw-bold"><i className="bi bi-grid-3x3-gap me-2"></i> Full Property Listing Grid Section</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        {module.type === 'inquiry' && (
+                                                                            <div className="col-12">
+                                                                                <div className="p-3 bg-white border border-primary border-opacity-25 rounded-3">
+                                                                                    <p className="extra-small text-primary mb-2 fw-bold"><i className="bi bi-envelope-at me-2"></i> Lead Inquiry Form</p>
+                                                                                    <label className="form-label extra-small fw-bold">Section Heading (Optional)</label>
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        className="form-control form-control-sm rounded-3"
+                                                                                        value={module.data?.title || ''}
+                                                                                        onChange={(e) => updateModule(index, { ...module.data, title: e.target.value })}
+                                                                                    />
                                                                                 </div>
                                                                             </div>
                                                                         )}
@@ -1039,9 +1165,11 @@ export default function WebsiteForm({
                 onClose={() => {
                     setShowMediaSelector(false);
                     setMediaTarget(null);
+                    setModularMediaIndex(null);
+                    setModularSlideIndex(null);
                 }}
                 onSelect={handleMediaSelect}
-                title={`Select ${mediaTarget === 'logoUrl' ? 'Brand Logo' : 'Hero Cover'}`}
+                title={mediaTarget ? `Select ${mediaTarget === 'logoUrl' ? 'Brand Logo' : 'Hero Cover'}` : 'Select Image'}
             />
 
             <style jsx>{`

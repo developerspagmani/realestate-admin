@@ -26,7 +26,7 @@ export default function HomePageClient() {
 
     return (
         <div className={loading ? 'opacity-50 pointer-events-none transition-opacity' : 'transition-opacity'}>
-            {builder.showHero ? (
+            {(builder.showHero !== false || (builder.modules && builder.modules.length > 0)) ? (
                 <PageBuilder
                     config={builder}
                     data={properties}

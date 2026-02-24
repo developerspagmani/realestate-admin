@@ -316,24 +316,27 @@ export default function StandaloneProvider({
 
                 {/* Premium Smart Footer */}
                 {builder.showFooter !== false && (
-                    <footer className="py-5 bg-dark text-white mt-auto position-relative">
+                    <footer className="py-5 mt-auto position-relative border-top" style={{
+                        backgroundColor: website.configuration?.footer?.backgroundColor || '#212529',
+                        color: website.configuration?.footer?.textColor || '#ffffff'
+                    }}>
                         <div className="container">
                             <div className="row g-5">
                                 <div className="col-md-4">
                                     <h5 className="fw-bold mb-4">{website.name}</h5>
-                                    <p className="small text-muted opacity-75">
-                                        {builder.footerText || 'A next-generation real estate experience powered by Antigravity OS.'}
+                                    <p className="small opacity-75">
+                                        {builder.footerText || website.configuration?.footer?.footerText || 'A next-generation real estate experience powered by Antigravity OS.'}
                                     </p>
                                 </div>
                                 <div className="col-md-2">
-                                    <h6 className="fw-bold mb-3 small">LINKS</h6>
-                                    <ul className="list-unstyled extra-small text-muted gap-2 d-flex flex-column text-white">
+                                    <h6 className="fw-bold mb-3 small opacity-50">LINKS</h6>
+                                    <ul className="list-unstyled extra-small gap-2 d-flex flex-column">
                                         {menus.footer?.map((item: any) => (
                                             <li key={item.id}>
                                                 <Link
                                                     href={item.type === 'page' ? `/standalone/${slugOrDomain}/page/${item.pageSlug}` : item.url}
                                                     target={item.target || '_self'}
-                                                    className="text-white text-decoration-none opacity-75 hover-opacity-100 transition-all"
+                                                    className="text-inherit text-decoration-none opacity-75 hover-opacity-100 transition-all"
                                                 >
                                                     {item.label}
                                                 </Link>
@@ -342,12 +345,33 @@ export default function StandaloneProvider({
                                     </ul>
                                 </div>
                                 <div className="col-md-6 text-md-end">
-                                    <div className="d-flex gap-3 justify-content-md-end mb-4">
-                                        <i className="bi bi-facebook fs-5 opacity-50 hover-opacity-100 transition-all cursor-pointer"></i>
-                                        <i className="bi bi-instagram fs-5 opacity-50 hover-opacity-100 transition-all cursor-pointer"></i>
-                                        <i className="bi bi-linkedin fs-5 opacity-50 hover-opacity-100 transition-all cursor-pointer"></i>
+                                    <div className="d-flex gap-4 justify-content-md-end mb-4">
+                                        {Object.entries(website.configuration?.footer?.socials || {}).map(([key, value]) => {
+                                            if (!value) return null;
+                                            const icons: any = {
+                                                facebook: 'bi-facebook',
+                                                instagram: 'bi-instagram',
+                                                twitter: 'bi-twitter-x',
+                                                linkedin: 'bi-linkedin',
+                                                youtube: 'bi-youtube'
+                                            };
+                                            return (
+                                                <a key={key} href={value as string} target="_blank" rel="noopener noreferrer" className="text-inherit opacity-50 hover-opacity-100 transition-all">
+                                                    <i className={`bi ${icons[key]} fs-5`}></i>
+                                                </a>
+                                            );
+                                        })}
+                                        {!Object.values(website.configuration?.footer?.socials || {}).some(v => !!v) && (
+                                            <>
+                                                <i className="bi bi-facebook fs-5 opacity-25"></i>
+                                                <i className="bi bi-instagram fs-5 opacity-25"></i>
+                                                <i className="bi bi-linkedin fs-5 opacity-25"></i>
+                                            </>
+                                        )}
                                     </div>
-                                    <p className="extra-small text-muted mb-0">© {new Date().getFullYear()} {website.name}. All rights reserved.</p>
+                                    <p className="extra-small opacity-50 mb-0">
+                                        {website.configuration?.footer?.copyright || `© ${new Date().getFullYear()} ${website.name}. All rights reserved.`}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -358,8 +382,8 @@ export default function StandaloneProvider({
                             rel="noopener noreferrer"
                             className="position-absolute bottom-0 start-50 translate-middle-x mb-2 text-decoration-none d-flex align-items-center"
                             style={{
-                                fontSize: '13px',
-                                color: 'rgba(255,255,255,0.3)',
+                                fontSize: '11px',
+                                color: 'rgba(128,128,128,0.3)',
                                 userSelect: 'none',
                                 pointerEvents: 'auto',
                                 zIndex: 9999
@@ -368,8 +392,7 @@ export default function StandaloneProvider({
                             <img
                                 src="/images/Virpnix-logo-icon-svg.svg"
                                 alt="Virpanix"
-                                className='rounded-pill'
-                                style={{ height: '20px', width: 'auto', marginRight: '6px', opacity: 1, borderRadius: '50px' }}
+                                style={{ height: '14px', width: 'auto', marginRight: '6px', opacity: 0.6 }}
                             />
                             Powered by Virpanix
                         </a>

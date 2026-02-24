@@ -129,6 +129,35 @@ export default function WidgetPreview({ formData, tenantType, deviceMode: extern
                             backgroundColor: module.data?.bgColor || 'transparent',
                             color: module.data?.textColor || 'inherit'
                         }}>
+                            {module.type === 'hero-slider' && (
+                                <div className="preview-mock-hero p-4 text-center text-white position-relative overflow-hidden" style={{
+                                    height: '180px',
+                                    backgroundColor: theme.primaryColor,
+                                    backgroundImage: module.data?.slides?.[0]?.imageUrl ? `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url(${module.data.slides[0].imageUrl})` : 'none',
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center'
+                                }}>
+                                    <div className="position-relative z-1">
+                                        <div className="fw-bold small mb-1">{module.data?.slides?.[0]?.title || 'Featured Property'}</div>
+                                        <div className="opacity-75" style={{ fontSize: '0.6rem' }}>{module.data?.slides?.[0]?.subtitle || 'Premium Living Experience'}</div>
+                                    </div>
+                                    <div className="position-absolute bottom-0 start-50 translate-middle-x mb-2 d-flex gap-1">
+                                        {[1, 2, 3].map(i => <div key={i} className={`rounded-circle ${i === 1 ? 'bg-white' : 'bg-white opacity-25'}`} style={{ width: '4px', height: '4px' }}></div>)}
+                                    </div>
+                                </div>
+                            )}
+
+                            {module.type === 'search' && (
+                                <div className="p-3 bg-white">
+                                    {module.data?.title && <div className="fw-bold extra-small mb-2 text-center">{module.data.title}</div>}
+                                    <div className="mock-search-bar p-2 bg-light border rounded-3 d-flex gap-2 align-items-center">
+                                        <i className="bi bi-search text-muted small" style={{ fontSize: '0.6rem' }}></i>
+                                        <div className="bg-secondary-subtle rounded-pill flex-grow-1" style={{ height: '8px' }}></div>
+                                        <div className="btn p-1 rounded-2" style={{ backgroundColor: theme.primaryColor, width: '20px', height: '20px' }}></div>
+                                    </div>
+                                </div>
+                            )}
+
                             {module.type === 'full-width-image' && (
                                 <div className="w-100 position-relative" style={{ height: '160px', overflow: 'hidden' }}>
                                     {module.data?.imageUrl ? (
@@ -175,13 +204,13 @@ export default function WidgetPreview({ formData, tenantType, deviceMode: extern
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <div className="fw-bold extra-small">Featured Collection</div>
                                         <div className="d-flex gap-1">
-                                            <div className="bg-white border rounded-circle" style={{ width: '20px', height: '20px' }}></div>
-                                            <div className="bg-white border rounded-circle" style={{ width: '20px', height: '20px' }}></div>
+                                            <div className="bg-white border rounded-circle" style={{ width: '12px', height: '12px' }}></div>
+                                            <div className="bg-white border rounded-circle" style={{ width: '12px', height: '12px' }}></div>
                                         </div>
                                     </div>
-                                    <div className="d-flex gap-3 overflow-hidden">
+                                    <div className="d-flex gap-2 overflow-hidden">
                                         {[1, 2].map(i => (
-                                            <div key={i} className="bg-white rounded-3 shadow-sm border p-1" style={{ width: '140px', flexShrink: 0 }}>
+                                            <div key={i} className="bg-white rounded-3 shadow-sm border p-1" style={{ width: '120px', flexShrink: 0 }}>
                                                 <div className="bg-light rounded-2 mb-2" style={{ height: '60px' }}></div>
                                                 <div className="bg-light w-75 mb-1" style={{ height: '6px', borderRadius: '3px' }}></div>
                                                 <div className="bg-light w-50" style={{ height: '4px', borderRadius: '2px' }}></div>
@@ -190,41 +219,76 @@ export default function WidgetPreview({ formData, tenantType, deviceMode: extern
                                     </div>
                                 </div>
                             )}
+
+                            {module.type === 'LISTING' && (
+                                <div className="p-3">
+                                    <div className="row g-2">
+                                        {[1, 2, 3, 4].map(i => (
+                                            <div key={i} className="col-6">
+                                                <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+                                                    <div className="bg-light" style={{ height: '60px' }}></div>
+                                                    <div className="p-2">
+                                                        <div className="bg-light mb-1 w-75" style={{ height: '5px' }}></div>
+                                                        <div className="bg-light w-50" style={{ height: '3px' }}></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {module.type === 'inquiry' && (
+                                <div className="p-4">
+                                    <div className="bg-white p-3 rounded-4 shadow-sm border border-light-subtle">
+                                        <div className="fw-bold extra-small mb-2 text-center">{module.data?.title || 'Get in Touch'}</div>
+                                        <div className="bg-light rounded-2 mb-2" style={{ height: '20px' }}></div>
+                                        <div className="bg-light rounded-2 mb-2" style={{ height: '20px' }}></div>
+                                        <div className="w-100 rounded-3" style={{ height: '30px', backgroundColor: theme.primaryColor }}></div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
 
-                    {/* Original Search Mock */}
-                    <div className="p-4">
-                        {builder.showSearch !== false && (
-                            <div className="mock-search-bar mb-4 p-2 bg-light border-0 rounded-4 d-flex gap-2">
-                                <div className="mock-dot bg-secondary-subtle" style={{ width: '60%', height: '14px', borderRadius: '7px' }}></div>
-                                <div className="mock-dot bg-secondary-subtle flex-grow-1" style={{ height: '14px', borderRadius: '7px' }}></div>
+                    <div className="p-0">
+                        {/* Original Search Mock - Only show if not hidden by settings AND no search module added */}
+                        {builder.showSearch !== false && !(builder.modules || []).find((m: any) => m.type === 'search') && (
+                            <div className="p-4">
+                                <div className="mock-search-bar p-2 bg-light border-0 rounded-4 d-flex gap-2">
+                                    <div className="bg-secondary-subtle" style={{ width: '60%', height: '14px', borderRadius: '7px' }}></div>
+                                    <div className="bg-secondary-subtle flex-grow-1" style={{ height: '14px', borderRadius: '7px' }}></div>
+                                </div>
                             </div>
                         )}
 
-                        {/* Mock Listings */}
-                        {(isPageBuilder ? builder.showListing !== false : true) && (
-                            <div className={`row g-2`}>
-                                {Array.from({ length: 4 }).map((_, i) => (
-                                    <div key={i} className={'col-6'}>
-                                        <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
-                                            <div className="mock-img bg-light" style={{ height: '70px' }}></div>
-                                            <div className="p-2">
-                                                <div className="mock-line bg-light mb-1 w-75" style={{ height: '6px', borderRadius: '3px' }}></div>
-                                                <div className="mock-line bg-light w-50" style={{ height: '4px', borderRadius: '2px' }}></div>
+                        {/* Mock Listings - Only show if not hidden by settings AND no LISTING module added */}
+                        {(isPageBuilder ? builder.showListing !== false : true) && !(builder.modules || []).find((m: any) => m.type === 'LISTING') && (
+                            <div className="p-4 pt-0">
+                                <div className={`row g-2`}>
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className={'col-6'}>
+                                            <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+                                                <div className="mock-img bg-light" style={{ height: '70px' }}></div>
+                                                <div className="p-2">
+                                                    <div className="mock-line bg-light mb-1 w-75" style={{ height: '6px', borderRadius: '3px' }}></div>
+                                                    <div className="mock-line bg-light w-50" style={{ height: '4px', borderRadius: '2px' }}></div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         )}
 
-                        {/* Mock Inquiry Form */}
-                        {(isPageBuilder ? builder.showInquiry !== false : true) && (
-                            <div className="mt-4 p-3 bg-light rounded-4 border-dashed">
-                                <div className="bg-white p-2 rounded-3 shadow-sm">
-                                    <div className="mock-line bg-light mb-2" style={{ height: '20px', borderRadius: '4px' }}></div>
-                                    <div className="mock-btn w-100 rounded-4" style={{ height: '25px', backgroundColor: theme.primaryColor }}></div>
+                        {/* Mock Inquiry Form - Only show if not hidden by settings AND no inquiry module added */}
+                        {(isPageBuilder ? builder.showInquiry !== false : true) && !(builder.modules || []).find((m: any) => m.type === 'inquiry') && (
+                            <div className="p-4 pt-0">
+                                <div className="mt-0 p-3 bg-light rounded-4 border-dashed">
+                                    <div className="bg-white p-2 rounded-3 shadow-sm">
+                                        <div className="mock-line bg-light mb-2" style={{ height: '20px', borderRadius: '4px' }}></div>
+                                        <div className="mock-btn w-100 rounded-4" style={{ height: '25px', backgroundColor: theme.primaryColor }}></div>
+                                    </div>
                                 </div>
                             </div>
                         )}
