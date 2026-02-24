@@ -629,7 +629,10 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                 <div className="modal-body p-4">
                                     <div className="row g-4">
                                         <div className="col-md-12">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">Select Visitor / Prospect</label>
+                                            <label className="form-label fw-bold small text-uppercase text-muted">
+                                                Select Visitor / Prospect
+                                                {loading && <span className="spinner-border spinner-border-sm text-primary ms-2" style={{ width: '0.8rem', height: '0.8rem' }}></span>}
+                                            </label>
                                             <select
                                                 className="form-select form-select-lg bg-light border-0"
                                                 value={formData.userId || ''}
@@ -649,7 +652,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                     }
                                                 }}
                                             >
-                                                <option value="">Choose a prospect...</option>
+                                                <option value="">{loading ? 'Fetching records...' : 'Choose a prospect...'}</option>
                                                 {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
                                                 <option value="new">+ Add New Guest / Lead</option>
                                             </select>

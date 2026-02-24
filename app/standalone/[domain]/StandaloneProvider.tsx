@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { websiteService, marketingService } from '@/app/services/api';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
+import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
 import '@/components/modules/realestate/shared/shared.css';
 
 interface StandaloneContextType {
@@ -63,6 +64,13 @@ export default function StandaloneProvider({
 
             const params = new URLSearchParams();
             params.append('tenantId', website.tenantId);
+
+            // If website is restricted to specific properties, ensure search stays within them
+            const allowedIds = website.propertyIds || (website.propertyId ? [website.propertyId] : []);
+            if (allowedIds.length > 0) {
+                params.append('propertyIds', allowedIds.join(','));
+            }
+
             Object.entries(newFilters).forEach(([key, value]) => {
                 if (value) params.append(key, String(value));
             });
@@ -131,8 +139,13 @@ export default function StandaloneProvider({
                 type,
                 metadata: { websiteId: website.id, ...metadata }
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error('Tracking failed:', err);
+            // If the lead was deleted from the system, clear our local identity
+            if (err.message === 'Lead not found') {
+                setLeadIdentity(null);
+                localStorage.removeItem(`website_lead_${website.id}`);
+            }
         }
     };
 
@@ -238,6 +251,38 @@ export default function StandaloneProvider({
 
                 <main className="flex-grow-1 animate-fade-in">
                     {children}
+
+                    {/* Inquiry Form Section for Front Pages */}
+                    {builder.showInquiry && isHome && (
+                        <section className="py-5 bg-light border-top">
+                            <div className="container" style={{ maxWidth: '600px' }}>
+                                <div className="text-center mb-4">
+                                    <h2 className="fw-black h3 mb-2">Get in Touch</h2>
+                                    <p className="text-muted small">Have questions about our properties? We're here to help.</p>
+                                </div>
+                                <FormRenderer
+                                    config={website.configuration?.inquiryForm || { enabled: true }}
+                                    primaryColor={theme.primaryColor}
+                                    onSubmit={async (formData, config) => {
+                                        try {
+                                            const res = await websiteService.createPublicLead(website.id, {
+                                                ...formData,
+                                                source: 'website_inquiry',
+                                                notes: `Inquiry from ${website.name} portal.`
+                                            });
+                                            if (res.success) {
+                                                const leadId = res.data?.id || res.id;
+                                                identifyLead(leadId, formData.email);
+                                                trackAction('INQUIRY_SUBMIT', { formId: config.marketingFormId || 'custom' });
+                                            }
+                                        } catch (err) {
+                                            console.error('Inquiry fail:', err);
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </section>
+                    )}
                 </main>
 
                 {/* Premium Smart Footer */}

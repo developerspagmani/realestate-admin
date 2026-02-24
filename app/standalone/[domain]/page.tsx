@@ -7,7 +7,7 @@ async function getWebsiteData(slugOrDomain: string) {
     if (!slugOrDomain) return null;
     try {
         const res = await fetch(`${BACKEND_URL}/websites/public/${slugOrDomain}`, {
-            next: { revalidate: 60 }
+            next: { revalidate: 1 }
         });
         if (!res.ok) return null;
         return res.json();

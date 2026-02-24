@@ -147,7 +147,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  role: 'user' | 'admin' | 'owner';
+  role: 'user' | 'admin' | 'owner' | 'agent';
   status?: 'active' | 'inactive' | 'suspended' | string;
   tenantId?: string;
   createdAt: string;

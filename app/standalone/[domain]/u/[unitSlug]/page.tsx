@@ -8,7 +8,7 @@ async function getUnitData(idOrSlug: string) {
     try {
         const url = `${BACKEND_URL}/public/units/${idOrSlug}`;
         const res = await fetch(url, {
-            next: { revalidate: 60 }
+            next: { revalidate: 1 }
         });
         if (!res.ok) return null;
         return res.json();

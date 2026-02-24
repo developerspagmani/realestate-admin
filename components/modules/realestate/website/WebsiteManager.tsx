@@ -18,7 +18,8 @@ const INITIAL_FORM_DATA = {
     name: '',
     slug: '',
     customDomain: '',
-    propertyId: '',
+    propertyId: '', // Keep for backward compatibility if needed, but we'll use propertyIds
+    propertyIds: [] as string[],
     configuration: {
         theme: {
             primaryColor: '#6366f1',
@@ -33,6 +34,7 @@ const INITIAL_FORM_DATA = {
         },
         settings: {
             propertyId: '',
+            propertyIds: [] as string[],
             layout: 'builder' // builder | listing
         },
         chatbot: {
@@ -69,9 +71,13 @@ const INITIAL_FORM_DATA = {
             fields: [
                 { id: 'f1', type: 'text', label: 'Full Name', placeholder: 'Enter your name', required: true },
                 { id: 'f2', type: 'email', label: 'Email Address', placeholder: 'Enter your email', required: true },
-                { id: 'f2', type: 'email', label: 'Email Address', placeholder: 'Enter your email', required: true },
                 { id: 'f3', type: 'textarea', label: 'Message', placeholder: 'How can we help you?', required: true }
             ]
+        },
+        bookingForm: {
+            enabled: false,
+            useMarketingForm: false,
+            marketingFormId: ''
         },
         menus: {
             header: [],
@@ -199,7 +205,9 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
                     ...formData.configuration,
                     settings: {
                         ...formData.configuration.settings,
-                        propertyId: formData.propertyId
+                        propertyId: formData.propertyId,
+                        propertyIds: formData.propertyIds,
+                        layout: formData.configuration?.settings?.layout || 'builder'
                     }
                 }
             };
@@ -251,9 +259,10 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
             slug: website.slug,
             customDomain: website.customDomain || '',
             propertyId: website.propertyId || '',
+            propertyIds: website.propertyIds || (website.propertyId ? [website.propertyId] : []),
             configuration: {
                 ...website.configuration,
-                settings: website.configuration.settings || { layout: 'builder', propertyId: website.propertyId }
+                settings: website.configuration?.settings || { layout: 'builder', propertyId: website.propertyId, propertyIds: website.propertyIds }
             }
         });
         setShowForm(true);

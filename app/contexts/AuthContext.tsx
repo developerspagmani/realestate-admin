@@ -11,6 +11,9 @@ export interface User {
   name: string;
   email: string;
   role: number; // 1: user, 2: admin, 3: owner, 4: agent
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
   tenantId?: string;
   status?: string;
   subscriptionStatus?: number;

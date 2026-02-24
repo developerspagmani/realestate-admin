@@ -33,8 +33,8 @@ const BookingModal: React.FC<BookingModalProps> = ({
     const bookingConfig = (bookingForm && bookingForm.enabled) ? bookingForm : (builderBookingEnabled || show ? {
         enabled: true,
         title: 'Reservation Request',
-        submitLabel: 'Send Request',
-        successMessage: 'We have received your request!',
+        submitLabel: 'Confirm Reservation',
+        successMessage: 'We have received your reservation request and it is now pending approval in our system.',
         fields: [
             { id: 'f1', type: 'text', label: 'Full Name', required: true, placeholder: 'Your Name' },
             { id: 'f2', type: 'email', label: 'Email Address', required: true, placeholder: 'name@example.com' },

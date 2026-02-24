@@ -98,6 +98,9 @@ export function middleware(request: NextRequest) {
     !pathname.startsWith('/_next') &&
     !pathname.startsWith('/public') &&
     !pathname.startsWith('/go') &&
+    !pathname.startsWith('/realestate-admin') &&
+    !pathname.startsWith('/realestate-owner-admin') &&
+    !pathname.startsWith('/realestate-agent') &&
     !pathname.startsWith('/standalone') // Avoid double rewriting
   ) {
     // Rewrite custom domain requests to our standalone renderer

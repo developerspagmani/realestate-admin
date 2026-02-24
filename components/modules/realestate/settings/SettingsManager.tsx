@@ -16,7 +16,7 @@ interface SettingsManagerProps {
 
 export default function SettingsManager({ mode }: SettingsManagerProps) {
     const { user, isAuthenticated, loading: authLoading, isAdmin, isOwner } = useAuthContext();
-    const { activeTenantId } = useManagementContext();
+    const { activeTenantId, refreshTenant } = useManagementContext();
     const [mounted, setMounted] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -252,6 +252,13 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                 if (activeTab === 'backup') {
                     setSettings(newSettings);
                 }
+
+                // Refresh the global management context to update currency symbols etc.
+                await refreshTenant();
+
+                // Re-fetch local settings to stay in sync
+                await loadSettings();
+
                 showToast('Organization settings updated successfully!');
             } else {
                 showToast(response.message || 'Failed to update settings', 'error');

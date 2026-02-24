@@ -9,7 +9,7 @@ async function getPropertyData(idOrSlug: string) {
         const url = `${BACKEND_URL}/public/properties/${idOrSlug}`;
         console.log(`Fetching property data from: ${url}`);
         const res = await fetch(url, {
-            next: { revalidate: 60 }
+            next: { revalidate: 1 }
         });
         if (!res.ok) {
             console.error(`Backend returned ${res.status} for ${url}`);

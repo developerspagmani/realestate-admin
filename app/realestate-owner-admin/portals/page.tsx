@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import { portalService } from '@/app/services/api';
-import { toast } from 'react-hot-toast';
+import Toast from '@/components/common/Toast';
 
 interface PortalListing {
     id: string;
@@ -24,6 +24,15 @@ export default function OwnerPortalsPage() {
     const [activeTab, setActiveTab] = useState<'listings' | 'config'>('listings');
     const [syncing, setSyncing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success',
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     // Form state for config
     const [config, setConfig] = useState({
@@ -70,11 +79,11 @@ export default function OwnerPortalsPage() {
         try {
             const response = await portalService.updateCredentials(config);
             if (response.success) {
-                toast.success('Configuration updated successfully!');
+                showToast('Configuration updated successfully!', 'success');
                 setActiveTab('listings');
             }
         } catch (e) {
-            toast.error('Failed to save configuration');
+            showToast('Failed to save configuration', 'error');
         } finally {
             setSaving(false);
         }
@@ -85,10 +94,10 @@ export default function OwnerPortalsPage() {
         try {
             const response = await portalService.syncLeads(portal);
             if (response.success) {
-                toast.success(response.message);
+                showToast(response.message, 'success');
             }
         } catch (error) {
-            toast.error('Failed to sync leads');
+            showToast('Failed to sync leads', 'error');
         } finally {
             setSyncing(false);
         }
@@ -261,6 +270,12 @@ export default function OwnerPortalsPage() {
                     </div>
                 )}
             </div>
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
 
             <style jsx>{`
                 .bg-soft-primary { background-color: rgba(13, 110, 253, 0.1); }

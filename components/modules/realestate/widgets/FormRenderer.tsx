@@ -84,7 +84,7 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
                     <i className="bi bi-check-circle-fill display-4 text-success"></i>
                 </div>
                 <h5 className="fw-bold">Thank You!</h5>
-                <p className="text-muted small">Your inquiry has been received. We will get back to you soon.</p>
+                <p className="text-muted small">{localConfig.successMessage || 'Your inquiry has been received. We will get back to you soon.'}</p>
                 <button
                     className="btn btn-outline-primary btn-sm rounded-4 mt-2"
                     onClick={() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 import { tenantService, getAuthToken } from '@/app/services/api';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
@@ -18,6 +18,7 @@ interface ManagementContextType {
     currencySymbol: string;
     currencyCode: string;
     isCommandCenterActive: boolean;
+    refreshTenant: () => Promise<void>;
 }
 
 const ManagementContext = createContext<ManagementContextType | undefined>(undefined);
@@ -31,6 +32,50 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
     const [currencyCode, setCurrencyCode] = useState('USD');
     const [isInitialized, setIsInitialized] = useState(false);
     const { user, isOwner, isAdmin } = useAuthContext();
+
+    const fetchTenant = useCallback(async () => {
+        if (!activeTenantId) {
+            setActiveTenant(null);
+            setCurrencySymbol('$');
+            setCurrencyCode('USD');
+            return;
+        }
+
+        const token = getAuthToken();
+        if (!token) return;
+
+        // Security check: If not admin, verify they are fetching their own tenant
+        if (!isAdmin && user?.tenantId && activeTenantId !== user.tenantId) {
+            console.warn('ManagementContext: Unauthorized tenant fetch attempted. Redirecting to user tenant.');
+            return;
+        }
+
+        try {
+            const res = await tenantService.getTenantById(token, activeTenantId);
+            if (res.success) {
+                const tenantData = res.data;
+                setActiveTenant(tenantData);
+
+                // Prefer explicit currency setting from tenant settings
+                const settings = tenantData.settings || {};
+                const baseCurrency = settings.general?.currency;
+
+                // Fallback to country-based currency if no explicit currency set
+                const config = getCurrencyConfig(baseCurrency || tenantData.country);
+                setCurrencySymbol(config.symbol);
+                setCurrencyCode(config.code);
+            }
+        } catch (error: any) {
+            // Silently catch access denied to prevent app crash
+            if (error.message?.includes('Access denied')) {
+                console.error('ManagementContext: Access denied for tenant', activeTenantId);
+                // If we get access denied, we should probably clear the active tenant ID
+                if (isAdmin) setActiveTenantIdState(null);
+            } else {
+                console.error('Failed to fetch tenant details:', error);
+            }
+        }
+    }, [activeTenantId, isAdmin, user?.tenantId]);
 
     // Initialize from localStorage on mount
     useEffect(() => {
@@ -60,45 +105,8 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
 
     // Fetch tenant details when activeTenantId changes
     useEffect(() => {
-        if (!activeTenantId) {
-            setActiveTenant(null);
-            setCurrencySymbol('$');
-            setCurrencyCode('USD');
-            return;
-        }
-
-        const fetchTenant = async () => {
-            const token = getAuthToken();
-            if (!token) return;
-
-            // Security check: If not admin, verify they are fetching their own tenant
-            if (!isAdmin && user?.tenantId && activeTenantId !== user.tenantId) {
-                console.warn('ManagementContext: Unauthorized tenant fetch attempted. Redirecting to user tenant.');
-                return;
-            }
-
-            try {
-                const res = await tenantService.getTenantById(token, activeTenantId);
-                if (res.success) {
-                    setActiveTenant(res.data);
-                    const config = getCurrencyConfig(res.data.country);
-                    setCurrencySymbol(config.symbol);
-                    setCurrencyCode(config.code);
-                }
-            } catch (error: any) {
-                // Silently catch access denied to prevent app crash
-                if (error.message?.includes('Access denied')) {
-                    console.error('ManagementContext: Access denied for tenant', activeTenantId);
-                    // If we get access denied, we should probably clear the active tenant ID
-                    if (isAdmin) setActiveTenantIdState(null);
-                } else {
-                    console.error('Failed to fetch tenant details:', error);
-                }
-            }
-        };
-
         fetchTenant();
-    }, [activeTenantId]);
+    }, [fetchTenant]);
 
     const setTenantType = (type: number) => {
         setTenantTypeState(type);
@@ -131,6 +139,10 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
         else localStorage.removeItem('mgmt_tenant_id');
     };
 
+    const refreshTenant = async () => {
+        await fetchTenant();
+    };
+
     return (
         <ManagementContext.Provider value={{
             tenantType,
@@ -143,7 +155,8 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
             activeTenant,
             currencySymbol,
             currencyCode,
-            isCommandCenterActive: true
+            isCommandCenterActive: true,
+            refreshTenant
         }}>
             {children}
         </ManagementContext.Provider>

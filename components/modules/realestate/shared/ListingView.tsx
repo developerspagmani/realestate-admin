@@ -46,8 +46,9 @@ const ListingView: React.FC<ListingViewProps> = ({
                     'col-md-6 col-lg-3');
 
     const getSymbol = (propertyCountry?: string) => {
-        const country = propertyCountry || widget?.tenant?.country || 'USA';
-        const config = getCurrencyConfig(country);
+        const baseCurrency = widget?.tenant?.settings?.general?.currency;
+        const input = propertyCountry || baseCurrency || widget?.tenant?.country || 'USA';
+        const config = getCurrencyConfig(input);
         return config?.symbol || '$';
     };
 
@@ -103,7 +104,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                                             <i className="bi bi-building fs-1 text-muted opacity-25"></i>
                                         </div>
                                     )}
-                                    <div className="floating-badge">
+                                    <div className="position-absolute bottom-0 end-0 m-3 px-3 py-1 bg-white rounded-pill shadow-sm small fw-bold text-primary">
                                         {property.units?.length || 0} Total Units
                                     </div>
                                     {property.displayPrice !== false && Number(property.price) > 0 && (

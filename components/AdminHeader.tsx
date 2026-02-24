@@ -12,7 +12,7 @@ interface AdminHeaderProps {
 }
 
 export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
-    const { user, logout, isAdmin, isOwner } = useAuthContext();
+    const { user, logout, isAdmin, isOwner, isAgent } = useAuthContext();
     const {
         tenantType, setTenantType,
         activeTenantId, setActiveTenantId,
@@ -55,13 +55,13 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         return () => clearInterval(timer);
     }, []);
 
-    // Ensure activeTenantId is set for owners if not already initialized
+    // Ensure activeTenantId is set for owners/agents if not already initialized
     useEffect(() => {
-        if (isOwner && user?.tenantId && !activeTenantId) {
-            console.log('AdminHeader: Initializing owner tenant context:', user.tenantId);
+        if ((isOwner || isAgent) && user?.tenantId && !activeTenantId) {
+            console.log('AdminHeader: Initializing tenant context:', user.tenantId);
             setActiveOwnerAndTenant(user.id, user.tenantId);
         }
-    }, [isOwner, user, activeTenantId, setActiveOwnerAndTenant]);
+    }, [isOwner, isAgent, user, activeTenantId, setActiveOwnerAndTenant]);
 
     // Fetch Owners when tenant type changes
     useEffect(() => {
@@ -96,7 +96,6 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             console.log('AdminHeader: Switching to owner:', selectedOwner.name, 'Tenant ID:', selectedOwner.tenantId);
             setActiveOwnerAndTenant(ownerId, selectedOwner.tenantId);
             // If the owner's tenant has a specific industry type, switch to it
-            // Based on API: selectedOwner might have tenant nested
             if (selectedOwner.tenant?.type) {
                 setTenantType(Number(selectedOwner.tenant.type));
             } else if (selectedOwner.tenantType) {
@@ -130,67 +129,106 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 limit: '5'
             };
 
-            // Fetch recent activities in parallel
-            const [dashRes, leadsRes, paymentsRes] = await Promise.all([
-                dashboardService.getStats(token, params),
-                leadService.getLeads(token, { ...params, limit: '5' }),
-                paymentService.getPayments(token, { ...params, limit: '5' })
-            ]);
-
             const newNotifications: any[] = [];
 
-            // 1. Process Bookings
-            if (dashRes.success && dashRes.data.recentBookings) {
-                dashRes.data.recentBookings.forEach((b: any) => {
-                    newNotifications.push({
-                        id: `booking-${b.id}`,
-                        title: 'New Booking',
-                        message: `${b.user?.name || 'Customer'} booked Unit ${b.unit?.unitCode || ''}`,
-                        time: new Date(b.createdAt).toLocaleString(),
-                        rawTime: new Date(b.createdAt),
-                        type: 'booking',
-                        unread: true,
-                        link: `/realestate-owner-admin/bookings/${b.id}`
-                    });
-                });
-            }
+            if (isAdmin || isOwner) {
+                // Fetch global activities for Admins and Owners
+                const [dashRes, leadsRes, paymentsRes] = await Promise.all([
+                    dashboardService.getStats(token, params),
+                    leadService.getLeads(token, { ...params, limit: '5' }),
+                    paymentService.getPayments(token, { ...params, limit: '5' })
+                ]);
 
-            // 2. Process Leads
-            if (leadsRes.success && (leadsRes.data.leads || leadsRes.data)) {
-                const leads = leadsRes.data.leads || leadsRes.data || [];
-                leads.forEach((l: any) => {
-                    newNotifications.push({
-                        id: `lead-${l.id}`,
-                        title: 'New Lead',
-                        message: `Lead "${l.name}" expressed interest.`,
-                        time: new Date(l.createdAt).toLocaleString(),
-                        rawTime: new Date(l.createdAt),
-                        type: 'lead',
-                        unread: true,
-                        link: `/realestate-admin/leads?id=${l.id}`
+                // 1. Process Bookings
+                if (dashRes.success && dashRes.data.recentBookings) {
+                    dashRes.data.recentBookings.forEach((b: any) => {
+                        newNotifications.push({
+                            id: `booking-${b.id}`,
+                            title: 'New Booking',
+                            message: `${b.user?.name || 'Customer'} booked Unit ${b.unit?.unitCode || ''}`,
+                            time: new Date(b.createdAt).toLocaleString(),
+                            rawTime: new Date(b.createdAt),
+                            type: 'booking',
+                            unread: true,
+                            link: `/realestate-owner-admin/bookings/${b.id}`
+                        });
                     });
-                });
-            }
+                }
 
-            // 3. Process Payments
-            if (paymentsRes.success && (paymentsRes.data.payments || paymentsRes.data)) {
-                const payments = paymentsRes.data.payments || paymentsRes.data || [];
-                payments.forEach((p: any) => {
-                    newNotifications.push({
-                        id: `payment-${p.id}`,
-                        title: 'Payment Received',
-                        message: `Payment of ${p.amount} ${p.currency} received.`,
-                        time: new Date(p.createdAt).toLocaleString(),
-                        rawTime: new Date(p.createdAt),
-                        type: 'payment',
-                        unread: false,
-                        link: `/realestate-admin/payments`
+                // 2. Process Leads
+                if (leadsRes.success && (leadsRes.data.leads || leadsRes.data)) {
+                    const leads = leadsRes.data.leads || leadsRes.data || [];
+                    leads.forEach((l: any) => {
+                        newNotifications.push({
+                            id: `lead-${l.id}`,
+                            title: 'New Lead',
+                            message: `Lead "${l.name}" expressed interest.`,
+                            time: new Date(l.createdAt).toLocaleString(),
+                            rawTime: new Date(l.createdAt),
+                            type: 'lead',
+                            unread: true,
+                            link: `/realestate-admin/leads?id=${l.id}`
+                        });
                     });
-                });
+                }
+
+                // 3. Process Payments
+                if (paymentsRes.success && (paymentsRes.data.payments || paymentsRes.data)) {
+                    const payments = paymentsRes.data.payments || paymentsRes.data || [];
+                    payments.forEach((p: any) => {
+                        newNotifications.push({
+                            id: `payment-${p.id}`,
+                            title: 'Payment Received',
+                            message: `Payment of ${p.amount} ${p.currency} received.`,
+                            time: new Date(p.createdAt).toLocaleString(),
+                            rawTime: new Date(p.createdAt),
+                            type: 'payment',
+                            unread: false,
+                            link: `/realestate-admin/payments`
+                        });
+                    });
+                }
+            } else if (isAgent) {
+                // Fetch Agent-specific activities
+                const { agentService } = await import('@/app/services/api');
+                const [leadsRes, commsRes] = await Promise.all([
+                    agentService.getMyLeads(token),
+                    agentService.getMyCommissions(token)
+                ]);
+
+                if (leadsRes.success && leadsRes.data.leads) {
+                    leadsRes.data.leads.slice(0, 5).forEach((l: any) => {
+                        newNotifications.push({
+                            id: `agent-lead-${l.id}`,
+                            title: 'Lead Assigned',
+                            message: `You were assigned lead: ${l.name}`,
+                            time: new Date(l.createdAt).toLocaleString(),
+                            rawTime: new Date(l.createdAt),
+                            type: 'lead',
+                            unread: true,
+                            link: `/realestate-agent/leads`
+                        });
+                    });
+                }
+
+                if (commsRes.success && commsRes.data.commissions) {
+                    commsRes.data.commissions.slice(0, 5).forEach((c: any) => {
+                        newNotifications.push({
+                            id: `agent-comm-${c.id}`,
+                            title: 'Commission Update',
+                            message: `Commission of ${c.amount} is ${c.status}`,
+                            time: new Date(c.createdAt).toLocaleString(),
+                            rawTime: new Date(c.createdAt),
+                            type: 'payment',
+                            unread: false,
+                            link: `/realestate-agent/commissions`
+                        });
+                    });
+                }
             }
 
             // Sort by time
-            newNotifications.sort((a, b) => b.rawTime - a.rawTime);
+            newNotifications.sort((a, b) => b.rawTime.getTime() - a.rawTime.getTime());
             setNotifications(newNotifications.slice(0, 10)); // Keep top 10
 
         } catch (error) {
@@ -221,9 +259,9 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
     if (!user) return null;
 
-    const roleLabel = isAdmin ? 'System Administrator' : isOwner ? 'Property Owner' : 'Standard User';
-    const settingsPath = isAdmin ? '/realestate-admin/settings' : isOwner ? '/realestate-owner-admin/settings' : '/user/settings';
-    const profilePath = isAdmin ? '/user/profile' : isOwner ? '/user/profile' : '/user/profile'; // Assuming profile is shared
+    const roleLabel = isAdmin ? 'System Administrator' : isOwner ? 'Property Owner' : isAgent ? 'Sales Agent' : 'Standard User';
+    const settingsPath = isAdmin ? '/realestate-admin/settings' : isOwner ? '/realestate-owner-admin/settings' : isAgent ? '/realestate-agent/profile' : '/user/settings';
+    const profilePath = isAgent ? '/realestate-agent/profile' : '/user/profile';
 
     return (
         <header className="admin-header bg-white border-bottom sticky-top shadow-sm px-3 px-md-4">

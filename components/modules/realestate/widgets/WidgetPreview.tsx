@@ -5,10 +5,13 @@ import React, { useState } from 'react';
 interface WidgetPreviewProps {
     formData: any;
     tenantType: number;
+    deviceMode?: 'desktop' | 'tablet' | 'mobile';
 }
 
-export default function WidgetPreview({ formData, tenantType }: WidgetPreviewProps) {
-    const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+export default function WidgetPreview({ formData, tenantType, deviceMode: externalDeviceMode }: WidgetPreviewProps) {
+    const [internalDeviceMode, setInternalDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+    const deviceMode = externalDeviceMode || internalDeviceMode;
+    const setDeviceMode = (mode: any) => externalDeviceMode ? null : setInternalDeviceMode(mode);
     const config = formData.configuration || {};
     const theme = config.theme || { primaryColor: '#6366f1', borderRadius: '8px', fontFamily: 'Inter, sans-serif' };
     const builder = config.builder || {};
@@ -44,27 +47,29 @@ export default function WidgetPreview({ formData, tenantType }: WidgetPreviewPro
 
     return (
         <div className="widget-preview-container sticky-top" style={{ top: '20px' }}>
-            <div className="preview-header mb-3 d-flex justify-content-between align-items-center">
-                <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-4 small fw-bold">
-                    <i className="bi bi-eye-fill me-2"></i>Live Preview
-                </span>
-                <div className="preview-devices d-flex gap-2">
-                    {[
-                        { mode: 'desktop', icon: 'bi-display', title: 'Desktop View' },
-                        { mode: 'tablet', icon: 'bi-tablet', title: 'Tablet View' },
-                        { mode: 'mobile', icon: 'bi-phone', title: 'Mobile View' }
-                    ].map((device) => (
-                        <button
-                            key={device.mode}
-                            className={`btn btn-sm rounded-circle shadow-sm p-2 transition-all ${deviceMode === device.mode ? 'btn-primary' : 'btn-light'}`}
-                            title={device.title}
-                            onClick={() => setDeviceMode(device.mode as any)}
-                        >
-                            <i className={`bi ${device.icon}`}></i>
-                        </button>
-                    ))}
+            {!externalDeviceMode && (
+                <div className="preview-header mb-3 d-flex justify-content-between align-items-center">
+                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-4 small fw-bold">
+                        <i className="bi bi-eye-fill me-2"></i>Live Preview
+                    </span>
+                    <div className="preview-devices d-flex gap-2">
+                        {[
+                            { mode: 'desktop', icon: 'bi-display', title: 'Desktop View' },
+                            { mode: 'tablet', icon: 'bi-tablet', title: 'Tablet View' },
+                            { mode: 'mobile', icon: 'bi-phone', title: 'Mobile View' }
+                        ].map((device) => (
+                            <button
+                                key={device.mode}
+                                className={`btn btn-sm rounded-circle shadow-sm p-2 transition-all ${deviceMode === device.mode ? 'btn-primary' : 'btn-light'}`}
+                                title={device.title}
+                                onClick={() => setDeviceMode(device.mode as any)}
+                            >
+                                <i className={`bi ${device.icon}`}></i>
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div
                 className={`widget-mockup-frame widget-container shadow-lg bg-white overflow-hidden border border-light-subtle rounded-4 mx-auto`}

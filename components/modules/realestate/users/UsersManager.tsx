@@ -56,7 +56,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
             const industryType = mode === 'admin' ? tenantType : undefined;
 
             const roleMap: Record<string, string> = {
-                'user': '1', 'admin': '2', 'owner': '3'
+                'user': '1', 'admin': '2', 'owner': '3', 'agent': '4'
             };
 
             const params: any = {
@@ -69,17 +69,22 @@ export default function UsersManager({ mode }: UsersManagerProps) {
 
             if (response.success && response.data) {
                 const usersList = response.data.users || response.data;
-                const mappedUsers: User[] = usersList.map((u: any) => ({
-                    id: u.id,
-                    name: u.name || 'Unknown User',
-                    email: u.email,
-                    phone: u.phone || '--',
-                    role: u.role === 2 ? 'admin' : u.role === 3 ? 'owner' : 'user',
-                    status: u.status === 2 ? 'inactive' : u.status === 3 ? 'suspended' : 'active',
-                    createdAt: u.createdAt,
-                    lastLogin: u.lastLogin,
-                    bookingsCount: u._count?.bookings || 0
-                }));
+                const mappedUsers: User[] = usersList
+                    .map((u: any) => ({
+                        id: u.id,
+                        name: u.name || 'Unknown User',
+                        email: u.email,
+                        phone: u.phone || '--',
+                        role: u.role === 2 ? 'admin' : u.role === 3 ? 'owner' : u.role === 4 ? 'agent' : 'user',
+                        status: u.status === 2 ? 'inactive' : u.status === 3 ? 'suspended' : 'active',
+                        tenantId: u.tenantId,
+                        createdAt: u.createdAt,
+                        lastLogin: u.lastLogin,
+                        bookingsCount: u._count?.bookings || 0
+                    }))
+                    // Strict client-side filter to ensure isolation
+                    .filter((u: any) => !tenantId || u.tenantId === tenantId);
+
                 setUsers(mappedUsers);
             }
         } catch (error) {
@@ -114,10 +119,11 @@ export default function UsersManager({ mode }: UsersManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = (currentUser as any)?.tenantId || localStorage.getItem('tenant-id');
+            const currentTenantId = mode === 'admin' ? activeTenantId : (currentUser as any)?.tenantId;
+            const targetTenantId = currentTenantId || localStorage.getItem('tenant-id');
 
             const roleMap: Record<string, number> = {
-                'user': 1, 'admin': 2, 'owner': 3
+                'user': 1, 'admin': 2, 'owner': 3, 'agent': 4
             };
 
             if (editingUser) {
@@ -133,7 +139,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                     email: formData.email,
                     phone: formData.phone,
                     password: 'Password123!',
-                    tenantId: tenantId || '',
+                    tenantId: targetTenantId || '',
                     role: isAdmin ? (roleMap[formData.role as string] || 1) : 1
                 });
             }
@@ -180,7 +186,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
             if (!token) return;
 
             const roleMap: Record<string, number> = {
-                'user': 1, 'admin': 2, 'owner': 3
+                'user': 1, 'admin': 2, 'owner': 3, 'agent': 4
             };
 
             await userService.updateUserStatus(token, id, {
@@ -202,7 +208,8 @@ export default function UsersManager({ mode }: UsersManagerProps) {
         const roleConfig = {
             user: { class: 'bg-primary-soft text-primary border-primary-soft', text: 'User', icon: 'bi-person' },
             admin: { class: 'bg-danger-soft text-danger border-danger-soft', text: 'Admin', icon: 'bi-shield-lock' },
-            owner: { class: 'bg-success-soft text-success border-success-soft', text: 'Owner', icon: 'bi-building' }
+            owner: { class: 'bg-success-soft text-success border-success-soft', text: 'Owner', icon: 'bi-building' },
+            agent: { class: 'bg-info-soft text-info border-info-soft', text: 'Agent', icon: 'bi-person-badge' }
         };
         const config = roleConfig[role] || roleConfig.user;
         return (
@@ -268,6 +275,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                     <option value="user">Standard Users</option>
                                     <option value="admin">Administrators</option>
                                     <option value="owner">Property Owners</option>
+                                    <option value="agent">Sales Agents</option>
                                 </select>
                             </div>
                             <div className="col-md-4 text-end">
@@ -361,6 +369,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                                                 <>
                                                                     <li><button className="dropdown-item py-2 small rounded" onClick={() => handleRoleChange(u.id, 'admin')}><i className="bi bi-shield-check me-2"></i>Administrator</button></li>
                                                                     <li><button className="dropdown-item py-2 small rounded" onClick={() => handleRoleChange(u.id, 'owner')}><i className="bi bi-building me-2"></i>Property Owner</button></li>
+                                                                    <li><button className="dropdown-item py-2 small rounded" onClick={() => handleRoleChange(u.id, 'agent')}><i className="bi bi-person-badge me-2"></i>Sales Agent</button></li>
                                                                 </>
                                                             )}
                                                         </ul>
@@ -437,7 +446,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                         <label className="form-label small fw-bold text-uppercase text-muted">Access Role</label>
                                         <div className="row g-2">
                                             {isAdmin ? (
-                                                ['user', 'admin', 'owner'].map((r) => (
+                                                ['user', 'admin', 'owner', 'agent'].map((r) => (
                                                     <div key={r} className="col-4">
                                                         <input
                                                             type="radio"
@@ -448,7 +457,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                                             onChange={() => setFormData({ ...formData, role: r as any })}
                                                         />
                                                         <label className="btn btn-outline-light text-dark border w-100 py-3 d-flex flex-column align-items-center rounded-3 shadow-none" htmlFor={`role-${r}`}>
-                                                            <i className={`bi ${r === 'admin' ? 'bi-shield-lock' : r === 'owner' ? 'bi-building' : 'bi-person'} mb-1`}></i>
+                                                            <i className={`bi ${r === 'admin' ? 'bi-shield-lock' : r === 'owner' ? 'bi-building' : r === 'agent' ? 'bi-person-badge' : 'bi-person'} mb-1`}></i>
                                                             <span className="small text-capitalize fw-bold">{r}</span>
                                                         </label>
                                                     </div>
@@ -481,9 +490,11 @@ export default function UsersManager({ mode }: UsersManagerProps) {
         .bg-primary-soft { background-color: rgba(13, 110, 253, 0.1); }
         .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
         .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
+        .bg-info-soft { background-color: rgba(13, 202, 240, 0.1); }
         .border-primary-soft { border-color: rgba(13, 110, 253, 0.2); }
         .border-success-soft { border-color: rgba(25, 135, 84, 0.2); }
         .border-danger-soft { border-color: rgba(220, 53, 69, 0.2); }
+        .border-info-soft { border-color: rgba(13, 202, 240, 0.2); }
         .extra-small { font-size: 0.7rem; }
         .btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; }
       `}</style>

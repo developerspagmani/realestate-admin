@@ -99,9 +99,10 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                 pricing.pricingModel === 4 ? 'mo' :
                     pricing.pricingModel === 5 ? 'yr' : '';
 
-        // Get currency from tenant country
-        const country = website?.tenant?.country || 'USA';
-        const config = getCurrencyConfig(country);
+        // Get currency from tenant settings if available, otherwise fallback to country
+        const tenantSettings = website?.tenant?.settings || {};
+        const baseCurrency = tenantSettings.general?.currency;
+        const config = getCurrencyConfig(baseCurrency || website?.tenant?.country);
         const symbol = config?.symbol || '$';
 
         return `${symbol}${Number(pricing.price).toLocaleString()}${label ? `/${label}` : ''}`;
@@ -141,8 +142,9 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     const builder = website.configuration?.builder || {};
 
     const renderView = () => {
-        const country = website?.tenant?.country || 'USA';
-        const currencyConfig = getCurrencyConfig(country);
+        const tenantSettings = website?.tenant?.settings || {};
+        const baseCurrency = tenantSettings.general?.currency;
+        const currencyConfig = getCurrencyConfig(baseCurrency || website?.tenant?.country);
         const currencySymbol = currencyConfig?.symbol || '$';
 
         switch (currentView) {

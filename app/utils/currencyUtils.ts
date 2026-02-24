@@ -21,23 +21,43 @@ export const countryToCurrency: Record<string, { symbol: string, code: string }>
     'Ghana': { symbol: 'GH₵ ', code: 'GHS' },
 };
 
-export const getCurrencyConfig = (countryName?: string) => {
-    if (!countryName) return countryToCurrency['USA'];
-
-    // Exact match
-    if (countryToCurrency[countryName]) return countryToCurrency[countryName];
-
-    // Case insensitive match
-    const found = Object.keys(countryToCurrency).find(
-        k => k.toLowerCase() === countryName.toLowerCase()
-    );
-    if (found) return countryToCurrency[found];
-
-    // Default to USD
-    return countryToCurrency['USA'];
+export const currencyCodeToConfig: Record<string, { symbol: string, code: string }> = {
+    'USD': { symbol: '$', code: 'USD' },
+    'EUR': { symbol: '€', code: 'EUR' },
+    'GBP': { symbol: '£', code: 'GBP' },
+    'INR': { symbol: '₹', code: 'INR' },
+    'CAD': { symbol: '$', code: 'CAD' },
+    'AUD': { symbol: '$', code: 'AUD' },
+    'NGN': { symbol: '₦', code: 'NGN' },
+    'ZAR': { symbol: 'R', code: 'ZAR' },
+    'AED': { symbol: 'AED ', code: 'AED' },
+    'SAR': { symbol: 'SR ', code: 'SAR' },
+    'KES': { symbol: 'KSh ', code: 'KES' },
+    'GHS': { symbol: 'GH₵ ', code: 'GHS' },
 };
 
-export const formatCurrency = (amount: number, countryName?: string) => {
-    const config = getCurrencyConfig(countryName);
+export const getCurrencyConfig = (input?: string) => {
+    if (!input) return currencyCodeToConfig['USD'];
+
+    // Check if it's a known currency code
+    if (currencyCodeToConfig[input.toUpperCase()]) {
+        return currencyCodeToConfig[input.toUpperCase()];
+    }
+
+    // Check if it's a known country name (exact match)
+    if (countryToCurrency[input]) return countryToCurrency[input];
+
+    // Case insensitive country match
+    const foundCountry = Object.keys(countryToCurrency).find(
+        k => k.toLowerCase() === input.toLowerCase()
+    );
+    if (foundCountry) return countryToCurrency[foundCountry];
+
+    // Default to USD
+    return currencyCodeToConfig['USD'];
+};
+
+export const formatCurrency = (amount: number, input?: string) => {
+    const config = getCurrencyConfig(input);
     return `${config.symbol}${amount.toLocaleString()}`;
 };

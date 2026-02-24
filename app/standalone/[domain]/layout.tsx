@@ -7,7 +7,7 @@ const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.ver
 async function getWebsiteData(slugOrDomain: string) {
     try {
         const res = await fetch(`${BACKEND_URL}/websites/public/${slugOrDomain}`, {
-            next: { revalidate: 60 } // Cache for 60 seconds
+            next: { revalidate: 1 } // Reduced for more immediate feedback
         });
         if (!res.ok) return null;
         return res.json();

@@ -34,6 +34,7 @@ export default function WebsiteForm({
     const router = useRouter();
     const { hasModule } = useAuthContext();
     const [activeTab, setActiveTab] = useState<'basics' | 'domain' | 'style' | 'builder' | 'modules' | 'navigation'>('basics');
+    const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
     const [showMediaSelector, setShowMediaSelector] = useState(false);
     const [mediaTarget, setMediaTarget] = useState<'logoUrl' | 'heroBgUrl' | null>(null);
 
@@ -284,16 +285,49 @@ export default function WebsiteForm({
                                         <div className="col-12 mt-4">
                                             <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Context Control</h6>
                                             <label className="form-label small fw-bold">Source Properties</label>
-                                            <select
-                                                className="form-select rounded-3 border-light-subtle shadow-sm"
-                                                value={formData.propertyId}
-                                                onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
-                                            >
-                                                <option value="">Full Portfolio (Global)</option>
-                                                {properties.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.title}</option>
-                                                ))}
-                                            </select>
+                                            <div className="p-3 bg-light rounded-4 border border-light-subtle">
+                                                <div className="row g-2">
+                                                    <div className="col-12">
+                                                        <div className="form-check mb-2">
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="checkbox"
+                                                                id="prop-all"
+                                                                checked={!formData.propertyIds || formData.propertyIds.length === 0}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) setFormData({ ...formData, propertyIds: [], propertyId: '' });
+                                                                }}
+                                                            />
+                                                            <label className="form-check-label small fw-bold" htmlFor="prop-all">Full Portfolio (Global)</label>
+                                                        </div>
+                                                    </div>
+                                                    {properties.map(p => (
+                                                        <div key={p.id} className="col-md-6">
+                                                            <div className="p-2 bg-white rounded-3 border border-light-subtle d-flex align-items-center">
+                                                                <div className="form-check">
+                                                                    <input
+                                                                        className="form-check-input"
+                                                                        type="checkbox"
+                                                                        id={`prop-${p.id}`}
+                                                                        checked={formData.propertyIds?.includes(p.id)}
+                                                                        onChange={(e) => {
+                                                                            const ids = formData.propertyIds || [];
+                                                                            if (e.target.checked) {
+                                                                                setFormData({ ...formData, propertyIds: [...ids, p.id] });
+                                                                            } else {
+                                                                                setFormData({ ...formData, propertyIds: ids.filter((id: string) => id !== p.id) });
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    <label className="form-check-label extra-small text-truncate" htmlFor={`prop-${p.id}`} title={p.title}>
+                                                                        {p.title}
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -578,6 +612,58 @@ export default function WebsiteForm({
                                                 )}
                                             </div>
                                         </div>
+
+                                        <div className="col-12 mt-4">
+                                            <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Booking Engine Strategy</h6>
+                                            <div className="card bg-light border-0 rounded-4 p-4">
+                                                <label className="form-label small fw-bold mb-3">Booking Form Source</label>
+                                                <div className="d-flex gap-3 mb-4">
+                                                    <div
+                                                        className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center ${!formData.configuration.bookingForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'}`}
+                                                        onClick={() => toggleNestedConfig('bookingForm', 'useMarketingForm', false)}
+                                                    >
+                                                        <i className="bi bi-calendar-check d-block mb-1"></i>
+                                                        <div className="fw-bold extra-small">Standard Booking Engine</div>
+                                                    </div>
+                                                    <div
+                                                        className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center position-relative ${formData.configuration.bookingForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'} ${!hasModule('marketing_hub') ? 'opacity-50' : ''}`}
+                                                        onClick={() => hasModule('marketing_hub') && toggleNestedConfig('bookingForm', 'useMarketingForm', true)}
+                                                    >
+                                                        {!hasModule('marketing_hub') && (
+                                                            <div className="position-absolute top-0 end-0 p-2">
+                                                                <i className="bi bi-lock-fill text-warning"></i>
+                                                            </div>
+                                                        )}
+                                                        <i className="bi bi-cloud-check d-block mb-1"></i>
+                                                        <div className="fw-bold extra-small">Marketing Hub Sync</div>
+                                                    </div>
+                                                </div>
+
+                                                {formData.configuration.bookingForm?.useMarketingForm && (
+                                                    <div className="animate-fade-in">
+                                                        {hasModule('marketing_hub') ? (
+                                                            <>
+                                                                <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Booking Form</label>
+                                                                <select
+                                                                    className="form-select border-0 shadow-sm py-2 rounded-3"
+                                                                    value={formData.configuration.bookingForm?.marketingFormId || ''}
+                                                                    onChange={(e) => toggleNestedConfig('bookingForm', 'marketingFormId', e.target.value)}
+                                                                >
+                                                                    <option value="">-- Choose a Marketing Form --</option>
+                                                                    {marketingForms.map(f => (
+                                                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </>
+                                                        ) : (
+                                                            <div className="p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 text-center">
+                                                                <p className="extra-small text-muted mb-0">Marketing Hub required for custom booking forms.</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -595,10 +681,44 @@ export default function WebsiteForm({
                     {/* Right side: Preview */}
                     <div className="col-lg-5 bg-light-subtle p-4 d-none d-lg-block">
                         <div className="sticky-top" style={{ top: '20px' }}>
-                            <label className="extra-small fw-bold text-muted text-uppercase mb-3 d-block">Device Simulation (iPhone 14)</label>
-                            <div className="preview-container bg-dark rounded-5 border border-dark border-4 shadow-2xl p-2 mx-auto" style={{ maxWidth: '300px', height: '600px' }}>
-                                <div className="rounded-4 overflow-hidden bg-white h-100 position-relative">
-                                    <WidgetPreview formData={formData} tenantType={tenantType} />
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <label className="extra-small fw-bold text-muted text-uppercase mb-0">Device Simulation ({previewDevice === 'mobile' ? 'iPhone 14' : previewDevice === 'tablet' ? 'iPad Pro' : 'Desktop'})</label>
+                                <div className="btn-group btn-group-sm bg-white rounded-pill shadow-sm p-1">
+                                    <button
+                                        type="button"
+                                        className={`btn btn-sm rounded-pill border-0 px-3 ${previewDevice === 'mobile' ? 'btn-primary text-white shadow-sm' : 'btn-light text-muted'}`}
+                                        onClick={() => setPreviewDevice('mobile')}
+                                    >
+                                        <i className="bi bi-phone"></i>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`btn btn-sm rounded-pill border-0 px-3 ${previewDevice === 'tablet' ? 'btn-primary text-white shadow-sm' : 'btn-light text-muted'}`}
+                                        onClick={() => setPreviewDevice('tablet')}
+                                    >
+                                        <i className="bi bi-tablet"></i>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`btn btn-sm rounded-pill border-0 px-3 ${previewDevice === 'desktop' ? 'btn-primary text-white shadow-sm' : 'btn-light text-muted'}`}
+                                        onClick={() => setPreviewDevice('desktop')}
+                                    >
+                                        <i className="bi bi-display"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div
+                                className="preview-container bg-dark rounded-5 border border-dark border-4 shadow-2xl p-2 mx-auto transition-all duration-300 overflow-hidden"
+                                style={{
+                                    width: previewDevice === 'mobile' ? '300px' : previewDevice === 'tablet' ? '100%' : '100%',
+                                    maxWidth: previewDevice === 'mobile' ? '300px' : previewDevice === 'tablet' ? '500px' : '100%',
+                                    height: previewDevice === 'mobile' ? '600px' : previewDevice === 'tablet' ? '650px' : '550px',
+                                    aspectRatio: previewDevice === 'mobile' ? '9/19.5' : previewDevice === 'tablet' ? '3/4' : 'auto'
+                                }}
+                            >
+                                <div className={`rounded-4 bg-white h-100 position-relative ${previewDevice !== 'desktop' ? 'overflow-hidden' : 'overflow-auto'}`}>
+                                    <WidgetPreview formData={formData} tenantType={tenantType} deviceMode={previewDevice} />
                                 </div>
                             </div>
                             <div className="mt-4 p-3 bg-white rounded-4 border border-light-subtle shadow-sm">
