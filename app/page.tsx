@@ -2,588 +2,567 @@
 
 import Link from "next/link";
 import { useEffect, useState } from 'react';
+import { useAuthContext } from '@/app/contexts/AuthContext';
+import AOS from 'aos';
 
 /**
- * Virpanix - Intelligent Real Estate Platform
- * Style: Apple Pro / Dark Mode / High Interaction
- * Theme: Black & White (Primary Black)
+ * Virpanix - Intelligent Real Estate OS
+ * Redesign: Black 90% / Red 10%
+ * Style: Creative, Smooth, Interactive
  */
 export default function Home() {
+  const { user, isAuthenticated } = useAuthContext();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: false,
+      mirror: true,
+      anchorPlacement: 'top-bottom',
+    });
+
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
 
-      // Product Showcase Scroll Effect
-      const showcase = document.querySelector('.product-showcase') as HTMLElement;
-      if (showcase) {
-        const rect = showcase.getBoundingClientRect();
-        const items = document.querySelectorAll('.showcase-item') as NodeListOf<HTMLElement>;
-        const totalHeight = showcase.offsetHeight;
+      // Vertical Slide Logic
+      const vSection = document.querySelector('.vertical-feature-section') as HTMLElement;
+      if (vSection) {
+        const rect = vSection.getBoundingClientRect();
+        const items = vSection.querySelectorAll('.v-item');
+        const visuals = vSection.querySelectorAll('.v-visual');
 
         if (rect.top <= 0 && rect.bottom >= window.innerHeight) {
-          const progress = Math.abs(rect.top) / (totalHeight - window.innerHeight);
+          const totalScroll = vSection.offsetHeight - window.innerHeight;
+          const progress = Math.min(1, Math.max(0, Math.abs(rect.top) / totalScroll));
           const index = Math.min(items.length - 1, Math.floor(progress * items.length));
 
-          items.forEach((item, i) => {
+          visuals.forEach((el: any, i) => {
+            el.style.opacity = i === index ? '1' : '0';
+            el.style.transform = i === index ? 'scale(1)' : 'scale(0.95)';
+            el.style.zIndex = i === index ? '1' : '0';
+            el.style.visibility = i === index ? 'visible' : 'hidden';
+          });
+
+          items.forEach((item: any, i) => {
             if (i === index) {
               item.style.opacity = '1';
-              item.style.transform = 'translateY(0)';
-            } else if (i < index) {
-              item.style.opacity = '0';
-              item.style.transform = 'translateY(-100%)';
+              item.style.transform = 'translateY(0) scale(1)';
+              item.style.visibility = 'visible';
+              item.style.zIndex = '10';
+            } else if (i === index + 1 && i < items.length) {
+              item.style.opacity = '0.15';
+              item.style.transform = 'translateY(320px) scale(0.9)';
+              item.style.visibility = 'visible';
+              item.style.zIndex = '5';
+            } else if (i === index + 2 && i < items.length) {
+              item.style.opacity = '0.05';
+              item.style.transform = 'translateY(550px) scale(0.85)';
+              item.style.visibility = 'visible';
+              item.style.zIndex = '2';
             } else {
               item.style.opacity = '0';
-              item.style.transform = 'translateY(100%)';
+              item.style.transform = i < index ? 'translateY(-200px)' : 'translateY(800px)';
+              item.style.visibility = 'hidden';
             }
           });
         }
       }
-
-      // Intersection Observer for scroll reveal
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('reveal-visible');
-          }
-        });
-      }, { threshold: 0.1 });
-
-      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-    };
-
-    // Initialize Swiper
-    const initSwiper = () => {
-      if (typeof (window as any).Swiper !== 'undefined') {
-        new (window as any).Swiper('.glassy-swiper', {
-          slidesPerView: 3,
-          spaceBetween: 30,
-          loop: true,
-          speed: 1000,
-          autoplay: {
-            delay: 3000,
-            disableOnInteraction: false,
-          },
-          pagination: {
-            el: '.swiper-pagination',
-            clickable: true,
-          },
-          navigation: {
-            nextEl: '.swiper-button-next',
-            prevEl: '.swiper-button-prev',
-          },
-          breakpoints: {
-            640: { slidesPerView: 4 },
-            1024: { slidesPerView: 3 },
-          },
-          effect: 'slide',
-        });
-      } else {
-        setTimeout(initSwiper, 100);
-      }
     };
 
     window.addEventListener('scroll', handleScroll);
-    handleScroll();
-    initSwiper();
-
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div className="landing-page bg-black text-white min-vh-100 overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600&display=swap" />
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-      <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" async></script>
+    <div className="landing-page bg-black text-white min-vh-100">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800&display=swap" />
 
-      {/* Minimal Pro Nav */}
-      <nav className={`fixed-top w-100 transition-all ${scrolled ? 'bg-black/80 backdrop-blur-md border-bottom border-secondary/20' : 'bg-transparent'}`} style={{ zIndex: 1000, height: '60px' }}>
+      {/* Navigation */}
+      <nav className={`fixed-top w-100 transition-all ${scrolled ? 'bg-black/80 backdrop-blur-lg border-bottom border-red opacity-100' : 'bg-transparent'}`} style={{ zIndex: 1000, height: '80px' }}>
         <div className="container h-100 d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-2">
-            <div className="logo-box bg-white text-black fw-600 px-2 py-0 rounded-1" style={{ fontSize: '1rem' }}>V</div>
-            <span className="fw-600 text-uppercase tracking-tighter text-white" style={{ fontSize: '1.2rem' }}>Virpanix</span>
+          <div className="d-flex align-items-center gap-3" data-aos="fade-right">
+            <div className="logo-box bg-red text-white fw-800 px-2 py-1 rounded-1" style={{ fontSize: '1.2rem' }}>V</div>
+            <span className="fw-800 text-uppercase tracking-widest" style={{ fontSize: '1.4rem' }}>Virpanix</span>
           </div>
-          <div className="d-none d-lg-flex align-items-center gap-4 small tracking-tight fw-400">
-            <a href="#about" className="text-white opacity-60 text-decoration-none hvr-opacity">Portfolio</a>
-            <a href="#features" className="text-white opacity-60 text-decoration-none hvr-opacity">Platform</a>
-            <a href="#results" className="text-white opacity-60 text-decoration-none hvr-opacity">Impact</a>
-            <Link href="/login" className="text-white opacity-60 text-decoration-none hvr-opacity">Sign In</Link>
-            <Link href="/register" className="btn btn-white btn-sm rounded-4 px-4 fw-600 bg-white text-black">Get Started</Link>
-          </div>
-          <div className="d-lg-none">
-            <Link href="/login" className="btn btn-outline-light btn-sm rounded-4 px-3 me-2">Sign In</Link>
+
+          <div className="d-none d-lg-flex align-items-center gap-5 small tracking-tight fw-600" data-aos="fade-left">
+            {['Modules', 'Analytics', 'Ecosystem'].map((item) => (
+              <a key={item} href={`#${item.toLowerCase()}`} className="text-white opacity-50 text-decoration-none hvr-red">
+                {item}
+              </a>
+            ))}
+            {isAuthenticated ? (
+              <Link
+                href={user?.role === 'admin' ? '/realestate-admin' : user?.role === 'owner' ? '/realestate-owner-admin' : '/realestate-agent'}
+                className="btn-red py-2 px-4 shadow-sm"
+              >
+                {user?.name || 'Dashboard'}
+              </Link>
+            ) : (
+              <div className="d-flex align-items-center gap-4">
+                <Link href="/login" className="text-white opacity-50 text-decoration-none hvr-red">Sign In</Link>
+                <Link href="/register" className="btn-red py-2 px-4">Get Started</Link>
+              </div>
+            )}
           </div>
         </div>
       </nav>
 
-      {/* Hero Section - Apple Pro Style */}
-      <section className="hero vh-100 d-flex align-items-center justify-content-center text-center px-3 position-relative">
-        <div className="position-absolute top-0 start-0 w-100 h-100 bg-grid opacity-10"></div>
+      {/* Hero Section */}
+      <section className="hero vh-100 d-flex align-items-center position-relative overflow-hidden bg-grid">
+        <div className="red-glow top-0 end-0"></div>
+        <div className="red-glow bottom-0 start-0" style={{ transform: 'scale(1.5)' }}></div>
+
+        {/* Scanline Effect */}
+        <div className="scanline"></div>
+
         <div className="container position-relative z-1">
-          <div className="reveal">
-            <h1 className="hero-title fw-300 mb-2 tracking-tight">Intelligence for Real Estate.</h1>
-            <h1 className="hero-subtitle fw-300 mb-4 tracking-tight text-stroke">The Era of Autonomous Estate.</h1>
-            <p className="hero-subtitle mx-auto fw-400 opacity-50 mb-5" style={{ maxWidth: '700px' }}>
-              Virpanix merges spatial computing with predictive AI to redefine institutional real estate management. Maximize yield. Automate operations.
-            </p>
-            <div className="d-flex flex-column flex-md-row gap-3 gap-md-4 justify-content-center align-items-center">
-              <Link href="/register" className="btn btn-white rounded-4 px-5 py-3 fw-600 bg-white text-black hvr-shift w-md-auto">
-                Start Exploring
-              </Link>
-              <button className="btn btn-outline-light rounded-4 px-5 py-3 border-opacity-25 hvr-shift fw-400 w-md-auto text-white">
-                Watch Intro
-              </button>
+          <div className="row align-items-center">
+            <div className="col-lg-10">
+              <div data-aos="zoom-out-up">
+                <div className="d-flex align-items-center gap-3 mb-4" data-aos="fade-right" data-aos-delay="200">
+                  <span className="bg-red text-white py-1 px-3 fw-800 small uppercase tracking-widest">Live</span>
+                  <span className="text-white opacity-40 small uppercase tracking-widest">Protocol V2.5.4 Integrated</span>
+                </div>
+                <h1 className="fs-huge fw-800 tracking-tighter text-white mb-4">
+                  COMMAND THE <br />
+                  <span className="text-red">UNBUILT.</span>
+                </h1>
+                <p className="lead opacity-50 mb-5 max-w-700 fs-4" data-aos="fade-up" data-aos-delay="400">
+                  The most advanced AI operating system for institutional portfolios.
+                  Bridge physical architecture with digital speed and predictive automation.
+                </p>
+                <div className="d-flex flex-column flex-md-row gap-4 align-items-center" data-aos="fade-up" data-aos-delay="600">
+                  <Link href="/register" className="btn-red btn-lg">
+                    <span>Initialize System</span>
+                    <i className="bi bi-arrow-right-short fs-4"></i>
+                  </Link>
+                  <button className="btn-outline-red btn-lg">
+                    Watch Interface
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Animated Background Elements */}
+        <div className="position-absolute bottom-0 end-0 p-5 opacity-10 d-none d-lg-block" data-aos="fade-left">
+          <span className="display-1 fw-900 text-stroke">VIRPANIX</span>
+        </div>
+      </section>
+
+      {/* Vertical Slide Features (10 Modules) */}
+      <section className="vertical-feature-section bg-black position-relative" style={{ height: '1000vh' }}>
+        <div className="vh-100 w-100 d-flex align-items-center overflow-hidden" style={{ position: 'sticky', top: 0 }}>
+          <div className="container">
+            <div className="row align-items-center g-5">
+              <div className="col-lg-5">
+                <div className="v-content-wrapper position-relative" style={{ height: '700px' }}>
+                  {[
+                    { title: 'Unified Listing Management', desc: 'Aggregated property inventory from multiple sources into a single high-performance HUD.' },
+                    { title: 'Autonomous AI Agents', desc: 'Qualify every lead 24/7. Our proprietary LLM handles initial inquiries and schedules tours.' },
+                    { title: 'Global Settlement Engine', desc: 'Execute institutional transactions across borders with integrated multi-currency escrow.' },
+                    { title: 'Predictive Yield Matrix', desc: 'Forecast market performance and vacancy trends with 94% accuracy via neural modeling.' },
+                    { title: 'Social Campaign Sync', desc: 'Automate Meta and Google ad distribution directly from your inventory database.' },
+                    { title: 'Spatial 3D Twins', desc: 'High-fidelity Matterport and custom Three.js integrations for immersive property tours.' },
+                    { title: 'DNA Security Shield', desc: 'Institutional-grade RBAC and tenant data segregation with SOC2 compliance readiness.' },
+                    { title: 'Multi-Tenant Architecture', desc: 'Manage unlimited sub-brands and agent teams with isolated data and custom domains.' },
+                    { title: 'Dynamic CMS Builder', desc: 'Deploy white-labeled property portals and landing pages in seconds without code.' },
+                    { title: 'Headless API Core', desc: 'Full-featured GraphQL and REST APIs to bridge the system with legacy enterprise ERPs.' }
+                  ].map((feat, i) => (
+                    <div key={i} className="v-item position-absolute transition-all w-100" style={{ opacity: i === 0 ? 1 : 0.2, top: 0 }}>
+                      <span className="text-red fw-700 uppercase tracking-widest small mb-2 d-block">Module {String(i + 1).padStart(2, '0')}</span>
+                      <h2 className="display-4 fw-800 text-white mb-4 line-clamp-2">{feat.title}</h2>
+                      <p className="opacity-50 fs-5 line-clamp-3">{feat.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="col-lg-7">
+                <div className="v-visual-container position-relative" style={{ height: '500px' }}>
+                  {[
+                    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
+                    "https://images.unsplash.com/photo-1497366216548-37526070297c",
+                    "https://images.unsplash.com/photo-1460925895917-afdab827c52f",
+                    "https://images.unsplash.com/photo-1551288049-bbbda536639a",
+                    "https://images.unsplash.com/photo-1552664730-d307ca884978",
+                    "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
+                    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b",
+                    "https://images.unsplash.com/photo-1497215728101-856f4ea42174",
+                    "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c",
+                    "https://images.unsplash.com/photo-1558494949-ef010cbdcc51"
+                  ].map((url, i) => (
+                    <div key={i} className="v-visual position-absolute w-100 h-100 rounded-5 overflow-hidden transition-all shadow-red-lg" style={{ opacity: i === 0 ? 1 : 0, zIndex: i === 0 ? 1 : 0 }}>
+                      <img src={`${url}?auto=format&fit=crop&q=80&w=1200`} className="w-100 h-100 object-fit-cover grayscale" alt={`Module ${i + 1}`} />
+                      <div className="position-absolute top-0 start-0 w-100 h-100 bg-gradient-to-t from-black/80 to-transparent"></div>
+                      <div className="position-absolute bottom-0 start-0 w-100 p-4 d-flex justify-content-between align-items-end">
+                        <div className="extra-small tracking-widest text-red opacity-50 fw-700">ENCODE_SESSION_{i * 124}</div>
+                        <div className="text-white extra-small opacity-30">NOMINAL_FLOW</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="about" className="py-10 bg-black border-top border-secondary border-opacity-10">
+      {/* Interactive Application Process */}
+      <section className="section-padding bg-black border-top border-white/5">
+        <div className="container">
+          <div className="text-center mb-10" data-aos="fade-up">
+            <h2 className="display-3 fw-800 text-white">Application <span className="text-red">Process</span></h2>
+            <p className="opacity-40 mt-3 fs-5">Your journey to autonomous asset management in four simple steps.</p>
+          </div>
+          <div className="row g-0 mt-5 workflow-line position-relative">
+            {[
+              { title: 'Inquiry', icon: 'bi-chat-left-text', text: 'Submit your portfolio details for internal evaluation.' },
+              { title: 'Calibration', icon: 'bi-cpu', text: 'Our team trains your custom AI model on property specifics.' },
+              { title: 'Staging', icon: 'bi-layers', text: 'Deploy your white-labeled dashboards in a secure environment.' },
+              { title: 'Execution', icon: 'bi-lightning', text: 'Go live and start capturing institutional-grade leads.' }
+            ].map((item, i) => (
+              <div key={i} className="col-md-3 text-center px-4 mb-5 mb-md-0" data-aos="zoom-in" data-aos-delay={i * 200}>
+                <div className="process-node mx-auto mb-4 bg-red/10 border-red text-red rounded-circle d-flex align-items-center justify-content-center" style={{ width: '100px', height: '100px', borderWidth: '1px', borderStyle: 'solid' }}>
+                  <i className={`bi ${item.icon} fs-2`}></i>
+                </div>
+                <h4 className="fw-800 text-white mb-3">{i + 1}. {item.title}</h4>
+                <p className="opacity-40 small">{item.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Quote Section */}
+      <section className="section-padding bg-red/5 text-center">
+        <div className="container py-5" data-aos="fade-up">
+          <div className="mb-5 row justify-content-center">
+            <div className="col-lg-8">
+              <i className="bi bi-quote text-red display-1 opacity-20 mb-4 d-block"></i>
+              <h2 className="display-5 fw-300 italic text-white lh-base">
+                "Virpanix didn't just digitize our inventory; they revolutionized our entire conversion cycle. We've seen a 400% increase in lead response speed within 60 days."
+              </h2>
+              <div className="mt-5">
+                <div className="bg-red mx-auto mb-3" style={{ width: '40px', height: '2px' }}></div>
+                <h5 className="fw-800 text-white tracking-widest uppercase small m-0">Marcus Thorne</h5>
+                <p className="text-red fw-600 extra-small uppercase m-0 mt-1">Chief Digital Officer, PrimeAssets Global</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Prediction Section */}
+      <section className="section-padding bg-black border-top border-white/5 overflow-hidden">
         <div className="container">
           <div className="row align-items-center g-5">
-            <div className="col-lg-6">
-              <div className="p-3 border border-secondary border-opacity-25 rounded-5 overflow-hidden position-relative">
-                <img
-                  src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1000"
-                  alt="Modern Office"
-                  className="img-fluid rounded-4 filter-bw grayscale"
-                />
-                <div className="position-absolute top-50 start-50 translate-middle bg-black p-4 border border-secondary rounded-circle animate-pulse">
-                  <i className="bi bi-play-fill fs-2"></i>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-6 px-lg-5">
-              <span className="text-uppercase tracking-widest small fw-bold text-white opacity-40 mb-3 d-block">Who We Are</span>
-              <h2 className="display-4 display-md-3 fw-300 mb-4 tracking-tight leading-tight text-white">Redefining Reality through Intelligent Systems.</h2>
-              <p className="opacity-50 mb-4 lh-lg">
-                We aren't just a booking platform. We are an intelligence layer for the real estate industry. By combining spatial computing, AI lead generation, and autonomous management workflows, we empower owners to operate at 10x efficiency.
-              </p>
-              <div className="row g-4 mt-2">
-                <div className="col-6">
-                  <h5 className="fw-300 mb-2">01. AI Powered</h5>
-                  <p className="small opacity-50">Predictive booking algorithms for max occupancy.</p>
-                </div>
-                <div className="col-6">
-                  <h5 className="fw-300 mb-2">02. Spatial Prep</h5>
-                  <p className="small opacity-50">Photorealistic 3D tours of every square inch.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            <div className="col-lg-6" data-aos="fade-right">
+              <span className="text-red fw-700 uppercase tracking-widest small mb-3 d-block">Neural Engine Core</span>
+              <h2 className="display-4 fw-800 text-white mb-4">AI Prediction <br /> <span className="text-red">Matrix</span></h2>
+              <p className="opacity-50 fs-5 mb-4">Our proprietary neural engine processes over 10,000 global market signals per second to forecast asset performance with 94% accuracy.</p>
 
-      {/* About Section */}
-      <section id="about" className="py-15 bg-black">
-        <div className="container py-5">
-          <div className="row g-5 align-items-center">
-            <div className="col-lg-6 reveal">
-              <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-4 d-block">The Vision</span>
-              <h2 className="display-4 display-md-3 fw-300 mb-4 tracking-tight leading-tight text-white">
-                Breaking the boundaries <br className="d-none d-md-block" /> of physics and property.
-              </h2>
-              <p className="opacity-50 mt-4 lh-lg" style={{ fontSize: '1.2rem' }}>
-                Virpanix isn't just software. It's an intelligent layer for the physical world. We bridge the gap between static assets and dynamic digital efficiency, enabling institutional real estate owners to operate at 10x scale.
-              </p>
-              <div className="row g-4 mt-5">
-                <div className="col-12 col-md-6">
-                  <h5 className="fw-300 mb-2 text-white">01. Spatial Computing</h5>
-                  <p className="small opacity-40 text-white">Converting physical architecture into data-driven digital assets.</p>
-                </div>
-                <div className="col-12 col-md-6">
-                  <h5 className="fw-300 mb-2 text-white">02. Autonomous Ops</h5>
-                  <p className="small opacity-40 text-white">Self-optimizing management layers for complex property portfolios.</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-6 reveal" style={{ transitionDelay: '200ms' }}>
-              <div className="p-2 border border-secondary/20 rounded-5 overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000"
-                  alt="Future Office"
-                  className="img-fluid rounded-4 grayscale"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Capabilities / Features Grid */}
-      <section id="features" className="py-10 py-md-15 bg-black border-top border-secondary/10">
-        <div className="container text-center mb-10 reveal">
-          <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-3 d-block">Capabilities</span>
-          <h2 className="display-4 fw-300 tracking-tight text-white">Built for Global Scale.</h2>
-        </div>
-        <div className="container">
-          <div className="row g-0 border border-secondary/20 rounded-5 overflow-hidden">
-            {[
-              { icon: 'bi-box', title: '3D Spatial Twins', desc: 'Photorealistic digital replicas of your properties for remote management.' },
-              { icon: 'bi-robot', title: 'Cognitive Assistant', desc: 'AI that understands asset requirements and handles complex tenant interactions.' },
-              { icon: 'bi-graph-up', title: 'Portfolio Analytics', desc: 'Macro and micro data analysis to drive institutional-grade decision making.' },
-              { icon: 'bi-window-stack', title: 'Enterprise Gateways', desc: 'White-labeled portals for institutional investors and global corporate clients.' }
-            ].map((f, i) => (
-              <div key={i} className="col-md-6 col-lg-3 p-5 reveal border-end border-secondary/10 hvr-darken" style={{ transitionDelay: `${i * 100}ms` }}>
-                <i className={`bi ${f.icon} fs-2 mb-4 d-block opacity-50`}></i>
-                <h4 className="fw-300 mb-3">{f.title}</h4>
-                <p className="opacity-40 small mb-0">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Workflow Section */}
-      <section id="workflow" className="py-15 bg-black">
-        <div className="container">
-          <div className="text-center mb-10 reveal">
-            <h2 className="display-3 fw-300 tracking-tight">The Intelligent Workflow.</h2>
-            <p className="opacity-40">From traditional to autonomous in four phases.</p>
-          </div>
-          <div className="row g-1 justify-content-center">
-            {[
-              { num: '01', title: 'Sync', desc: 'Integrate multi-location data into our centralized neural hub.' },
-              { num: '02', title: 'Model', desc: 'Generate high-fidelity spatial twins and operational protocols.' },
-              { num: '03', title: 'Activate', desc: 'Deploy autonomous booking engines and investor portals.' },
-              { num: '04', title: 'Optimize', desc: 'Continuous machine learning of market trends to maximize yields.' }
-            ].map((s, i) => (
-              <div key={i} className="col-md-6 col-lg-3 reveal mb-4 mb-lg-0" style={{ transitionDelay: `${i * 100}ms` }}>
-                <div className="p-4 border-start border-secondary/20 h-100">
-                  <span className="display-6 fw-100 opacity-20 d-block mb-3 text-white">{s.num}</span>
-                  <h4 className="fw-300 mb-3 fs-3 text-white">{s.title}</h4>
-                  <p className="opacity-40 small mb-0 text-white">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Business Solutions Section */}
-      <section className="py-15 bg-black border-top border-secondary/10">
-        <div className="container">
-          <div className="row g-5 align-items-center">
-            <div className="col-lg-5 reveal">
-              <div className="position-relative">
-                <div className="position-absolute top-0 start-0 w-100 h-100 bg-white opacity-5 blur-3xl"></div>
-                <div className="card bg-black border border-secondary/20 p-4 p-md-5 rounded-5 position-relative z-1 mb-4 hvr-shift">
-                  <div className="d-flex align-items-center gap-3 mb-4">
-                    <div className="bg-white text-black rounded-circle px-2 py-1 small fw-600">01</div>
-                    <h4 className="fw-300 mb-0 text-white">For Portfolio Owners</h4>
-                  </div>
-                  <p className="opacity-40 mb-0 fw-400 text-white">Maximize portfolio yield with automated operational workflows and spatial monetization data.</p>
-                </div>
-                <div className="card bg-black border border-secondary/20 p-4 p-md-5 rounded-5 position-relative z-1 hvr-shift ms-0 ms-md-5">
-                  <div className="d-flex align-items-center gap-3 mb-4">
-                    <div className="bg-white text-black rounded-circle px-2 py-1 small fw-600">02</div>
-                    <h4 className="fw-300 mb-0 text-white">For Asset Managers</h4>
-                  </div>
-                  <p className="opacity-40 mb-0 fw-400 text-white">Transform commercial floorplates into dynamic, high-velocity assets with autonomous booking engines.</p>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-7 ps-lg-5 reveal" style={{ transitionDelay: '200ms' }}>
-              <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-4 d-block">Solutions</span>
-              <h2 className="display-4 fw-300 mb-4 tracking-tight text-white">Success for every <br className="d-none d-md-block" /> business model.</h2>
-              <p className="opacity-40 mb-5 lh-lg text-white" style={{ fontSize: '1.1rem' }}>
-                Whether you're managing a single grade-A tower or a global institutional portfolio, Virpanix scales with you. We eliminate capital friction and administrative overhead, allowing you to focus on the strategic optimization of your assets.
-              </p>
-              <div className="row g-4">
-                <div className="col-md-6 d-flex gap-3">
-                  <i className="bi bi-cpu fs-4 opacity-50"></i>
-                  <div>
-                    <h6 className="fw-500 mb-1">Unified API</h6>
-                    <p className="x-small opacity-40">Seamlessly integrate with your existing infrastructure.</p>
-                  </div>
-                </div>
-                <div className="col-md-6 d-flex gap-3">
-                  <i className="bi bi-shield-check fs-4 opacity-50"></i>
-                  <div>
-                    <h6 className="fw-500 mb-1">Secure Core</h6>
-                    <p className="x-small opacity-40">Enterprise-grade encryption for all asset data.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Business Impact / Benefits */}
-      <section className="py-15 bg-black">
-        <div className="container">
-          <div className="row justify-content-center text-center mb-10 reveal">
-            <div className="col-lg-8">
-              <h2 className="display-3 fw-300 tracking-tight">Quantifiable Impact.</h2>
-            </div>
-          </div>
-          <div className="row g-5 align-items-center">
-            <div className="col-lg-6 reveal">
-              <div className="card bg-charcoal text-white p-5 rounded-5 border-0 shadow-pro position-relative overflow-hidden">
-                <div className="mb-5 d-flex justify-content-between align-items-center">
-                  <h5 className="fw-400 m-0 tracking-tight lg-large">Performance Report</h5>
-                  <span className="x-small bg-white/10 text-white rounded-4 px-3 py-1 fw-500 tracking-widest">REAL-TIME</span>
-                </div>
-                <div className="d-flex flex-column gap-5">
-                  <div>
+              <div className="prediction-details mt-5">
+                {[
+                  { label: 'Market Sentiment Analysis', value: 92 },
+                  { label: 'Predictive Vacancy Score', value: 88 },
+                  { label: 'Dynamic Yield Optimization', value: 95 }
+                ].map((p, i) => (
+                  <div key={i} className="mb-4">
                     <div className="d-flex justify-content-between mb-2">
-                      <span className="small opacity-50">Booking Efficiency</span>
-                      <span className="fw-300 fs-5">+310%</span>
+                      <span className="small text-white opacity-80">{p.label}</span>
+                      <span className="text-red small fw-700">{p.value}%</span>
                     </div>
-                    <div className="progress bg-white/5" style={{ height: '3px' }}>
-                      <div className="progress-bar bg-white" style={{ width: '85%' }}></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span className="small opacity-50">Lead Capture Rate</span>
-                      <span className="fw-300 fs-5">+85%</span>
-                    </div>
-                    <div className="progress bg-white/5" style={{ height: '3px' }}>
-                      <div className="progress-bar bg-white" style={{ width: '92%' }}></div>
+                    <div className="progress bg-white/5" style={{ height: '4px' }}>
+                      <div className="progress-bar bg-red" style={{ width: `${p.value}%` }} data-aos="slide-right" data-aos-delay={i * 200}></div>
                     </div>
                   </div>
-                  <div>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span className="small opacity-50">Operating Costs</span>
-                      <span className="fw-300 fs-5">-62%</span>
-                    </div>
-                    <div className="progress bg-white/5" style={{ height: '3px' }}>
-                      <div className="progress-bar bg-white" style={{ width: '38%' }}></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="col-lg-6 reveal ps-lg-5" style={{ transitionDelay: '200ms' }}>
-              <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-4 d-block">The Advantage</span>
-              <h3 className="display-5 fw-300 mb-4 tracking-tight text-white">Better Ops. <br className="d-none d-md-block" /> More Growth.</h3>
-              <p className="opacity-40 mb-5 text-white">Our intelligence engine doesn't just manage; it optimizes. Every data point is used to drive your business forward.</p>
-              <ul className="list-unstyled d-flex flex-column gap-3 mb-0">
-                {['99.9% Platform Uptime', 'Unified Billing Core', 'GDPR & SOC2 Ready', 'Global API Access'].map((t, i) => (
-                  <li key={i} className="d-flex align-items-center gap-3 fw-500 small opacity-60">
-                    <i className="bi bi-circle-fill" style={{ fontSize: '4px' }}></i> {t}
-                  </li>
                 ))}
-              </ul>
+              </div>
+            </div>
+            <div className="col-lg-6" data-aos="fade-left">
+              <div className="prediction-viz p-5 glass-card position-relative overflow-hidden">
+                <div className="scanning-grid"></div>
+                <div className="d-flex flex-column gap-3">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="d-flex gap-2 align-items-center opacity-30">
+                      <div className="bg-red rounded-1" style={{ width: Math.random() * 100 + 50 + 'px', height: '4px' }}></div>
+                      <div className="text-red small pulse" style={{ opacity: Math.random() }}>• SCANNING...</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 text-center">
+                  <div className="display-1 fw-900 text-red opacity-10">0.94X</div>
+                  <p className="text-red tracking-widest small fw-700 uppercase">Confidence Interval Reached</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Results Counters */}
-      <section id="results" className="py-15 bg-black border-top border-secondary/10">
+      {/* Interactive Workflow */}
+      <section className="section-padding bg-red/5">
         <div className="container">
-          <div className="row text-center g-5">
-            {[
-              { label: 'Properties Managed', value: '4,200+' },
-              { label: 'Bookings Processed', value: '$120M+' },
-              { label: 'Retention Rate', value: '98.4%' },
-              { label: 'Average ROI Inc', value: '2.4x' }
-            ].map((s, i) => (
-              <div key={i} className="col-md-3 reveal mb-5 mb-md-0" style={{ transitionDelay: `${i * 100}ms` }}>
-                <h2 className="display-5 fw-200 mb-1 text-white">{s.value}</h2>
-                <p className="x-small opacity-30 text-uppercase tracking-widest fw-600 mb-0 text-white">{s.label}</p>
+          <div className="row align-items-center g-5">
+            <div className="col-lg-6" data-aos="fade-right">
+              <h2 className="display-4 fw-800 text-white mb-4">
+                The <span className="text-red">Automation</span> <br />
+                Lifecycle.
+              </h2>
+              <div className="workflow-steps mt-5">
+                {[
+                  { step: '01', title: 'Data Injection', desc: 'Sync multi-location inventory via global APIs.' },
+                  { step: '02', title: 'Neural Analysis', desc: 'Qualify every inquiry with sentiment-aware AI.' },
+                  { step: '03', title: 'Asset Activation', desc: 'Deploy targeted campaigns and booking engines.' }
+                ].map((s, i) => (
+                  <div key={i} className="d-flex gap-4 mb-5" data-aos="fade-left" data-aos-delay={i * 200}>
+                    <div className="fs-1 fw-800 text-red opacity-30">{s.step}</div>
+                    <div>
+                      <h4 className="fw-700 text-white mb-2">{s.title}</h4>
+                      <p className="opacity-50">{s.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
+            <div className="col-lg-6" data-aos="flip-right">
+              <div className="p-2 border-red border-dashed rounded-5 position-relative">
+                <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1000" className="img-fluid rounded-5 grayscale brightness-50" alt="Workflow" />
+                <div className="position-absolute top-50 start-50 translate-middle">
+                  <div className="btn-red p-4 rounded-circle pulse">
+                    <i className="bi bi-play-fill fs-3"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Impact Section */}
+      <section id="analytics" className="section-padding bg-black border-top border-white/5">
+        <div className="container">
+          <div className="row g-5">
+            <div className="col-lg-4" data-aos="fade-up">
+              <span className="text-red fw-700 uppercase tracking-widest small d-block mb-3">Institutional results</span>
+              <h2 className="display-4 fw-800 text-white mb-4">Numbers Speak.</h2>
+              <p className="opacity-50 fs-5 mb-5">
+                Our partners experience immediate velocity gains within 30 days of standard deployment.
+              </p>
+              <Link href="/register" className="btn-red">Get Case Studies</Link>
+            </div>
+            <div className="col-lg-8">
+              <div className="row g-4">
+                {[
+                  { label: 'Booking Speed', val: '+410%', icon: 'bi-lightning-charge' },
+                  { label: 'Yield Increase', val: '+28%', icon: 'bi-graph-up' },
+                  { label: 'Agent Response', val: 'Instant', icon: 'bi-whatsapp' },
+                  { label: 'System Uptime', val: '99.9%', icon: 'bi-shield-check' }
+                ].map((stat, i) => (
+                  <div key={i} className="col-sm-6" data-aos="zoom-in" data-aos-delay={i * 100}>
+                    <div className="glass-card p-5 border-start border-4 border-red">
+                      <div className="text-red fs-1 mb-3">
+                        <i className={`bi ${stat.icon}`}></i>
+                      </div>
+                      <h3 className="display-5 fw-800 text-white mb-1">{stat.val}</h3>
+                      <p className="opacity-40 fw-700 text-uppercase tracking-widest small">{stat.label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Protocol (Institutional Logos) */}
+      <section className="py-10 bg-black border-top border-white/5 opacity-40">
+        <div className="container">
+          <div className="d-flex flex-wrap justify-content-center align-items-center gap-5 grayscale">
+            {['BLACKROCK', 'CBRE', 'JLL', 'CUSHMAN', 'KNIGHT FRANK'].map((logo) => (
+              <span key={logo} className="fw-900 tracking-widest small">{logo}</span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="py-15 py-md-20 bg-black text-center reveal">
+      {/* Global Connectivity Section */}
+      <section className="section-padding bg-black border-top border-white/5 overflow-hidden position-relative">
+        <div className="red-glow top-50 start-50 translate-middle" style={{ opacity: 0.05 }}></div>
         <div className="container">
-          <h2 className="display-3 display-md-2 fw-300 mb-5 tracking-tighter text-white">Ready to automate <br /> your estate?</h2>
-          <div className="d-flex gap-4 justify-content-center pt-2">
-            <Link href="/register" className="btn btn-white btn-lg rounded-4 px-5 py-3 fw-600 bg-white text-black hvr-shift">Try it Free</Link>
-            <button className="btn btn-outline-light btn-lg rounded-4 px-5 py-3 fw-400 border-opacity-25 hvr-shift">Book Demo</button>
+          <div className="row align-items-center g-5">
+            <div className="col-lg-5" data-aos="fade-right">
+              <span className="text-red fw-700 uppercase tracking-widest small mb-3 d-block">Global Distribution</span>
+              <h2 className="display-4 fw-800 text-white mb-4">Command the <br /> <span className="text-red">Globe.</span></h2>
+              <p className="opacity-50 fs-5 mb-5">Deploy portals and sync multi-currency inventory across 140+ regional markets instantly. One architecture for a borderless portfolio.</p>
+
+              <div className="market-stats d-flex gap-5 mt-5">
+                <div>
+                  <h3 className="fw-800 text-white m-0">142</h3>
+                  <span className="extra-small uppercase tracking-widest text-red">Active Nodes</span>
+                </div>
+                <div>
+                  <h3 className="fw-800 text-white m-0">2.4ms</h3>
+                  <span className="extra-small uppercase tracking-widest text-red">Latent Sync</span>
+                </div>
+              </div>
+            </div>
+            <div className="col-lg-7" data-aos="zoom-in-left">
+              <div className="map-container glass-card p-5 position-relative bg-grid">
+                <svg viewBox="0 0 1000 500" className="w-100 opacity-20">
+                  <path fill="currentColor" d="M150,200 Q400,100 800,250" className="text-red" stroke="currentColor" fill="none" strokeWidth="0.5" strokeDasharray="5,5" />
+                  {[
+                    { x: 200, y: 150, n: 'NYC' }, { x: 480, y: 120, n: 'LON' }, { x: 520, y: 180, n: 'DUB' }, { x: 820, y: 350, n: 'SYD' }
+                  ].map((p, i) => (
+                    <g key={i}>
+                      <circle cx={p.x} cy={p.y} r="3" fill="var(--primary-red)" className="pulse" />
+                      <text x={p.x + 10} y={p.y + 5} fill="white" fontSize="12" className="fw-700 opacity-50">{p.n}</text>
+                    </g>
+                  ))}
+                </svg>
+                <div className="position-absolute bottom-0 end-0 p-4">
+                  <div className="text-red extra-small fw-800 tracking-widest">REAL-TIME PACKET FLOW: NOMINAL</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Gallery Section - Glassy Swiper */}
-      <section className="py-15 py-md-20 bg-black overflow-hidden border-top border-secondary/10">
-        <div className="container text-center mb-10 reveal">
-          <span className="text-uppercase tracking-widest x-small fw-600 text-white opacity-40 mb-3 d-block">Experience</span>
-          <h2 className="display-4 fw-300 tracking-tight text-white">Curated Spaces.</h2>
-        </div>
-        <div className="container-fluid px-md-5 reveal">
-          <div className="swiper glassy-swiper p-5">
-            <div className="swiper-wrapper">
-              {[
-                { img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000', title: 'Institutional Assets', location: 'Commercial Core' },
-                { img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1000', title: 'Smart Headquarters', location: 'Corporate Campus' },
-                { img: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1000', title: 'Industrial Logistics', location: 'Distribution Hub' },
-                { img: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=1000', title: 'Retail Ecosystems', location: 'Mixed Use' },
-                { img: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=1000', title: 'Tech Innovation Labs', location: 'R&D Center' }
-              ].map((slide, i) => (
-                <div key={i} className="swiper-slide">
-                  <div className="glass-card rounded-5 overflow-hidden position-relative hvr-float shadow-pro">
-                    <img src={slide.img} alt={slide.title} className="w-100 h-100 object-fit-cover grayscale transition-all" style={{ height: '400px' }} />
-                    <div className="glass-overlay position-absolute bottom-0 w-100 p-4 backdrop-blur-md bg-black/40 border-top border-secondary/20">
-                      <h4 className="fw-300 mb-0">{slide.title}</h4>
-                      <p className="x-small opacity-50 mb-0 tracking-widest text-uppercase">{slide.location}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      {/* Final High-Impact CTA */}
+      <section className="section-padding position-relative overflow-hidden bg-grid">
+        <div className="red-glow top-50 start-50 translate-middle" style={{ transform: 'scale(2)', opacity: 0.2 }}></div>
+        <div className="container text-center position-relative z-1 py-5">
+          <div data-aos="zoom-in" className="card-cta glass-card p-5 p-md-10 py-10">
+            <h2 className="display-2 fw-800 text-white mb-4">Command the <span className="text-red">Unbuilt.</span></h2>
+            <p className="opacity-50 fs-4 mb-5 mx-auto" style={{ maxWidth: '800px' }}>
+              Join the elite institutional owners managing billions in scale-locked assets on the Virpanix Intelligence Layer.
+            </p>
+            <div className="d-flex gap-4 justify-content-center flex-wrap mt-2">
+              <Link href="/register" className="btn-red btn-lg px-5 py-3">
+                <span>Launch Autonomous Instance</span>
+                <i className="bi bi-box-arrow-in-right fs-4"></i>
+              </Link>
+              <button className="btn-outline-red btn-lg px-5 py-3">Book Tactical Briefing</button>
             </div>
-            {/* Swiper Controls */}
-            <div className="swiper-pagination mt-5"></div>
-            <div className="swiper-button-next text-white opacity-20"></div>
-            <div className="swiper-button-prev text-white opacity-20"></div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-10 bg-black text-white border-top border-secondary/10">
+      <footer className="py-5 bg-black border-top border-white/5">
         <div className="container">
-          <div className="row g-4 mb-5">
-            <div className="col-lg-4">
-              <div className="d-flex align-items-center gap-2 mb-4">
-                <div className="logo-box bg-white text-black fw-600 px-2 py-0 rounded-1" style={{ fontSize: '1rem' }}>V</div>
-                <span className="fw-500 text-uppercase tracking-tighter" style={{ fontSize: '1.1rem' }}>Virpanix</span>
+          <div className="row g-4 align-items-center">
+            <div className="col-md-6" data-aos="fade-right">
+              <div className="d-flex align-items-center gap-3 mb-4">
+                <div className="bg-red text-white fw-800 px-2 py-1 rounded-1">V</div>
+                <span className="fw-800 text-uppercase tracking-widest">Virpanix</span>
               </div>
+              <p className="opacity-30 small">The Intelligence Layer for Global Real Estate. Built for Institutional Velocity.</p>
             </div>
-            <div className="col-lg-8">
-              <div className="row g-4">
-                <div className="col-md-4">
-                  <h6 className="x-small text-uppercase tracking-widest fw-600 mb-4 opacity-30">Platform</h6>
-                  <div className="d-flex flex-column gap-3 small fw-400 opacity-50">
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">For Owners</a>
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">For Teams</a>
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">3D Space</a>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <h6 className="x-small text-uppercase tracking-widest fw-600 mb-4 opacity-30">Company</h6>
-                  <div className="d-flex flex-column gap-3 small fw-400 opacity-50">
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">About</a>
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">Security</a>
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">Privacy</a>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <h6 className="x-small text-uppercase tracking-widest fw-600 mb-4 opacity-30">Connect</h6>
-                  <div className="d-flex flex-column gap-3 small fw-400 opacity-50">
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">Twitter</a>
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">LinkedIn</a>
-                    <a href="#" className="text-white text-decoration-none hvr-opacity">Contact</a>
-                  </div>
-                </div>
+            <div className="col-md-6 text-md-end" data-aos="fade-left">
+              <div className="d-flex gap-4 justify-content-md-end mb-4">
+                <a href="#" className="text-white opacity-40 text-decoration-none hvr-red">Privacy</a>
+                <a href="#" className="text-white opacity-40 text-decoration-none hvr-red">Terms</a>
+                <a href="#" className="text-white opacity-40 text-decoration-none hvr-red">Security</a>
               </div>
-            </div>
-          </div>
-          <div className="pt-5 border-top border-secondary/10 d-flex flex-column flex-md-row justify-content-between align-items-center x-small opacity-30 fw-500 tracking-tight">
-            <span>&copy; 2026 Virpanix Platform. All Rights Reserved.</span>
-            <div className="d-flex gap-4 mt-3 mt-md-0">
-              <span>Designed for Excellence</span>
-              <span>System Status: Optimal</span>
+              <p className="opacity-20 x-small">&copy; 2026 Virpanix Platform. All Rights Reserved.</p>
             </div>
           </div>
         </div>
       </footer>
 
       <style jsx>{`
-                .hero-title { font-size: clamp(3rem, 10vw, 6rem); line-height: 1.05; }
-                .hero-subtitle { font-size: 1.2rem; }
-                .tracking-tighter { letter-spacing: -0.05em; }
-                .tracking-tight { letter-spacing: -0.02em; }
-                .tracking-widest { letter-spacing: 0.15em; }
-                .fw-100 { font-weight: 100; }
-                .fw-200 { font-weight: 200; }
-                .fw-300 { font-weight: 300; }
-                .fw-400 { font-weight: 400; }
-                .fw-500 { font-weight: 500; }
-                .fw-600 { font-weight: 600; }
-                .x-small { font-size: 0.7rem; }
-                .py-10 { padding-top: 5rem; padding-bottom: 5rem; }
-                .py-15 { padding-top: 10rem; padding-bottom: 10rem; }
-                .py-20 { padding-top: 15rem; padding-bottom: 15rem; }
-                .mb-10 { margin-bottom: 8rem; }
-                .p-10 { padding: 6rem; }
-                .transition-all { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-                .bg-black { background-color: #000; }
-                .bg-charcoal { background-color: #0c0c0c; }
-                .shadow-pro { box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5); }
-                .text-stroke { -webkit-text-stroke: 1px rgba(255,255,255,0.3); color: transparent; }
-                
-                .hvr-opacity:hover { opacity: 1 !important; }
-                .hvr-shift:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(255,255,255,0.05); }
-                .hvr-darken:hover { background-color: rgba(255,255,255,0.02); }
-                
-                /* Selection link style */
-                .text-primary-link { color: #0066cc; }
-                
-                /* Scroll Reveal Animation */
-                .reveal {
-                    opacity: 0;
-                    transform: translateY(40px);
-                    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-                }
-                .reveal-visible {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-                
-                .bg-grid {
-                    background-image: 
-                        linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
-                    background-size: 60px 60px;
-                }
-                
-                .image-wrapper {
-                    transform: scale(0.95);
-                    transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
-                }
-                .reveal-visible .image-wrapper {
-                    transform: scale(1);
-                }
-                
-                .grayscale { filter: grayscale(100%); transition: all 0.5s ease; }
-                .grayscale:hover { filter: grayscale(0%); }
-                .grayscale-hover:hover { filter: grayscale(0%); }
-                .blur-3xl { filter: blur(100px); }
+        .hvr-red { transition: all 0.3s ease; }
+        .hvr-red:hover { color: var(--primary-red) !important; opacity: 1 !important; }
+        
+        .transition-all { transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
 
-                /* Product Showcase Styles */
-                .product-showcase { height: 400vh; position: relative; }
-                .showcase-container { position: relative; height: 100%; width: 100%; }
-                .sticky-wrapper { position: sticky; top: 0; height: 100vh; width: 100%; overflow: hidden; }
-                .showcase-item { transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .text-stroke { 
+          -webkit-text-stroke: 1px rgba(255,255,255,0.1);
+          color: transparent;
+        }
 
-                /* Glassy Swiper Styles */
-                .glassy-swiper { overflow: visible !important; }
-                .glass-card { 
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-                }
-                .glass-card:hover .grayscale { filter: grayscale(0%); transform: scale(1.05); }
-                .backdrop-blur-md { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-                
-                .swiper-pagination-bullet { background: rgba(255, 255, 255, 0.2) !important; }
-                .swiper-pagination-bullet-active { background: #fff !important; }
-                .swiper-button-next:after, .swiper-button-prev:after { font-size: 1.2rem !important; font-weight: bold; }
-                
-                .hvr-float { transition: transform 0.5s ease; }
-                .hvr-float:hover { transform: translateY(-10px); }
+        .scanline {
+          width: 100%;
+          height: 100px;
+          z-index: 2;
+          background: linear-gradient(0deg, rgba(230,0,38,0) 0%, rgba(230,0,38,0.05) 50%, rgba(230,0,38,0) 100%);
+          opacity: 0.1;
+          position: absolute;
+          bottom: 100%;
+          animation: scanline 8s linear infinite;
+        }
 
-                @media (max-width: 991px) {
-                    .py-10 { padding-top: 3rem; padding-bottom: 3rem; }
-                    .py-15 { padding-top: 4rem; padding-bottom: 4rem; }
-                    .py-20 { padding-top: 5rem; padding-bottom: 5rem; }
-                    .mb-10 { margin-bottom: 3rem; }
-                    .p-10 { padding: 1.5rem; }
-                    .hero-title { font-size: 2.8rem; }
-                    .hero-subtitle { font-size: 1rem; }
-                    .display-3 { font-size: 2.5rem !important; }
-                    .display-4 { font-size: 2.2rem !important; }
-                }
-            `}</style>
+        @keyframes scanline {
+          0% { bottom: 100%; }
+          100% { bottom: -100px; }
+        }
+        
+        .pulse {
+          animation: pulse-red 2s infinite;
+        }
+        
+        @keyframes pulse-red {
+          0% { box-shadow: 0 0 0 0 rgba(230, 0, 38, 0.7); }
+          70% { box-shadow: 0 0 0 20px rgba(230, 0, 38, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(230, 0, 38, 0); }
+        }
+
+        .max-w-700 { max-width: 700px; }
+
+        .grayscale { filter: grayscale(100%); transition: all 0.5s ease; }
+        .grayscale:hover { filter: grayscale(0%); brightness: 100% !important; }
+
+        .shadow-red-lg { box-shadow: 0 20px 80px -20px rgba(230,0,38,0.3); }
+
+        .workflow-line::before {
+          content: '';
+          position: absolute;
+          top: 50px;
+          left: 10%;
+          right: 10%;
+          height: 1px;
+          background: rgba(230,0,38,0.2);
+          z-index: 0;
+          display: none;
+        }
+
+        @media (min-width: 768px) {
+          .workflow-line::before { display: block; }
+        }
+
+        .scanning-grid {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: 
+            linear-gradient(rgba(230,0,38,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(230,0,38,0.05) 1px, transparent 1px);
+          background-size: 20px 20px;
+          animation: scan-grid 20s linear infinite;
+        }
+
+        @keyframes scan-grid {
+          0% { transform: translateY(0); }
+          100% { transform: translateY(20px); }
+        }
+        
+        @media (max-width: 991px) {
+          .fs-huge { font-size: 3.5rem; }
+          .section-padding { padding: 60px 0; }
+          .vertical-feature-section { height: auto !important; }
+          .vertical-feature-section .sticky-top { position: relative !important; height: auto !important; padding: 60px 0; }
+          .v-visual-container { height: 300px !important; margin-top: 50px; }
+          .v-item { opacity: 1 !important; margin-bottom: 3rem !important; }
+          .v-visual { position: relative !important; opacity: 1 !important; transform: none !important; margin-bottom: 2rem; }
+        }
+      `}</style>
     </div>
   );
 }

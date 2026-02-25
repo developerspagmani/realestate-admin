@@ -28,15 +28,15 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
     const [activeTenantId, setActiveTenantIdState] = useState<string | null>(null);
     const [activeOwnerId, setActiveOwnerIdState] = useState<string | null>(null);
     const [activeTenant, setActiveTenant] = useState<any | null>(null);
-    const [currencySymbol, setCurrencySymbol] = useState('$');
-    const [currencyCode, setCurrencyCode] = useState('USD');
+    const [currencySymbol, setCurrencySymbol] = useState('AED ');
+    const [currencyCode, setCurrencyCode] = useState('AED');
     const [isInitialized, setIsInitialized] = useState(false);
     const { user, isOwner, isAdmin } = useAuthContext();
 
     const fetchTenant = useCallback(async () => {
         if (!activeTenantId) {
             setActiveTenant(null);
-            setCurrencySymbol('$');
+            setCurrencySymbol('USD ');
             setCurrencyCode('USD');
             return;
         }

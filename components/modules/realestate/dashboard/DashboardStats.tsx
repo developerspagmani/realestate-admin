@@ -92,7 +92,7 @@ export default function DashboardStats({ mode, stats, loading }: DashboardStatsP
                         <StatCard label="Occupied" value={stats.occupiedUnits} icon="bi-dash-circle" color="danger" />
                     </div>
                     <div className="col-md-3">
-                        <StatCard label="Total Revenue" value={`${currencySymbol}${stats.totalRevenue.toLocaleString()}`} icon="bi-currency-dollar" color="dark" bgClass="bg-dark text-white" />
+                        <StatCard label="Total Revenue" value={`${currencySymbol}${stats.totalRevenue.toLocaleString()}`} icon="bi-cash-coin" color="dark" bgClass="bg-dark text-white" />
                     </div>
                 </div>
 
@@ -138,7 +138,7 @@ export default function DashboardStats({ mode, stats, loading }: DashboardStatsP
                 <StatCard label="Total Bookings" value={stats.totalBookings} icon="bi-calendar-check" color="info" />
             </div>
             <div className="col-md-3">
-                <StatCard label="Revenue" value={`${currencySymbol}${stats.totalRevenue.toLocaleString()}`} icon="bi-currency-dollar" color="warning" />
+                <StatCard label="Revenue" value={`${currencySymbol}${stats.totalRevenue.toLocaleString()}`} icon="bi-cash-coin" color="warning" />
             </div>
         </div>
     );

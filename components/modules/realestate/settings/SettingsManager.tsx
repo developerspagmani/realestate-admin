@@ -33,7 +33,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
             state: '',
             country: '',
             postalCode: '',
-            currency: 'USD',
+            currency: 'AED',
             timezone: 'UTC',
         },
         appearance: {

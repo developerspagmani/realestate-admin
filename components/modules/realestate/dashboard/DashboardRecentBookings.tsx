@@ -1,4 +1,4 @@
-'use client';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 interface DashboardRecentBookingsProps {
     bookings: any[];
@@ -6,6 +6,8 @@ interface DashboardRecentBookingsProps {
 }
 
 export default function DashboardRecentBookings({ bookings, loading }: DashboardRecentBookingsProps) {
+    const { currencySymbol } = useManagementContext();
+
     return (
         <div className="card border-0 shadow-sm rounded-4 h-100 overflow-visible">
             <div className="card-header bg-white border-0 p-4 d-flex justify-content-between align-items-center">
@@ -54,7 +56,7 @@ export default function DashboardRecentBookings({ bookings, loading }: Dashboard
                                     <div className="text-muted extra-small">{booking.unit?.property?.title || booking.unit?.unitCategory}</div>
                                 </td>
                                 <td className="py-3">
-                                    <span className="fw-bold text-dark small">${booking.totalPrice}</span>
+                                    <span className="fw-bold text-dark small">{currencySymbol}{booking.totalPrice}</span>
                                 </td>
                                 <td className="py-3 text-center">
                                     <span className={`badge rounded-4 px-3 ${booking.status === 2 || booking.status === 3 ? 'bg-success-soft text-success' : // Confirmed/Completed
