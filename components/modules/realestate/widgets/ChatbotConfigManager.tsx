@@ -5,6 +5,7 @@ import { tenantService, propertyService, getAuthToken } from '@/app/services/api
 import ChatbotWidget from './ChatbotWidget';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
 
 interface ChatbotConfigManagerProps {
     propertyId?: string; // Optional now, for global mode it's empty
@@ -105,7 +106,7 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
         }
     };
 
-    if (loading) return <div className="p-5 text-center"><div className="spinner-border text-primary"></div></div>;
+    if (loading) return <Loader message="Loading conversational AI configuration..." />;
 
     return (
         <div className="row g-4">

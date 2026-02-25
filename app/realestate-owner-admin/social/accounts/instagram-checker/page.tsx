@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import { connectedAccountsApi } from '@/lib/api/social';
+import Loader from '@/components/common/Loader';
 
 interface InstagramPost {
     id: string;
@@ -93,8 +94,7 @@ export default function InstagramCheckerPage() {
 
                 {loading ? (
                     <div className="text-center py-5">
-                        <div className="spinner-border text-primary" role="status"></div>
-                        <p className="text-muted mt-3">Fetching live media from Instagram...</p>
+                        <Loader size="md" message="Fetching live media..." />
                     </div>
                 ) : !account ? (
                     <div className="card border-0 shadow-sm rounded-4 p-5 text-center">

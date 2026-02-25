@@ -15,6 +15,7 @@ import ThreeDView from '@/components/modules/realestate/shared/ThreeDView';
 import PageBuilder from '@/components/modules/realestate/shared/PageBuilder';
 import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
+import Loader from '@/components/common/Loader';
 
 type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'THREE_D' | 'TOUR';
 
@@ -158,9 +159,7 @@ export default function PublicWidgetPage() {
 
     if (loading) return (
         <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '300px' }}>
-            <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-            </div>
+            <Loader size="md" message="Loading..." />
         </div>
     );
 

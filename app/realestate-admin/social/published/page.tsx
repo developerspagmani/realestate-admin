@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import StatCard from '@/components/StatCard';
 import { publishedPostsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 
 interface PublishedPost {
     id: string;
@@ -75,9 +76,7 @@ export default function PublishedPostsPage() {
         return (
             <MainLayout activePage="social-published">
                 <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
+                    <Loader size="md" message="Loading live feed..." />
                 </div>
             </MainLayout>
         );

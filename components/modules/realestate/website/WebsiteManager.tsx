@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { websiteService, getAuthToken, cmsService } from '@/app/services/api';
+import { cmsService, getAuthToken, websiteService } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import WebsiteForm from '@/components/modules/realestate/website/WebsiteForm';
@@ -337,8 +338,8 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
 
                 <div className="row g-4">
                     {loading ? (
-                        <div className="col-12 text-center py-5">
-                            <div className="spinner-border text-primary pulse"></div>
+                        <div className="col-12 py-5">
+                            <Loader message="Loading website configuration..." />
                         </div>
                     ) : websites.length === 0 ? (
                         <div className="col-12">

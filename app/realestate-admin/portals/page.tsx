@@ -5,6 +5,7 @@ import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import { portalService } from '@/app/services/api';
 import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
 
 interface PortalListing {
     id: string;
@@ -79,11 +80,7 @@ export default function PortalsPage() {
                             onClick={() => handleSyncLeads('99ACRES')}
                             disabled={syncing}
                         >
-                            {syncing ? (
-                                <><span className="spinner-border spinner-border-sm me-2"></span>Syncing...</>
-                            ) : (
-                                <><i className="bi bi-arrow-repeat me-2"></i>Global 99Acres Sync</>
-                            )}
+                            {syncing ? <Loader size="sm" message="Syncing..." /> : <><i className="bi bi-arrow-repeat me-2"></i>Fetch New Leads</>}
                         </button>
                     </div>
                 </div>
@@ -141,10 +138,7 @@ export default function PortalsPage() {
                                 </thead>
                                 <tbody>
                                     {loading ? (
-                                        <tr><td colSpan={6} className="text-center py-5">
-                                            <div className="spinner-border text-primary mb-2"></div>
-                                            <div className="text-muted">Fetching global portal data...</div>
-                                        </td></tr>
+                                        <tr><td colSpan={6} className="text-center py-4 text-muted"><Loader size="sm" message="Scanning portals..." /></td></tr>
                                     ) : listings.length === 0 ? (
                                         <tr><td colSpan={6} className="text-center py-5 text-muted">
                                             <i className="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>

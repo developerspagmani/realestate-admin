@@ -6,6 +6,7 @@ import { connectedAccountsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import ModuleGuard from '@/components/common/ModuleGuard';
+import Loader from '@/components/common/Loader';
 
 export default function ConnectedAccountsPage() {
     return (
@@ -195,9 +196,7 @@ function AccountsContent() {
         return (
             <MainLayout activePage="social-accounts">
                 <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
+                    <Loader size="md" message="Loading social accounts..." />
                 </div>
             </MainLayout>
         );

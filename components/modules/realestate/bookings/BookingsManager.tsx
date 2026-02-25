@@ -8,6 +8,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import { Booking, User, Unit, Property } from '@/app/services/api';
 import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
 
 interface BookingsManagerProps {
     mode: 'admin' | 'owner';
@@ -496,7 +497,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                     {loading ? (
                                         <tr>
                                             <td colSpan={7} className="text-center py-5">
-                                                <div className="spinner-border text-primary" role="status"></div>
+                                                <Loader message="Fetching bookings..." />
                                             </td>
                                         </tr>
                                     ) : filteredBookings.length === 0 ? (
@@ -631,7 +632,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                         <div className="col-md-12">
                                             <label className="form-label fw-bold small text-uppercase text-muted">
                                                 Select Visitor / Prospect
-                                                {loading && <span className="spinner-border spinner-border-sm text-primary ms-2" style={{ width: '0.8rem', height: '0.8rem' }}></span>}
+                                                {loading && <Loader size="sm" message="" />}
                                             </label>
                                             <select
                                                 className="form-select form-select-lg bg-light border-0"
@@ -779,7 +780,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                 <div className="d-flex justify-content-between align-items-center">
                                                     <div className="d-flex align-items-center gap-2">
                                                         {availabilityStatus.loading ? (
-                                                            <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                                            <Loader size="sm" message="" />
                                                         ) : availabilityStatus.available === true ? (
                                                             <i className="bi bi-check-circle-fill text-success"></i>
                                                         ) : availabilityStatus.available === false ? (
@@ -881,7 +882,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                 disabled={!availabilityForm.unitId || !availabilityForm.startAt || !availabilityForm.endAt || availabilityStatus.loading}
                                                 onClick={() => checkAvailability(true)}
                                             >
-                                                {availabilityStatus.loading ? 'Checking...' : 'Check Now'}
+                                                {availabilityStatus.loading ? <Loader size="sm" message="" /> : 'Check Now'}
                                             </button>
                                         </div>
 

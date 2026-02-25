@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { analyticsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
+import Loader from '@/components/common/Loader';
 
 /* ────────────────────────────── Types ───────────────────────────────── */
 interface OverviewSummary { connectedAccounts: number; scheduledPosts: number; publishedPosts: number; drafts: number; }
@@ -176,10 +177,8 @@ export default function AnalyticsPage() {
     if (loading) {
         return (
             <MainLayout activePage="social-analytics">
-                <div className="d-flex align-items-center justify-content-center min-vh-60">
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
+                <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
+                    <Loader size="md" message="Loading analytics..." />
                 </div>
             </MainLayout>
         );
@@ -259,8 +258,7 @@ export default function AnalyticsPage() {
                     <div className="card-body p-4">
                         {forecastLoading ? (
                             <div className="text-center py-5">
-                                <div className="spinner-border text-primary me-2" role="status"></div>
-                                <span className="text-muted small">Running model...</span>
+                                <Loader size="sm" message="Running model..." />
                             </div>
                         ) : forecast ? (
                             <>

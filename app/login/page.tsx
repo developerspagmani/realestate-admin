@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
+import Loader from '@/components/common/Loader';
 import Link from 'next/link';
 
 function LoginContent() {
@@ -168,7 +169,7 @@ function LoginContent() {
                   disabled={localLoading}
                 >
                   {localLoading ? (
-                    <span className="spinner-border spinner-border-sm"></span>
+                    <Loader size="sm" message="" />
                   ) : (
                     <i className="bi bi-box-arrow-in-right"></i>
                   )}

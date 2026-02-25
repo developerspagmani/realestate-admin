@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { agentService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 
 export default function AgentCommissions() {
     const [commissions, setCommissions] = useState<any[]>([]);
@@ -79,7 +80,7 @@ export default function AgentCommissions() {
                                     {loading ? (
                                         <tr>
                                             <td colSpan={5} className="text-center py-5">
-                                                <div className="spinner-border text-primary spinner-border-sm" role="status"></div>
+                                                <Loader size="sm" message="" />
                                             </td>
                                         </tr>
                                     ) : commissions.length === 0 ? (

@@ -6,6 +6,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { categoryService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 interface Category {
@@ -234,10 +235,8 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-5">
-                        <div className="spinner-border text-primary" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
+                    <div className="py-5">
+                        <Loader message="Loading categories..." />
                     </div>
                 ) : filteredCategories.length === 0 ? (
                     <div className="text-center py-5">

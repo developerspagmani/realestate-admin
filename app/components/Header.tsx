@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -14,18 +15,18 @@ const Header = () => {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
       <div className="container">
-        <a className="navbar-brand" href="/">
+        <Link className="navbar-brand" href="/">
           <i className="bi bi-building me-2"></i>
-          CoWorking Space
-        </a>
-        
+          Virpanix
+        </Link>
+
         <div className="navbar-nav ms-auto">
           {isAuthenticated && user ? (
             <>
               <span className="navbar-text me-3">
                 Welcome, {user.name}
               </span>
-              <button 
+              <button
                 className="btn btn-outline-light btn-sm"
                 onClick={handleLogout}
               >
@@ -35,10 +36,10 @@ const Header = () => {
             </>
           ) : (
             <div className="navbar-nav">
-              <a className="nav-link" href="/login">
+              <Link className="nav-link" href="/login">
                 <i className="bi bi-box-arrow-in-right me-1"></i>
                 Login
-              </a>
+              </Link>
             </div>
           )}
         </div>

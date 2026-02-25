@@ -13,6 +13,7 @@ import {
     useCursor
 } from '@react-three/drei';
 import * as THREE from 'three';
+import Loader from '@/components/common/Loader';
 
 // Types for the Tour
 interface Hotspot {
@@ -487,7 +488,7 @@ export default function PropertyTour({ propertyId, data }: PropertyTourProps) {
             {/* Canvas: 3D Scene */}
             <div className="tour-canvas" style={{ flex: 1, height: isMobile ? '500px' : '700px' }}>
                 <Canvas shadows gl={{ antialias: true }}>
-                    <Suspense fallback={<Html center><div className="spinner-border text-primary"></div></Html>}>
+                    <Suspense fallback={<Html center><Loader size="md" message="Loading Scene Components..." /></Html>}>
                         <PerspectiveCamera makeDefault position={isMobile ? [20, 15, 20] : [15, 12, 15]} fov={isMobile ? 50 : 45} />
                         <OrbitControls
                             enablePan={false}

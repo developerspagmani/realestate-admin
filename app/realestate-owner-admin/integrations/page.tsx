@@ -6,6 +6,7 @@ import { integrationService } from '@/app/services/integration';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { getAuthToken } from '@/app/services/api';
 import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
 
 export default function IntegrationsPage() {
     const { isAuthenticated, loading: authLoading } = useAuthContext();
@@ -93,7 +94,7 @@ export default function IntegrationsPage() {
                                 </thead>
                                 <tbody>
                                     {loading ? (
-                                        <tr><td colSpan={6} className="text-center py-5"><div className="spinner-border spinner-border-sm text-primary"></div></td></tr>
+                                        <tr><td colSpan={6} className="text-center py-5"><Loader size="sm" message="" /></td></tr>
                                     ) : integrations.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="text-center py-5">

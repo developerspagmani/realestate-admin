@@ -6,6 +6,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { amenityService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { Amenity } from '@/types';
 
@@ -194,10 +195,8 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-5">
-                        <div className="spinner-border text-primary" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
+                    <div className="py-5">
+                        <Loader message="Loading amenities..." />
                     </div>
                 ) : (
                     <div className="row g-4">

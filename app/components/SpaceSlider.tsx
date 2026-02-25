@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import Loader from '@/components/common/Loader';
 
 interface Space {
   id: string;
@@ -58,19 +59,19 @@ const SpaceSlider = () => {
         rating: 4.9
       }
     ];
-    
+
     setSpaces(mockSpaces);
     setLoading(false);
   }, []);
 
   const nextSlide = () => {
-    setCurrentIndex((prevIndex) => 
+    setCurrentIndex((prevIndex) =>
       prevIndex === workspace.length - 1 ? 0 : prevIndex + 1
     );
   };
 
   const prevSlide = () => {
-    setCurrentIndex((prevIndex) => 
+    setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? workspace.length - 1 : prevIndex - 1
     );
   };
@@ -82,9 +83,7 @@ const SpaceSlider = () => {
   if (loading) {
     return (
       <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
+        <Loader size="md" message="Loading..." />
       </div>
     );
   }
@@ -96,15 +95,14 @@ const SpaceSlider = () => {
           <h2 className="display-5 fw-bold text-primary mb-3">Featured Spaces</h2>
           <p className="lead text-muted">Discover amazing coworking workspace in your city</p>
         </div>
-        
+
         <div className="position-relative">
           <div className="overflow-hidden rounded-3" style={{ height: '400px' }}>
             {workspace.map((space, index) => (
               <div
                 key={space.id}
-                className={`position-absolute w-100 h-100 transition-transform duration-500 ${
-                  index === currentIndex ? 'opacity-100' : 'opacity-0'
-                }`}
+                className={`position-absolute w-100 h-100 transition-transform duration-500 ${index === currentIndex ? 'opacity-100' : 'opacity-0'
+                  }`}
                 style={{
                   transform: `translateX(${(index - currentIndex) * 100}%)`
                 }}
@@ -142,7 +140,7 @@ const SpaceSlider = () => {
                             {space.totalWorkspaces} total
                           </span>
                         </div>
-                        <Link 
+                        <Link
                           href={`/workspace/${space.id}`}
                           className="btn btn-primary btn-sm"
                         >
@@ -179,9 +177,8 @@ const SpaceSlider = () => {
             {workspace.map((_, index) => (
               <button
                 key={index}
-                className={`btn btn-sm rounded-circle ${
-                  index === currentIndex ? 'btn-primary' : 'btn-outline-secondary'
-                }`}
+                className={`btn btn-sm rounded-circle ${index === currentIndex ? 'btn-primary' : 'btn-outline-secondary'
+                  }`}
                 style={{ width: '12px', height: '12px' }}
                 onClick={() => goToSlide(index)}
                 aria-label={`Go to slide ${index + 1}`}

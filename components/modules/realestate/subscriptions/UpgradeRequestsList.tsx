@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Loader from '@/components/common/Loader';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { upgradeRequestService } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
@@ -87,8 +88,7 @@ export default function UpgradeRequestsList() {
                                 {loading ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-5">
-                                            <div className="spinner-border spinner-border-sm text-primary me-2"></div>
-                                            <span className="text-muted small">Loading requests...</span>
+                                            <Loader message="Loading requests..." />
                                         </td>
                                     </tr>
                                 ) : requests.length === 0 ? (

@@ -5,6 +5,8 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { moduleService, getAuthToken, tenantService } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
+import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
 
 export default function ModuleManager() {
     const { user, isAdmin } = useAuthContext();
@@ -97,6 +99,7 @@ export default function ModuleManager() {
 
     return (
         <MainLayout activePage="modules">
+            {loading && <Loader />}
             <div className="container-fluid py-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
@@ -144,7 +147,7 @@ export default function ModuleManager() {
                             <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
                                 <div className="card-header bg-white border-0 p-4 d-flex justify-content-between align-items-center">
                                     <h5 className="fw-bold mb-0">Available Features</h5>
-                                    {saving && <div className="spinner-border spinner-border-sm text-primary"></div>}
+                                    {saving && <span className="ms-2"><Loader message="" fullPage={false} /></span>}
                                 </div>
                                 <div className="card-body p-4 pt-0">
                                     {allModules.length === 0 ? (

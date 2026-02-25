@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Property3DManager from '@/components/modules/realestate/properties/Property3DManager';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 
 function Property3DManagerContent() {
     const searchParams = useSearchParams();
@@ -53,8 +54,7 @@ export default function Property3DManagerWrapper() {
         <Suspense fallback={
             <MainLayout activePage="properties">
                 <div className="container-fluid p-4 text-center py-5">
-                    <div className="spinner-border text-primary"></div>
-                    <p className="mt-3 text-muted">Loading 3D workspace...</p>
+                    <Loader size="md" message="Loading 3D workspace..." />
                 </div>
             </MainLayout>
         }>

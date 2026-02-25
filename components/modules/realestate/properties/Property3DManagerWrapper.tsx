@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Property3DManager from '@/components/modules/realestate/properties/Property3DManager';
+import Property3DManager from './Property3DManager';
+import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import MainLayout from '@/components/MainLayout';
@@ -92,7 +93,7 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
                                         {loading ? (
                                             <tr>
                                                 <td colSpan={3} className="text-center py-5">
-                                                    <div className="spinner-border text-primary spinner-border-sm me-2"></div>
+                                                    <Loader message="" fullPage={false} />
                                                     Loading properties...
                                                 </td>
                                             </tr>

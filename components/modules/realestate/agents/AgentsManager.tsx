@@ -7,6 +7,7 @@ import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
+import Loader from '@/components/common/Loader';
 
 interface AgentsManagerProps {
     mode: 'owner' | 'admin';
@@ -343,8 +344,8 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                 <tbody>
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={6} className="text-center py-5">
-                                                <div className="spinner-border text-primary text-sm" role="status"></div>
+                                            <td colSpan={6} className="py-5">
+                                                <Loader message="Fetching agents..." />
                                             </td>
                                         </tr>
                                     ) : agents.length === 0 ? (

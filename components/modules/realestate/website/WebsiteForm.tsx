@@ -7,6 +7,7 @@ import FormBuilder from '../widgets/FormBuilder';
 import WidgetPreview from '../widgets/WidgetPreview';
 import MediaSelector from '@/components/shared/MediaSelector';
 import MenuBuilder from './MenuBuilder';
+import Loader from '@/components/common/Loader';
 
 interface WebsiteFormProps {
     formData: any;
@@ -302,7 +303,7 @@ export default function WebsiteForm({
                                                     disabled={verificationStatus === 'checking' || !formData.customDomain}
                                                 >
                                                     {verificationStatus === 'checking' ? (
-                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                        <Loader size="sm" message="" />
                                                     ) : verificationStatus === 'valid' ? (
                                                         <i className="bi bi-check-circle-fill me-2"></i>
                                                     ) : verificationStatus === 'invalid' ? (
@@ -501,7 +502,7 @@ export default function WebsiteForm({
                                                     title={!editingWebsite ? 'Save the website first to enable cache clearing' : ''}
                                                 >
                                                     {cacheClearing ? (
-                                                        <><span className="spinner-border spinner-border-sm me-2" role="status"></span>Clearing...</>
+                                                        <><Loader size="sm" message="" />Clearing...</>
                                                     ) : cacheClearStatus === 'success' ? (
                                                         <><i className="bi bi-check-circle-fill me-2"></i>Cache Cleared!</>
                                                     ) : cacheClearStatus === 'error' ? (

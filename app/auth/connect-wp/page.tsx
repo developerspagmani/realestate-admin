@@ -7,6 +7,7 @@ import { getAuthToken } from '@/app/services/api';
 import { makeApiCall } from '@/app/api/config/endpoints';
 import '@/app/globals.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import Loader from '@/components/common/Loader';
 
 function ConnectWPContent() {
     const router = useRouter();
@@ -141,8 +142,8 @@ function ConnectWPContent() {
                                 >
                                     {loading ? (
                                         <>
-                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Connecting...
+                                            <Loader size="sm" message="" />
+                                            <span className="ms-2">Connecting...</span>
                                         </>
                                     ) : 'Authorize & Connect'}
                                 </button>

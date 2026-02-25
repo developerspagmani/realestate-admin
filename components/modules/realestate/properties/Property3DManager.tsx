@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { property3DService, getAuthToken, unitService } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
+import { property3DService, getAuthToken, propertyService, unitService } from '@/app/services/api';
+import MainLayout from '@/components/MainLayout';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import Workspace3D from '@/components/Workspace3D';
 import VisualEditor from './VisualEditor';
@@ -152,7 +154,7 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
         }
     };
 
-    if (loading) return <div className="p-5 text-center"><div className="spinner-border text-primary"></div></div>;
+    if (loading) return <Loader message="Initializing 3D designer environment..." fullPage />;
 
     return (
         <div className="card border-0 shadow-none rounded-0 overflow-hidden">
@@ -224,7 +226,7 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                                 onClick={handleSave}
                                 disabled={saving}
                             >
-                                {saving ? <><span className="spinner-border spinner-border-sm me-2"></span>Saving...</> : 'Save & Publish 3D Layout'}
+                                {saving ? <><Loader size="sm" message="" />Saving...</> : 'Save & Publish 3D Layout'}
                             </button>
                         </div>
                     </div>

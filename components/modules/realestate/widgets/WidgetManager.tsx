@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { widgetService, getAuthToken } from '@/app/services/api';
+import { cmsService, getAuthToken, widgetService } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import WidgetForm from './WidgetForm';
@@ -301,8 +302,8 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
 
                 <div className="row g-4">
                     {loading ? (
-                        <div className="col-12 text-center py-5">
-                            <div className="spinner-border text-primary pulse"></div>
+                        <div className="col-12 py-5">
+                            <Loader message="Loading widget configuration..." />
                         </div>
                     ) : widgets.length === 0 ? (
                         <div className="col-12">

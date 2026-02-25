@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { mediaService, getAuthToken } from '@/app/services/api';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { MediaItem } from '@/types';
+import Loader from '@/components/common/Loader';
 
 interface MediaSelectorProps {
     show: boolean;
@@ -166,7 +167,7 @@ export default function MediaSelector({
                                     disabled={isUploading}
                                 >
                                     {isUploading ? (
-                                        <span className="spinner-border spinner-border-sm me-2"></span>
+                                        <Loader size="sm" message="" />
                                     ) : (
                                         <i className="bi bi-upload me-2"></i>
                                     )}
@@ -185,7 +186,7 @@ export default function MediaSelector({
 
                         {loading ? (
                             <div className="text-center py-5">
-                                <div className="spinner-border text-primary"></div>
+                                <Loader size="md" message="Loading media..." />
                             </div>
                         ) : filteredMedia.length === 0 ? (
                             <div className="text-center py-5 text-muted">

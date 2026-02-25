@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { marketingService, leadService, propertyService, getAuthToken } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
 
 interface AudienceManagerProps {
     tenantId: string;
@@ -240,9 +241,8 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
         return (
             <div className="audience-manager">
                 {loadingGroup ? (
-                    <div className="text-center py-5">
-                        <div className="spinner-border text-primary mb-3"></div>
-                        <p className="text-muted small">Loading group members...</p>
+                    <div className="py-5">
+                        <Loader message="Loading group members..." />
                     </div>
                 ) : (
                     <>
@@ -343,7 +343,9 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
             </div>
 
             {loading ? (
-                <div className="text-center py-5"><div className="spinner-border spinner-border-sm text-primary"></div></div>
+                <div className="py-5">
+                    <Loader message="Loading audience data..." />
+                </div>
             ) : activeAudienceTab === 'groups' ? (
                 groups.length === 0 ? (
                     <div className="card border-0 shadow-sm rounded-4 p-5 text-center bg-light bg-opacity-50">
@@ -537,7 +539,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                 <button className="btn btn-primary rounded-4 px-4 fw-bold shadow-sm d-flex align-items-center gap-2" onClick={handleSave} disabled={!groupData.name || isSaving}>
                                     {isSaving ? (
                                         <>
-                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            <Loader size="sm" message="" />
                                             <span>Saving...</span>
                                         </>
                                     ) : (

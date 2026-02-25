@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { userService, getAuthToken } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
 
 export default function OwnerUsers() {
     const { id } = useParams();
@@ -27,7 +28,7 @@ export default function OwnerUsers() {
         loadUsers();
     }, [id]);
 
-    if (loading) return <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>;
+    if (loading) return <Loader message="Loading registered users..." />;
 
     return (
         <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">

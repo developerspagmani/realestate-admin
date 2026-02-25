@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Loader from '@/components/common/Loader';
 
 interface ProcessStep {
   id: number;
@@ -49,7 +50,7 @@ const ProcessFlow = () => {
         const next = prev + 1;
         if (next >= steps.length) {
           // Reset and start over
-          setSteps((prevSteps) => 
+          setSteps((prevSteps) =>
             prevSteps.map((step, index) => ({
               ...step,
               completed: index < prevSteps.length
@@ -84,9 +85,9 @@ const ProcessFlow = () => {
             <div className="position-relative">
               {/* Progress Line */}
               <div className="progress" style={{ height: '4px' }}>
-                <div 
+                <div
                   className="progress-bar bg-primary"
-                  style={{ 
+                  style={{
                     width: `${((currentStep + 1) / steps.length) * 100}%`,
                     transition: 'width 0.5s ease-in-out'
                   }}
@@ -98,15 +99,14 @@ const ProcessFlow = () => {
                 {steps.map((step, index) => (
                   <div key={step.id} className="text-center">
                     <div
-                      className={`rounded-circle d-flex align-items-center justify-content-center mb-3 ${
-                        getStepStatus(step.id) === 'completed' 
-                          ? 'bg-success text-white' 
+                      className={`rounded-circle d-flex align-items-center justify-content-center mb-3 ${getStepStatus(step.id) === 'completed'
+                          ? 'bg-success text-white'
                           : getStepStatus(step.id) === 'active'
-                          ? 'bg-primary text-white border border-3 border-white'
-                          : 'bg-white border border-3 border-secondary'
-                      }`}
-                      style={{ 
-                        width: '40px', 
+                            ? 'bg-primary text-white border border-3 border-white'
+                            : 'bg-white border border-3 border-secondary'
+                        }`}
+                      style={{
+                        width: '40px',
                         height: '40px',
                         transition: 'all 0.3s ease'
                       }}
@@ -117,9 +117,8 @@ const ProcessFlow = () => {
                         <span className="fw-bold">{step.id}</span>
                       )}
                     </div>
-                    <h6 className={`fw-bold mb-2 ${
-                      getStepStatus(step.id) === 'active' ? 'text-primary' : 'text-muted'
-                    }`}>
+                    <h6 className={`fw-bold mb-2 ${getStepStatus(step.id) === 'active' ? 'text-primary' : 'text-muted'
+                      }`}>
                       {step.title}
                     </h6>
                   </div>
@@ -132,33 +131,28 @@ const ProcessFlow = () => {
         {/* Step Details */}
         <div className="row g-4">
           {steps.map((step, index) => (
-            <div 
-              key={step.id} 
-              className={`col-md-6 col-lg-3 transition-all duration-500 ${
-                getStepStatus(step.id) === 'active' ? 'scale-105' : ''
-              }`}
+            <div
+              key={step.id}
+              className={`col-md-6 col-lg-3 transition-all duration-500 ${getStepStatus(step.id) === 'active' ? 'scale-105' : ''
+                }`}
             >
-              <div className={`card h-100 border-0 shadow-sm ${
-                getStepStatus(step.id) === 'active' ? 'border-primary border-2' : ''
-              }`}>
+              <div className={`card h-100 border-0 shadow-sm ${getStepStatus(step.id) === 'active' ? 'border-primary border-2' : ''
+                }`}>
                 <div className="card-body text-center p-4">
-                  <div className={`mb-3 ${
-                    getStepStatus(step.id) === 'completed' 
-                      ? 'text-success' 
+                  <div className={`mb-3 ${getStepStatus(step.id) === 'completed'
+                      ? 'text-success'
                       : getStepStatus(step.id) === 'active'
-                      ? 'text-primary'
-                      : 'text-muted'
-                  }`}>
+                        ? 'text-primary'
+                        : 'text-muted'
+                    }`}>
                     <i className={`bi ${step.icon}`} style={{ fontSize: '2rem' }}></i>
                   </div>
-                  <h5 className={`card-title fw-bold mb-3 ${
-                    getStepStatus(step.id) === 'active' ? 'text-primary' : ''
-                  }`}>
+                  <h5 className={`card-title fw-bold mb-3 ${getStepStatus(step.id) === 'active' ? 'text-primary' : ''
+                    }`}>
                     Step {step.id}: {step.title}
                   </h5>
-                  <p className={`card-text ${
-                    getStepStatus(step.id) === 'active' ? 'text-dark' : 'text-muted'
-                  }`}>
+                  <p className={`card-text ${getStepStatus(step.id) === 'active' ? 'text-dark' : 'text-muted'
+                    }`}>
                     {step.description}
                   </p>
                   {getStepStatus(step.id) === 'completed' && (
@@ -168,11 +162,9 @@ const ProcessFlow = () => {
                     </div>
                   )}
                   {getStepStatus(step.id) === 'active' && (
-                    <div className="text-primary">
-                      <div className="spinner-border spinner-border-sm me-2" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </div>
-                      In Progress
+                    <div className="text-primary d-flex align-items-center justify-content-center">
+                      <Loader size="sm" message="" />
+                      <span className="ms-2">In Progress</span>
                     </div>
                   )}
                 </div>
@@ -183,8 +175,8 @@ const ProcessFlow = () => {
 
         {/* Call to Action */}
         <div className="text-center mt-5">
-          <a 
-            href="/workspace" 
+          <a
+            href="/workspace"
             className="btn btn-primary btn-lg"
           >
             <i className="bi bi-play-circle me-2"></i>

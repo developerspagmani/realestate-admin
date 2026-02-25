@@ -9,6 +9,7 @@ import MainLayout from '@/components/MainLayout';
 import CMSForm from '@/components/modules/realestate/cms/CMSForm';
 import CMSList from '@/components/modules/realestate/cms/CMSList';
 import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
 
 interface CMSManagerProps {
     mode?: 'admin' | 'owner';
@@ -170,8 +171,8 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
 
                 <div className="row g-4">
                     {loading ? (
-                        <div className="col-12 text-center py-5">
-                            <div className="spinner-border text-primary pulse"></div>
+                        <div className="col-12 py-5">
+                            <Loader message="Fetching CMS content..." />
                         </div>
                     ) : pages.length === 0 ? (
                         <div className="col-12">

@@ -8,6 +8,7 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     BarChart, Bar, Cell, Legend
 } from 'recharts';
+import Loader from '@/components/common/Loader';
 
 interface DemandSummary {
     totalSearches: number;
@@ -101,10 +102,7 @@ export default function ForecastingPage() {
         return (
             <MainLayout activePage="analytics-forecasting">
                 <div className="p-4 text-center mt-5">
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
-                    <p className="mt-2 text-muted">Analyzing market demand signals...</p>
+                    <Loader size="md" message="Analyzing market demand signals..." />
                 </div>
             </MainLayout>
         );

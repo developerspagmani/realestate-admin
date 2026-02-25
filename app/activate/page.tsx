@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Loader from '@/components/common/Loader';
 import Link from 'next/link';
 
 function ActivateAccountContent() {
@@ -48,8 +49,8 @@ function ActivateAccountContent() {
 
                 {status === 'verifying' && (
                     <>
-                        <div className="spinner-border text-primary mb-4" role="status" style={{ width: '3rem', height: '3rem' }}>
-                            <span className="visually-hidden">Loading...</span>
+                        <div className="mb-4">
+                            <Loader size="lg" message="" />
                         </div>
                         <h3 className="fw-bold mb-3">Verifying Email</h3>
                         <p className="text-muted">{message}</p>
@@ -102,8 +103,8 @@ export default function ActivateAccountPage() {
             <Suspense fallback={
                 <div className="card shadow-sm border-0 rounded-4" style={{ width: '500px' }}>
                     <div className="card-body p-5 text-center">
-                        <div className="spinner-border text-primary mb-4" role="status" style={{ width: '3rem', height: '3rem' }}>
-                            <span className="visually-hidden">Loading...</span>
+                        <div className="mb-4">
+                            <Loader size="lg" message="" />
                         </div>
                         <h3 className="fw-bold mb-3">Initialising...</h3>
                     </div>

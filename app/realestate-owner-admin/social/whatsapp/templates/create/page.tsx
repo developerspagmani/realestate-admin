@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import { whatsappApi, connectedAccountsApi } from '@/lib/api/social';
+import Loader from '@/components/common/Loader';
 
 export default function CreateWhatsAppTemplatePage() {
     const router = useRouter();
@@ -187,7 +188,7 @@ export default function CreateWhatsAppTemplatePage() {
                                 disabled={loading}
                                 className="btn btn-success px-5 rounded-pill shadow-sm"
                             >
-                                {loading && <span className="spinner-border spinner-border-sm me-2"></span>}
+                                {loading && <Loader size="sm" message="" />}
                                 Submit for Approval
                             </button>
                         </div>

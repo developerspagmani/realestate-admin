@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Grid, ContactShadows, Float, Text } from '@react-three/drei';
 import * as THREE from 'three';
@@ -108,7 +109,7 @@ export default function Svg3DConverterPage() {
         setLoading(false);
     }, []);
 
-    if (loading) return <div className="p-5 text-center"><div className="spinner-border text-primary"></div></div>;
+    if (loading) return <div className="p-5 text-center"><Loader size="md" message="Loading 3D View..." /></div>;
 
     if (!svgData) {
         return (

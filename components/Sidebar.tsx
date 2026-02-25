@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import Image from 'next/image';
+import Link from 'next/link';
 
 
 interface SidebarProps {
@@ -17,13 +18,45 @@ interface SidebarProps {
 export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onMobileClose }: SidebarProps) {
   const { user, isAuthenticated, isAdmin, isOwner, isUser, isAgent, logout, hasModule } = useAuthContext();
   const { tenantType } = useManagementContext();
+  const pathname = usePathname();
+
   const [mounted, setMounted] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const [isMounting, setIsMounting] = useState(true);
+
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar_collapsed') === 'true';
+    }
+    return false;
+  });
+
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('sidebar_open_menus');
+      if (stored) {
+        try { return JSON.parse(stored); } catch (e) { }
+      }
+    }
+    return {};
+  });
 
   useEffect(() => {
     setMounted(true);
+    const timer = setTimeout(() => setIsMounting(false), 50);
+    return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebar_collapsed', String(collapsed));
+    }
+  }, [collapsed]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sidebar_open_menus', JSON.stringify(openMenus));
+    }
+  }, [openMenus]);
 
   useEffect(() => {
     // Notify parent of sidebar width changes
@@ -269,9 +302,26 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     return [];
   };
 
-  const menuItems = getMenuItems(isAdmin, isOwner, isUser, isAgent, tenantType, hasModule, activePage, user);
+  const baseMenuItems = getMenuItems(isAdmin, isOwner, isUser, isAgent, tenantType, hasModule, activePage, user);
 
-  if (!mounted || !user) {
+  // Recursively apply active state based on pathname to prevent visual glitches during routing
+  // and handle complex sub-routes properly
+  const menuItems = baseMenuItems.map((section: any) => ({
+    ...section,
+    items: section.items.map((item: any) => {
+      const isItemActive = item.active || (pathname && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href + '/'))));
+      return {
+        ...item,
+        active: isItemActive,
+        children: item.children ? item.children.map((child: any) => ({
+          ...child,
+          active: child.active || (pathname && (pathname === child.href || (child.href !== '/' && pathname.startsWith(child.href + '/'))))
+        })) : undefined
+      };
+    })
+  }));
+
+  if (!user) {
     return (
       <div className="sidebar bg-white border-end shadow-sm" style={{ width: collapsed ? '70px' : '250px', minHeight: '100vh', position: 'fixed' }}>
         <div className="p-4 border-bottom">
@@ -289,7 +339,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
         style={{
           width: collapsed ? '70px' : '250px',
           height: '100vh',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: isMounting || !mounted ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'fixed',
           top: '0',
           left: '0',
@@ -327,7 +377,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
         )}
 
         {/* Logo Section */}
-        <div className="p-4 border-bottom d-flex align-items-center gap-2">
+        <div className="p-4 border-bottom d-flex align-items-center justify-content-center gap-2">
           <div className=" d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
             <Image
               src="/images/Virpnix-logo-icon-svg.svg"
@@ -357,8 +407,8 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               )}
               {section.items.map((item: any) => {
                 const hasChildren = item.children && item.children.length > 0;
-                const isParentActive = item.active;
-                const isOpen = openMenus[item.label] ?? isParentActive;
+                const isParentActive = item.active || (hasChildren && item.children.some((c: any) => c.active));
+                const isOpen = isParentActive || (openMenus[item.label] ?? false);
 
                 return (
                   <div key={item.label} className="mb-1">
@@ -383,7 +433,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                         {isOpen && (!collapsed || showMobile) && (
                           <div className="ms-4 mt-1 border-start ps-2">
                             {item.children.map((child: any) => (
-                              <a
+                              <Link
                                 key={child.href}
                                 href={child.href}
                                 className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all small ${child.active ? 'bg-primary text-white fw-semibold shadow-sm' : 'text-secondary hover-bg-light'
@@ -392,13 +442,13 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                               >
                                 <i className={`bi ${child.icon} fs-6`}></i>
                                 <span className="text-nowrap">{child.label}</span>
-                              </a>
+                              </Link>
                             ))}
                           </div>
                         )}
                       </>
                     ) : (
-                      <a
+                      <Link
                         href={item.href}
                         className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all ${item.active
                           ? 'active bg-primary text-white fw-semibold shadow-sm'
@@ -410,7 +460,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                         {(!collapsed || showMobile) && (
                           <span className="text-nowrap">{item.label}</span>
                         )}
-                      </a>
+                      </Link>
                     )}
                   </div>
                 );
@@ -452,7 +502,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
                   <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Account</h6></li>
-                  <li><a className="dropdown-item d-flex align-items-center gap-2" href={settingsPath}><i className="bi bi-person"></i> Profile</a></li>
+                  <li><Link className="dropdown-item d-flex align-items-center gap-2" href={settingsPath}><i className="bi bi-person"></i> Profile</Link></li>
                   <li><hr className="dropdown-divider" /></li>
                   <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={handleLogout}><i className="bi bi-box-arrow-right"></i> Logout</button></li>
                 </ul>

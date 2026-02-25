@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import AOS from 'aos';
 
@@ -11,8 +11,12 @@ import AOS from 'aos';
  * Style: Creative, Smooth, Interactive
  */
 export default function Home() {
-  const { user, isAuthenticated } = useAuthContext();
+  const { user, isAuthenticated, getRedirectPath } = useAuthContext();
   const [scrolled, setScrolled] = useState(false);
+  const verticalSectionRef = useRef<HTMLElement>(null);
+  const vItemsRef = useRef<NodeListOf<HTMLElement> | null>(null);
+  const vVisualsRef = useRef<NodeListOf<HTMLElement> | null>(null);
+  const scrollRequestRef = useRef<number | null>(null);
 
   useEffect(() => {
     AOS.init({
@@ -22,56 +26,72 @@ export default function Home() {
       anchorPlacement: 'top-bottom',
     });
 
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+    // Cache elements for performance
+    if (verticalSectionRef.current) {
+      vItemsRef.current = verticalSectionRef.current.querySelectorAll('.v-item');
+      vVisualsRef.current = verticalSectionRef.current.querySelectorAll('.v-visual');
+    }
 
-      // Vertical Slide Logic
-      const vSection = document.querySelector('.vertical-feature-section') as HTMLElement;
-      if (vSection) {
-        const rect = vSection.getBoundingClientRect();
-        const items = vSection.querySelectorAll('.v-item');
-        const visuals = vSection.querySelectorAll('.v-visual');
+    const updateScrollEffects = () => {
+      const vSection = verticalSectionRef.current;
+      if (!vSection || !vItemsRef.current || !vVisualsRef.current) return;
 
-        if (rect.top <= 0 && rect.bottom >= window.innerHeight) {
-          const totalScroll = vSection.offsetHeight - window.innerHeight;
-          const progress = Math.min(1, Math.max(0, Math.abs(rect.top) / totalScroll));
-          const index = Math.min(items.length - 1, Math.floor(progress * items.length));
+      const rect = vSection.getBoundingClientRect();
+      const items = vItemsRef.current;
+      const visuals = vVisualsRef.current;
 
-          visuals.forEach((el: any, i) => {
-            el.style.opacity = i === index ? '1' : '0';
-            el.style.transform = i === index ? 'scale(1)' : 'scale(0.95)';
-            el.style.zIndex = i === index ? '1' : '0';
-            el.style.visibility = i === index ? 'visible' : 'hidden';
-          });
+      if (rect.top <= 0 && rect.bottom >= window.innerHeight) {
+        const totalScroll = vSection.offsetHeight - window.innerHeight;
+        const progress = Math.min(1, Math.max(0, Math.abs(rect.top) / totalScroll));
+        const index = Math.min(items.length - 1, Math.floor(progress * items.length));
 
-          items.forEach((item: any, i) => {
-            if (i === index) {
-              item.style.opacity = '1';
-              item.style.transform = 'translateY(0) scale(1)';
-              item.style.visibility = 'visible';
-              item.style.zIndex = '10';
-            } else if (i === index + 1 && i < items.length) {
-              item.style.opacity = '0.15';
-              item.style.transform = 'translateY(320px) scale(0.9)';
-              item.style.visibility = 'visible';
-              item.style.zIndex = '5';
-            } else if (i === index + 2 && i < items.length) {
-              item.style.opacity = '0.05';
-              item.style.transform = 'translateY(550px) scale(0.85)';
-              item.style.visibility = 'visible';
-              item.style.zIndex = '2';
-            } else {
-              item.style.opacity = '0';
-              item.style.transform = i < index ? 'translateY(-200px)' : 'translateY(800px)';
-              item.style.visibility = 'hidden';
-            }
-          });
-        }
+        visuals.forEach((el, i) => {
+          const isSelected = i === index;
+          el.style.opacity = isSelected ? '1' : '0';
+          el.style.transform = isSelected ? 'scale(1)' : 'scale(0.95)';
+          el.style.zIndex = isSelected ? '1' : '0';
+          el.style.visibility = isSelected ? 'visible' : 'hidden';
+        });
+
+        items.forEach((item, i) => {
+          if (i === index) {
+            item.style.opacity = '1';
+            item.style.transform = 'translateY(0) scale(1)';
+            item.style.visibility = 'visible';
+            item.style.zIndex = '10';
+          } else if (i === index + 1 && i < items.length) {
+            item.style.opacity = '0.15';
+            item.style.transform = 'translateY(320px) scale(0.9)';
+            item.style.visibility = 'visible';
+            item.style.zIndex = '5';
+          } else if (i === index + 2 && i < items.length) {
+            item.style.opacity = '0.05';
+            item.style.transform = 'translateY(550px) scale(0.85)';
+            item.style.visibility = 'visible';
+            item.style.zIndex = '2';
+          } else {
+            item.style.opacity = '0';
+            item.style.transform = i < index ? 'translateY(-200px)' : 'translateY(800px)';
+            item.style.visibility = 'hidden';
+          }
+        });
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+
+      if (scrollRequestRef.current) {
+        cancelAnimationFrame(scrollRequestRef.current);
+      }
+      scrollRequestRef.current = requestAnimationFrame(updateScrollEffects);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollRequestRef.current) cancelAnimationFrame(scrollRequestRef.current);
+    };
   }, []);
 
   return (
@@ -94,7 +114,7 @@ export default function Home() {
             ))}
             {isAuthenticated ? (
               <Link
-                href={user?.role === 'admin' ? '/realestate-admin' : user?.role === 'owner' ? '/realestate-owner-admin' : '/realestate-agent'}
+                href={getRedirectPath()}
                 className="btn-red py-2 px-4 shadow-sm"
               >
                 {user?.name || 'Dashboard'}
@@ -154,7 +174,7 @@ export default function Home() {
       </section>
 
       {/* Vertical Slide Features (10 Modules) */}
-      <section className="vertical-feature-section bg-black position-relative" style={{ height: '1000vh' }}>
+      <section ref={verticalSectionRef} className="vertical-feature-section bg-black position-relative" style={{ height: '1000vh' }}>
         <div className="vh-100 w-100 d-flex align-items-center overflow-hidden" style={{ position: 'sticky', top: 0 }}>
           <div className="container">
             <div className="row align-items-center g-5">
@@ -243,7 +263,7 @@ export default function Home() {
             <div className="col-lg-8">
               <i className="bi bi-quote text-red display-1 opacity-20 mb-4 d-block"></i>
               <h2 className="display-5 fw-300 italic text-white lh-base">
-                "Virpanix didn't just digitize our inventory; they revolutionized our entire conversion cycle. We've seen a 400% increase in lead response speed within 60 days."
+                &quot;Virpanix didn&apos;t just digitize our inventory; they revolutionized our entire conversion cycle. We&apos;ve seen a 400% increase in lead response speed within 60 days.&quot;
               </h2>
               <div className="mt-5">
                 <div className="bg-red mx-auto mb-3" style={{ width: '40px', height: '2px' }}></div>
@@ -288,8 +308,8 @@ export default function Home() {
                 <div className="d-flex flex-column gap-3">
                   {[...Array(8)].map((_, i) => (
                     <div key={i} className="d-flex gap-2 align-items-center opacity-30">
-                      <div className="bg-red rounded-1" style={{ width: Math.random() * 100 + 50 + 'px', height: '4px' }}></div>
-                      <div className="text-red small pulse" style={{ opacity: Math.random() }}>• SCANNING...</div>
+                      <div className="bg-red rounded-1" style={{ width: ((i * 13) % 100) + 50 + 'px', height: '4px' }}></div>
+                      <div className="text-red small pulse" style={{ opacity: 0.2 + (i * 0.1) }}>• SCANNING...</div>
                     </div>
                   ))}
                 </div>
@@ -413,7 +433,7 @@ export default function Home() {
             <div className="col-lg-7" data-aos="zoom-in-left">
               <div className="map-container glass-card p-5 position-relative bg-grid">
                 <svg viewBox="0 0 1000 500" className="w-100 opacity-20">
-                  <path fill="currentColor" d="M150,200 Q400,100 800,250" className="text-red" stroke="currentColor" fill="none" strokeWidth="0.5" strokeDasharray="5,5" />
+                  <path fill="none" d="M150,200 Q400,100 800,250" className="text-red" stroke="currentColor" strokeWidth="0.5" strokeDasharray="5,5" />
                   {[
                     { x: 200, y: 150, n: 'NYC' }, { x: 480, y: 120, n: 'LON' }, { x: 520, y: 180, n: 'DUB' }, { x: 820, y: 350, n: 'SYD' }
                   ].map((p, i) => (

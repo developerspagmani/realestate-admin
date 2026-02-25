@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import StatCard from '@/components/StatCard';
 import { scheduledPostsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 
 interface ScheduledPost {
     id: string;
@@ -112,9 +113,7 @@ export default function ScheduledPostsPage() {
         return (
             <MainLayout activePage="social-scheduled">
                 <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
+                    <Loader size="md" message="Loading social content..." />
                 </div>
             </MainLayout>
         );

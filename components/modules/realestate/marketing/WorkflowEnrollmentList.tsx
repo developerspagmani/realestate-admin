@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import Loader from '@/components/common/Loader';
 import { marketingService, getAuthToken } from '@/app/services/api';
 
 interface EnrollmentLog {
@@ -97,8 +98,8 @@ export default function WorkflowEnrollmentList({ workflowId, workflowName, onClo
             </div>
             <div className="offcanvas-body p-0">
                 {loading ? (
-                    <div className="text-center py-5">
-                        <div className="spinner-border spinner-border-sm text-primary"></div>
+                    <div className="py-5">
+                        <Loader message="Fetching enrollments..." />
                     </div>
                 ) : enrollments.length === 0 ? (
                     <div className="text-center py-5 px-4">
@@ -140,7 +141,7 @@ export default function WorkflowEnrollmentList({ workflowId, workflowName, onClo
                                                         <h6 className="extra-small fw-bold text-uppercase text-muted mb-3">Execution History</h6>
                                                         {loadingLogs ? (
                                                             <div className="text-center py-3">
-                                                                <div className="spinner-border spinner-border-sm text-primary"></div>
+                                                                <Loader message="" fullPage={false} />
                                                             </div>
                                                         ) : enrollmentLogs.length === 0 ? (
                                                             <div className="text-center py-3 extra-small text-muted">No logs recorded yet.</div>
@@ -189,5 +190,3 @@ export default function WorkflowEnrollmentList({ workflowId, workflowName, onClo
         </div>
     );
 }
-
-import React from 'react';

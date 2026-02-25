@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Loader from '@/components/common/Loader';
 
 const OwnerLicense = dynamic(
     () => import('@/components/modules/realestate/owners/Detail/OwnerLicense'),
@@ -8,8 +9,7 @@ const OwnerLicense = dynamic(
         ssr: false,
         loading: () => (
             <div className="text-center py-5">
-                <div className="spinner-border text-primary" role="status"></div>
-                <p className="text-muted mt-3 small">Loading license details...</p>
+                <Loader size="md" message="Loading license details..." />
             </div>
         )
     }

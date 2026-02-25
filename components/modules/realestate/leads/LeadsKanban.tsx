@@ -248,17 +248,18 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                     })}
                 </div>
 
-                <style jsx>{`
+                <style jsx global>{`
                 .kanban-wrapper {
                     width: 100%;
                     overflow-x: auto;
-                    overflow-y: visible;
                     border-radius: 1rem;
                     background: rgba(0,0,0,0.01);
-                    scrollbar-width: auto;
-                    scrollbar-color: #000000 #f1f3f5;
-                    padding-bottom: 20px; /* More space for scrollbar */
+                    display: block; 
+                    white-space: nowrap;
+                    padding-bottom: 20px; 
                     margin-bottom: 10px;
+                    scrollbar-width: thin;
+                    scrollbar-color: #adb5bd #f8f9fa;
                 }
                 .kanban-wrapper::-webkit-scrollbar {
                     height: 12px;
@@ -276,8 +277,9 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                     background: #333333;
                 }
                 .kanban-container {
-                    display: table; /* Force container to respect children width */
+                    display: inline-flex;
                     min-width: 100%;
+                    vertical-align: top;
                 }
                 .cursor-grab {
                     cursor: grab;

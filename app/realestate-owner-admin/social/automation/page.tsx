@@ -6,6 +6,7 @@ import StatCard from '@/components/StatCard';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { automationApi } from '@/lib/api/social';
 import ModuleGuard from '@/components/common/ModuleGuard';
+import Loader from '@/components/common/Loader';
 
 export default function SocialAutomationPage() {
     return (
@@ -169,77 +170,83 @@ function AutomationContent() {
                                 <h5 className="mb-0 fw-bold">Active Nurture Flows</h5>
                             </div>
                             <div className="table-responsive">
-                                <table className="table table-hover align-middle mb-0">
-                                    <thead className="bg-light">
-                                        <tr>
-                                            <th className="px-4">Workflow Name</th>
-                                            <th>Trigger</th>
-                                            <th>Channel</th>
-                                            <th>Sent</th>
-                                            <th>Status</th>
-                                            <th className="text-end px-4">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {workflows.length === 0 ? (
+                                {loading ? (
+                                    <div className="text-center py-5">
+                                        <Loader size="md" message="Loading automation flows..." />
+                                    </div>
+                                ) : (
+                                    <table className="table table-hover align-middle mb-0">
+                                        <thead className="bg-light">
                                             <tr>
-                                                <td colSpan={6} className="text-center py-4 text-muted">No automation workflows found.</td>
+                                                <th className="px-4">Workflow Name</th>
+                                                <th>Trigger</th>
+                                                <th>Channel</th>
+                                                <th>Sent</th>
+                                                <th>Status</th>
+                                                <th className="text-end px-4">Action</th>
                                             </tr>
-                                        ) : (
-                                            workflows.map(wf => (
-                                                <tr key={wf.id}>
-                                                    <td className="px-4">
-                                                        <div className="fw-semibold">{wf.name}</div>
-                                                    </td>
-                                                    <td><span className="badge bg-light text-dark border">{wf.trigger}</span></td>
-                                                    <td>
-                                                        {wf.type === 'WhatsApp' && <i className="bi bi-whatsapp text-success me-2"></i>}
-                                                        {wf.type === 'Email' && <i className="bi bi-envelope text-primary me-2"></i>}
-                                                        {wf.type === 'Omni-channel' && <i className="bi bi-shuffle text-info me-2"></i>}
-                                                        {wf.type}
-                                                    </td>
-                                                    <td>{wf.sent || 0}</td>
-                                                    <td>
-                                                        <div className="form-check form-switch">
-                                                            <input
-                                                                className="form-check-input"
-                                                                type="checkbox"
-                                                                checked={wf.status === 'Active'}
-                                                                onChange={() => handleToggleStatus(wf.id)}
-                                                            />
-                                                            <span className={`small ms-1 ${wf.status === 'Active' ? 'text-success' : 'text-muted'}`}>
-                                                                {wf.status}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="text-end px-4">
-                                                        <button
-                                                            className="btn btn-sm btn-light-primary me-2"
-                                                            onClick={() => {
-                                                                setEditingWorkflow(wf);
-                                                                setFormData({
-                                                                    name: wf.name,
-                                                                    trigger: wf.trigger,
-                                                                    type: wf.type,
-                                                                    status: wf.status
-                                                                });
-                                                                setShowModal(true);
-                                                            }}
-                                                        >
-                                                            <i className="bi bi-pencil"></i>
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-sm btn-light-danger"
-                                                            onClick={() => handleDelete(wf.id)}
-                                                        >
-                                                            <i className="bi bi-trash"></i>
-                                                        </button>
-                                                    </td>
+                                        </thead>
+                                        <tbody>
+                                            {workflows.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={6} className="text-center py-4 text-muted">No automation workflows found.</td>
                                                 </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
+                                            ) : (
+                                                workflows.map(wf => (
+                                                    <tr key={wf.id}>
+                                                        <td className="px-4">
+                                                            <div className="fw-semibold">{wf.name}</div>
+                                                        </td>
+                                                        <td><span className="badge bg-light text-dark border">{wf.trigger}</span></td>
+                                                        <td>
+                                                            {wf.type === 'WhatsApp' && <i className="bi bi-whatsapp text-success me-2"></i>}
+                                                            {wf.type === 'Email' && <i className="bi bi-envelope text-primary me-2"></i>}
+                                                            {wf.type === 'Omni-channel' && <i className="bi bi-shuffle text-info me-2"></i>}
+                                                            {wf.type}
+                                                        </td>
+                                                        <td>{wf.sent || 0}</td>
+                                                        <td>
+                                                            <div className="form-check form-switch">
+                                                                <input
+                                                                    className="form-check-input"
+                                                                    type="checkbox"
+                                                                    checked={wf.status === 'Active'}
+                                                                    onChange={() => handleToggleStatus(wf.id)}
+                                                                />
+                                                                <span className={`small ms-1 ${wf.status === 'Active' ? 'text-success' : 'text-muted'}`}>
+                                                                    {wf.status}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="text-end px-4">
+                                                            <button
+                                                                className="btn btn-sm btn-light-primary me-2"
+                                                                onClick={() => {
+                                                                    setEditingWorkflow(wf);
+                                                                    setFormData({
+                                                                        name: wf.name,
+                                                                        trigger: wf.trigger,
+                                                                        type: wf.type,
+                                                                        status: wf.status
+                                                                    });
+                                                                    setShowModal(true);
+                                                                }}
+                                                            >
+                                                                <i className="bi bi-pencil"></i>
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-sm btn-light-danger"
+                                                                onClick={() => handleDelete(wf.id)}
+                                                            >
+                                                                <i className="bi bi-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                )}
                             </div>
                         </div>
                     </div>

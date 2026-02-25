@@ -9,6 +9,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import ImageModal from '@/components/shared/ImageModal';
+import Loader from '@/components/common/Loader';
 
 interface MediaManagerProps {
     mode: 'admin' | 'owner';
@@ -245,7 +246,9 @@ export default function MediaManager({ mode }: MediaManagerProps) {
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
+                    <div className="py-5">
+                        <Loader message="Loading media library..." />
+                    </div>
                 ) : (
                     <div className="row g-4">
                         {viewMode === 'grid' ? (

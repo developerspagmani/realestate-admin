@@ -1,7 +1,8 @@
 'use client';
-
 import { useState, useEffect } from 'react';
+import { propertyService, getAuthToken } from '@/app/services/api';
 import { Property, MediaItem } from '@/types';
+import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MapView from '@/components/common/MapView';
 import MediaSelector from '@/components/shared/MediaSelector';

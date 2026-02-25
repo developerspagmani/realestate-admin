@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { analyticsApi, connectedAccountsApi, scheduledPostsApi, publishedPostsApi } from '@/lib/api/social';
+import { analyticsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 import StatCard from '@/components/StatCard';
 
 interface DashboardStats {
@@ -68,9 +69,7 @@ export default function SocialDashboard() {
         return (
             <MainLayout activePage="social">
                 <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
+                    <Loader size="md" message="Loading social dashboard..." />
                 </div>
             </MainLayout>
         );

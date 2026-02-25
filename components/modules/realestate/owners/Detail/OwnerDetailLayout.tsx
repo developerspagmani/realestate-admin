@@ -6,6 +6,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { userService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Link from 'next/link';
+import Loader from '@/components/common/Loader';
 
 interface OwnerDetailLayoutProps {
     children: React.ReactNode;
@@ -61,7 +62,7 @@ export default function OwnerDetailLayout({
         { label: 'Users', icon: 'bi-people', path: `${basePath}/${id}/users` },
     ];
 
-    if (authLoading) return <div className="vh-100 d-flex align-items-center justify-content-center bg-light"><div className="spinner-border text-primary"></div></div>;
+    if (authLoading) return <div className="vh-100 d-flex align-items-center justify-content-center bg-light"><Loader message="Verifying access..." /></div>;
     if (!isAuthenticated || !isAdmin) return null;
 
     return (

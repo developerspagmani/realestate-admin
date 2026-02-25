@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { userService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 
 export default function AgentProfile() {
     const { user } = useAuthContext();
@@ -123,7 +124,7 @@ export default function AgentProfile() {
                                         <div className="col-12 mt-5 text-end">
                                             <button type="submit" className="btn btn-primary px-5 py-3 rounded-4 fw-bold shadow-sm" disabled={saving || loading}>
                                                 {saving ? (
-                                                    <><span className="spinner-border spinner-border-sm me-2"></span>Saving...</>
+                                                    <Loader size="sm" message="Saving..." />
                                                 ) : 'Save Changes'}
                                             </button>
                                         </div>

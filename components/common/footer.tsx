@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function Footer() {
     return (
         <footer className="footer py-3 border-top bg-white opacity-75">
@@ -6,12 +8,12 @@ export default function Footer() {
                     <div>
                         <span className="fw-medium">© {new Date().getFullYear()}</span>
                         <span className="mx-1">•</span>
-                        <span className="fw-bold text-dark">Intelligent Real Estate Marketing Platform</span>
+                        <span className="fw-bold text-dark">Virpanix Platform</span>
                     </div>
                     <div className="d-flex align-items-center gap-3">
-                        <a href="/legal/privacy" className="text-decoration-none text-muted hvr-text-primary">Privacy</a>
-                        <a href="/legal/terms" className="text-decoration-none text-muted hvr-text-primary">Terms</a>
-                        <a href="/legal/data-deletion" className="text-decoration-none text-muted hvr-text-primary">Data Deletion</a>
+                        <Link href="/legal/privacy" className="text-decoration-none text-muted hvr-text-primary">Privacy</Link>
+                        <Link href="/legal/terms" className="text-decoration-none text-muted hvr-text-primary">Terms</Link>
+                        <Link href="/legal/data-deletion" className="text-decoration-none text-muted hvr-text-primary">Data Deletion</Link>
                         <span className="mx-1">|</span>
                         <span>
                             Developed by

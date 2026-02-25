@@ -6,6 +6,7 @@ import StatCard from '@/components/StatCard';
 import { analyticsApi, connectedAccountsApi, publishedPostsApi, scheduledPostsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
+import Loader from '@/components/common/Loader';
 
 export default function SocialDashboard() {
     return (
@@ -77,9 +78,7 @@ function DashboardContent() {
         return (
             <MainLayout activePage="social">
                 <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
+                    <Loader size="md" message="Loading dashboard..." />
                 </div>
             </MainLayout>
         );

@@ -184,7 +184,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                                         <h4 className="fw-bold h5 mb-2 text-truncate">{prop.title}</h4>
                                                         <div className="d-flex justify-content-between align-items-center mt-3">
                                                             <div className="h5 fw-black mb-0" style={{ color: theme.primaryColor }}>
-                                                                {prop.currency || '$'}{Number(prop.price).toLocaleString()}
+                                                                {prop.currency || '$'}{Number(prop.price).toLocaleString('en-US')}
                                                             </div>
                                                             <div className="extra-small text-muted text-uppercase fw-bold tracking-wider">
                                                                 <i className="bi bi-geo-alt-fill me-1"></i> {prop.city}

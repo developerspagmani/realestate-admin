@@ -7,6 +7,7 @@ import { User } from '@/types';
 import { userService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 import Toast from '@/components/common/Toast';
 
 interface UsersManagerProps {
@@ -310,8 +311,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                 {loading ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-5">
-                                            <div className="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
-                                            <span className="text-muted small">Loading system users...</span>
+                                            <Loader message="Loading system users..." />
                                         </td>
                                     </tr>
                                 ) : filteredUsers.length > 0 ? (

@@ -1,9 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { property3DService, getAuthToken, propertyService } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import PropertyTour from './PropertyTour';
+import Loader from '@/components/common/Loader';
 
 interface PropertyTourManagerProps {
     propertyId: string;
@@ -47,10 +49,7 @@ export default function PropertyTourManager({ propertyId }: PropertyTourManagerP
     if (loading) {
         return (
             <MainLayout activePage="properties">
-                <div className="container py-5 text-center">
-                    <div className="spinner-border text-primary" role="status"></div>
-                    <p className="mt-3 text-muted">Loading your 3D immersive experience...</p>
-                </div>
+                <Loader message="Loading your 3D immersive experience..." size="lg" />
             </MainLayout>
         );
     }
@@ -73,7 +72,7 @@ export default function PropertyTourManager({ propertyId }: PropertyTourManagerP
                         <h4 className="fw-bold mb-1">{property.name} - Immersive 3D Tour</h4>
                         <nav aria-label="breadcrumb">
                             <ol className="breadcrumb small">
-                                <li className="breadcrumb-item"><a href="/realestate-owner-admin/properties" className="text-decoration-none">Properties</a></li>
+                                <li className="breadcrumb-item"><Link href="/realestate-owner-admin/properties" className="text-decoration-none">Properties</Link></li>
                                 <li className="breadcrumb-item active">{property.name}</li>
                                 <li className="breadcrumb-item active">3D Tour</li>
                             </ol>

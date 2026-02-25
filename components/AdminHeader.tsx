@@ -6,6 +6,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { tenantService, userService, getAuthToken, dashboardService, leadService, paymentService } from '@/app/services/api';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import Loader from '@/components/common/Loader';
 
 interface AdminHeaderProps {
     onMenuClick?: () => void;
@@ -445,7 +446,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                                     <div className="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
                                         <div className="d-flex align-items-center gap-2">
                                             <h6 className="fw-bold mb-0">Notifications</h6>
-                                            {notifLoading && <span className="spinner-border spinner-border-sm text-primary" style={{ width: '12px', height: '12px' }}></span>}
+                                            {notifLoading && <Loader size="sm" message="" />}
                                         </div>
                                         {unreadCount > 0 && (
                                             <button className="btn btn-link btn-sm p-0 extra-small text-decoration-none fw-bold" onClick={markAllRead}>

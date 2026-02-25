@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { agentService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
+import { useAuth } from '@/app/hooks/useAuth';
+import Loader from '@/components/common/Loader';
+import Link from 'next/link';
 
 export default function AgentDashboard() {
     const { user } = useAuthContext();
@@ -62,7 +65,7 @@ export default function AgentDashboard() {
 
                 {loading ? (
                     <div className="d-flex justify-content-center py-5">
-                        <div className="spinner-border text-primary" role="status"></div>
+                        <Loader size="md" message="Loading dashboard data..." />
                     </div>
                 ) : (
                     <div className="row g-4">
@@ -129,12 +132,12 @@ export default function AgentDashboard() {
                                 <div className="card-body p-4">
                                     <h5 className="fw-bold mb-4">Quick Actions</h5>
                                     <div className="d-flex flex-wrap gap-3">
-                                        <a href="/realestate-agent/leads" className="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
+                                        <Link href="/realestate-agent/leads" className="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
                                             <i className="bi bi-person-check me-2"></i>Manage Leads
-                                        </a>
-                                        <a href="/realestate-agent/commissions" className="btn btn-outline-primary px-4 py-2 rounded-3">
+                                        </Link>
+                                        <Link href="/realestate-agent/commissions" className="btn btn-outline-primary px-4 py-2 rounded-3">
                                             <i className="bi bi-cash-stack me-2"></i>My Commissions
-                                        </a>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

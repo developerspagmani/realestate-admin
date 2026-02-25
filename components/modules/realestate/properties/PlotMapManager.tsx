@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { propertyService, unitService, getAuthToken } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
 import PlotMapEditor from './PlotMapEditor';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
@@ -174,7 +175,7 @@ export default function PlotMapManager({ mode, propertyId: propId, propertyName:
         return (
             <MainLayout activePage="plot-map">
                 <div className="d-flex justify-content-center align-items-center vh-100">
-                    <div className="spinner-border text-primary" role="status"></div>
+                    <Loader message="Loading plot map..." />
                     <span className="ms-3 text-muted">Loading Plot Map Manager...</span>
                 </div>
             </MainLayout>

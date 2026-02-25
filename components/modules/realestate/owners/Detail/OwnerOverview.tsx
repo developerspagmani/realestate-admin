@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { userService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
+import Loader from '@/components/common/Loader';
 
 export default function OwnerOverview() {
     const { id } = useParams();
@@ -29,7 +30,7 @@ export default function OwnerOverview() {
         loadStats();
     }, [id]);
 
-    if (loading) return <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>;
+    if (loading) return <Loader message="Loading business overview..." />;
 
     const statCards = [
         { label: 'Properties', value: stats?.propertyCount || 0, icon: 'bi-building', color: 'primary' },

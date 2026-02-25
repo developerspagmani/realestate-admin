@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Loader from '@/components/common/Loader';
 import PlotMapManager from '@/components/modules/realestate/properties/PlotMapManager';
 
 function AdminPlotMapEditorPageContent() {
@@ -20,7 +21,7 @@ function AdminPlotMapEditorPageContent() {
 
 export default function AdminPlotMapEditorPage() {
     return (
-        <Suspense fallback={<div className="p-5 text-center"><div className="spinner-border text-primary"></div></div>}>
+        <Suspense fallback={<div className="p-5 text-center"><Loader size="md" message="Loading Plot Map Editor..." /></div>}>
             <AdminPlotMapEditorPageContent />
         </Suspense>
     );

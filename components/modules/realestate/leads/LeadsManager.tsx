@@ -10,6 +10,7 @@ import Toast from '@/components/common/Toast';
 import { Agent } from '@/types';
 import LeadEngagementInsights from './LeadEngagementInsights';
 import LeadsKanban from './LeadsKanban';
+import Loader from '@/components/common/Loader';
 
 export interface Lead {
     id: string;
@@ -475,14 +476,13 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     return (
         <MainLayout activePage="leads">
             <div className="container-fluid py-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
+                <div className="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center gap-3 mb-4">
                     <div>
                         <h1 className="h3 fw-bold mb-1">CRM & Leads</h1>
                         <p className="text-muted small mb-0">Track and manage your potential customers</p>
                     </div>
-                    <div className="d-flex align-items-center gap-3">
-                        <div className="btn-group p-1 bg-light rounded-3 shadow-sm" style={{ border: '1px solid #eee' }}>
-
+                    <div className="d-flex flex-column flex-md-row gap-3 w-100 mt-3 mt-xl-0 justify-content-xl-end">
+                        <div className="btn-group p-1 bg-light rounded-3 shadow-sm flex-shrink-0" style={{ border: '1px solid #eee' }}>
                             <button
                                 className={`btn btn-sm px-3 rounded-2 ${viewMode === 'kanban' ? 'btn-white shadow-sm fw-bold' : 'btn-light border-0 text-muted'}`}
                                 onClick={() => setViewMode('kanban')}
@@ -496,26 +496,28 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                 <i className="bi bi-table me-2"></i>Table
                             </button>
                         </div>
-                        <div className="d-flex align-items-center gap-2">
-                            <button className="btn btn-outline-secondary btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportLeads}>
+                        <div className="d-flex flex-wrap gap-2 flex-grow-1 flex-md-grow-0 justify-content-start justify-content-md-end">
+                            <button className="btn btn-outline-secondary btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-sm-grow-0" onClick={handleExportLeads}>
                                 <i className="bi bi-download"></i>
-                                <span>Export {selectedLeads.length > 0 ? `(${selectedLeads.length})` : ''}</span>
+                                <span className="d-none d-sm-inline">Export {selectedLeads.length > 0 ? `(${selectedLeads.length})` : ''}</span>
+                                <span className="d-inline d-sm-none">{selectedLeads.length > 0 ? `(${selectedLeads.length})` : ''}</span>
                             </button>
                             {(filterBudget !== '' || filterStatus !== 'all' || filterSource !== 'all') && (
-                                <button className="btn btn-outline-primary btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center gap-2" onClick={() => setShowGroupModal(true)}>
+                                <button className="btn btn-outline-primary btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-sm-grow-0" onClick={() => setShowGroupModal(true)}>
                                     <i className="bi bi-people-fill"></i>
-                                    <span>Save as Group</span>
+                                    <span className="d-none d-sm-inline">Group</span>
                                 </button>
                             )}
                             {selectedLeads.length > 0 && (
-                                <button className="btn btn-danger-soft text-danger btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleBulkDelete}>
+                                <button className="btn btn-danger-soft text-danger btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-sm-grow-0" onClick={handleBulkDelete}>
                                     <i className="bi bi-trash-fill"></i>
-                                    <span>Delete ({selectedLeads.length})</span>
+                                    <span className="d-none d-sm-inline">Delete ({selectedLeads.length})</span>
                                 </button>
                             )}
-                            <button className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm" onClick={() => { setEditingLead(null); resetForm(); setShowModal(true); }}>
+                            <button className="btn btn-primary d-flex align-items-center justify-content-center gap-2 px-3 shadow-sm flex-grow-1 flex-sm-grow-0" onClick={() => { setEditingLead(null); resetForm(); setShowModal(true); }}>
                                 <i className="bi bi-person-plus-fill"></i>
-                                <span>Add New Lead</span>
+                                <span className="d-none d-sm-inline">Add Lead</span>
+                                <span className="d-inline d-sm-none">Add</span>
                             </button>
                         </div>
                     </div>
@@ -523,15 +525,15 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
 
                 <div className="card border-0 shadow-sm mb-4 rounded-4">
                     <div className="card-body p-3">
-                        <div className="row g-3">
-                            <div className="col-md-3">
+                        <div className="row g-3 align-items-center">
+                            <div className="col-12 col-md-12 col-lg-3">
                                 <div className="input-group">
                                     <span className="input-group-text bg-light border-0"><i className="bi bi-search text-muted"></i></span>
                                     <input type="text" className="form-control bg-light border-0" placeholder="Search leads..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                 </div>
                             </div>
-                            <div className="col-md-2">
-                                <select className="form-select bg-light border-0" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                            <div className="col-6 col-sm-6 col-md-4 col-lg-2">
+                                <select className="form-select bg-light border-0 w-100" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
                                     <option value="all">Status: All</option>
                                     <option value="new">New</option>
                                     <option value="contacted">Contacted</option>
@@ -540,8 +542,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                     <option value="lost">Lost</option>
                                 </select>
                             </div>
-                            <div className="col-md-2">
-                                <select className="form-select bg-light border-0" value={filterSource} onChange={(e) => setFilterSource(e.target.value)}>
+                            <div className="col-6 col-sm-6 col-md-4 col-lg-2">
+                                <select className="form-select bg-light border-0 w-100" value={filterSource} onChange={(e) => setFilterSource(e.target.value)}>
                                     <option value="all">Source: All</option>
                                     <option value="website">Website</option>
                                     <option value="email">Email</option>
@@ -552,15 +554,15 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                     <option value="other">Other</option>
                                 </select>
                             </div>
-                            <div className="col-md-2">
-                                <select className="form-select bg-light border-0" value={filterTag} onChange={(e) => setFilterTag(e.target.value)}>
+                            <div className="col-12 col-sm-6 col-md-4 col-lg-2">
+                                <select className="form-select bg-light border-0 w-100" value={filterTag} onChange={(e) => setFilterTag(e.target.value)}>
                                     <option value="all">Tag: All</option>
                                     {allTags.map(tag => (
                                         <option key={tag} value={tag}>{tag}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div className="col-md-2">
+                            <div className="col-12 col-sm-6 col-md-6 col-lg-2">
                                 <div className="px-1">
                                     <div className="d-flex justify-content-between align-items-center mb-1">
                                         <label className="form-label extra-small text-muted fw-bold text-uppercase mb-0">Budget</label>
@@ -585,24 +587,21 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                     />
                                 </div>
                             </div>
-                            <div className="col-md-1 d-flex align-items-center justify-content-end">
-                                <span className="fw-bold text-primary">{filteredLeads.length}</span>
+                            <div className="col-12 col-md-6 col-lg-1 d-flex align-items-center justify-content-center justify-content-lg-end">
+                                <span className="fw-bold text-primary text-nowrap">{filteredLeads.length} Matches</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {isLoading ? (
-                    <div className="d-flex flex-column align-items-center justify-content-center py-5 my-5">
-                        <div className="spinner-border text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 className="text-muted fw-light">Fetching your leads...</h5>
+                    <div className="py-5 my-5">
+                        <Loader message="Fetching your leads..." />
                     </div>
                 ) : viewMode === 'table' ? (
-                    <div className="card border-0 shadow-sm rounded-4 overflow-visible">
-                        <div className="vi-table-responsive">
-                            <table className="table table-hover align-middle mb-0">
+                    <div className="card border-0 shadow-sm rounded-4 mt-2">
+                        <div className="table-responsive">
+                            <table className="table table-hover align-middle mb-0 text-nowrap">
                                 <thead className="bg-light">
                                     <tr>
                                         <th className="px-4 py-3" style={{ width: '40px' }}>

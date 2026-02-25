@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import { connectedAccountsApi } from '@/lib/api/social';
+import Loader from '@/components/common/Loader';
 
 interface ConnectedAccount {
     id: string;
@@ -185,9 +186,7 @@ export default function ConnectedAccountsPage() {
         return (
             <MainLayout activePage="social-accounts">
                 <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
+                    <Loader size="md" message="Loading accounts..." />
                 </div>
             </MainLayout>
         );

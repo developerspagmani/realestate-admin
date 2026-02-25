@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, MouseEvent, useCallback } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { DEMO_HOUSE_PLANS } from '@/app/constants/demoPlans';
+import Loader from '@/components/common/Loader';
 
 interface Marker {
     unitId: string;
@@ -1438,7 +1439,7 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
                                 disabled={isExtractingSvg}
                             >
                                 {isExtractingSvg ? (
-                                    <><span className="spinner-border spinner-border-sm me-2"></span>Extracting...</>
+                                    <><Loader size="sm" message="" />Extracting...</>
                                 ) : (
                                     <><i className="bi bi-robot me-2"></i>Import & Scan SVG</>
                                 )}

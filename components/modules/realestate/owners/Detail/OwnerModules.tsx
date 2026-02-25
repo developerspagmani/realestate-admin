@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { getAuthToken } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
 
 interface Module {
     id: string;
@@ -184,12 +185,7 @@ export default function OwnerModules() {
     const activeCount = allModules.filter(m => activeMap[m.id]).length;
 
     if (loading) {
-        return (
-            <div className="text-center py-5">
-                <div className="spinner-border text-primary" role="status"></div>
-                <p className="text-muted mt-3 small">Loading module configuration...</p>
-            </div>
-        );
+        return <Loader message="Loading module configuration..." />;
     }
 
     if (!tenantId) {
@@ -303,7 +299,7 @@ export default function OwnerModules() {
                                             />
                                         </div>
                                         {isSaving && (
-                                            <span className="spinner-border spinner-border-sm text-primary ms-2" style={{ width: '16px', height: '16px' }}></span>
+                                            <Loader size="sm" message="" />
                                         )}
                                     </div>
                                 </div>

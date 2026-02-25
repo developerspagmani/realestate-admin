@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { agentService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
+import Loader from '@/components/common/Loader';
 
 export default function AgentLeads() {
     const [leads, setLeads] = useState<any[]>([]);
@@ -101,7 +102,7 @@ export default function AgentLeads() {
                                     {loading ? (
                                         <tr>
                                             <td colSpan={5} className="text-center py-5">
-                                                <div className="spinner-border text-primary spinner-border-sm" role="status"></div>
+                                                <Loader size="sm" message="" />
                                             </td>
                                         </tr>
                                     ) : leads.length === 0 ? (

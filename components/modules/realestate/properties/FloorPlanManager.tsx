@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { propertyService, getAuthToken } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
 import Workspace3D from '@/components/Workspace3D';
 import { Seats } from '@/types';
 
@@ -286,7 +288,7 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
                 <div className="p-3 overflow-auto" style={{ height: 'calc(100% - 75px)' }}>
                     {isExtracting && (
                         <div className="text-center p-5">
-                            <div className="spinner-border text-primary mb-2"></div>
+                            <Loader message="Loading floor plans..." />
                             <p className="extra-small text-muted">Analyzing CAD Geometry...</p>
                         </div>
                     )}

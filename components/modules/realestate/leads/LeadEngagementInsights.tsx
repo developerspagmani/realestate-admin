@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Loader from '@/components/common/Loader';
 import { marketingService, getAuthToken } from '@/app/services/api';
 
 interface LeadInteraction {
@@ -131,7 +132,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                 <div className="flex-grow-1 p-4">
                     {loading ? (
                         <div className="text-center py-5 mt-5">
-                            <div className="spinner-border spinner-border-sm text-primary mb-2"></div>
+                            <Loader size="sm" message="" />
                             <div className="text-muted extra-small italic">Analyzing lead behavior...</div>
                         </div>
                     ) : (
@@ -229,7 +230,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                                             disabled={sending}
                                                         >
                                                             {sending ? (
-                                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                                <Loader size="sm" message="" />
                                                             ) : (
                                                                 <i className="bi bi-send-fill" style={{ fontSize: '10px' }}></i>
                                                             )}

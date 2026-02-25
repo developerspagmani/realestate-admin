@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/hooks/useAuth';
+import Loader from '@/components/common/Loader';
+import Link from 'next/link';
 
 export default function UserRegistrationPage() {
   const [formData, setFormData] = useState({
@@ -66,7 +68,7 @@ export default function UserRegistrationPage() {
 
       // Redirect to dashboard
       // Note: AuthContext will initialize on the next page load and see the user in localStorage
-      window.location.href = '/user/dashboard';
+      router.push('/user/dashboard');
     } catch (err) {
       setErrors({ submit: 'Registration failed. Please try again.' });
     } finally {
@@ -203,8 +205,7 @@ export default function UserRegistrationPage() {
               disabled={loading}
             >
               {loading ? (
-                <span className="spinner-border spinner-border-sm me-2">
-                  Registering...</span>
+                <Loader size="sm" message="Registering..." />
               ) : (
                 <i className="bi bi-person-plus me-2"></i>
               )}
@@ -214,13 +215,13 @@ export default function UserRegistrationPage() {
 
           <div className="text-center mt-4">
             <small className="text-muted">
-              Already have an account? <a href="/login" className="text-primary">Login here</a>
+              Already have an account? <Link href="/login" className="text-primary">Login here</Link>
             </small>
           </div>
 
           <div className="text-center mt-3">
             <small className="text-muted">
-              Want to register as a property owner? <a href="/register/owner" className="text-primary">Owner Registration</a>
+              Want to register as a property owner? <Link href="/register/owner" className="text-primary">Owner Registration</Link>
             </small>
 
           </div>

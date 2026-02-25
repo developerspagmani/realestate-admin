@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import { whatsappApi } from '@/lib/api/social';
+import Loader from '@/components/common/Loader';
 
 export default function WhatsAppTemplateDetailsPage() {
     const router = useRouter();
@@ -57,7 +58,7 @@ export default function WhatsAppTemplateDetailsPage() {
         return (
             <MainLayout activePage="social">
                 <div className="container py-5 text-center">
-                    <div className="spinner-border text-success" role="status"></div>
+                    <Loader size="md" message="Loading template details..." />
                 </div>
             </MainLayout>
         );

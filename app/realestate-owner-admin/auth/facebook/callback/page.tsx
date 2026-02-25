@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { connectedAccountsApi } from '@/lib/api/social';
+import Loader from '@/components/common/Loader';
 
 function FacebookCallbackContent() {
     const router = useRouter();
@@ -60,11 +61,10 @@ function FacebookCallbackContent() {
         <div className="min-h-screen d-flex align-items-center justify-content-center bg-light">
             <div className="card border-0 shadow-lg rounded-4 p-5 text-center" style={{ maxWidth: '500px' }}>
                 {status === 'processing' && (
-                    <>
-                        <div className="spinner-border text-primary mx-auto mb-4" style={{ width: '3rem', height: '3rem' }}></div>
-                        <h2 className="fw-bold mb-3">{message}</h2>
-                        <p className="text-muted">Wait, we are finalizing the connection with Meta.</p>
-                    </>
+                    <div className="mb-4">
+                        <Loader size="md" message={message} />
+                        <p className="text-muted mt-2">Wait, we are finalizing the connection with Meta.</p>
+                    </div>
                 )}
 
                 {status === 'success' && (
@@ -101,7 +101,7 @@ export default function FacebookCallbackPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen d-flex align-items-center justify-content-center">
-                <div className="spinner-border text-primary" role="status"></div>
+                <Loader size="md" message="" />
             </div>
         }>
             <FacebookCallbackContent />

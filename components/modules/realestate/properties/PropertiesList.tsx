@@ -2,6 +2,7 @@
 
 import { Property } from '@/types';
 import Link from 'next/link';
+import Loader from '@/components/common/Loader';
 
 interface PropertiesListProps {
     properties: Property[];
@@ -38,8 +39,7 @@ export default function PropertiesList({
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={5} className="text-center py-5">
-                                        <div className="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
-                                        <span className="text-muted">Loading properties...</span>
+                                        <Loader message="Loading properties..." size="sm" />
                                     </td>
                                 </tr>
                             ) : properties.length > 0 ? (

@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Loader from '@/components/common/Loader';
 
 interface ModuleGuardProps {
     children: ReactNode;
@@ -42,9 +43,7 @@ export default function ModuleGuard({
     if (loading || isAuthorized === null) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
-                <div className="spinner-border text-primary pulse" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </div>
+                <Loader size="md" message="" />
             </div>
         );
     }

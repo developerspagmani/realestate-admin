@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { userService, getAuthToken } from '@/app/services/api';
+import Loader from '@/components/common/Loader';
 
 export default function OwnerUnits() {
     const { id } = useParams();
@@ -27,7 +28,7 @@ export default function OwnerUnits() {
         loadUnits();
     }, [id]);
 
-    if (loading) return <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>;
+    if (loading) return <Loader message="Loading business units..." />;
 
     const getStatusBadge = (status: number) => {
         switch (status) {

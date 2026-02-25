@@ -5,6 +5,7 @@ import { useRouter, useParams, usePathname } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import { scheduledPostsApi, analyticsApi } from '@/lib/api/social';
+import Loader from '@/components/common/Loader';
 
 interface Campaign {
     id: string;
@@ -124,8 +125,8 @@ function CampaignDetailContent() {
 
     if (loading && !campaign) {
         return (
-            <div className="d-flex align-items-center justify-content-center min-vh-60">
-                <div className="spinner-border text-primary" role="status"></div>
+            <div className="d-flex align-items-center justify-content-center" style={{ minHeight: '60vh' }}>
+                <Loader size="md" message="Loading campaign..." />
             </div>
         );
     }

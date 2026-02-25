@@ -103,6 +103,7 @@ export default function MainLayout({ children, activePage, hideSidebar = false, 
         <main className="main-content flex-grow-1 d-flex flex-column" style={{
           marginLeft: isMobile || hideSidebar ? '0' : sidebarWidth,
           minHeight: isTrial ? 'calc(100vh - 60px)' : '100vh',
+          minWidth: 0,
           backgroundColor: 'var(--admin-bg)',
           transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>

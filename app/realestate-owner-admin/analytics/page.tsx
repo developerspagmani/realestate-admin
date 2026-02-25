@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
+import Loader from '@/components/common/Loader';
 import { analyticsProService, propertyService, marketingService } from '@/app/services/api';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -114,9 +116,9 @@ export default function AdvancedAnalyticsPage() {
                             <p className="text-muted small">Deep insights into your business growth and market demand.</p>
                         </div>
                         <div className="d-flex gap-2">
-                            <a href="/realestate-owner-admin/analytics/forecasting" className="btn btn-primary rounded-3 shadow-sm">
+                            <Link href="/realestate-owner-admin/analytics/forecasting" className="btn btn-primary rounded-3 shadow-sm">
                                 <i className="bi bi-robot me-2"></i>Forecasting AI
-                            </a>
+                            </Link>
                             <button className="btn btn-outline-primary rounded-3 shadow-sm" onClick={() => setFilters({ ...filters, dateRange: '30d', campaignId: '', propertyId: '', startDate: '', endDate: '' })}>
                                 <i className="bi bi-x-circle me-2"></i>Clear Filters
                             </button>
@@ -191,9 +193,7 @@ export default function AdvancedAnalyticsPage() {
                     </div>
 
                     {loading ? (
-                        <div className="text-center py-5">
-                            <div className="spinner-border text-primary"></div>
-                        </div>
+                        <Loader size="md" message="Loading analytics data..." />
                     ) : (
                         <div className="row g-4">
                             {/* Summary Stats ROW */}
