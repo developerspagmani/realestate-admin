@@ -6,6 +6,7 @@ import { analyticsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import Loader from '@/components/common/Loader';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 /* ────────────────────────────── Types ───────────────────────────────── */
 interface OverviewSummary { connectedAccounts: number; scheduledPosts: number; publishedPosts: number; drafts: number; }
@@ -111,16 +112,9 @@ function MiniBarChart({ data, forecastData, color = '#6366f1' }: {
 
 /* ────────────────────────── Main Page ──────────────────────────────── */
 export default function AnalyticsPage() {
+    const queryClient = useQueryClient();
     const router = useRouter();
     const pathname = usePathname();
-    const [loading, setLoading] = useState(true);
-    const [forecastLoading, setForecastLoading] = useState(true);
-
-    const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
-    const [platforms, setPlatforms] = useState<PlatformData[]>([]);
-    const [engagement, setEngagement] = useState<EngagementData | null>(null);
-    const [propertyData, setPropertyData] = useState<PropertyAnalytics[]>([]);
-    const [forecast, setForecast] = useState<ForecastData | null>(null);
     const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
 
     const basePath = pathname.includes('/realestate-owner-admin')
@@ -129,45 +123,47 @@ export default function AnalyticsPage() {
 
     const navigateTo = (path: string) => router.push(`${basePath}${path}`);
 
-    const loadAnalytics = useCallback(async () => {
-        try {
-            setLoading(true);
-            const params: any = {};
-            if (dateRange.startDate) params.startDate = dateRange.startDate;
-            if (dateRange.endDate) params.endDate = dateRange.endDate;
+    const { data: overviewRes, isLoading: overviewLoading, refetch: refetchOverview } = useQuery({
+        queryKey: ['social-analytics-overview', dateRange],
+        queryFn: () => analyticsApi.getOverview(dateRange),
+    });
 
-            const [overviewRes, platformsRes, engagementRes, propertyRes] = await Promise.all([
-                analyticsApi.getOverview(params),
-                analyticsApi.getPlatforms(),
-                analyticsApi.getEngagement(),
-                analyticsApi.getProperties()
-            ]);
+    const { data: platformsRes, isLoading: platformsLoading } = useQuery({
+        queryKey: ['social-analytics-platforms'],
+        queryFn: () => analyticsApi.getPlatforms(),
+    });
 
-            if (overviewRes.success) setOverview(overviewRes.data);
-            if (platformsRes.success) setPlatforms(platformsRes.data.platforms || []);
-            if (engagementRes.success) setEngagement(engagementRes.data);
-            if (propertyRes.success) setPropertyData(propertyRes.data.properties || []);
-        } catch (error) {
-            console.error('Error loading analytics:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [dateRange]);
+    const { data: engagementRes, isLoading: engagementLoading } = useQuery({
+        queryKey: ['social-analytics-engagement'],
+        queryFn: () => analyticsApi.getEngagement(),
+    });
 
-    const loadForecast = useCallback(async () => {
-        try {
-            setForecastLoading(true);
-            const res = await analyticsApi.getForecast();
-            if (res.success) setForecast(res.data);
-        } catch (error) {
-            console.error('Forecast load error:', error);
-        } finally {
-            setForecastLoading(false);
-        }
-    }, []);
+    const { data: propertiesRes, isLoading: propertiesLoading } = useQuery({
+        queryKey: ['social-analytics-properties'],
+        queryFn: () => analyticsApi.getProperties(),
+    });
 
-    useEffect(() => { loadAnalytics(); }, [loadAnalytics]);
-    useEffect(() => { loadForecast(); }, [loadForecast]);
+    const { data: forecastRes, isLoading: forecastLoading, refetch: refetchForecast } = useQuery({
+        queryKey: ['social-analytics-forecast'],
+        queryFn: () => analyticsApi.getForecast(),
+    });
+
+    const overview = overviewRes?.data || null;
+    const platforms: PlatformData[] = platformsRes?.data?.platforms || [];
+    const engagement: EngagementData | null = engagementRes?.data || null;
+    const propertyData: PropertyAnalytics[] = propertiesRes?.data?.properties || [];
+    const forecast: ForecastData | null = forecastRes?.data || null;
+
+    const loading = overviewLoading || platformsLoading || engagementLoading || propertiesLoading;
+
+    const handleApplyFilter = () => {
+        refetchOverview();
+    };
+
+    const handleClearFilter = () => {
+        setDateRange({ startDate: '', endDate: '' });
+        // The query will automatically refetch because dateRange changed
+    };
 
     const trendIcon = (dir?: string) =>
         dir === 'increasing' ? '↗' : dir === 'decreasing' ? '↘' : '→';
@@ -203,13 +199,10 @@ export default function AnalyticsPage() {
                         <input type="date" className="form-control form-control-sm rounded-3"
                             value={dateRange.endDate}
                             onChange={e => setDateRange(p => ({ ...p, endDate: e.target.value }))} />
-                        <button className="btn btn-primary btn-sm rounded-3 px-3 fw-bold" onClick={loadAnalytics}>
+                        <button className="btn btn-primary btn-sm rounded-3 px-3 fw-bold" onClick={handleApplyFilter}>
                             <i className="bi bi-funnel me-1"></i>Apply
                         </button>
-                        <button className="btn btn-outline-secondary btn-sm rounded-3 px-3" onClick={() => {
-                            setDateRange({ startDate: '', endDate: '' });
-                            setTimeout(loadAnalytics, 50);
-                        }}>
+                        <button className="btn btn-outline-secondary btn-sm rounded-3 px-3" onClick={handleClearFilter}>
                             <i className="bi bi-x-circle me-1"></i>Clear
                         </button>
                     </div>
@@ -250,7 +243,7 @@ export default function AnalyticsPage() {
                                 Linear regression model trained on your last 30 days of posting activity
                             </p>
                         </div>
-                        <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold" onClick={loadForecast}>
+                        <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold" onClick={() => refetchForecast()}>
                             <i className="bi bi-arrow-clockwise me-1"></i>Refresh
                         </button>
                     </div>
@@ -373,7 +366,7 @@ export default function AnalyticsPage() {
                             <div className="card-body p-4">
                                 {platforms.length > 0 ? (
                                     <div className="d-flex flex-column gap-3">
-                                        {platforms.map((platform, index) => {
+                                        {platforms.map((platform: PlatformData, index: number) => {
                                             const icon = platform.platform.toLowerCase();
                                             return (
                                                 <div key={index} className="d-flex align-items-center justify-content-between p-3 bg-light rounded-4">
@@ -438,7 +431,7 @@ export default function AnalyticsPage() {
                                             <div>
                                                 <h3 className="small fw-bold text-uppercase text-muted mb-3">By Platform</h3>
                                                 <div className="d-flex flex-column gap-2">
-                                                    {Object.entries(engagement.byPlatform).map(([platform, metrics]) => (
+                                                    {Object.entries(engagement.byPlatform).map(([platform, metrics]: [string, EngagementMetrics]) => (
                                                         <div key={platform} className="p-3 border rounded-4 small">
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                                 <span className="fw-bold text-capitalize">{platform}</span>
@@ -498,7 +491,7 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="card-body p-4">
                             <div className="row g-4">
-                                {propertyData.map((prop, index) => (
+                                {propertyData.map((prop: PropertyAnalytics, index: number) => (
                                     <div key={index} className="col-md-6 col-lg-4">
                                         <div className="p-3 bg-light rounded-4 h-100 border hover-shadow transition-all">
                                             <div className="d-flex justify-content-between align-items-start mb-3">
@@ -511,7 +504,7 @@ export default function AnalyticsPage() {
                                                     </span>
                                                 </div>
                                                 <div className="d-flex gap-1 flex-wrap">
-                                                    {prop.platforms.map(p => (
+                                                    {prop.platforms.map((p: string) => (
                                                         <i key={p} className={`bi bi-${p.toLowerCase()} small text-muted`}></i>
                                                     ))}
                                                 </div>
@@ -540,7 +533,7 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="card-body p-4">
                             <div className="d-flex flex-column gap-2">
-                                {overview.recentActivity.map((activity, index) => (
+                                {overview.recentActivity.map((activity: RecentActivity, index: number) => (
                                     <div key={index}
                                         className="d-flex align-items-center justify-content-between p-3 bg-light rounded-4">
                                         <div className="d-flex align-items-center gap-3">

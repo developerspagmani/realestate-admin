@@ -7,6 +7,7 @@ import { amenityService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import Loader from '@/components/common/Loader';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { Amenity } from '@/types';
 
@@ -15,16 +16,14 @@ interface AmenitiesManagerProps {
 }
 
 export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
+    const queryClient = useQueryClient();
     const { user, isAuthenticated } = useAuthContext();
     const { activeTenantId } = useManagementContext();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
-    const [amenities, setAmenities] = useState<Amenity[]>([]);
-    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingAmenity, setEditingAmenity] = useState<Amenity | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -48,33 +47,56 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
     }, []);
 
     useEffect(() => {
-        if (mounted && isAuthenticated) {
-            loadAmenities();
-        } else if (mounted && !isAuthenticated) {
+        if (mounted && !isAuthenticated) {
             router.push('/login');
         }
     }, [mounted, isAuthenticated]);
 
-    const loadAmenities = async () => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            if (!token) return;
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
 
-            const response = await amenityService.getAmenities(token);
-            if (response.success) {
-                setAmenities(response.data.amenities || []);
+    // --- Queries ---
+
+    const { data: amenitiesRes, isLoading: loading } = useQuery({
+        queryKey: ['amenities'],
+        queryFn: () => amenityService.getAmenities(token!),
+        enabled: !!token && mounted && isAuthenticated,
+    });
+
+    const amenities = amenitiesRes?.data?.amenities || [];
+
+    // --- Mutations ---
+
+    const saveMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            if (editingAmenity) return amenityService.updateAmenity(token!, editingAmenity.id, payload);
+            return amenityService.createAmenity(token!, payload);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['amenities'] });
+                showToast(editingAmenity ? 'Amenity updated successfully' : 'Amenity created successfully');
+                handleCloseModal();
+            } else {
+                showToast(res.message || 'Failed to save amenity', 'error');
             }
-        } catch (error) {
-            console.error('Failed to load amenities:', error);
-            showToast('Failed to load amenities', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+        },
+        onError: () => showToast('Error saving amenity', 'error')
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => amenityService.deleteAmenity(token!, id),
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['amenities'] });
+                showToast('Amenity deleted successfully');
+            } else {
+                showToast(res.message || 'Failed to delete amenity', 'error');
+            }
+        },
+        onError: () => showToast('Error deleting amenity', 'error')
+    });
 
     const handleEdit = (amenity: Amenity) => {
-        // Can only edit own amenities
         if (mode === 'owner' && !amenity.tenantId) {
             showToast("You cannot edit global system amenities.", 'error');
             return;
@@ -90,50 +112,19 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
         setShowModal(true);
     };
 
-    const handleDelete = async (id: string, tenantId: string | null) => {
+    const handleDelete = (id: string, tenantId: string | null) => {
         if (mode === 'owner' && !tenantId) {
             showToast("You cannot delete global system amenities.", 'error');
             return;
         }
 
         if (!window.confirm('Are you sure you want to delete this amenity?')) return;
-
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-
-            await amenityService.deleteAmenity(token, id);
-            setAmenities(amenities.filter(a => a.id !== id));
-            showToast('Amenity deleted successfully');
-        } catch (error) {
-            console.error('Failed to delete amenity:', error);
-            showToast('Error deleting amenity.', 'error');
-        }
+        deleteMutation.mutate(id);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        try {
-            setIsSubmitting(true);
-            const token = getAuthToken();
-            if (!token) return;
-
-            if (editingAmenity) {
-                await amenityService.updateAmenity(token, editingAmenity.id, formData);
-                showToast('Amenity updated successfully');
-            } else {
-                await amenityService.createAmenity(token, formData);
-                showToast('Amenity created successfully');
-            }
-
-            await loadAmenities();
-            handleCloseModal();
-        } catch (error) {
-            console.error('Failed to save amenity:', error);
-            showToast('Error saving amenity.', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
+        saveMutation.mutate(formData);
     };
 
     const handleCloseModal = () => {
@@ -141,6 +132,8 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
         setEditingAmenity(null);
         setFormData({ name: '', category: 1, icon: 'bi-check-circle', status: 1 });
     };
+
+    const isSubmitting = saveMutation.isPending;
 
     const getCategoryName = (cat: number) => {
         switch (cat) {
@@ -153,7 +146,7 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
         }
     };
 
-    const filteredAmenities = amenities.filter(a =>
+    const filteredAmenities = amenities.filter((a: any) =>
         a.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -200,7 +193,7 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
                     </div>
                 ) : (
                     <div className="row g-4">
-                        {filteredAmenities.map(amenity => (
+                        {filteredAmenities.map((amenity: any) => (
                             <div key={amenity.id} className="col-md-4 col-lg-3">
                                 <div className="card h-100 border-0 shadow-sm hover-shadow transition-all">
                                     <div className="card-body p-4">

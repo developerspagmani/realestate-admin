@@ -6,6 +6,7 @@ import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import { scheduledPostsApi } from '@/lib/api/social';
 import Loader from '@/components/common/Loader';
+import { useQuery } from '@tanstack/react-query';
 
 interface Campaign {
     id: string;
@@ -24,54 +25,36 @@ interface Campaign {
 export default function CampaignsListPage() {
     const router = useRouter();
     const pathname = usePathname();
-    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-    const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
-    const [stats, setStats] = useState({
-        total: 0,
-        scheduled: 0,
-        published: 0,
-        drafts: 0
-    });
     const [selectedMonth, setSelectedMonth] = useState(new Date());
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
     const [showModal, setShowModal] = useState(false);
+
+    const { data: campaignsRes, isLoading: campaignsLoading } = useQuery({
+        queryKey: ['social-campaigns'],
+        queryFn: () => scheduledPostsApi.getAll(),
+    });
+
+    const { data: statsRes } = useQuery({
+        queryKey: ['social-campaign-stats'],
+        queryFn: () => scheduledPostsApi.getStats(),
+    });
+
+    const campaigns = campaignsRes?.data?.posts || [];
+    const stats = {
+        total: statsRes?.data?.total || 0,
+        scheduled: statsRes?.data?.scheduled || 0,
+        published: statsRes?.data?.posted || 0,
+        drafts: statsRes?.data?.drafts || 0
+    };
+    const loading = campaignsLoading;
 
     // Determine the base path (either /realestate-admin or /realestate-owner-admin)
     const basePath = pathname.includes('/realestate-owner-admin')
         ? '/realestate-owner-admin'
         : '/realestate-admin';
 
-    useEffect(() => {
-        loadCampaigns();
-    }, []);
 
-    const loadCampaigns = async () => {
-        try {
-            setLoading(true);
-            const [postsRes, statsRes] = await Promise.all([
-                scheduledPostsApi.getAll(),
-                scheduledPostsApi.getStats()
-            ]);
-
-            if (postsRes.success) {
-                setCampaigns(postsRes.data.posts || []);
-            }
-
-            if (statsRes.success) {
-                setStats({
-                    total: statsRes.data.total || 0,
-                    scheduled: statsRes.data.scheduled || 0,
-                    published: statsRes.data.posted || 0, // In stats it returns 'posted'
-                    drafts: statsRes.data.drafts || 0
-                });
-            }
-        } catch (error) {
-            console.error('Error loading campaigns:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const navigateTo = (path: string) => {
         router.push(`${basePath}${path}`);
@@ -113,7 +96,7 @@ export default function CampaignsListPage() {
     };
 
     const calendarPosts: Record<string, Campaign[]> = {};
-    campaigns.forEach(campaign => {
+    campaigns.forEach((campaign: Campaign) => {
         const date = campaign.scheduledDate.split('T')[0];
         if (!calendarPosts[date]) calendarPosts[date] = [];
         calendarPosts[date].push(campaign);
@@ -175,7 +158,7 @@ export default function CampaignsListPage() {
                 ) : viewMode === 'grid' ? (
                     <div className="row g-4">
                         {campaigns.length > 0 ? (
-                            campaigns.map((campaign) => (
+                            campaigns.map((campaign: Campaign) => (
                                 <div key={campaign.id} className="col-md-6 col-lg-4 col-xl-3">
                                     <div
                                         className="card border-0 shadow-sm rounded-4 overflow-hidden h-100 transition-all hover-shadow cursor-pointer"
@@ -194,7 +177,7 @@ export default function CampaignsListPage() {
                                             </div>
                                             <div className="position-absolute bottom-0 start-0 p-3 w-100 bg-gradient-dark-transparent">
                                                 <div className="d-flex gap-1">
-                                                    {campaign.platforms.map(p => (
+                                                    {campaign.platforms.map((p: string) => (
                                                         <span key={p} className="badge bg-white bg-opacity-75 text-dark rounded-circle p-2 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '24px', height: '24px' }}>
                                                             <i className={`bi bi-${p.toLowerCase()} scale-75`}></i>
                                                         </span>
@@ -271,7 +254,7 @@ export default function CampaignsListPage() {
                         </div>
                         <div className="card-body p-4 pt-0">
                             <div className="calendar-grid">
-                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day: string) => (
                                     <div key={day} className="text-center py-2 fw-bold small text-muted text-uppercase mb-2">
                                         {day}
                                     </div>
@@ -293,7 +276,7 @@ export default function CampaignsListPage() {
                                                         {date.getDate()}
                                                     </div>
                                                     <div className="d-flex flex-column gap-1">
-                                                        {dayPosts.map(post => (
+                                                        {dayPosts.map((post: Campaign) => (
                                                             <div
                                                                 key={post.id}
                                                                 className={`p-1 px-2 rounded-2 smaller text-white text-truncate cursor-pointer shadow-sm bg-${getStatusColor(post.status)}`}

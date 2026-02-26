@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { cmsService, getAuthToken, websiteService } from '@/app/services/api';
+import { cmsService, getAuthToken, websiteService, marketingService, propertyService } from '@/app/services/api';
 import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
@@ -10,6 +10,7 @@ import WebsiteForm from '@/components/modules/realestate/website/WebsiteForm';
 import WebsiteCard from '@/components/modules/realestate/website/WebsiteCard';
 import WebsiteQRCodeGenerator from '@/components/modules/realestate/website/WebsiteQRCodeGenerator';
 import Toast from '@/components/common/Toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface WebsiteManagerProps {
     mode?: 'admin' | 'owner';
@@ -102,17 +103,13 @@ const INITIAL_FORM_DATA = {
 };
 
 export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) {
+    const queryClient = useQueryClient();
     const { user, isAuthenticated } = useAuthContext();
     const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
-    const [websites, setWebsites] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingWebsite, setEditingWebsite] = useState<any>(null);
     const [qrWebsite, setQrWebsite] = useState<any>(null);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-    const [properties, setProperties] = useState<any[]>([]);
-    const [marketingForms, setMarketingForms] = useState<any[]>([]);
-    const [cmsPages, setCmsPages] = useState<any[]>([]);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -123,154 +120,115 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
         setToast({ show: true, message, type });
     };
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            loadWebsites();
-            loadProperties();
-            loadMarketingForms();
-            loadCMSPages();
-        }
-    }, [isAuthenticated, activeTenantId, activeOwnerId]);
+    const token = typeof window !== 'undefined' ? getAuthToken() || '' : '';
+    const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
 
-    const loadCMSPages = async () => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await cmsService.getPages(token, tenantId);
-            if (response.success) {
-                // Ensure array even if backend response format differs
-                const pages = Array.isArray(response.data) ? response.data : (response.data?.media || response.data?.pages || []);
-                setCmsPages(pages);
-            }
-        } catch (error) {
-            console.error('Failed to load CMS pages:', error);
-        }
-    };
+    const { data: websitesRes, isLoading: loading } = useQuery({
+        queryKey: ['websites', tenantId, activeOwnerId],
+        queryFn: () => websiteService.getWebsites(token, {
+            ...(tenantId && { tenantId }),
+            ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
+        }),
+        enabled: isAuthenticated && !!token,
+    });
 
-    const loadMarketingForms = async () => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const { marketingService } = await import('@/app/services/api');
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await marketingService.getForms(token, { tenantId });
-            if (response.success) {
-                setMarketingForms(response.data);
-            }
-        } catch (error) {
-            console.error('Failed to load marketing forms:', error);
-        }
-    };
+    const { data: propertiesRes } = useQuery({
+        queryKey: ['properties-list', tenantId, activeOwnerId],
+        queryFn: () => propertyService.getProperties(token, {
+            ...(tenantId && { tenantId }),
+            ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
+        }),
+        enabled: isAuthenticated && !!token,
+    });
 
-    const loadProperties = async () => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const { propertyService } = await import('@/app/services/api');
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await propertyService.getProperties(token, {
-                ...(tenantId && { tenantId }),
-                ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
-            });
-            if (response.success) {
-                const rawProps = response.data?.properties || response.data || [];
-                setProperties(rawProps);
-            }
-        } catch (error) {
-            console.error('Failed to load properties:', error);
-        }
-    };
+    const { data: marketingFormsRes } = useQuery({
+        queryKey: ['marketing-forms', tenantId],
+        queryFn: () => marketingService.getForms(token, { tenantId }),
+        enabled: isAuthenticated && !!token,
+    });
 
-    const loadWebsites = async () => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await websiteService.getWebsites(token, {
-                ...(tenantId && { tenantId }),
-                ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
-            });
-            if (response.success) {
-                setWebsites(response.data);
-            }
-        } catch (error) {
-            console.error('Failed to load websites:', error);
-            showToast('Failed to load websites', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { data: cmsPagesRes } = useQuery({
+        queryKey: ['cms-pages', tenantId],
+        queryFn: () => cmsService.getPages(token, tenantId),
+        enabled: isAuthenticated && !!token,
+    });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const token = getAuthToken();
-            if (!token) return;
+    const websites = websitesRes?.data || [];
+    const properties = useMemo(() => propertiesRes?.data?.properties || propertiesRes?.data || [], [propertiesRes]);
+    const marketingForms = marketingFormsRes?.data || [];
+    const cmsPages = useMemo(() => {
+        if (!cmsPagesRes?.success) return [];
+        return Array.isArray(cmsPagesRes.data) ? cmsPagesRes.data : (cmsPagesRes.data?.media || cmsPagesRes.data?.pages || []);
+    }, [cmsPagesRes]);
 
-            let response;
+    // --- Mutations ---
+
+    const saveMutation = useMutation({
+        mutationFn: (data: any) => {
             const currentTenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-
             const finalData = {
-                ...formData,
+                ...data,
                 tenantId: currentTenantId,
-                slug: formData.slug || `site-${Math.random().toString(36).substr(2, 9)}`,
+                slug: data.slug || `site-${Math.random().toString(36).substr(2, 9)}`,
                 configuration: {
-                    ...formData.configuration,
+                    ...data.configuration,
                     settings: {
-                        ...formData.configuration.settings,
-                        propertyId: formData.propertyId,
-                        propertyIds: formData.propertyIds,
-                        layout: formData.configuration?.settings?.layout || 'builder'
+                        ...data.configuration.settings,
+                        propertyId: data.propertyId,
+                        propertyIds: data.propertyIds,
+                        layout: data.configuration?.settings?.layout || 'builder'
                     }
                 }
             };
-
-            if (editingWebsite) {
-                response = await websiteService.updateWebsite(token, editingWebsite.id, finalData, currentTenantId);
-            } else {
-                response = await websiteService.createWebsite(token, finalData);
-            }
-
-            if (response.success) {
+            if (editingWebsite) return websiteService.updateWebsite(token, editingWebsite.id, finalData, currentTenantId);
+            return websiteService.createWebsite(token, finalData);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
                 if (!editingWebsite) {
                     setShowForm(false);
                     setEditingWebsite(null);
                     setFormData(INITIAL_FORM_DATA);
-                } else {
-                    // Update editingWebsite state with the new data from finalData if needed
-                    // or just leave it as is if websiteService doesn't return the full updated object
-                    // The list refresh will handle the main state
                 }
-                loadWebsites();
+                queryClient.invalidateQueries({ queryKey: ['websites'] });
                 showToast(editingWebsite ? 'Website updated successfully' : 'Website created successfully');
             } else {
-                showToast(response.message || 'Failed to save website', 'error');
+                showToast(res.message || 'Failed to save website', 'error');
             }
-        } catch (error) {
+        },
+        onError: (error) => {
             console.error('Failed to save website:', error);
             showToast('Error saving website. Make sure Slug is unique.', 'error');
         }
-    };
+    });
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this website?')) return;
-        try {
-            const token = getAuthToken();
-            if (!token) return;
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => {
             const currentTenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await websiteService.deleteWebsite(token, id, currentTenantId);
-            if (response.success) {
-                loadWebsites();
+            return websiteService.deleteWebsite(token, id, currentTenantId);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['websites'] });
                 showToast('Website deleted successfully');
             } else {
-                showToast(response.message || 'Failed to delete website', 'error');
+                showToast(res.message || 'Failed to delete website', 'error');
             }
-        } catch (error) {
+        },
+        onError: (error) => {
             console.error('Failed to delete website:', error);
             showToast('Failed to delete website', 'error');
         }
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        saveMutation.mutate(formData);
+    };
+
+    const handleDelete = (id: string) => {
+        if (!confirm('Are you sure you want to delete this website?')) return;
+        deleteMutation.mutate(id);
     };
 
     const handleEdit = (website: any) => {
@@ -349,7 +307,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
                                 <p className="text-muted">Create your first landing page to showcase your properties.</p>
                             </div>
                         </div>
-                    ) : websites.map((website) => (
+                    ) : websites.map((website: any) => (
                         <WebsiteCard
                             key={website.id}
                             website={website}

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminService, getAuthToken } from '@/app/services/api';
 
 interface SystemConfigSubTabProps {
@@ -8,50 +9,42 @@ interface SystemConfigSubTabProps {
 }
 
 export default function SystemConfigSubTab({ showToast }: SystemConfigSubTabProps) {
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [settings, setSettings] = useState<any[]>([]);
-    const [trialDays, setTrialDays] = useState('15');
+    const queryClient = useQueryClient();
+    const token = typeof window !== 'undefined' ? getAuthToken() || '' : '';
+    const [localTrialDays, setLocalTrialDays] = useState('15');
 
-    useEffect(() => {
-        loadSettings();
-    }, []);
-
-    const loadSettings = async () => {
-        setLoading(true);
-        try {
-            const token = getAuthToken() || '';
+    const { data: systemSettings = [], isLoading: loading } = useQuery({
+        queryKey: ['system-settings'],
+        queryFn: async () => {
             const res = await adminService.getSystemSettings(token);
             if (res.success) {
-                setSettings(res.data);
                 const trialSetting = res.data.find((s: any) => s.key === 'default_trial_days');
-                if (trialSetting) {
-                    setTrialDays(trialSetting.value);
-                }
+                if (trialSetting) setLocalTrialDays(trialSetting.value);
             }
-        } catch (error) {
-            console.error('Failed to load system settings:', error);
-            showToast('Failed to load system settings', 'error');
-        } finally {
-            setLoading(false);
+            return res.success ? res.data : [];
         }
-    };
+    });
 
-    const handleSaveTrial = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSaving(true);
-        try {
-            const token = getAuthToken() || '';
-            const res = await adminService.updateSystemSetting(token, 'default_trial_days', trialDays, 'number');
+    const updateSettingMutation = useMutation({
+        mutationFn: async ({ key, value, type }: { key: string; value: string; type: string }) => {
+            return await adminService.updateSystemSetting(token, key, value, type);
+        },
+        onSuccess: (res: any) => {
             if (res.success) {
                 showToast('Trial period updated successfully!');
-                loadSettings();
+                queryClient.invalidateQueries({ queryKey: ['system-settings'] });
+            } else {
+                showToast(res.message || 'Failed to update setting', 'error');
             }
-        } catch (error) {
+        },
+        onError: () => {
             showToast('Failed to update trial period', 'error');
-        } finally {
-            setSaving(false);
         }
+    });
+
+    const handleSaveTrial = (e: React.FormEvent) => {
+        e.preventDefault();
+        updateSettingMutation.mutate({ key: 'default_trial_days', value: localTrialDays, type: 'number' });
     };
 
     if (loading) {
@@ -62,6 +55,8 @@ export default function SystemConfigSubTab({ showToast }: SystemConfigSubTabProp
             </div>
         );
     }
+
+    const saving = updateSettingMutation.isPending;
 
     return (
         <div className="fade-in">
@@ -79,9 +74,10 @@ export default function SystemConfigSubTab({ showToast }: SystemConfigSubTabProp
                                 <div className="input-group">
                                     <input
                                         type="number"
+                                        name="trialDays"
                                         className="form-control border-primary-subtle"
-                                        value={trialDays}
-                                        onChange={(e) => setTrialDays(e.target.value)}
+                                        value={localTrialDays}
+                                        onChange={(e) => setLocalTrialDays(e.target.value)}
                                         min="1"
                                         max="365"
                                         required

@@ -1,25 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { marketingService, agentService, getAuthToken } from '@/app/services/api';
 import WorkflowEnrollmentList from './WorkflowEnrollmentList';
 import Toast from '@/components/common/Toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface WorkflowManagerProps {
     tenantId: string;
 }
 
 export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
-    const [workflows, setWorkflows] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [isEditing, setIsEditing] = useState(false);
-    const [saving, setSaving] = useState(false);
     const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
-    const [templates, setTemplates] = useState<any[]>([]);
-    const [agents, setAgents] = useState<any[]>([]);
     const [selectedWorkflowForEnrollments, setSelectedWorkflowForEnrollments] = useState<any>(null);
-    const [leadForms, setLeadForms] = useState<any[]>([]);
-    const [processing, setProcessing] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' });
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -37,99 +32,105 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
         status: 1
     });
 
-    const loadWorkflows = async () => {
-        setLoading(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const res = await marketingService.getWorkflows(token, { tenantId });
-            if (res.success) setWorkflows(res.data);
-        } catch (error) {
-            console.error('Failed to load workflows:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
 
-    const loadResources = async () => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tRes = await marketingService.getTemplates(token, { tenantId });
-            if (tRes.success && Array.isArray(tRes.data)) {
-                setTemplates(tRes.data);
-            }
+    const { data: workflowsRes, isLoading: workflowsLoading } = useQuery({
+        queryKey: ['marketing-workflows', tenantId],
+        queryFn: () => marketingService.getWorkflows(token!, { tenantId }),
+        enabled: !!token && !!tenantId,
+    });
 
-            const aRes = await agentService.getAgents(token, { tenantId });
-            if (aRes.success && aRes.data) {
-                const fetchedAgents = Array.isArray(aRes.data) ? aRes.data : (aRes.data.agents || []);
-                setAgents([
-                    { id: 'auto', name: 'Auto-Assign (Round Robin)' },
-                    ...fetchedAgents.map((a: any) => ({
-                        id: a.id,
-                        name: a.user?.name || a.name || a.user?.email || a.email || 'Unnamed Agent'
-                    }))
-                ]);
-            }
+    const { data: templatesRes } = useQuery({
+        queryKey: ['marketing-templates', tenantId],
+        queryFn: () => marketingService.getTemplates(token!, { tenantId }),
+        enabled: !!token && !!tenantId,
+    });
 
-            const fRes = await marketingService.getForms(token, { tenantId });
-            if (fRes.success && Array.isArray(fRes.data)) {
-                setLeadForms(fRes.data);
-            }
-        } catch (e) { console.error(e); }
-    };
+    const { data: agentsRes } = useQuery({
+        queryKey: ['agents-list', tenantId],
+        queryFn: () => agentService.getAgents(token!, { tenantId }),
+        enabled: !!token && !!tenantId,
+    });
 
-    useEffect(() => {
-        loadWorkflows();
-        loadResources();
-    }, [tenantId]);
+    const { data: formsRes } = useQuery({
+        queryKey: ['marketing-forms', tenantId],
+        queryFn: () => marketingService.getForms(token!, { tenantId }),
+        enabled: !!token && !!tenantId,
+    });
 
-    const handleProcessWorkflows = async () => {
-        setProcessing(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const res = await marketingService.processWorkflows(token);
-            if (res.success) {
-                alert('Workflow engine triggered successfully. Active enrollments have been processed.');
-            }
-        } catch (error) {
-            console.error('Failed to process workflows:', error);
-        } finally {
-            setProcessing(false);
-        }
-    };
+    const workflows = workflowsRes?.data || [];
+    const templates = templatesRes?.data || [];
+    const leadForms = formsRes?.data || [];
+    const agents = useMemo(() => {
+        if (!agentsRes?.success) return [];
+        const fetchedAgents = Array.isArray(agentsRes.data) ? agentsRes.data : (agentsRes.data.agents || []);
+        return [
+            { id: 'auto', name: 'Auto-Assign (Round Robin)' },
+            ...fetchedAgents.map((a: any) => ({
+                id: a.id,
+                name: a.user?.name || a.name || a.user?.email || a.email || 'Unnamed Agent'
+            }))
+        ];
+    }, [agentsRes]);
 
-    const handleSave = async () => {
-        if (!currentWorkflow.name) return;
-        setSaving(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
+    const loading = workflowsLoading;
 
-            let res;
-            if (currentWorkflow.id) {
-                res = await marketingService.updateWorkflow(token, currentWorkflow.id, {
-                    ...currentWorkflow,
-                    tenantId
-                });
-            } else {
-                res = await marketingService.createWorkflow(token, {
-                    ...currentWorkflow,
-                    tenantId
-                });
-            }
+    // --- Mutations ---
 
+    const saveMutation = useMutation({
+        mutationFn: (payload: any) => {
+            if (payload.id) return marketingService.updateWorkflow(token!, payload.id, payload);
+            return marketingService.createWorkflow(token!, payload);
+        },
+        onSuccess: (res) => {
             if (res.success) {
                 setIsEditing(false);
-                loadWorkflows();
+                queryClient.invalidateQueries({ queryKey: ['marketing-workflows'] });
             }
-        } catch (error) {
-            console.error('Failed to save workflow:', error);
-        } finally {
-            setSaving(false);
         }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => marketingService.deleteWorkflow(token!, id),
+        onSuccess: (res) => {
+            if (res.success) queryClient.invalidateQueries({ queryKey: ['marketing-workflows'] });
+        }
+    });
+
+    const toggleMutation = useMutation({
+        mutationFn: (id: string) => marketingService.toggleWorkflow(token!, id),
+        onSuccess: (res) => {
+            if (res.success) queryClient.invalidateQueries({ queryKey: ['marketing-workflows'] });
+        }
+    });
+
+    const processMutation = useMutation({
+        mutationFn: () => marketingService.processWorkflows(token!),
+        onSuccess: (res) => {
+            if (res.success) alert('Workflow engine triggered successfully. Active enrollments have been processed.');
+        }
+    });
+
+    const simulationMutation = useMutation({
+        mutationFn: ({ workflow, testLead }: any) => marketingService.testWorkflow(token!, workflow, testLead),
+        onSuccess: (res) => {
+            if (res.success) setTestLogs(res.logs || []);
+        },
+        onError: (error: any) => showToast(error.message || 'Simulation failed', 'error')
+    });
+
+    const handleProcessWorkflows = () => {
+        processMutation.mutate();
     };
+
+    const processing = processMutation.isPending || simulationMutation.isPending;
+
+    const handleSave = () => {
+        if (!currentWorkflow.name) return;
+        saveMutation.mutate({ ...currentWorkflow, tenantId });
+    };
+
+    const saving = saveMutation.isPending;
 
     const [showTestModal, setShowTestModal] = useState(false);
     const [testLead, setTestLead] = useState({ email: 'test@example.com', budget: '1500000', name: 'James Smith' });
@@ -163,45 +164,17 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
         setTestLogs([]);
     };
 
-    const runSimulation = async () => {
-        setProcessing(true);
-        setTestLogs([]);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const res = await marketingService.testWorkflow(token, currentWorkflow, testLead);
-            if (res.success) {
-                setTestLogs(res.logs || []);
-            }
-        } catch (error: any) {
-            console.error('Simulation error:', error);
-            showToast(error.message || 'Simulation failed', 'error');
-        } finally {
-            setProcessing(false);
-        }
+    const runSimulation = () => {
+        simulationMutation.mutate({ workflow: currentWorkflow, testLead });
     };
 
-    const handleDelete = async (id: string, name: string) => {
+    const handleDelete = (id: string, name: string) => {
         if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const res = await marketingService.deleteWorkflow(token, id);
-            if (res.success) loadWorkflows();
-        } catch (error) {
-            console.error('Failed to delete workflow:', error);
-        }
+        deleteMutation.mutate(id);
     };
 
-    const handleToggle = async (id: string) => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const res = await marketingService.toggleWorkflow(token, id);
-            if (res.success) loadWorkflows();
-        } catch (error) {
-            console.error('Failed to toggle workflow:', error);
-        }
+    const handleToggle = (id: string) => {
+        toggleMutation.mutate(id);
     };
 
     const [showTemplatesModal, setShowTemplatesModal] = useState(false);
@@ -412,7 +385,7 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                                         <div className="extra-small text-muted fw-bold text-uppercase">Step: {step.type}</div>
                                         <div className="fw-bold small text-dark">
                                             {step.type === 'DELAY' ? `Wait for ${step.duration} ${step.unit}` :
-                                                step.type === 'EMAIL' ? `Email: ${templates.find(t => t.id === step.templateId)?.name || 'Needs Setup'}` :
+                                                step.type === 'EMAIL' ? `Email: ${templates.find((t: any) => t.id === step.templateId)?.name || 'Needs Setup'}` :
                                                     step.type === 'CONDITION' ? `IF ${step.field} ${step.operator} ${step.value}` :
                                                         step.type === 'TAG' ? `${step.action === 'add' ? 'Add' : 'Remove'} Tag: ${step.tag}` :
                                                             'Assign Team Member'}
@@ -544,7 +517,7 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                                         <select className="form-select bg-light border-0" value={currentWorkflow.trigger?.formId || ''}
                                             onChange={e => setCurrentWorkflow({ ...currentWorkflow, trigger: { ...currentWorkflow.trigger, formId: e.target.value } })}>
                                             <option value="">Any Form Submission</option>
-                                            {leadForms.map(f => (
+                                            {leadForms.map((f: any) => (
                                                 <option key={f.id} value={f.id}>{f.name}</option>
                                             ))}
                                         </select>
@@ -596,7 +569,7 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                                                         <label className="extra-small text-muted mb-1">Select Email Template</label>
                                                         <select className="form-select form-select-sm border-0 bg-light mb-2" value={step.templateId} onChange={e => updateStep(step.id, { templateId: e.target.value })}>
                                                             <option value="">Choose a template...</option>
-                                                            {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                                            {templates.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                                                         </select>
                                                         <div className="extra-small text-primary"><i className="bi bi-info-circle me-1"></i> Personalized tags will be auto-filled.</div>
                                                     </div>
@@ -641,7 +614,7 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                                                     <div className="mb-0 text-start">
                                                         <label className="extra-small text-muted mb-1">Assign To Owner/Agent</label>
                                                         <select className="form-select form-select-sm border-0 bg-light" value={step.agentId} onChange={e => updateStep(step.id, { agentId: e.target.value })}>
-                                                            {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                                            {Array.isArray(agents) && agents.map((a: any) => <option key={a.id} value={a.id}>{a.user?.name || a.name || 'Unknown Agent'}</option>)}
                                                         </select>
                                                     </div>
                                                 )}
@@ -716,7 +689,7 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                         </div>
                     ) : (
                         <div className="row g-4">
-                            {workflows.map(wf => (
+                            {workflows.map((wf: any) => (
                                 <div key={wf.id} className="col-md-6">
                                     <div className="card border-0 shadow-sm rounded-4 p-4 h-100 transition-all workflow-list-card">
                                         <div className="d-flex justify-content-between align-items-start mb-3">
@@ -787,7 +760,7 @@ export default function WorkflowManager({ tenantId }: WorkflowManagerProps) {
                             <div className="modal-body p-4">
                                 <p className="text-muted small mb-4">Choose a pre-built automation to get started instantly. You can customize the steps after selection.</p>
                                 <div className="row g-3">
-                                    {PREBUILT_WORKFLOWS.map(tpl => (
+                                    {PREBUILT_WORKFLOWS.map((tpl: any) => (
                                         <div key={tpl.id} className="col-12">
                                             <div className="card border p-3 rounded-4 cursor-pointer hover-bg-light transition-all hvr-grow" onClick={() => applyTemplate(tpl)}>
                                                 <div className="d-flex justify-content-between align-items-center">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { dashboardService, getAuthToken } from '@/app/services/api';
@@ -11,6 +11,7 @@ import DashboardRecentBookings from '@/components/modules/realestate/dashboard/D
 import DashboardTopUnits from '@/components/modules/realestate/dashboard/DashboardTopUnits';
 import DashboardCharts from '@/components/modules/realestate/dashboard/DashboardCharts';
 import Toast from '@/components/common/Toast';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface DashboardManagerProps {
     mode: 'admin' | 'owner';
@@ -20,35 +21,9 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
     const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
     const [mounted, setMounted] = useState(false);
-    const [loading, setLoading] = useState(true);
-
-    const [stats, setStats] = useState({
-        // Admin specific
-        totalOwners: 0,
-        totalUsers: 0,
-
-        // Shared / Renamed
-        totalProperties: 0, // Admin calls this 'Spaces'
-        totalUnits: 0,      // Admin calls this 'Workspaces'
-
-        totalBookings: 0,
-        totalRevenue: 0,
-
-        availableUnits: 0,
-        occupiedUnits: 0,
-        pendingBookings: 0,
-        confirmedBookings: 0,
-    });
-
-    const [recentBookings, setRecentBookings] = useState<any[]>([]);
-    const [topUnits, setTopUnits] = useState<any[]>([]);
-    const [historicalData, setHistoricalData] = useState<any[]>([]);
-    const [periodLabel, setPeriodLabel] = useState('Last 6 Months');
     const [chartParams, setChartParams] = useState<any>({ period: 'last6months' });
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
-        show: false,
-        message: '',
-        type: 'success'
+        show: false, message: '', type: 'success'
     });
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -57,63 +32,59 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
 
     const router = useRouter();
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    useEffect(() => { setMounted(true); }, []);
 
-    useEffect(() => {
-        if (!mounted) return;
-        if (!isAuthenticated || !user) {
-            router.push('/login');
-            return;
-        }
-        loadDashboardData(chartParams);
-    }, [mounted, isAuthenticated, user, router, activeTenantId, activeOwnerId, tenantType]);
+    // --- TanStack Query ---
 
-    const loadDashboardData = async (params: any = chartParams) => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            if (!token) return;
+    const queryClient = useQueryClient();
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+    const { data: dashboardData, isLoading, isFetching } = useQuery({
+        queryKey: ['dashboard', mode, tenantId, activeOwnerId, tenantType, chartParams],
+        queryFn: async () => {
             const industryType = mode === 'admin' ? tenantType : undefined;
-
-            const response = await dashboardService.getStats(token, {
+            const res = await dashboardService.getStats(token!, {
                 tenantId: tenantId || undefined,
                 industryType,
-                ...params,
+                ...chartParams,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
             });
+            if (!res.success) throw new Error(res.message || 'Failed to fetch dashboard stats');
+            return res.data;
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            if (response.success && response.data) {
-                const overview = response.data.overview || {};
+    const stats = useMemo(() => {
+        const overview = dashboardData?.overview || {};
+        return {
+            totalOwners: overview.totalOwners || 0,
+            totalUsers: overview.totalUsers || 0,
+            totalProperties: overview.totalProperties || 0,
+            totalUnits: overview.totalUnits || 0,
+            totalBookings: overview.totalBookings || 0,
+            totalRevenue: overview.totalRevenue || 0,
+            availableUnits: overview.availableUnits || 0,
+            occupiedUnits: overview.occupiedUnits || 0,
+            pendingBookings: overview.pendingBookings || 0,
+            confirmedBookings: overview.activeBookings || 0,
+        };
+    }, [dashboardData]);
 
-                setStats({
-                    totalOwners: overview.totalOwners || 0,
-                    totalUsers: overview.totalUsers || 0,
-                    totalProperties: overview.totalProperties || 0,
-                    totalUnits: overview.totalUnits || 0,
-                    totalBookings: overview.totalBookings || 0,
-                    totalRevenue: overview.totalRevenue || 0,
-                    availableUnits: overview.availableUnits || 0,
-                    occupiedUnits: overview.occupiedUnits || 0,
-                    pendingBookings: overview.pendingBookings || 0,
-                    confirmedBookings: overview.activeBookings || 0,
-                });
+    const recentBookings = dashboardData?.recentBookings || [];
+    const topUnits = dashboardData?.topWorkspaces || [];
+    const historicalData = dashboardData?.historicalData || [];
+    const periodLabel = dashboardData?.periodLabel || 'Report';
 
-                setRecentBookings(response.data.recentBookings || []);
-                setTopUnits(response.data.topWorkspaces || []);
-                setHistoricalData(response.data.historicalData || []);
-                setPeriodLabel(response.data.periodLabel || 'Report');
-            }
-        } catch (error) {
-            console.error('Failed to load dashboard data:', error);
-            showToast('Failed to load dashboard data', 'error');
-        } finally {
-            setLoading(false);
-        }
+    const loading = isLoading;
+    const isRefreshing = isFetching && !isLoading;
+
+    const handleRefresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     };
+
+
 
     if (!mounted || !isAuthenticated) return null;
 
@@ -131,11 +102,11 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                     </div>
                     <button
                         className="btn btn-white shadow-sm border-0 px-3"
-                        onClick={loadDashboardData}
-                        disabled={loading}
+                        onClick={handleRefresh}
+                        disabled={loading || isRefreshing}
                     >
-                        <i className={`bi bi-arrow-clockwise me-2 ${loading ? 'spin' : ''}`}></i>
-                        Refresh
+                        <i className={`bi bi-arrow-clockwise me-2 ${(loading || isRefreshing) ? 'spin' : ''}`}></i>
+                        {isRefreshing ? 'Updating...' : 'Refresh'}
                     </button>
                 </div>
 
@@ -147,10 +118,7 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                     data={historicalData}
                     loading={loading}
                     periodLabel={periodLabel}
-                    onRangeChange={(params) => {
-                        setChartParams(params);
-                        loadDashboardData(params);
-                    }}
+                    onRangeChange={(params) => setChartParams(params)}
                 />
 
                 <div className="row g-4 mt-2">

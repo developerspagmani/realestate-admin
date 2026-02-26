@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/components/MainLayout';
 import { analyticsProService } from '@/app/services/api';
 import ModuleGuard from '@/components/common/ModuleGuard';
@@ -55,39 +56,28 @@ interface TrendData {
 }
 
 export default function ForecastingPage() {
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<any>(null);
     const [filters, setFilters] = useState({
         dateRange: '30d',
         startDate: '',
         endDate: ''
     });
 
-    const fetchData = useCallback(async () => {
-        try {
-            setLoading(true);
+    const { data, isLoading, refetch } = useQuery({
+        queryKey: ['demandIntelligence', filters],
+        queryFn: async () => {
             const params: any = {};
-            if (filters.dateRange !== 'custom') {
-                // Backend handles basic trend if no dates, but we can pass them
-            } else {
+            if (filters.dateRange === 'custom') {
                 if (filters.startDate) params.startDate = filters.startDate;
                 if (filters.endDate) params.endDate = filters.endDate;
+            } else {
+                // If backend supports 7d, 30d, 90d string directly, pass it
+                params.dateRange = filters.dateRange;
             }
 
             const res = await analyticsProService.getDemandIntelligence(params);
-            if (res.success) {
-                setData(res.data);
-            }
-        } catch (error) {
-            console.error('Error fetching demand intelligence:', error);
-        } finally {
-            setLoading(false);
+            return res.success ? res.data : null;
         }
-    }, [filters]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    });
 
     const getSeverityBadge = (severity: string) => {
         switch (severity.toLowerCase()) {
@@ -98,7 +88,7 @@ export default function ForecastingPage() {
         }
     };
 
-    if (loading && !data) {
+    if (isLoading && !data) {
         return (
             <MainLayout activePage="forecasting">
                 <div className="p-4 text-center mt-5">
@@ -143,7 +133,7 @@ export default function ForecastingPage() {
                                         value={filters.endDate}
                                         onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
                                     />
-                                    <button className="btn btn-sm btn-primary" onClick={fetchData}>Apply</button>
+                                    <button className="btn btn-sm btn-primary" onClick={() => refetch()}>Apply</button>
                                 </>
                             )}
                         </div>

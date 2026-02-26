@@ -1,11 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { propertyService, mediaService, amenityService, categoryService, getAuthToken } from '@/app/services/api';
+import {
+    propertyService,
+    mediaService,
+    amenityService,
+    categoryService,
+    getAuthToken
+} from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PropertiesList from './PropertiesList';
 import PropertyForm from './PropertyForm';
 import Toast from '@/components/common/Toast';
@@ -16,20 +23,15 @@ interface PropertiesManagerProps {
 }
 
 export default function PropertiesManager({ mode }: PropertiesManagerProps) {
+    const queryClient = useQueryClient();
     const { user, isAuthenticated } = useAuthContext();
     const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
     const router = useRouter();
 
     const [mounted, setMounted] = useState(false);
-    const [view, setView] = useState<'list' | 'form'>('list');   // ← replaces modal state
-    const [properties, setProperties] = useState<Property[]>([]);
-    const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-    const [amenities, setAmenities] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [view, setView] = useState<'list' | 'form'>('list');
     const [editingProperty, setEditingProperty] = useState<Property | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -42,148 +44,110 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
 
     useEffect(() => { setMounted(true); }, []);
 
-    useEffect(() => {
-        if (!mounted) return;
-        if (!isAuthenticated || !user) { router.push('/login'); return; }
-        loadData();
-    }, [mounted, isAuthenticated, user, router, activeTenantId, activeOwnerId, tenantType]);
+    // --- TanStack Queries ---
 
-    // ── DATA LOADING ──────────────────────────────────────────────────────────
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            if (!token) return;
-
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+    const { data: propertiesData, isLoading: propsLoading } = useQuery({
+        queryKey: ['properties', mode, activeTenantId, activeOwnerId, tenantType],
+        queryFn: async () => {
             const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
-
-            console.log('PropertiesManager: Loading data with:', { tenantId, industryType, activeOwnerId, mode });
-
-            // Load Properties
-            const propsRes = await propertyService.getProperties(token, {
+            const res = await propertyService.getProperties(token!, {
                 tenantId: tenantId || undefined,
                 industryType,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId }),
             });
+            if (!res.success) throw new Error(res.message || 'Failed to fetch properties');
+            return res.data?.properties || res.data || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            if (propsRes.success) {
-                const rawProps = propsRes.data?.properties || propsRes.data || [];
-                setProperties(rawProps.map((p: any) => ({
-                    id: p.id,
-                    name: p.title || p.name || 'Untitled Property',
-                    slug: p.slug || '',
-                    description: p.description || '',
-                    address: p.addressLine1 || p.address || '',
-                    addressLine2: p.addressLine2 || '',
-                    city: p.city || '',
-                    state: p.state || '',
-                    country: p.country || 'USA',
-                    zipCode: p.postalCode || p.zipCode || '',
-                    latitude: p.latitude || 0,
-                    longitude: p.longitude || 0,
-                    ownerId: p.tenantId || '',
-                    propertyType: typeof p.propertyType === 'number'
-                        ? (p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use')
-                        : (p.propertyType || 'residential'),
-                    status: typeof p.status === 'number'
-                        ? (p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance')
-                        : (p.status || 'active'),
-                    mainImageId: p.mainImageId || '',
-                    gallery: p.gallery || [],
-                    price: p.price || 0,
-                    area: p.area || p.sizeSqft || 0,
-                    floorPlanId: p.floorPlanId || '',
-                    brochureId: p.brochureId || '',
-                    amenities: p.propertyAmenities ? p.propertyAmenities.map((pa: any) => pa.amenity?.id || pa.amenityId) : [],
-                    yearBuilt: p.yearBuilt,
-                    neighborhood: p.neighborhood || '',
-                    parkingSpaces: p.parkingSpaces || 0,
-                    bedrooms: p.bedrooms || 0,
-                    bathrooms: p.bathrooms || 0,
-                    lotSize: p.lotSize || 0,
-                    listingType: (p.listingType?.toLowerCase() as any) || 'rent',
-                    categoryId: p.categoryId || '',
-                    videoUrl: p.videoUrl || '',
-                    displayPrice: p.displayPrice !== undefined ? p.displayPrice : true,
-                    createdAt: p.createdAt,
-                    updatedAt: p.updatedAt,
-                })));
-            }
+    const { data: mediaItems = [] } = useQuery({
+        queryKey: ['media', tenantId],
+        queryFn: async () => {
+            const res = await mediaService.getMedia(token!, tenantId ? { tenantId } : undefined);
+            return res.data?.media || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            // Load Media
-            const mediaRes = await mediaService.getMedia(token, tenantId ? { tenantId } : undefined);
-            if (mediaRes.success) setMediaItems(mediaRes.data.media || []);
+    const { data: amenities = [] } = useQuery({
+        queryKey: ['amenities'],
+        queryFn: async () => {
+            const res = await amenityService.getAmenities(token!);
+            return res.data?.amenities || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            // Load Amenities
-            const amenRes = await amenityService.getAmenities(token);
-            if (amenRes.success) setAmenities(amenRes.data.amenities || []);
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories'],
+        queryFn: async () => {
+            const res = await categoryService.getCategories(token!);
+            return res.data?.categories || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            // Load Categories
-            const catRes = await categoryService.getCategories(token);
-            if (catRes.success) setCategories(catRes.data.categories || []);
+    // Mapping Raw Data to Property Interface
+    const properties = useMemo(() => {
+        const rawProps = Array.isArray(propertiesData) ? propertiesData : [];
+        return rawProps.map((p: any) => ({
+            id: p.id,
+            name: p.title || p.name || 'Untitled Property',
+            slug: p.slug || '',
+            description: p.description || '',
+            address: p.addressLine1 || p.address || '',
+            addressLine2: p.addressLine2 || '',
+            city: p.city || '',
+            state: p.state || '',
+            country: p.country || 'USA',
+            zipCode: p.postalCode || p.zipCode || '',
+            latitude: p.latitude || 0,
+            longitude: p.longitude || 0,
+            ownerId: p.tenantId || '',
+            propertyType: typeof p.propertyType === 'number'
+                ? (p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use')
+                : (p.propertyType || 'residential'),
+            status: typeof p.status === 'number'
+                ? (p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance')
+                : (p.status || 'active'),
+            mainImageId: p.mainImageId || '',
+            gallery: p.gallery || [],
+            price: p.price || 0,
+            priceType: p.priceType || 'fixed',
+            area: p.area || p.sizeSqft || 0,
+            squareFootage: p.area || p.sizeSqft || 0,
+            floorPlanId: p.floorPlanId || '',
+            brochureId: p.brochureId || '',
+            amenities: p.propertyAmenities ? p.propertyAmenities.map((pa: any) => pa.amenity?.id || pa.amenityId) : [],
+            features: p.features || [],
+            photos: p.gallery || [],
+            rating: p.rating || 0,
+            totalReviews: p.totalReviews || 0,
+            yearBuilt: p.yearBuilt,
+            neighborhood: p.neighborhood || '',
+            parkingSpaces: p.parkingSpaces || 0,
+            bedrooms: p.bedrooms || 0,
+            bathrooms: p.bathrooms || 0,
+            lotSize: p.lotSize || 0,
+            listingType: (p.listingType?.toLowerCase() as any) || 'rent',
+            categoryId: p.categoryId || '',
+            videoUrl: p.videoUrl || '',
+            displayPrice: p.displayPrice !== undefined ? p.displayPrice : true,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+        }));
+    }, [propertiesData]);
 
-        } catch (error) {
-            console.error('Failed to load properties data:', error);
-            showToast('Failed to load data', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const loading = propsLoading;
 
-    // ── VIEW TRANSITIONS ──────────────────────────────────────────────────────
+    // --- TanStack Mutations ---
 
-    const handleCreate = () => {
-        setEditingProperty(null);
-        setView('form');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleEdit = (property: Property) => {
-        setEditingProperty(property);
-        setView('form');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleBackToList = () => {
-        setView('list');
-        setEditingProperty(null);
-    };
-
-    // ── CRUD ACTIONS ──────────────────────────────────────────────────────────
-
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this property?')) return;
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId;
-            await propertyService.deleteProperty(token, id, tenantId);
-            showToast('Property deleted successfully');
-            setProperties(properties.filter(p => p.id !== id));
-        } catch (error) {
-            console.error('Failed to delete property:', error);
-            showToast('Error deleting property.', 'error');
-        }
-    };
-
-    const handleSubmit = async (formData: Partial<Property>) => {
-        try {
-            setIsSubmitting(true);
-            const token = getAuthToken();
-            if (!token) return;
-
-            const tenantId = (mode === 'admin' && activeTenantId)
-                ? activeTenantId
-                : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
-
-            if (!tenantId) {
-                showToast('Error: Tenant ID is required. Please select a company first.', 'error');
-                setIsSubmitting(false);
-                return;
-            }
-
+    const saveMutation = useMutation({
+        mutationFn: async (formData: Partial<Property>) => {
             const payload = {
                 tenantId,
                 title: formData.name,
@@ -221,21 +185,71 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             };
 
             if (editingProperty) {
-                await propertyService.updateProperty(token, editingProperty.id, payload, tenantId);
-                showToast('Property updated successfully!');
-            } else {
-                await propertyService.createProperty(token, payload, tenantId);
-                showToast('Property registered successfully!');
+                return propertyService.updateProperty(token!, editingProperty.id, payload, tenantId);
             }
+            return propertyService.createProperty(token!, payload, tenantId);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast(editingProperty ? 'Property updated successfully!' : 'Property registered successfully!');
+                queryClient.invalidateQueries({ queryKey: ['properties'] });
+                handleBackToList();
+            } else {
+                showToast(res.message || 'Error saving property', 'error');
+            }
+        },
+        onError: () => showToast('Error saving property.', 'error')
+    });
 
-            await loadData();
-            setIsSubmitting(false);
-            handleBackToList();
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => propertyService.deleteProperty(token!, id, tenantId),
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('Property deleted successfully');
+                queryClient.invalidateQueries({ queryKey: ['properties'] });
+            } else {
+                showToast(res.message || 'Error deleting property', 'error');
+            }
+        },
+        onError: () => showToast('Error deleting property.', 'error')
+    });
 
+
+
+    // ── VIEW TRANSITIONS ──────────────────────────────────────────────────────
+
+    const handleCreate = () => {
+        setEditingProperty(null);
+        setView('form');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleEdit = (property: Property) => {
+        setEditingProperty(property);
+        setView('form');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleBackToList = () => {
+        setView('list');
+        setEditingProperty(null);
+    };
+
+    // ── CRUD ACTIONS ──────────────────────────────────────────────────────────
+
+    const handleSubmit = async (formData: Partial<Property>) => {
+        try {
+            await saveMutation.mutateAsync(formData);
         } catch (error) {
-            console.error('Failed to save property:', error);
-            showToast('Error saving property.', 'error');
-            setIsSubmitting(false);
+            // Error already handled in mutation
+        }
+    };
+
+    const isSubmitting = saveMutation.isPending;
+
+    const handleDelete = (id: string) => {
+        if (window.confirm('Are you sure you want to delete this property?')) {
+            deleteMutation.mutate(id);
         }
     };
 
@@ -244,11 +258,13 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
         router.push(`${basePath}?propertyId=${id}`);
     };
 
-    const filteredProperties = properties.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.state.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredProperties = useMemo(() => {
+        return properties.filter((p: any) =>
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.state.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [properties, searchTerm]);
 
     if (!mounted || !isAuthenticated) return null;
 

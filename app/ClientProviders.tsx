@@ -1,12 +1,13 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import ReduxProvider from '@/components/ReduxProvider';
 import { AuthProvider } from '@/app/contexts/AuthContext';
 import { ManagementProvider } from '@/app/contexts/ManagementContext';
 import { LoadingProvider } from '@/app/contexts/LoadingContext';
-import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 
 interface ClientProvidersProps {
     children: ReactNode;
@@ -18,6 +19,16 @@ interface ClientProvidersProps {
  */
 export default function ClientProviders({ children }: ClientProvidersProps) {
     const pathname = usePathname();
+
+    // Initialize QueryClient once per session
+    const [queryClient] = useState(() => new QueryClient({
+        defaultOptions: {
+            queries: {
+                staleTime: 60 * 1000, // 1 minute stale time
+                refetchOnWindowFocus: false, // Prevent re-fetching on tab switch
+            },
+        },
+    }));
 
     useEffect(() => {
         // Initialize Bootstrap JS
@@ -32,14 +43,17 @@ export default function ClientProviders({ children }: ClientProvidersProps) {
     }
 
     return (
-        <ReduxProvider>
-            <AuthProvider>
-                <ManagementProvider>
-                    <LoadingProvider>
-                        {children}
-                    </LoadingProvider>
-                </ManagementProvider>
-            </AuthProvider>
-        </ReduxProvider>
+        <QueryClientProvider client={queryClient}>
+            <ReduxProvider>
+                <AuthProvider>
+                    <ManagementProvider>
+                        <LoadingProvider>
+                            {children}
+                        </LoadingProvider>
+                    </ManagementProvider>
+                </AuthProvider>
+            </ReduxProvider>
+            <ReactQueryDevtools initialIsOpen={false} />
+        </QueryClientProvider>
     );
 }

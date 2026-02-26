@@ -3,30 +3,46 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { bookingService, userService, unitService, propertyService, agentService, getAuthToken } from '@/app/services/api';
+import {
+    bookingService,
+    userService,
+    unitService,
+    propertyService,
+    agentService,
+    getAuthToken,
+    Booking,
+    User,
+    Unit,
+    Property
+} from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
-import { Booking, User, Unit, Property } from '@/app/services/api';
-import Toast from '@/components/common/Toast';
-import Loader from '@/components/common/Loader';
 
 interface BookingsManagerProps {
     mode: 'admin' | 'owner';
 }
 
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Toast from '@/components/common/Toast';
+import Loader from '@/components/common/Loader';
+
 export default function BookingsManager({ mode }: BookingsManagerProps) {
+    const queryClient = useQueryClient();
     const { user, isAuthenticated } = useAuthContext();
     const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
     const [mounted, setMounted] = useState(false);
-    const [bookings, setBookings] = useState<any[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
-    const [units, setUnits] = useState<Unit[]>([]);
-    const [properties, setProperties] = useState<Property[]>([]);
-    const [agents, setAgents] = useState<any[]>([]);
+
+    // Filter and UI States
     const [showModal, setShowModal] = useState(false);
     const [editingBooking, setEditingBooking] = useState<any | null>(null);
-    const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed' | 'past'>('all');
+    const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
+    const [currentDate, setCurrentDate] = useState(new Date());
 
     const [formData, setFormData] = useState<any>({
         userId: '',
@@ -44,15 +60,9 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         guestPhone: ''
     });
 
-    const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
-    const [showDetailModal, setShowDetailModal] = useState(false);
-
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed' | 'past'>('all');
-    const [availabilityStatus, setAvailabilityStatus] = useState<{ loading: boolean; available?: boolean; conflicts?: any[]; price?: number }>({ loading: false });
-    const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
     const [availabilityForm, setAvailabilityForm] = useState({ propertyId: '', unitId: '', startAt: '', endAt: '' });
+    const [availabilityStatus, setAvailabilityStatus] = useState<{ loading: boolean; available?: boolean; conflicts?: any[]; price?: number }>({ loading: false });
+
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -65,71 +75,144 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
 
     const router = useRouter();
     const searchParams = useSearchParams();
-    const urlPropertyId = searchParams.get('propertyId');
     const urlUnitId = searchParams.get('unitId');
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    const [currentDate, setCurrentDate] = useState(new Date());
+    // --- TanStack Queries ---
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            if (!token) return;
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            const industryType = mode === 'admin' ? tenantType : undefined;
-
+    const { data: bookingsData, isLoading: bookingsLoading } = useQuery({
+        queryKey: ['bookings', mode, activeTenantId, activeOwnerId, tenantType, urlUnitId],
+        queryFn: () => {
             const params: any = {
                 tenantId,
                 ...(mode === 'admin' && activeOwnerId ? { ownerId: activeOwnerId } : {})
             };
             if (urlUnitId) params.unitId = urlUnitId;
+            return bookingService.getBookings(token!, { ...params, industryType: mode === 'admin' ? tenantType : undefined });
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            const [bookingsRes, usersRes, propertiesRes, unitsRes, agentsRes] = await Promise.all([
-                bookingService.getBookings(token, {
-                    ...params,
-                    industryType
-                }),
-                userService.getUsers(token, { tenantId: tenantId || undefined }),
-                propertyService.getProperties(token, {
-                    tenantId: tenantId || undefined,
-                    industryType,
-                    ...(mode === 'admin' && activeOwnerId ? { ownerId: activeOwnerId } : {})
-                }),
-                unitService.getUnits(token, {
-                    tenantId: tenantId || undefined,
-                    industryType,
-                    ...(mode === 'admin' && activeOwnerId ? { ownerId: activeOwnerId } : {})
-                }),
-                agentService.getAgents(token, { tenantId: tenantId || undefined })
-            ]);
+    const { data: usersData } = useQuery({
+        queryKey: ['users', tenantId],
+        queryFn: () => userService.getUsers(token!, { tenantId: tenantId || undefined }),
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            if (bookingsRes.success) setBookings(bookingsRes.data.bookings || bookingsRes.data || []);
-            if (usersRes.success) setUsers(usersRes.data.users || usersRes.data || []);
-            if (propertiesRes.success) setProperties(propertiesRes.data.properties || propertiesRes.data || []);
-            if (unitsRes.success) setUnits(unitsRes.data.units || unitsRes.data || []);
-            if (agentsRes && (agentsRes as any).success) setAgents((agentsRes as any).data.agents || (agentsRes as any).data || []);
+    const { data: propertiesData } = useQuery({
+        queryKey: ['properties', tenantId, activeOwnerId, tenantType],
+        queryFn: () => propertyService.getProperties(token!, {
+            tenantId: tenantId || undefined,
+            industryType: mode === 'admin' ? tenantType : undefined,
+            ...(mode === 'admin' && activeOwnerId ? { ownerId: activeOwnerId } : {})
+        }),
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-        } catch (error) {
-            console.error('Failed to load bookings data:', error);
-            showToast('Failed to load bookings', 'error');
-        } finally {
-            setLoading(false);
+    const { data: unitsData } = useQuery({
+        queryKey: ['units', tenantId, activeOwnerId, tenantType],
+        queryFn: () => unitService.getUnits(token!, {
+            tenantId: tenantId || undefined,
+            industryType: mode === 'admin' ? tenantType : undefined,
+            ...(mode === 'admin' && activeOwnerId ? { ownerId: activeOwnerId } : {})
+        }),
+        enabled: !!token && mounted && isAuthenticated,
+    });
+
+    const { data: agentsData } = useQuery({
+        queryKey: ['agents', tenantId],
+        queryFn: () => agentService.getAgents(token!, { tenantId: tenantId || undefined }),
+        enabled: !!token && mounted && isAuthenticated,
+    });
+
+    // Extracting actual data arrays
+    const bookings = bookingsData?.data?.bookings || bookingsData?.data || [];
+    const users = usersData?.data?.users || usersData?.data || [];
+    const properties = propertiesData?.data?.properties || propertiesData?.data || [];
+    const units = unitsData?.data?.units || unitsData?.data || [];
+    const agents = (agentsData as any)?.data?.agents || (agentsData as any)?.data || [];
+
+    // --- TanStack Mutations ---
+
+    const saveBookingMutation = useMutation({
+        mutationFn: async ({ id, payload }: { id?: string; payload: any }) => {
+            if (id) return bookingService.updateBooking(token!, id, payload);
+            return bookingService.createBooking(token!, payload);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                setShowModal(false);
+                setEditingBooking(null);
+                showToast(editingBooking ? 'Booking updated successfully' : 'Booking created successfully');
+            } else {
+                showToast(res.message || 'Failed to save booking', 'error');
+            }
+        },
+        onError: () => showToast('Error saving booking', 'error')
+    });
+
+    const updateStatusMutation = useMutation({
+        mutationFn: ({ id, status }: { id: string; status: number }) => bookingService.updateBookingStatus(token!, id, status),
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                showToast('Booking status updated');
+            } else {
+                showToast(res.message || 'Failed to update status', 'error');
+            }
+        },
+        onError: () => showToast('Error updating status', 'error')
+    });
+
+    const deleteBookingMutation = useMutation({
+        mutationFn: (id: string) => bookingService.deleteBooking(token!, id),
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['bookings'] });
+                showToast('Booking deleted successfully');
+            } else {
+                showToast(res.message || 'Failed to delete booking', 'error');
+            }
+        },
+        onError: () => showToast('Error deleting booking', 'error')
+    });
+
+    const sendInfoMutation = useMutation({
+        mutationFn: (id: string) => bookingService.sendVisitInfo(token!, id, tenantId as string),
+        onSuccess: (res) => {
+            if (res.success) showToast('Visit information email sent to prospect');
+            else showToast(res.message || 'Failed to send email', 'error');
+        },
+        onError: () => showToast('Error sending email', 'error')
+    });
+
+    // --- UI Logic Handlers ---
+
+    const handleStatusChange = (id: string, status: number) => updateStatusMutation.mutate({ id, status });
+    const handleSendInfo = (id: string) => sendInfoMutation.mutate(id);
+    const handleDelete = (id: string) => {
+        if (window.confirm('Are you sure you want to delete this booking?')) {
+            deleteBookingMutation.mutate(id);
         }
     };
 
-    useEffect(() => {
-        if (!mounted) return;
-        if (!isAuthenticated || !user) {
-            router.push('/login');
-            return;
-        }
-        loadData();
-    }, [mounted, isAuthenticated, user, router, urlUnitId, activeTenantId, activeOwnerId, tenantType]);
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const payload = {
+            ...formData,
+            tenantId: (user as any)?.tenantId || localStorage.getItem('tenant-id'),
+            startAt: new Date(formData.startAt).toISOString(),
+            endAt: new Date(formData.endAt).toISOString(),
+        };
+        saveBookingMutation.mutate({ id: editingBooking?.id, payload });
+    };
 
     const formatForInput = (dateStr: string) => {
         if (!dateStr) return '';
@@ -140,7 +223,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     };
 
     const filteredBookings = useMemo(() => {
-        return bookings.filter(booking => {
+        if (!bookings) return [];
+        return bookings.filter((booking: any) => {
             const userName = booking.user?.name?.toLowerCase() || '';
             const unitCode = booking.unit?.unitCode?.toLowerCase() || '';
             const propertyTitle = (booking.unit?.property?.title || booking.property?.title || '').toLowerCase();
@@ -178,9 +262,6 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
 
         try {
             setAvailabilityStatus({ loading: true });
-            const token = getAuthToken();
-            if (!token) return;
-
             const params: any = {
                 unitId: targetForm.unitId,
                 startAt: new Date(targetForm.startAt).toISOString(),
@@ -191,7 +272,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                 params.bookingId = editingBooking.id;
             }
 
-            const res = await bookingService.checkAvailability(token, params);
+            const res = await bookingService.checkAvailability(token!, params);
             setAvailabilityStatus({
                 loading: false,
                 available: res.available,
@@ -213,105 +294,9 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         }
     }, [formData.unitId, formData.startAt, formData.endAt]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-
-            const payload = {
-                ...formData,
-                tenantId: (user as any)?.tenantId || localStorage.getItem('tenant-id'),
-                startAt: new Date(formData.startAt).toISOString(),
-                endAt: new Date(formData.endAt).toISOString(),
-            };
-
-            let response;
-            if (editingBooking) {
-                response = await bookingService.updateBooking(token, editingBooking.id, payload);
-            } else {
-                response = await bookingService.createBooking(token, payload);
-            }
-
-            if (response.success) {
-                setShowModal(false);
-                setEditingBooking(null);
-                loadData();
-                showToast(editingBooking ? 'Booking updated successfully' : 'Booking created successfully');
-            } else {
-                showToast(response.message || 'Failed to save booking', 'error');
-            }
-        } catch (error) {
-            console.error('Error saving booking:', error);
-            showToast('Error saving booking', 'error');
-        }
-    };
-
-    const handleStatusChange = async (id: string, status: number) => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const response = await bookingService.updateBookingStatus(token, id, status);
-            if (response.success) {
-                loadData();
-                showToast('Booking status updated');
-            } else {
-                showToast(response.message || 'Failed to update status', 'error');
-            }
-        } catch (error) {
-            console.error('Error updating status:', error);
-            showToast('Error updating status', 'error');
-        }
-    };
-
-    const handleSendInfo = async (id: string) => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const booking = bookings.find(b => b.id === id);
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            const response = await bookingService.sendVisitInfo(token, id, tenantId as string);
-            if (response.success) {
-                showToast('Visit information email sent to prospect');
-            } else {
-                showToast(response.message || 'Failed to send email', 'error');
-            }
-        } catch (error) {
-            console.error('Error sending email:', error);
-            showToast('Error sending email', 'error');
-        }
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this booking?')) return;
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const response = await bookingService.deleteBooking(token, id);
-            if (response.success) {
-                loadData();
-                showToast('Booking deleted successfully');
-            } else {
-                showToast(response.message || 'Failed to delete booking', 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting booking:', error);
-            showToast('Error deleting booking', 'error');
-        }
-    };
-
-    const getStatusLabel = (status: number) => {
-        const config: any = {
-            1: { label: 'Pending', class: 'bg-warning-soft text-warning', icon: 'bi-clock' },
-            2: { label: 'Confirmed', class: 'bg-success-soft text-success', icon: 'bi-check-circle' },
-            3: { label: 'Cancelled', class: 'bg-danger-soft text-danger', icon: 'bi-x-circle' },
-            4: { label: 'Completed', class: 'bg-primary-soft text-primary', icon: 'bi-flag' },
-            5: { label: 'No Show', class: 'bg-secondary-soft text-secondary', icon: 'bi-person-x' }
-        };
-        return config[status] || { label: 'Unknown', class: 'bg-light text-muted', icon: 'bi-question' };
-    };
-
     const resetForm = () => {
+        setShowModal(false);
+        setEditingBooking(null);
         setFormData({
             userId: '',
             unitId: '',
@@ -327,12 +312,21 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             guestEmail: '',
             guestPhone: ''
         });
-        setEditingBooking(null);
-        setShowModal(false);
+    };
+
+    const getStatusLabel = (status: number) => {
+        const config: any = {
+            1: { label: 'Pending', class: 'bg-warning-soft text-warning', icon: 'bi-clock' },
+            2: { label: 'Confirmed', class: 'bg-success-soft text-success', icon: 'bi-check-circle' },
+            3: { label: 'Cancelled', class: 'bg-danger-soft text-danger', icon: 'bi-x-circle' },
+            4: { label: 'Completed', class: 'bg-primary-soft text-primary', icon: 'bi-flag' },
+            5: { label: 'No Show', class: 'bg-secondary-soft text-secondary', icon: 'bi-person-x' }
+        };
+        return config[status] || { label: 'Unknown', class: 'bg-light text-muted', icon: 'bi-question' };
     };
 
     const getCalendarEvents = () => {
-        return bookings.map(booking => ({
+        return bookings.map((booking: any) => ({
             id: booking.id,
             title: `${booking.guestName || booking.user?.name || 'Guest'} - ${booking.unit?.unitCode || booking.unit?.property?.title || booking.property?.title || 'Visit'}`,
             start: new Date(booking.startAt),
@@ -494,7 +488,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {loading ? (
+                                    {bookingsLoading ? (
                                         <tr>
                                             <td colSpan={7} className="text-center py-5">
                                                 <Loader message="Fetching bookings..." />
@@ -507,7 +501,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                 <p className="text-muted">No reservations found matching your criteria</p>
                                             </td>
                                         </tr>
-                                    ) : filteredBookings.map((booking) => {
+                                    ) : filteredBookings.map((booking: any) => {
                                         const status = getStatusLabel(booking.status);
                                         return (
                                             <tr key={booking.id} className="cursor-pointer" onClick={() => { setSelectedBooking(booking); setShowDetailModal(true); }}>
@@ -578,8 +572,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                                     userId: booking.userId || '',
                                                                     unitId: booking.unitId || '',
                                                                     propertyId: booking.unit?.property?.id || booking.unit?.propertyId || '',
-                                                                    startAt: booking.startAt,
-                                                                    endAt: booking.endAt,
+                                                                    startAt: formatForInput(booking.startAt),
+                                                                    endAt: formatForInput(booking.endAt),
                                                                     status: booking.status || 1,
                                                                     paymentStatus: booking.paymentStatus || 1,
                                                                     notes: booking.notes || '',
@@ -632,7 +626,6 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                         <div className="col-md-12">
                                             <label className="form-label fw-bold small text-uppercase text-muted">
                                                 Select Visitor / Prospect
-                                                {loading && <Loader size="sm" message="" />}
                                             </label>
                                             <select
                                                 className="form-select form-select-lg bg-light border-0"
@@ -642,7 +635,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                     if (val === 'new' || val === '') {
                                                         setFormData({ ...formData, userId: val === 'new' ? '' : val, guestName: '', guestEmail: '', guestPhone: '' });
                                                     } else {
-                                                        const selUser = users.find(u => u.id === val);
+                                                        const selUser = users.find((u: any) => u.id === val);
                                                         setFormData({
                                                             ...formData,
                                                             userId: val,
@@ -653,8 +646,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                     }
                                                 }}
                                             >
-                                                <option value="">{loading ? 'Fetching records...' : 'Choose a prospect...'}</option>
-                                                {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+                                                <option value="">Choose a prospect...</option>
+                                                {users.map((u: any) => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
                                                 <option value="new">+ Add New Guest / Lead</option>
                                             </select>
                                         </div>
@@ -702,7 +695,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                 onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
                                             >
                                                 <option value="">No Agent (Direct)</option>
-                                                {agents.map(a => (
+                                                {agents.map((a: { id: string; user?: { name?: string; firstName?: string; lastName?: string } }) => (
                                                     <option key={a.id} value={a.id}>
                                                         {a.user?.name || `${a.user?.firstName} ${a.user?.lastName}`}
                                                     </option>
@@ -719,7 +712,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                 required
                                             >
                                                 <option value="">Select Property...</option>
-                                                {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                                                {properties.map((p: any) => <option key={p.id} value={p.id}>{p.title}</option>)}
                                             </select>
                                         </div>
 
@@ -734,8 +727,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             >
                                                 <option value="">Select Unit...</option>
                                                 {units
-                                                    .filter(u => u.propertyId === formData.propertyId)
-                                                    .map(u => <option key={u.id} value={u.id}>{u.unitCode}</option>)}
+                                                    .filter((u: any) => u.propertyId === formData.propertyId)
+                                                    .map((u: any) => <option key={u.id} value={u.id}>{u.unitCode}</option>)}
                                             </select>
                                         </div>
 
@@ -840,7 +833,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                 onChange={(e) => setAvailabilityForm({ ...availabilityForm, propertyId: e.target.value, unitId: '' })}
                                             >
                                                 <option value="">Select Property...</option>
-                                                {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                                                {properties.map((p: any) => <option key={p.id} value={p.id}>{p.title}</option>)}
                                             </select>
                                         </div>
                                         <div className="col-12">
@@ -853,8 +846,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             >
                                                 <option value="">Select Unit...</option>
                                                 {units
-                                                    .filter(u => u.propertyId === availabilityForm.propertyId)
-                                                    .map(u => <option key={u.id} value={u.id}>{u.unitCode}</option>)}
+                                                    .filter((u: any) => u.propertyId === availabilityForm.propertyId)
+                                                    .map((u: any) => <option key={u.id} value={u.id}>{u.unitCode}</option>)}
                                             </select>
                                         </div>
                                         <div className="col-6">
@@ -1159,11 +1152,11 @@ function CalendarView({ currentDate, setCurrentDate, bookings, onEventClick, get
                                     </div>
                                     <div className="calendar-events d-flex flex-column gap-1">
                                         {getEventsForDay(day).map((event: any) => {
-                                            const status = getStatusLabel(event.status);
+                                            const statusInfo = getStatusLabel(event.status);
                                             return (
                                                 <div
                                                     key={event.id}
-                                                    className={`event-tag p-2 rounded-3 cursor-pointer shadow-sm border-start border-4 ${status.class}`}
+                                                    className={`event-tag p-2 rounded-3 cursor-pointer shadow-sm border-start border-4 ${statusInfo.class}`}
                                                     style={{ fontSize: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();

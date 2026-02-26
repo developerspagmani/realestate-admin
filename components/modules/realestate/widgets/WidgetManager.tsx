@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { cmsService, getAuthToken, widgetService } from '@/app/services/api';
+import { cmsService, getAuthToken, widgetService, marketingService, propertyService } from '@/app/services/api';
 import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
@@ -10,6 +10,7 @@ import WidgetForm from './WidgetForm';
 import WidgetCard from './WidgetCard';
 import QRCodeGenerator from './QRCodeGenerator';
 import Toast from '@/components/common/Toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface WidgetManagerProps {
     mode?: 'admin' | 'owner';
@@ -86,15 +87,12 @@ const INITIAL_FORM_DATA = {
 };
 
 export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
+    const queryClient = useQueryClient();
     const { user, isAuthenticated, hasModule, activeModules } = useAuthContext();
     const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
-    const [widgets, setWidgets] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingWidget, setEditingWidget] = useState<any>(null);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-    const [properties, setProperties] = useState<any[]>([]);
-    const [marketingForms, setMarketingForms] = useState<any[]>([]);
     const [showQRModal, setShowQRModal] = useState(false);
     const [qrWidget, setQRWidget] = useState<any>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -107,132 +105,101 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         setToast({ show: true, message, type });
     };
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            loadWidgets();
-            loadProperties();
-            if (hasModule('marketing_hub')) {
-                loadMarketingForms();
-            }
-        }
-    }, [isAuthenticated, activeTenantId, activeOwnerId, activeModules]);
+    const token = typeof window !== 'undefined' ? getAuthToken() || '' : '';
+    const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
 
-    const loadMarketingForms = async () => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const { marketingService } = await import('@/app/services/api');
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await marketingService.getForms(token, { tenantId });
-            if (response.success) {
-                setMarketingForms(response.data);
-            }
-        } catch (error) {
-            console.error('Failed to load marketing forms:', error);
-        }
-    };
+    const { data: widgetsRes, isLoading: loading } = useQuery({
+        queryKey: ['widgets', tenantId, activeOwnerId],
+        queryFn: () => widgetService.getWidgets(token, {
+            ...(tenantId && { tenantId }),
+            ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
+        }),
+        enabled: isAuthenticated && !!token,
+    });
 
-    const loadProperties = async () => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const { propertyService } = await import('@/app/services/api');
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await propertyService.getProperties(token, {
-                ...(tenantId && { tenantId }),
-                ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
-            });
-            if (response.success) {
-                const rawProps = response.data?.properties || response.data || [];
-                setProperties(rawProps);
-            }
-        } catch (error) {
-            console.error('Failed to load properties:', error);
-        }
-    };
+    const { data: propertiesRes } = useQuery({
+        queryKey: ['properties-list', tenantId, activeOwnerId],
+        queryFn: () => propertyService.getProperties(token, {
+            ...(tenantId && { tenantId }),
+            ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
+        }),
+        enabled: isAuthenticated && !!token,
+    });
 
-    const loadWidgets = async () => {
-        try {
-            setLoading(true);
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await widgetService.getWidgets(token, {
-                ...(tenantId && { tenantId }),
-                ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
-            });
-            if (response.success) {
-                setWidgets(response.data);
-            }
-        } catch (error) {
-            console.error('Failed to load widgets:', error);
-            showToast('Failed to load widgets', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { data: marketingFormsRes } = useQuery({
+        queryKey: ['marketing-forms', tenantId],
+        queryFn: () => marketingService.getForms(token, { tenantId }),
+        enabled: isAuthenticated && !!token && hasModule('marketing_hub'),
+    });
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const token = getAuthToken();
-            if (!token) return;
+    const widgets = widgetsRes?.data || [];
+    const properties = useMemo(() => propertiesRes?.data?.properties || propertiesRes?.data || [], [propertiesRes]);
+    const marketingForms = marketingFormsRes?.data || [];
 
-            let response;
+    // --- Mutations ---
+
+    const saveMutation = useMutation({
+        mutationFn: (data: any) => {
             const currentTenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-
             const finalData = {
-                ...formData,
+                ...data,
                 tenantId: currentTenantId,
-                uniqueId: formData.uniqueId || (editingWidget ? editingWidget.uniqueId : `wid-${Math.random().toString(36).substr(2, 9)}`),
+                uniqueId: data.uniqueId || (editingWidget ? editingWidget.uniqueId : `wid-${Math.random().toString(36).substr(2, 9)}`),
                 configuration: {
-                    ...formData.configuration,
+                    ...data.configuration,
                     settings: {
-                        ...formData.configuration.settings,
-                        propertyId: formData.propertyId
+                        ...data.configuration.settings,
+                        propertyId: data.propertyId
                     }
                 }
             };
-
-            if (editingWidget) {
-                response = await widgetService.updateWidget(token, editingWidget.id, finalData, currentTenantId);
-            } else {
-                response = await widgetService.createWidget(token, finalData);
-            }
-
-            if (response.success) {
-                // If it was a create operation, transition to edit mode so we stay on the page
-                if (!editingWidget && response.data) {
-                    setEditingWidget(response.data);
+            if (editingWidget) return widgetService.updateWidget(token, editingWidget.id, finalData, currentTenantId);
+            return widgetService.createWidget(token, finalData);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                if (!editingWidget && res.data) {
+                    setEditingWidget(res.data);
                 }
-                loadWidgets();
+                queryClient.invalidateQueries({ queryKey: ['widgets'] });
                 showToast(editingWidget ? 'Widget changes synchronized' : 'Widget published successfully');
             } else {
-                showToast(response.message || 'Failed to save widget', 'error');
+                showToast(res.message || 'Failed to save widget', 'error');
             }
-        } catch (error) {
+        },
+        onError: (error) => {
             console.error('Failed to save widget:', error);
             showToast('Error saving widget. Make sure Unique ID is unique.', 'error');
         }
-    };
+    });
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this widget?')) return;
-        try {
-            const token = getAuthToken();
-            if (!token) return;
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => {
             const currentTenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const response = await widgetService.deleteWidget(token, id, currentTenantId);
-            if (response.success) {
-                loadWidgets();
+            return widgetService.deleteWidget(token, id, currentTenantId);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['widgets'] });
                 showToast('Widget deleted successfully');
             } else {
-                showToast(response.message || 'Failed to delete widget', 'error');
+                showToast(res.message || 'Failed to delete widget', 'error');
             }
-        } catch (error) {
+        },
+        onError: (error) => {
             console.error('Failed to delete widget:', error);
             showToast('Failed to delete widget', 'error');
         }
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        saveMutation.mutate(formData);
+    };
+
+    const handleDelete = (id: string) => {
+        if (!confirm('Are you sure you want to delete this widget?')) return;
+        deleteMutation.mutate(id);
     };
 
     const copyEmbedCode = (uniqueId: string) => {
@@ -313,7 +280,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
                                 <p className="text-muted">Create your first widget and start accepting bookings on any website.</p>
                             </div>
                         </div>
-                    ) : widgets.map((widget) => (
+                    ) : widgets.map((widget: any) => (
                         <WidgetCard
                             key={widget.id}
                             widget={widget}
@@ -322,7 +289,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
                             onDelete={handleDelete}
                             onCopyEmbed={copyEmbedCode}
                             onCopyShortLink={copyShortLink}
-                            onShowQR={(w) => {
+                            onShowQR={(w: any) => {
                                 setQRWidget(w);
                                 setShowQRModal(true);
                             }}

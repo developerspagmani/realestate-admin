@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { marketingService, propertyService, getAuthToken } from '@/app/services/api';
 import { Property } from '@/app/services/types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const DEFAULT_THEMES = [
     {
@@ -132,19 +133,14 @@ interface TemplateManagerProps {
 }
 
 export default function TemplateManager({ tenantId }: TemplateManagerProps) {
-    const [templates, setTemplates] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
     const [showModal, setShowModal] = useState(false);
     const [showGallery, setShowGallery] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState<'editor' | 'designer'>('designer');
     const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(null);
-    const [saving, setSaving] = useState(false);
     const [templateData, setTemplateData] = useState({
-        name: '',
-        subject: '',
-        content: '',
-        type: 'email'
+        name: '', subject: '', content: '', type: 'email'
     });
 
     const [design, setDesign] = useState<designState>({
@@ -162,32 +158,74 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
     });
 
     const [testEmail, setTestEmail] = useState('');
-    const [sendingTest, setSendingTest] = useState(false);
     const [showTestInput, setShowTestInput] = useState(false);
-    const [properties, setProperties] = useState<Property[]>([]);
-    const [loadingProperties, setLoadingProperties] = useState(false);
     const [showPropertyPicker, setShowPropertyPicker] = useState(false);
     const [pickerMode, setPickerMode] = useState<'single' | 'grid'>('single');
     const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([]);
     const contentRef = useRef<HTMLTextAreaElement>(null);
 
-    const loadProperties = async () => {
-        setLoadingProperties(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const res = await propertyService.getProperties(token, { tenantId });
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+
+    const { data: templatesRes, isLoading: templatesLoading } = useQuery({
+        queryKey: ['marketing-templates', tenantId],
+        queryFn: () => marketingService.getTemplates(token!, { tenantId }),
+        enabled: !!token && !!tenantId,
+    });
+
+    const { data: propsRes, isLoading: propsLoading } = useQuery({
+        queryKey: ['properties-list', tenantId],
+        queryFn: () => propertyService.getProperties(token!, { tenantId }),
+        enabled: !!token && !!tenantId,
+    });
+
+    const templates = templatesRes?.data || [];
+    const properties = useMemo(() => {
+        const res = propsRes?.data;
+        return res?.properties || res || [];
+    }, [propsRes]);
+
+    const loading = templatesLoading;
+    const loadingProperties = propsLoading;
+
+    // --- Mutations ---
+
+    const saveMutation = useMutation({
+        mutationFn: (payload: any) => {
+            if (isEditing && currentTemplateId) return marketingService.updateTemplate(token!, currentTemplateId, payload);
+            return marketingService.createTemplate(token!, payload);
+        },
+        onSuccess: (res) => {
             if (res.success) {
-                // The API might return data directly or wrapped in data.properties
-                const propList = res.data.properties || res.data || [];
-                setProperties(propList);
+                alert('Template saved successfully!');
+                setShowModal(false);
+                queryClient.invalidateQueries({ queryKey: ['marketing-templates'] });
+                resetForm();
+            } else {
+                alert(res.message || 'Failed to save template');
             }
-        } catch (error) {
-            console.error('Failed to load properties:', error);
-        } finally {
-            setLoadingProperties(false);
+        },
+        onError: () => alert('Error saving template. Please check your connection.')
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => marketingService.deleteTemplate(token!, id),
+        onSuccess: (res) => {
+            if (res.success) queryClient.invalidateQueries({ queryKey: ['marketing-templates'] });
         }
-    };
+    });
+
+    const sendTestMutation = useMutation({
+        mutationFn: (payload: any) => marketingService.sendTestTemplateEmail(token!, payload),
+        onSuccess: (res) => {
+            if (res.success) {
+                alert('Test email sent successfully!');
+                setShowTestInput(false);
+            } else {
+                alert(res.message || 'Failed to send test email');
+            }
+        },
+        onError: () => alert('Error sending test email')
+    });
 
     const addPropertyToTemplate = (property: Property) => {
         const baseUrl = process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : 'https://virpanix.com';
@@ -296,125 +334,53 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
             setTemplateData({ ...templateData, content: templateData.content + html });
         }
     };
-    const loadTemplates = async () => {
-        setLoading(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const res = await marketingService.getTemplates(token, { tenantId });
-            if (res.success) {
-                setTemplates(res.data);
-            }
-        } catch (error) {
-            console.error('Failed to load templates:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    useEffect(() => {
-        loadTemplates();
-        loadProperties();
-    }, [tenantId]);
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!templateData.name) return;
-        setSaving(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
 
-            let finalContent = templateData.content;
-            if (activeTab === 'designer') {
-                // Quick protection: If content already looks like a finished email, don't re-theme it
-                const isAlreadyThemed = templateData.content.includes('<div style="background-color:') || templateData.content.includes('<!DOCTYPE');
-
-                if (isAlreadyThemed) {
-                    const proceed = window.confirm("This template appears to already have a design applied. Re-applying a theme may cause layout issues. Continue anyway?");
-                    if (!proceed) {
-                        setSaving(false);
-                        return;
-                    }
-                }
-
-                const theme = DEFAULT_THEMES.find(t => t.id === design.theme) || DEFAULT_THEMES[0];
-                finalContent = theme.render(design, templateData.content);
+        let finalContent = templateData.content;
+        if (activeTab === 'designer') {
+            const isAlreadyThemed = templateData.content.includes('<div style="background-color:') || templateData.content.includes('<!DOCTYPE');
+            if (isAlreadyThemed) {
+                const proceed = window.confirm("This template appears to already have a design applied. Re-applying a theme may cause layout issues. Continue anyway?");
+                if (!proceed) return;
             }
 
-            let res;
-            if (isEditing && currentTemplateId) {
-                res = await marketingService.updateTemplate(token, currentTemplateId, { ...templateData, content: finalContent, tenantId });
-            } else {
-                res = await marketingService.createTemplate(token, { ...templateData, content: finalContent, tenantId });
-            }
-
-            if (res.success) {
-                alert('Template saved successfully!');
-                setShowModal(false);
-                loadTemplates();
-                resetForm();
-            } else {
-                alert(res.message || 'Failed to save template');
-            }
-        } catch (error) {
-            console.error('Failed to save template:', error);
-            alert('Error saving template. Please check your connection.');
-        } finally {
-            setSaving(false);
+            const theme = DEFAULT_THEMES.find(t => t.id === design.theme) || DEFAULT_THEMES[0];
+            finalContent = theme.render(design, templateData.content);
         }
+
+        saveMutation.mutate({ ...templateData, content: finalContent, tenantId });
     };
 
-    const handleSendTest = async () => {
+    const saving = saveMutation.isPending;
+
+    const handleSendTest = () => {
         if (!testEmail) {
             alert('Please enter a test email address');
             return;
         }
 
-        setSendingTest(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-
-            let finalContent = templateData.content;
-            if (activeTab === 'designer') {
-                const theme = DEFAULT_THEMES.find(t => t.id === design.theme) || DEFAULT_THEMES[0];
-                finalContent = theme.render(design, templateData.content);
-            }
-
-            const res = await marketingService.sendTestTemplateEmail(token, {
-                templateId: currentTemplateId || undefined,
-                email: testEmail,
-                subject: templateData.subject || 'Test Email',
-                content: finalContent
-            });
-
-            if (res.success) {
-                alert('Test email sent successfully!');
-                setShowTestInput(false);
-            } else {
-                alert(res.message || 'Failed to send test email');
-            }
-        } catch (error) {
-            console.error('Failed to send test email:', error);
-            alert('Error sending test email');
-        } finally {
-            setSendingTest(false);
+        let finalContent = templateData.content;
+        if (activeTab === 'designer') {
+            const theme = DEFAULT_THEMES.find(t => t.id === design.theme) || DEFAULT_THEMES[0];
+            finalContent = theme.render(design, templateData.content);
         }
+
+        sendTestMutation.mutate({
+            templateId: currentTemplateId || undefined,
+            email: testEmail,
+            subject: templateData.subject || 'Test Email',
+            content: finalContent
+        });
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+    const sendingTest = sendTestMutation.isPending;
 
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const res = await marketingService.deleteTemplate(token, id);
-            if (res.success) {
-                loadTemplates();
-            }
-        } catch (error) {
-            console.error('Failed to delete template:', error);
-        }
+    const handleDelete = (id: string, name: string) => {
+        if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+        deleteMutation.mutate(id);
     };
 
     const openEdit = (template: any) => {
@@ -499,7 +465,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                 </div>
             ) : (
                 <div className="row g-4">
-                    {templates.map(template => (
+                    {templates.map((template: any) => (
                         <div key={template.id} className="col-md-4">
                             <div className="card border-0 shadow-sm rounded-4 overflow-hidden h-100 template-card">
                                 <div className="template-preview bg-light p-2 d-flex align-items-center justify-content-center border-bottom" style={{ height: '180px', overflow: 'hidden' }}>
@@ -536,7 +502,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                             </div>
                             <div className="modal-body p-4 pt-0">
                                 <div className="row g-4">
-                                    {DEFAULT_TEMPLATES.map((tpl, idx) => (
+                                    {DEFAULT_TEMPLATES.map((tpl: any, idx: number) => (
                                         <div key={idx} className="col-md-4">
                                             <div className="card h-100 border rounded-4 hover-shadow cursor-default transition-all">
                                                 <div className="card-body p-4">
@@ -591,7 +557,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                                 <div className="mb-4">
                                                     <label className="form-label extra-small fw-bold text-uppercase text-muted">Choose Theme</label>
                                                     <div className="row g-2">
-                                                        {DEFAULT_THEMES.map(theme => (
+                                                        {DEFAULT_THEMES.map((theme: any) => (
                                                             <div key={theme.id} className="col-4">
                                                                 <div
                                                                     onClick={() => setDesign({ ...design, theme: theme.id })}
@@ -686,7 +652,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                                             ) : (
                                                                 <>
                                                                     <div className="list-group list-group-flush mb-3" style={{ maxHeight: '250px', overflowY: 'auto' }}>
-                                                                        {properties.map(prop => {
+                                                                        {properties.map((prop: Property) => {
                                                                             const isSelected = selectedPropertyIds.includes(prop.id);
                                                                             return (
                                                                                 <div
@@ -729,7 +695,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                                                             className="btn btn-primary w-100 btn-sm rounded-3 fw-bold shadow-sm"
                                                                             disabled={selectedPropertyIds.length === 0}
                                                                             onClick={() => {
-                                                                                const propsToInsert = properties.filter(p => selectedPropertyIds.includes(p.id));
+                                                                                const propsToInsert = properties.filter((p: any) => selectedPropertyIds.includes(p.id));
                                                                                 addPropertyGridToTemplate(propsToInsert);
                                                                             }}
                                                                         >

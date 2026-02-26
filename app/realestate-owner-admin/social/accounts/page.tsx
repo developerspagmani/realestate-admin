@@ -7,6 +7,7 @@ import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import ModuleGuard from '@/components/common/ModuleGuard';
 import Loader from '@/components/common/Loader';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function ConnectedAccountsPage() {
     return (
@@ -40,11 +41,9 @@ const PLATFORMS = [
 ];
 
 function AccountsContent() {
+    const queryClient = useQueryClient();
     const router = useRouter();
     const pathname = usePathname();
-    const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState<AccountStats>({ total: 0, active: 0, inactive: 0 });
 
     // Determine the base path (either /realestate-admin or /realestate-owner-admin)
     const basePath = pathname.includes('/realestate-owner-admin')
@@ -52,9 +51,60 @@ function AccountsContent() {
         : '/realestate-admin';
 
     useEffect(() => {
-        loadAccounts();
         loadMetaSDK();
     }, []);
+
+    const { data: accountsRes, isLoading: accountsLoading } = useQuery({
+        queryKey: ['social-accounts'],
+        queryFn: () => connectedAccountsApi.getAll(),
+    });
+
+    const { data: statsRes } = useQuery({
+        queryKey: ['social-account-stats'],
+        queryFn: () => connectedAccountsApi.getStats(),
+    });
+
+    const accounts = accountsRes?.data?.accounts || [];
+    const stats = statsRes?.data || { total: 0, active: 0, inactive: 0 };
+    const loading = accountsLoading;
+
+    // --- Mutations ---
+
+    const connectMutation = useMutation({
+        mutationFn: (data: any) => connectedAccountsApi.connect(data),
+        onSuccess: (res) => {
+            if (res.success) {
+                alert(`${res.data?.platform || 'Account'} connected successfully!`);
+                queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+                queryClient.invalidateQueries({ queryKey: ['social-account-stats'] });
+            } else {
+                alert(res.message || 'Failed to connect');
+            }
+        },
+        onError: (error) => {
+            console.error(error);
+            alert('An error occurred while connecting');
+        }
+    });
+
+    const disconnectMutation = useMutation({
+        mutationFn: (id: string) => connectedAccountsApi.disconnect(id),
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+                queryClient.invalidateQueries({ queryKey: ['social-account-stats'] });
+            }
+        }
+    });
+
+    const refreshMutation = useMutation({
+        mutationFn: (id: string) => connectedAccountsApi.refreshToken(id),
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['social-accounts'] });
+            }
+        }
+    });
 
     const loadMetaSDK = () => {
         const initFB = () => {
@@ -86,28 +136,6 @@ function AccountsContent() {
         }(document, 'script', 'facebook-jssdk'));
     };
 
-    const loadAccounts = async () => {
-        try {
-            setLoading(true);
-            const [accountsRes, statsRes] = await Promise.all([
-                connectedAccountsApi.getAll(),
-                connectedAccountsApi.getStats()
-            ]);
-
-            if (accountsRes.success) {
-                setAccounts(accountsRes.data.accounts || []);
-            }
-
-            if (statsRes.success) {
-                setStats(statsRes.data);
-            }
-        } catch (error) {
-            console.error('Error loading accounts:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const handleConnect = async (platform: string) => {
         const redirectUri = `${window.location.origin}${basePath}/auth/${platform.toLowerCase()}/callback`;
 
@@ -121,29 +149,14 @@ function AccountsContent() {
                         const accessToken = response.authResponse.accessToken;
                         const userId = response.authResponse.userID;
 
-                        const connectAccount = async () => {
-                            try {
-                                setLoading(true);
-                                const res = await connectedAccountsApi.connect({
-                                    platform: 'FACEBOOK',
-                                    accessToken: accessToken,
-                                    accountId: userId,
-                                    accountName: 'Facebook User',
-                                    metadata: { sdk_login: true }
-                                });
-
-                                if (res.success) {
-                                    alert('Facebook connected successfully!');
-                                    loadAccounts();
-                                } else {
-                                    alert(res.message || 'Failed to connect Facebook');
-                                }
-                            } catch (e) {
-                                console.error(e);
-                                alert('An error occurred while connecting');
-                            } finally {
-                                setLoading(false);
-                            }
+                        const connectAccount = () => {
+                            connectMutation.mutate({
+                                platform: 'FACEBOOK',
+                                accessToken: accessToken,
+                                accountId: userId,
+                                accountName: 'Facebook User',
+                                metadata: { sdk_login: true }
+                            });
                         };
 
                         connectAccount();
@@ -168,28 +181,13 @@ function AccountsContent() {
         }
     };
 
-    const handleDisconnect = async (id: string) => {
+    const handleDisconnect = (id: string) => {
         if (!confirm('Are you sure you want to disconnect this account?')) return;
-
-        try {
-            const res = await connectedAccountsApi.disconnect(id);
-            if (res.success) {
-                loadAccounts();
-            }
-        } catch (error) {
-            console.error('Error disconnecting account:', error);
-        }
+        disconnectMutation.mutate(id);
     };
 
-    const handleRefresh = async (id: string) => {
-        try {
-            const res = await connectedAccountsApi.refreshToken(id);
-            if (res.success) {
-                loadAccounts();
-            }
-        } catch (error) {
-            console.error('Error refreshing token:', error);
-        }
+    const handleRefresh = (id: string) => {
+        refreshMutation.mutate(id);
     };
 
     if (loading) {
@@ -215,25 +213,14 @@ function AccountsContent() {
                         <button
                             onClick={async () => {
                                 if (!confirm('Simulate a successful Meta connection for testing?')) return;
-                                try {
-                                    setLoading(true);
-                                    const testData = {
-                                        platform: 'FACEBOOK',
-                                        accessToken: 'dummy_access_token_' + Math.random().toString(36).substring(7),
-                                        accountId: 'vpx_' + Math.random().toString(36).substring(7),
-                                        accountName: 'Test Business Account',
-                                        metadata: { simulated: true, pages: [{ id: '123', name: 'Test Page', instagram_business_account: { id: 'ig_123', name: 'Test Insta' } }] }
-                                    };
-                                    const res = await connectedAccountsApi.connect(testData);
-                                    if (res.success) {
-                                        alert('Simulated connection successful!');
-                                        loadAccounts();
-                                    }
-                                } catch (e) {
-                                    console.error(e);
-                                } finally {
-                                    setLoading(false);
-                                }
+                                const testData = {
+                                    platform: 'FACEBOOK',
+                                    accessToken: 'dummy_access_token_' + Math.random().toString(36).substring(7),
+                                    accountId: 'vpx_' + Math.random().toString(36).substring(7),
+                                    accountName: 'Test Business Account',
+                                    metadata: { simulated: true, pages: [{ id: '123', name: 'Test Page', instagram_business_account: { id: 'ig_123', name: 'Test Insta' } }] }
+                                };
+                                connectMutation.mutate(testData);
                             }}
                             className="btn btn-outline-secondary btn-sm rounded-pill px-3 border-dashed"
                         >
@@ -263,7 +250,7 @@ function AccountsContent() {
                     <div className="card-body p-4">
                         {accounts.length > 0 ? (
                             <div className="row g-3">
-                                {accounts.map((account) => {
+                                {accounts.map((account: ConnectedAccount) => {
                                     const platform = PLATFORMS.find(p => p.id === account.platform);
                                     return (
                                         <div key={account.id} className="col-12">
@@ -325,8 +312,8 @@ function AccountsContent() {
                     </div>
                     <div className="card-body p-4">
                         <div className="row g-4">
-                            {PLATFORMS.map((platform) => {
-                                const isConnected = accounts.some(a => a.platform === platform.id && a.isActive);
+                            {PLATFORMS.map((platform: any) => {
+                                const isConnected = accounts.some((a: ConnectedAccount) => a.platform === platform.id && a.isActive);
                                 return (
                                     <div key={platform.id} className="col-md-6 col-lg-4">
                                         <button

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { leadService, agentService, marketingService, getAuthToken } from '@/app/services/api';
@@ -12,6 +12,7 @@ import LeadEngagementInsights from './LeadEngagementInsights';
 import LeadsKanban from './LeadsKanban';
 import Loader from '@/components/common/Loader';
 import StructuredLossModal from './StructuredLossModal';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export interface Lead {
     id: string;
@@ -54,23 +55,10 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
     const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
     const [mounted, setMounted] = useState(false);
-    const [leads, setLeads] = useState<Lead[]>([]);
-    const [agents, setAgents] = useState<Agent[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editingLead, setEditingLead] = useState<Lead | null>(null);
     const [formData, setFormData] = useState<Partial<Lead & { agentId: string }>>({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        source: 'website',
-        status: 'new',
-        budget: 0,
-        requirements: '',
-        notes: '',
-        assignedTo: '',
-        priority: 2,
-        agentId: ''
+        name: '', email: '', phone: '', company: '', source: 'website', status: 'new', budget: 0, requirements: '', notes: '', assignedTo: '', priority: 2, agentId: ''
     });
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -79,130 +67,163 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [filterBudget, setFilterBudget] = useState<number | ''>('');
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [groupName, setGroupName] = useState('');
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
-        show: false,
-        message: '',
-        type: 'success'
+        show: false, message: '', type: 'success'
     });
     const [selectedLeadForInsights, setSelectedLeadForInsights] = useState<Lead | null>(null);
     const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
-    const [isLoading, setIsLoading] = useState(true);
     const [isConverting, setIsConverting] = useState(false);
     const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
     const [showLossModal, setShowLossModal] = useState(false);
     const [leadToMarkLost, setLeadToMarkLost] = useState<Lead | null>(null);
     const { hasModule } = useAuthContext();
+    const router = useRouter();
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
     };
-    const router = useRouter();
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    useEffect(() => { setMounted(true); }, []);
 
-    const loadLeads = async (silent = false) => {
-        try {
-            if (!silent) setIsLoading(true);
-            const token = getAuthToken();
-            if (!token) {
-                if (!silent) setIsLoading(false);
-                return;
-            }
+    // --- TanStack Queries ---
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+    const queryClient = useQueryClient();
+
+    const { data: rawLeadsData, isLoading: leadsLoading } = useQuery({
+        queryKey: ['leads', mode, tenantId, activeOwnerId, tenantType],
+        queryFn: async () => {
             const industryType = mode === 'admin' ? tenantType : undefined;
-
-            const response = await leadService.getLeads(token, {
+            const res = await leadService.getLeads(token!, {
                 tenantId: tenantId || undefined,
                 industryType,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
             });
+            if (!res.success) throw new Error(res.message || 'Failed to fetch leads');
+            return res.data?.leads || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+        refetchInterval: 30000, // Replace manual polling
+    });
 
-            if (response.success && response.data && response.data.leads) {
-                const mappedLeads: Lead[] = response.data.leads.map((l: any) => {
-                    const dbTags = l.tags ? l.tags.split(',').filter(Boolean) : [];
-                    const workflowTags = l.enrollments?.map((e: any) => `Workflow: ${e.workflow?.name}`) || [];
+    const leads = useMemo(() => {
+        const rawLeads = Array.isArray(rawLeadsData) ? rawLeadsData : [];
+        return rawLeads.map((l: any) => {
+            const dbTags = l.tags ? l.tags.split(',').filter(Boolean) : [];
+            const workflowTags = l.enrollments?.map((e: any) => `Workflow: ${e.workflow?.name}`) || [];
 
-                    return {
-                        id: l.id,
-                        name: l.name || 'Anonymous',
-                        email: l.email || '',
-                        phone: l.phone || '',
-                        company: l.company || '',
-                        source: l.source === 1 ? 'website' :
-                            l.source === 2 ? 'email' :
-                                l.source === 3 ? 'phone' :
-                                    l.source === 4 ? 'social' :
-                                        l.source === 5 ? 'referral' :
-                                            l.source === 7 ? 'chatbot' : 'other',
-                        status: l.status === 1 ? 'new' :
-                            l.status === 2 ? 'contacted' :
-                                l.status === 3 ? 'qualified' :
-                                    l.status === 4 ? 'converted' : 'lost',
-                        budget: l.budget ? Number(l.budget) : 0,
-                        requirements: l.message || '',
-                        notes: l.notes || '',
-                        assignedTo: l.assignedTo || '',
-                        assignedAgent: l.agent,
-                        priority: l.priority || 2,
-                        leadScore: l.leadScore || 0,
-                        createdAt: l.createdAt,
-                        updatedAt: l.updatedAt || l.createdAt,
-                        lastContacted: l.lastContacted || null,
-                        tags: [...dbTags, ...workflowTags],
-                        userId: l.userId,
-                        enrollments: l.enrollments
-                    };
-                });
+            return {
+                id: l.id,
+                name: l.name || 'Anonymous',
+                email: l.email || '',
+                phone: l.phone || '',
+                company: l.company || '',
+                source: l.source === 1 ? 'website' : l.source === 2 ? 'email' : l.source === 3 ? 'phone' : l.source === 4 ? 'social' : l.source === 5 ? 'referral' : l.source === 7 ? 'chatbot' : 'other',
+                status: l.status === 1 ? 'new' : l.status === 2 ? 'contacted' : l.status === 3 ? 'qualified' : l.status === 4 ? 'converted' : 'lost',
+                budget: l.budget ? Number(l.budget) : 0,
+                requirements: l.message || '',
+                notes: l.notes || '',
+                assignedTo: l.assignedTo || '',
+                assignedAgent: l.agent,
+                priority: l.priority || 2,
+                leadScore: l.leadScore || 0,
+                createdAt: l.createdAt,
+                updatedAt: l.updatedAt || l.createdAt,
+                lastContacted: l.lastContacted || null,
+                tags: [...dbTags, ...workflowTags],
+                userId: l.userId,
+                enrollments: l.enrollments
+            } as Lead;
+        });
+    }, [rawLeadsData]);
 
-                // Only update state if leads have actually changed or it's first load
-                setLeads(prevLeads => {
-                    const hasChanged = JSON.stringify(prevLeads) !== JSON.stringify(mappedLeads);
-                    return hasChanged ? mappedLeads : prevLeads;
-                });
+    const { data: agents = [] } = useQuery({
+        queryKey: ['agents'],
+        queryFn: async () => {
+            const res = await agentService.getAgents(token!, { status: 1 });
+            return res.data?.agents || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
+
+    const isLoading = leadsLoading;
+
+    // --- TanStack Mutations ---
+
+    const saveMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            if (editingLead) return leadService.updateLead(token!, editingLead.id, payload, tenantId);
+            return leadService.createLead(token!, payload);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast(editingLead ? 'Lead updated successfully' : 'Lead created successfully');
+                queryClient.invalidateQueries({ queryKey: ['leads'] });
+                resetForm();
+            } else {
+                showToast(res.message || 'Error saving lead', 'error');
             }
-        } catch (error) {
-            console.error('Failed to load leads:', error);
-            setLeads([]);
-        } finally {
-            if (!silent) setIsLoading(false);
-        }
-    };
+        },
+        onError: () => showToast('Error saving lead', 'error')
+    });
 
-    const loadAgents = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        try {
-            const res = await agentService.getAgents(token, { status: 1 }); // Active agents
-            if (res.success && res.data) {
-                setAgents(res.data.agents);
+    const statusMutation = useMutation({
+        mutationFn: async ({ id, status }: { id: string, status: number }) => leadService.updateLeadStatus(token!, id, status, tenantId),
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('Status updated successfully');
+                queryClient.invalidateQueries({ queryKey: ['leads'] });
+            } else {
+                showToast(res.message || 'Error updating status', 'error');
             }
-        } catch (error) {
-            console.error('Failed to load agents', error);
-        }
-    };
+        },
+        onError: () => showToast('Error updating status', 'error')
+    });
 
-    useEffect(() => {
-        if (!mounted) return;
-        if (!isAuthenticated || !user) {
-            router.push('/login');
-            return;
-        }
-        loadLeads();
-        loadAgents();
+    const lossMutation = useMutation({
+        mutationFn: async ({ id, lossData }: { id: string, lossData: any }) => leadService.markAsLost(token!, id, lossData, tenantId),
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('Lead marked as lost. Intelligence captured!');
+                queryClient.invalidateQueries({ queryKey: ['leads'] });
+                setShowLossModal(false);
+                setLeadToMarkLost(null);
+            } else {
+                showToast(res.message || 'Failed to mark lead as lost', 'error');
+            }
+        },
+        onError: () => showToast('Error marking lead as lost', 'error')
+    });
 
-        // Implement Option 1: Polling every 30 seconds
-        const pollInterval = setInterval(() => {
-            loadLeads(true); // Silent update
-        }, 30000);
+    const deleteMutation = useMutation({
+        mutationFn: async (ids: string[]) => {
+            return Promise.all(ids.map(id => leadService.deleteLead(token!, id, tenantId)));
+        },
+        onSuccess: () => {
+            showToast('Lead(s) deleted successfully');
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            setSelectedLeads([]);
+        },
+        onError: () => showToast('Error deleting lead(s)', 'error')
+    });
 
-        return () => clearInterval(pollInterval);
-    }, [user, isAuthenticated, mounted, router, activeTenantId, activeOwnerId, tenantType]);
+    const conversionMutation = useMutation({
+        mutationFn: async ({ id, payload }: { id: string, payload: any }) => leadService.updateLead(token!, id, payload, tenantId),
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('Lead successfully converted to a User!');
+                queryClient.invalidateQueries({ queryKey: ['leads'] });
+                setConvertingLead(null);
+            } else {
+                showToast(res.message || 'Failed to convert lead', 'error');
+            }
+        },
+        onError: () => showToast('Error converting lead', 'error')
+    });
+
+    const isSubmitting = saveMutation.isPending || lossMutation.isPending || conversionMutation.isPending;
 
     const allTags = Array.from(new Set(leads.flatMap(l => l.tags || []))).sort();
 
@@ -244,68 +265,36 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        try {
-            const token = getAuthToken();
-            if (!token) return;
 
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            if (!tenantId) return;
+        const sourceMap: Record<string, number> = {
+            'website': 1, 'email': 2, 'phone': 3, 'social': 4, 'referral': 5, 'other': 6, 'chatbot': 7
+        };
+        const statusMap: Record<string, number> = {
+            'new': 1, 'contacted': 2, 'qualified': 3, 'converted': 4, 'lost': 5
+        };
 
-            const sourceMap: Record<string, number> = {
-                'website': 1, 'email': 2, 'phone': 3, 'social': 4, 'referral': 5, 'other': 6, 'chatbot': 7
-            };
-            const statusMap: Record<string, number> = {
-                'new': 1, 'contacted': 2, 'qualified': 3, 'converted': 4, 'lost': 5
-            };
+        const payload = {
+            tenantId,
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            company: formData.company,
+            message: formData.requirements,
+            source: sourceMap[formData.source || 'website'] || 1,
+            status: statusMap[formData.status || 'new'] || 1,
+            budget: formData.budget,
+            notes: formData.notes,
+            priority: formData.priority || 2,
+            agentId: formData.agentId || undefined,
+            lossData: formData.lossData
+        };
 
-            const payload = {
-                tenantId,
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
-                company: formData.company,
-                message: formData.requirements,
-                source: sourceMap[formData.source || 'website'] || 1,
-                status: statusMap[formData.status || 'new'] || 1,
-                budget: formData.budget,
-                notes: formData.notes,
-                priority: formData.priority || 2,
-                agentId: formData.agentId || undefined,
-                lossData: formData.lossData
-            };
-
-            setIsSubmitting(true);
-            let res;
-            if (editingLead) {
-                res = await leadService.updateLead(token, editingLead.id, payload, tenantId);
-                if (res.success) {
-                    showToast('Lead updated successfully');
-                }
-            } else {
-                res = await leadService.createLead(token, payload);
-                if (res.success) {
-                    showToast('Lead created successfully');
-                }
-            }
-
-            if (res.success) {
-                loadLeads();
-                setIsSubmitting(false);
-                resetForm();
-            } else {
-                setIsSubmitting(false);
-                showToast('Failed to save lead', 'error');
-            }
-        } catch (error) {
-            console.error('Failed to save lead:', error);
-            showToast('Error saving lead', 'error');
-            setIsSubmitting(false);
-        }
+        saveMutation.mutate(payload);
     };
 
-    const handleStatusChange = async (id: string, newStatus: Lead['status']) => {
+    const handleStatusChange = (id: string, newStatus: Lead['status']) => {
         if (newStatus === 'lost' && hasModule('deal_intelligence')) {
             const lead = leads.find(l => l.id === id);
             if (lead) {
@@ -315,59 +304,20 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             }
         }
 
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            const statusMap: Record<string, number> = {
-                'new': 1, 'contacted': 2, 'qualified': 3, 'converted': 4, 'lost': 5
-            };
-            await leadService.updateLeadStatus(token, id, statusMap[newStatus], tenantId);
-            showToast('Status updated successfully');
-            loadLeads();
-        } catch (error) {
-            console.error('Failed to update status:', error);
-            showToast('Failed to update status', 'error');
-        }
+        const statusMap: Record<string, number> = {
+            'new': 1, 'contacted': 2, 'qualified': 3, 'converted': 4, 'lost': 5
+        };
+        statusMutation.mutate({ id, status: statusMap[newStatus] || 1 });
     };
 
-    const confirmLoss = async (lossData: any) => {
+    const confirmLoss = (lossData: any) => {
         if (!leadToMarkLost) return;
-        setIsSubmitting(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
-            const res = await leadService.markAsLost(token, leadToMarkLost.id, lossData, tenantId);
-            if (res.success) {
-                showToast('Lead marked as lost. Intelligence captured!');
-                setShowLossModal(false);
-                setLeadToMarkLost(null);
-                loadLeads();
-            } else {
-                showToast(res.message || 'Failed to mark as lost', 'error');
-            }
-        } catch (error) {
-            console.error('Loss confirmation failed:', error);
-            showToast('Failed to execute deal closer.', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
+        lossMutation.mutate({ id: leadToMarkLost.id, lossData });
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
         if (!window.confirm('Delete this lead?')) return;
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
-            await leadService.deleteLead(token, id, tenantId);
-            showToast('Lead deleted successfully');
-            loadLeads();
-        } catch (error) {
-            console.error('Delete error:', error);
-            showToast('Error deleting lead', 'error');
-        }
+        deleteMutation.mutate([id]);
     };
 
     const toggleSelectAll = () => {
@@ -384,25 +334,9 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         );
     };
 
-    const handleBulkDelete = async () => {
+    const handleBulkDelete = () => {
         if (!window.confirm(`Are you sure you want to delete ${selectedLeads.length} leads?`)) return;
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
-
-            // Sequential delete for safety if bulk endpoint isn't ready
-            for (const id of selectedLeads) {
-                await leadService.deleteLead(token, id, tenantId);
-            }
-
-            showToast(`${selectedLeads.length} leads deleted successfully`);
-            setSelectedLeads([]);
-            loadLeads();
-        } catch (error) {
-            console.error('Bulk delete error:', error);
-            showToast('Error during bulk deletion', 'error');
-        }
+        deleteMutation.mutate(selectedLeads);
     };
 
     const handleExportLeads = () => {
@@ -448,40 +382,19 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         // I will assume there's a need to confirm first.
     };
 
-    const confirmConversion = async (userData: any) => {
+    const confirmConversion = (userData: any) => {
         if (!convertingLead) return;
-        try {
-            setIsConverting(true);
-            const token = getAuthToken();
-            if (!token) return;
 
-            // Use leadService or authService to convert
-            // Since I haven't added the backend yet, I'll assume I'll call a hypothetical endpoint
-            // or I can add it now.
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            const { id: _, requirements, assignedAgent, leadScore, createdAt, updatedAt, lastContacted, tags, assignedTo, ...leadParams } = convertingLead;
-            const res = await leadService.updateLead(token, convertingLead.id, {
-                ...leadParams,
-                message: requirements, // Map requirements to message for API
-                preferences: { tags }, // Wrap tags in preferences for API
-                status: 4, // Converted
-                isConvertedToUser: true,
-                userCreationData: userData
-            }, tenantId);
-
-            if (res.success) {
-                showToast(`Lead ${convertingLead.name} successfully converted to a User!`);
-                setConvertingLead(null);
-                loadLeads();
-            } else {
-                showToast(res.message || 'Failed to convert lead', 'error');
-            }
-        } catch (error) {
-            console.error('Conversion error:', error);
-            showToast('Error converting lead', 'error');
-        } finally {
-            setIsConverting(false);
-        }
+        const { id: _, requirements, assignedAgent, leadScore, createdAt, updatedAt, lastContacted, tags, assignedTo, ...leadParams } = convertingLead;
+        const payload = {
+            ...leadParams,
+            message: requirements,
+            preferences: { tags },
+            status: 4,
+            isConvertedToUser: true,
+            userCreationData: userData
+        };
+        conversionMutation.mutate({ id: convertingLead.id, payload });
     };
 
     const resetForm = () => {
@@ -490,8 +403,6 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         });
         setEditingLead(null);
         setShowModal(false);
-        setSuccessMessage(null);
-        setIsSubmitting(false);
     };
 
     const getStatusBadge = (status: Lead['status']) => {
@@ -840,7 +751,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                                 onChange={(e) => setFormData({ ...formData, agentId: e.target.value })}
                                             >
                                                 <option value="">Auto-Assign (Round Robin)</option>
-                                                {agents.map(agent => (
+                                                {agents.map((agent: any) => (
                                                     <option key={agent.id} value={agent.id}>
                                                         {agent.user?.name || agent.id} ({agent.totalLeads} leads)
                                                     </option>

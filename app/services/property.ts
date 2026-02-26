@@ -21,6 +21,7 @@ export const propertyService = {
     },
 
     createProperty: async (token: string, propertyData: Partial<Property>, tenantId?: string) => {
+        const { id, userId, agent, propertyAmenities, units, mainImage, tenant, createdAt, updatedAt, _count, ...rest } = propertyData as any;
         return await makeApiCall(propertyEndpoints.create(), {
             method: 'POST',
             headers: {
@@ -28,20 +29,26 @@ export const propertyService = {
                 ...(tenantId ? { 'x-tenant-domain': tenantId } : {})
             },
             body: JSON.stringify({
-                ...propertyData,
-                ...(tenantId && !propertyData.tenantId ? { tenantId } : {})
+                ...rest,
+                ...(tenantId && !rest.tenantId ? { tenantId } : {})
             }),
         });
     },
 
     updateProperty: async (token: string, propertyId: string, propertyData: Partial<Property>, tenantId?: string) => {
-        return await makeApiCall(propertyEndpoints.update(propertyId, tenantId), {
+        // Handle updating a property - strip read-only/meta fields
+        const { id, userId, agent, propertyAmenities, units, mainImage, tenant, createdAt, updatedAt, _count, ...rest } = propertyData as any;
+        const url = propertyEndpoints.update(propertyId, tenantId);
+        return await makeApiCall(url, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 ...(tenantId ? { 'x-tenant-domain': tenantId } : {})
             },
-            body: JSON.stringify(propertyData),
+            body: JSON.stringify({
+                ...rest,
+                ...(tenantId && !rest.tenantId ? { tenantId } : {})
+            }),
         });
     },
 

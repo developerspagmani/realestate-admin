@@ -225,7 +225,7 @@ export default function WhatsAppSetup({ onSuccess, initialData }: SetupComponent
                                 className="btn btn-success btn-lg px-5 rounded-pill shadow-sm py-3 fw-bold"
                             >
                                 {loading ? (
-                                    <Loader size="sm" message="Connecting..." />
+                                    <><span className="spinner-border spinner-border-sm me-2"></span> Connecting...</>
                                 ) : (
                                     <><i className="bi bi-whatsapp me-2"></i> Connect with Meta</>
                                 )}

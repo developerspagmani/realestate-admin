@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { User } from '@/types';
@@ -9,6 +9,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Loader from '@/components/common/Loader';
 import Toast from '@/components/common/Toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface UsersManagerProps {
     mode: 'admin' | 'owner';
@@ -17,24 +18,17 @@ interface UsersManagerProps {
 export default function UsersManager({ mode }: UsersManagerProps) {
     const { user: currentUser, isAuthenticated, isAdmin, isOwner, loading: authLoading } = useAuthContext();
     const { tenantType, activeTenantId } = useManagementContext();
+    const queryClient = useQueryClient();
     const [mounted, setMounted] = useState(false);
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [formData, setFormData] = useState<Partial<User>>({
-        name: '',
-        email: '',
-        phone: '',
-        role: 'user',
-        status: 'active'
+        name: '', email: '', phone: '', role: 'user', status: 'active'
     });
     const [searchTerm, setSearchTerm] = useState('');
     const [filterRole, setFilterRole] = useState<string>('all');
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
-        show: false,
-        message: '',
-        type: 'success'
+        show: false, message: '', type: 'success'
     });
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -43,69 +37,97 @@ export default function UsersManager({ mode }: UsersManagerProps) {
 
     const router = useRouter();
 
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    useEffect(() => { setMounted(true); }, []);
 
-    const loadUsers = async () => {
-        setLoading(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
+    // --- TanStack Query ---
 
-            const tenantId = mode === 'admin' ? activeTenantId : (currentUser as any)?.tenantId;
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const tenantId = mode === 'admin' ? activeTenantId : (currentUser as any)?.tenantId;
+
+    const { data: rawUsersData, isLoading: usersLoading, isFetching } = useQuery({
+        queryKey: ['users', mode, tenantId, tenantType, filterRole],
+        queryFn: async () => {
             const industryType = mode === 'admin' ? tenantType : undefined;
-
-            const roleMap: Record<string, string> = {
-                'user': '1', 'admin': '2', 'owner': '3', 'agent': '4'
-            };
-
-            const params: any = {
-                tenantId: tenantId || undefined,
-                industryType
-            };
+            const roleMap: Record<string, string> = { 'user': '1', 'admin': '2', 'owner': '3', 'agent': '4' };
+            const params: any = { tenantId: tenantId || undefined, industryType };
             if (filterRole !== 'all') params.role = roleMap[filterRole];
 
-            const response = await userService.getUsers(token, params);
+            const res = await userService.getUsers(token!, params);
+            if (!res.success) throw new Error(res.message || 'Failed to fetch users');
+            return res.data.users || res.data || [];
+        },
+        enabled: !!token && mounted && isAuthenticated && !authLoading,
+    });
 
-            if (response.success && response.data) {
-                const usersList = response.data.users || response.data;
-                const mappedUsers: User[] = usersList
-                    .map((u: any) => ({
-                        id: u.id,
-                        name: u.name || 'Unknown User',
-                        email: u.email,
-                        phone: u.phone || '--',
-                        role: u.role === 2 ? 'admin' : u.role === 3 ? 'owner' : u.role === 4 ? 'agent' : 'user',
-                        status: u.status === 2 ? 'inactive' : u.status === 3 ? 'suspended' : 'active',
-                        tenantId: u.tenantId,
-                        createdAt: u.createdAt,
-                        lastLogin: u.lastLogin,
-                        bookingsCount: u._count?.bookings || 0
-                    }))
-                    // Strict client-side filter to ensure isolation
-                    .filter((u: any) => !tenantId || u.tenantId === tenantId);
+    const users = useMemo(() => {
+        const usersList = Array.isArray(rawUsersData) ? rawUsersData : [];
+        return usersList
+            .map((u: any) => ({
+                id: u.id,
+                name: u.name || 'Unknown User',
+                email: u.email,
+                phone: u.phone || '--',
+                role: u.role === 2 ? 'admin' : u.role === 3 ? 'owner' : u.role === 4 ? 'agent' : 'user',
+                status: u.status === 2 ? 'inactive' : u.status === 3 ? 'suspended' : 'active',
+                tenantId: u.tenantId,
+                createdAt: u.createdAt,
+                lastLogin: u.lastLogin,
+                bookingsCount: u._count?.bookings || u.bookingsCount || 0
+            }))
+            .filter((u: any) => !tenantId || u.tenantId === tenantId) as User[];
+    }, [rawUsersData]);
 
-                setUsers(mappedUsers);
+    const loading = usersLoading;
+
+    // --- Mutations ---
+
+    const saveMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            if (editingUser) return userService.updateUser(token!, editingUser.id, payload);
+            return userService.createUser(token!, payload);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast(editingUser ? 'User updated successfully' : 'User created successfully');
+                queryClient.invalidateQueries({ queryKey: ['users'] });
+                resetForm();
+            } else {
+                showToast(res.message || 'Error saving user', 'error');
             }
-        } catch (error) {
-            console.error('Failed to load users:', error);
-            showToast('Failed to load users', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+        },
+        onError: () => showToast('Error saving user', 'error')
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => userService.deleteUser(token!, id),
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('User deleted successfully');
+                queryClient.invalidateQueries({ queryKey: ['users'] });
+            } else {
+                showToast(res.message || 'Error deleting user', 'error');
+            }
+        },
+        onError: () => showToast('Error deleting user', 'error')
+    });
+
+    const roleMutation = useMutation({
+        mutationFn: async ({ id, payload }: { id: string, payload: any }) => userService.updateUserStatus(token!, id, payload),
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('Role updated successfully');
+                queryClient.invalidateQueries({ queryKey: ['users'] });
+            } else {
+                showToast(res.message || 'Error updating role', 'error');
+            }
+        },
+        onError: () => showToast('Error updating role', 'error')
+    });
 
     useEffect(() => {
         if (!mounted || authLoading) return;
-
-        if (!isAuthenticated || !currentUser) {
-            router.push('/login');
-            return;
-        }
-
-        loadUsers();
-    }, [currentUser, isAuthenticated, mounted, authLoading, router, filterRole, activeTenantId, tenantType]);
+        if (!isAuthenticated || !currentUser) router.push('/login');
+    }, [currentUser, isAuthenticated, mounted, authLoading, router]);
 
     const filteredUsers = users.filter(u => {
         const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -113,44 +135,32 @@ export default function UsersManager({ mode }: UsersManagerProps) {
         return matchesSearch;
     });
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        try {
-            const token = getAuthToken();
-            if (!token) return;
+        const currentTenantId = mode === 'admin' ? activeTenantId : (currentUser as any)?.tenantId;
+        const targetTenantId = currentTenantId || localStorage.getItem('tenant-id');
 
-            const currentTenantId = mode === 'admin' ? activeTenantId : (currentUser as any)?.tenantId;
-            const targetTenantId = currentTenantId || localStorage.getItem('tenant-id');
+        const roleMap: Record<string, number> = {
+            'user': 1, 'admin': 2, 'owner': 3, 'agent': 4
+        };
 
-            const roleMap: Record<string, number> = {
-                'user': 1, 'admin': 2, 'owner': 3, 'agent': 4
-            };
-
-            if (editingUser) {
-                await userService.updateUser(token, editingUser.id, {
-                    name: formData.name,
-                    phone: formData.phone,
-                    status: formData.status === 'active' ? 1 : formData.status === 'inactive' ? 2 : 3,
-                    role: isAdmin ? roleMap[formData.role as string] : (editingUser.role === 'admin' ? 2 : (editingUser.role === 'owner' ? 3 : 1))
-                });
-            } else {
-                await userService.createUser(token, {
-                    name: formData.name,
-                    email: formData.email,
-                    phone: formData.phone,
-                    password: 'Password123!',
-                    tenantId: targetTenantId || '',
-                    role: isAdmin ? (roleMap[formData.role as string] || 1) : 1
-                });
-            }
-
-            resetForm();
-            loadUsers();
-            showToast(editingUser ? 'User updated successfully' : 'User created successfully');
-        } catch (error) {
-            console.error('Failed to save user:', error);
-            showToast('Error saving user. Please check all fields.', 'error');
+        if (editingUser) {
+            saveMutation.mutate({
+                name: formData.name,
+                phone: formData.phone,
+                status: formData.status === 'active' ? 1 : formData.status === 'inactive' ? 2 : 3,
+                role: isAdmin ? roleMap[formData.role as string] : (editingUser.role === 'admin' ? 2 : (editingUser.role === 'owner' ? 3 : 1))
+            });
+        } else {
+            saveMutation.mutate({
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                password: 'Password123!',
+                tenantId: targetTenantId || '',
+                role: isAdmin ? (roleMap[formData.role as string] || 1) : 1
+            });
         }
     };
 
@@ -166,37 +176,15 @@ export default function UsersManager({ mode }: UsersManagerProps) {
         setShowModal(true);
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
         if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-            try {
-                const token = getAuthToken();
-                if (!token) return;
-                await userService.deleteUser(token, id);
-                loadUsers();
-                showToast('User deleted successfully');
-            } catch (error) {
-                console.error('Failed to delete user:', error);
-                showToast('Could not delete user.', 'error');
-            }
+            deleteMutation.mutate(id);
         }
     };
 
-    const handleRoleChange = async (id: string, newRole: User['role']) => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-
-            const roleMap: Record<string, number> = {
-                'user': 1, 'admin': 2, 'owner': 3, 'agent': 4
-            };
-
-            await userService.updateUserStatus(token, id, {
-                role: roleMap[newRole]
-            });
-            loadUsers();
-        } catch (error) {
-            console.error('Failed to update role:', error);
-        }
+    const handleRoleChange = (id: string, newRole: User['role']) => {
+        const roleMap: Record<string, number> = { 'user': 1, 'admin': 2, 'owner': 3, 'agent': 4 };
+        roleMutation.mutate({ id, payload: { role: roleMap[newRole] } });
     };
 
     const resetForm = () => {
@@ -285,9 +273,10 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                 </span>
                                 <button
                                     className="btn btn-sm btn-link text-decoration-none ms-2"
-                                    onClick={loadUsers}
+                                    onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
+                                    disabled={isFetching}
                                 >
-                                    <i className="bi bi-arrow-clockwise"></i>
+                                    <i className={`bi bi-arrow-clockwise ${isFetching ? 'spin' : ''}`}></i>
                                 </button>
                             </div>
                         </div>
@@ -311,7 +300,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                 {loading ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-5">
-                                            <Loader message="Loading system users..." />
+                                            <Loader message="Loading users..." />
                                         </td>
                                     </tr>
                                 ) : filteredUsers.length > 0 ? (

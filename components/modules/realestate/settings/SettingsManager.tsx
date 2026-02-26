@@ -7,6 +7,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SubscriptionSubTab from './SubscriptionSubTab';
 import SystemConfigSubTab from './SystemConfigSubTab';
 import EmailTemplatesSubTab from './EmailTemplatesSubTab';
@@ -16,81 +17,28 @@ interface SettingsManagerProps {
 }
 
 export default function SettingsManager({ mode }: SettingsManagerProps) {
+    const queryClient = useQueryClient();
     const { user, isAuthenticated, loading: authLoading, isAdmin, isOwner } = useAuthContext();
     const { activeTenantId, refreshTenant } = useManagementContext();
     const [mounted, setMounted] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [profileSaving, setProfileSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('general');
 
     const [settings, setSettings] = useState<any>({
-        general: {
-            siteName: '',
-            supportEmail: '',
-            contactPhone: '',
-            address: '',
-            city: '',
-            state: '',
-            country: '',
-            postalCode: '',
-            currency: 'AED',
-            timezone: 'UTC',
-        },
-        appearance: {
-            primaryColor: '#6366f1',
-            logoUrl: '',
-            darkMode: false,
-        },
-        notifications: {
-            emailBookings: true,
-            emailLeads: true,
-            emailUpdates: false,
-            whatsappAlerts: true,
-        },
-        tenant: {
-            name: '',
-            domain: '',
-            type: 2,
-        },
-        backup: {
-            autoBackup: false,
-            frequency: 'weekly',
-            lastBackup: null,
-        },
-        privacy: {
-            gdprConsent: false,
-            cookieNotice: true,
-            privacyLink: '',
-            termsLink: '',
-        },
+        general: { siteName: '', supportEmail: '', contactPhone: '', address: '', city: '', state: '', country: '', postalCode: '', currency: 'AED', timezone: 'UTC' },
+        appearance: { primaryColor: '#6366f1', logoUrl: '', darkMode: false },
+        notifications: { emailBookings: true, emailLeads: true, emailUpdates: false, whatsappAlerts: true },
+        tenant: { name: '', domain: '', type: 2 },
+        backup: { autoBackup: false, frequency: 'weekly', lastBackup: null },
+        privacy: { gdprConsent: false, cookieNotice: true, privacyLink: '', termsLink: '' },
         emailTemplates: {}
     });
 
     const [profile, setProfile] = useState<any>({
-        firstName: '',
-        lastName: '',
-        name: '',
-        email: '',
-        phone: '',
-        companyName: '',
-        website: '',
-        addressLine1: '',
-        addressLine2: '',
-        city: '',
-        state: '',
-        country: '',
-        zipCode: '',
+        firstName: '', lastName: '', name: '', email: '', phone: '', companyName: '', website: '',
+        addressLine1: '', addressLine2: '', city: '', state: '', country: '', zipCode: ''
     });
 
-    const [passwordData, setPasswordData] = useState({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-    });
-
-    const [resetLoading, setResetLoading] = useState(false);
-    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
@@ -108,98 +56,182 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
         setMounted(true);
     }, []);
 
-    const loadSettings = async () => {
-        if (!user) return;
-        setLoading(true);
-        try {
-            const { tenantService, userService } = await import('@/app/services/api');
-            const token = getAuthToken();
-            if (!token) {
-                setLoading(false);
-                return;
-            }
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const effectiveTenantId = mode === 'admin' ? activeTenantId : (user?.tenantId || null);
 
-            const effectiveTenantId = mode === 'admin' ? activeTenantId : (user?.tenantId || null);
+    // --- Queries ---
 
-            // Load Tenant Settings if tenantId exists
-            if (effectiveTenantId) {
-                const tenantRes = await tenantService.getTenantById(token, effectiveTenantId);
-                if (tenantRes.success && tenantRes.data) {
-                    const tenant = tenantRes.data;
-                    const dbSettings = tenant.settings || {};
+    const { data: tenantData, isLoading: tenantLoading } = useQuery({
+        queryKey: ['tenant-settings', effectiveTenantId],
+        queryFn: async () => {
+            const { tenantService } = await import('@/app/services/api');
+            const res = await tenantService.getTenantById(token!, effectiveTenantId!);
+            return res.success ? res.data : null;
+        },
+        enabled: !!token && mounted && isAuthenticated && !!effectiveTenantId,
+    });
 
-                    setSettings({
-                        general: {
-                            siteName: tenant.name || '',
-                            supportEmail: dbSettings.general?.supportEmail || '',
-                            contactPhone: dbSettings.general?.contactPhone || '',
-                            address: tenant.address || '',
-                            city: tenant.city || '',
-                            state: tenant.state || '',
-                            country: tenant.country || '',
-                            postalCode: tenant.postalCode || '',
-                            currency: dbSettings.general?.currency || 'USD',
-                            timezone: dbSettings.general?.timezone || 'UTC',
-                        },
-                        appearance: {
-                            primaryColor: dbSettings.appearance?.primaryColor || '#6366f1',
-                            logoUrl: dbSettings.appearance?.logoUrl || '',
-                            darkMode: dbSettings.appearance?.darkMode || false,
-                        },
-                        notifications: {
-                            emailBookings: dbSettings.notifications?.emailBookings ?? true,
-                            emailLeads: dbSettings.notifications?.emailLeads ?? true,
-                            emailUpdates: dbSettings.notifications?.emailUpdates ?? false,
-                            whatsappAlerts: dbSettings.notifications?.whatsappAlerts ?? true,
-                        },
-                        tenant: {
-                            name: tenant.name || '',
-                            domain: tenant.domain || '',
-                            type: tenant.type || (mode === 'owner' ? 1 : 2),
-                        },
-                        backup: {
-                            autoBackup: dbSettings.backup?.autoBackup || false,
-                            frequency: dbSettings.backup?.frequency || 'weekly',
-                            lastBackup: dbSettings.backup?.lastBackup || null,
-                        },
-                        privacy: {
-                            gdprConsent: dbSettings.privacy?.gdprConsent ?? false,
-                            cookieNotice: dbSettings.privacy?.cookieNotice ?? true,
-                            privacyLink: dbSettings.privacy?.privacyLink || '',
-                            termsLink: dbSettings.privacy?.termsLink || '',
-                        },
-                        emailTemplates: dbSettings.emailTemplates || {}
-                    });
-                }
-            }
+    const { data: profileData, isLoading: profileLoading } = useQuery({
+        queryKey: ['profile'],
+        queryFn: async () => {
+            const { userService } = await import('@/app/services/api');
+            const res = await userService.getProfile(token!);
+            return res.success ? res.data?.user : null;
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            // Load User Profile
-            const profileRes = await userService.getProfile(token);
-            if (profileRes.success && profileRes.data?.user) {
-                const u = profileRes.data.user;
-                setProfile({
-                    firstName: u.firstName || '',
-                    lastName: u.lastName || '',
-                    name: u.name || '',
-                    email: u.email || '',
-                    phone: u.phone || '',
-                    companyName: u.companyName || '',
-                    website: u.website || '',
-                    addressLine1: u.addressLine1 || '',
-                    addressLine2: u.addressLine2 || '',
-                    city: u.city || '',
-                    state: u.state || '',
-                    country: u.country || '',
-                    zipCode: u.zipCode || '',
-                });
-            }
-        } catch (error) {
-            console.error('Failed to load settings:', error);
-            showToast('Failed to load settings', 'error');
-        } finally {
-            setLoading(false);
+    useEffect(() => {
+        if (tenantData) {
+            const tenant = tenantData;
+            const dbSettings = tenant.settings || {};
+            setSettings({
+                general: {
+                    siteName: tenant.name || '',
+                    supportEmail: dbSettings.general?.supportEmail || '',
+                    contactPhone: dbSettings.general?.contactPhone || '',
+                    address: tenant.address || '',
+                    city: tenant.city || '',
+                    state: tenant.state || '',
+                    country: tenant.country || '',
+                    postalCode: tenant.postalCode || '',
+                    currency: dbSettings.general?.currency || 'USD',
+                    timezone: dbSettings.general?.timezone || 'UTC',
+                },
+                appearance: {
+                    primaryColor: dbSettings.appearance?.primaryColor || '#6366f1',
+                    logoUrl: dbSettings.appearance?.logoUrl || '',
+                    darkMode: dbSettings.appearance?.darkMode || false,
+                },
+                notifications: {
+                    emailBookings: dbSettings.notifications?.emailBookings ?? true,
+                    emailLeads: dbSettings.notifications?.emailLeads ?? true,
+                    emailUpdates: dbSettings.notifications?.emailUpdates ?? false,
+                    whatsappAlerts: dbSettings.notifications?.whatsappAlerts ?? true,
+                },
+                tenant: {
+                    name: tenant.name || '',
+                    domain: tenant.domain || '',
+                    type: tenant.type || (mode === 'owner' ? 1 : 2),
+                },
+                backup: {
+                    autoBackup: dbSettings.backup?.autoBackup || false,
+                    frequency: dbSettings.backup?.frequency || 'weekly',
+                    lastBackup: dbSettings.backup?.lastBackup || null,
+                },
+                privacy: {
+                    gdprConsent: dbSettings.privacy?.gdprConsent ?? false,
+                    cookieNotice: dbSettings.privacy?.cookieNotice ?? true,
+                    privacyLink: dbSettings.privacy?.privacyLink || '',
+                    termsLink: dbSettings.privacy?.termsLink || '',
+                },
+                emailTemplates: dbSettings.emailTemplates || {}
+            });
         }
-    };
+    }, [tenantData, mode]);
+
+    useEffect(() => {
+        if (profileData) {
+            const u = profileData;
+            setProfile({
+                firstName: u.firstName || '',
+                lastName: u.lastName || '',
+                name: u.name || '',
+                email: u.email || '',
+                phone: u.phone || '',
+                companyName: u.companyName || '',
+                website: u.website || '',
+                addressLine1: u.addressLine1 || '',
+                addressLine2: u.addressLine2 || '',
+                city: u.city || '',
+                state: u.state || '',
+                country: u.country || '',
+                zipCode: u.zipCode || '',
+            });
+        }
+    }, [profileData]);
+
+    // --- Mutations ---
+
+    const saveSettingsMutation = useMutation({
+        mutationFn: async (newSettings: any) => {
+            const { tenantService } = await import('@/app/services/api');
+            const updatePayload = {
+                name: newSettings.general.siteName,
+                address: newSettings.general.address,
+                city: newSettings.general.city,
+                state: newSettings.general.state,
+                country: newSettings.general.country,
+                postalCode: newSettings.general.postalCode,
+                settings: newSettings
+            };
+            return tenantService.updateTenant(token!, effectiveTenantId!, updatePayload);
+        },
+        onSuccess: async (res) => {
+            if (res.success) {
+                await queryClient.invalidateQueries({ queryKey: ['tenant-settings'] });
+                await refreshTenant();
+                showToast('Organization settings updated successfully!');
+            } else {
+                showToast(res.message || 'Failed to update settings', 'error');
+            }
+        },
+        onError: () => showToast('Error saving settings', 'error')
+    });
+
+    const saveProfileMutation = useMutation({
+        mutationFn: async (data: any) => {
+            const { userService } = await import('@/app/services/api');
+            const profileUpdateData = {
+                ...data,
+                name: `${data.firstName} ${data.lastName}`.trim()
+            };
+            return userService.updateProfile(token!, profileUpdateData);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                queryClient.invalidateQueries({ queryKey: ['profile'] });
+                showToast('Profile updated successfully!');
+            } else {
+                showToast(res.message || 'Failed to update profile', 'error');
+            }
+        },
+        onError: () => showToast('Error updating profile', 'error')
+    });
+
+    const updatePasswordMutation = useMutation({
+        mutationFn: async (data: any) => {
+            const { authService } = await import('@/app/services/api');
+            return authService.updatePassword(token!, {
+                currentPassword: data.currentPassword,
+                newPassword: data.newPassword
+            });
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('Password updated successfully!');
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            } else {
+                showToast(res.message || 'Failed to update password', 'error');
+            }
+        },
+        onError: () => showToast('Error updating password', 'error')
+    });
+
+    const resetEmailMutation = useMutation({
+        mutationFn: async (email: string) => {
+            const { authService } = await import('@/app/services/api');
+            return authService.forgotPassword(email);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast(`Reset link sent!`);
+            } else {
+                showToast(res.message || 'Failed to send reset email', 'error');
+            }
+        },
+        onError: () => showToast('Error sending reset email', 'error')
+    });
 
     useEffect(() => {
         if (settings.appearance.darkMode) {
@@ -213,147 +245,42 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
         if (!mounted || authLoading) return;
         if (!isAuthenticated || !user) {
             router.push('/login');
-            return;
         }
-        loadSettings();
     }, [user, isAuthenticated, mounted, authLoading, router]);
 
-    const handleSaveSettings = async (e?: React.FormEvent) => {
+    const handleSaveSettings = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        const token = getAuthToken();
-        if (!token) return;
-
-        const effectiveTenantId = mode === 'admin' ? activeTenantId : (user?.tenantId || null);
         if (!effectiveTenantId) {
-            showToast('No tenant context found to save settings', 'error');
-            setSaving(false);
+            showToast('No tenant context found', 'error');
             return;
         }
 
-        setSaving(true);
-        try {
-            const { tenantService } = await import('@/app/services/api');
+        const timestamp = new Date().toISOString();
+        const newSettings = activeTab === 'backup' ? {
+            ...settings,
+            backup: { ...settings.backup, lastBackup: timestamp }
+        } : settings;
 
-            const timestamp = new Date().toISOString();
-            const newSettings = activeTab === 'backup' ? {
-                ...settings,
-                backup: { ...settings.backup, lastBackup: timestamp }
-            } : settings;
-
-            const updatePayload = {
-                name: newSettings.general.siteName,
-                address: newSettings.general.address,
-                city: newSettings.general.city,
-                state: newSettings.general.state,
-                country: newSettings.general.country,
-                postalCode: newSettings.general.postalCode,
-                settings: newSettings
-            };
-
-            const response = await tenantService.updateTenant(token, effectiveTenantId, updatePayload);
-            if (response.success) {
-                if (activeTab === 'backup') {
-                    setSettings(newSettings);
-                }
-
-                // Refresh the global management context to update currency symbols etc.
-                await refreshTenant();
-
-                // Re-fetch local settings to stay in sync
-                await loadSettings();
-
-                showToast('Organization settings updated successfully!');
-            } else {
-                showToast(response.message || 'Failed to update settings', 'error');
-            }
-        } catch (error) {
-            console.error('Failed to save settings:', error);
-            showToast('Error saving settings.', 'error');
-        } finally {
-            setSaving(false);
-        }
+        saveSettingsMutation.mutate(newSettings);
     };
 
-    const handleSaveProfile = async (e: React.FormEvent) => {
+    const handleSaveProfile = (e: React.FormEvent) => {
         e.preventDefault();
-        setProfileSaving(true);
-        try {
-            const { userService } = await import('@/app/services/api');
-            const token = getAuthToken();
-            if (!token) return;
-
-            const profileUpdateData = {
-                ...profile,
-                name: `${profile.firstName} ${profile.lastName}`.trim()
-            };
-
-            const res = await userService.updateProfile(token, profileUpdateData);
-            if (res.success) {
-                showToast('Profile updated successfully!');
-                // Update profile local state with response just in case
-                if (res.data?.user) {
-                    setProfile(res.data.user);
-                }
-            } else {
-                showToast(res.message || 'Failed to update profile', 'error');
-            }
-        } catch (error) {
-            console.error('Profile update error:', error);
-            showToast('Error updating profile', 'error');
-        } finally {
-            setProfileSaving(false);
-        }
+        saveProfileMutation.mutate(profile);
     };
 
-    const handleUpdatePassword = async (e: React.FormEvent) => {
+    const handleUpdatePassword = (e: React.FormEvent) => {
         e.preventDefault();
         if (passwordData.newPassword !== passwordData.confirmPassword) {
             showToast('New passwords do not match', 'error');
             return;
         }
-
-        setPasswordLoading(true);
-        try {
-            const { authService } = await import('@/app/services/api');
-            const token = getAuthToken();
-            if (!token) return;
-
-            const res = await authService.updatePassword(token, {
-                currentPassword: passwordData.currentPassword,
-                newPassword: passwordData.newPassword
-            });
-
-            if (res.success) {
-                showToast('Password updated successfully!');
-                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            } else {
-                showToast(res.message || 'Failed to update password', 'error');
-            }
-        } catch (error) {
-            console.error('Password update error:', error);
-            showToast('Error updating password', 'error');
-        } finally {
-            setPasswordLoading(false);
-        }
+        updatePasswordMutation.mutate(passwordData);
     };
 
-    const handleSendResetEmail = async () => {
+    const handleSendResetEmail = () => {
         if (!user?.email) return;
-        setResetLoading(true);
-        try {
-            const { authService } = await import('@/app/services/api');
-            const res = await authService.forgotPassword(user.email);
-            if (res.success) {
-                showToast(`Reset link sent to ${user.email}`);
-            } else {
-                showToast(res.message || 'Failed to send reset email', 'error');
-            }
-        } catch (error) {
-            console.error('Reset email error:', error);
-            showToast('Error sending reset email', 'error');
-        } finally {
-            setResetLoading(false);
-        }
+        resetEmailMutation.mutate(user.email);
     };
 
     const handleExportBackup = () => {
@@ -381,42 +308,22 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                 if (!importedSettings.general || !importedSettings.appearance) {
                     throw new Error('Invalid backup file format');
                 }
-
-                await setSettings(importedSettings);
-                const effectiveTenantId = mode === 'admin' ? activeTenantId : (user?.tenantId || null);
-                if (!effectiveTenantId) return;
-
-                setSaving(true);
-                const { tenantService } = await import('@/app/services/api');
-                const token = getAuthToken();
-                if (!token) return;
-
-                const updatePayload = {
-                    name: importedSettings.general.siteName,
-                    address: importedSettings.general.address,
-                    city: importedSettings.general.city,
-                    state: importedSettings.general.state,
-                    country: importedSettings.general.country,
-                    postalCode: importedSettings.general.postalCode,
-                    settings: importedSettings
-                };
-
-                const response = await tenantService.updateTenant(token, effectiveTenantId, updatePayload);
-                if (response.success) {
-                    showToast('Backup restored successfully!');
-                } else {
-                    showToast('Restored settings locally but failed to save to server.', 'error');
-                }
-
+                setSettings(importedSettings);
+                saveSettingsMutation.mutate(importedSettings);
             } catch (err) {
                 console.error('Import error:', err);
                 showToast('Failed to import backup. Invalid file.', 'error');
-            } finally {
-                setSaving(false);
             }
         };
         reader.readAsText(file);
     };
+
+    const loading = tenantLoading || profileLoading;
+    const saving = saveSettingsMutation.isPending;
+    const profileSaving = saveProfileMutation.isPending;
+    const passwordLoading = updatePasswordMutation.isPending;
+    const resetLoading = resetEmailMutation.isPending;
+
 
     if (!mounted || !user) return null;
 

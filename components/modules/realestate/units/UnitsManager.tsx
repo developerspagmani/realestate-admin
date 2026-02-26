@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { unitService, propertyService, mediaService, getAuthToken } from '@/app/services/api';
@@ -9,6 +9,7 @@ import { Seats, Property, MediaItem } from '@/types';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import MediaSelector from '@/components/shared/MediaSelector';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface UnitsManagerProps {
     mode: 'admin' | 'owner';
@@ -43,19 +44,14 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const { tenantType, activeTenantId, activeOwnerId, currencySymbol, currencyCode } = useManagementContext();
 
     const [mounted, setMounted] = useState(false);
-    const [view, setView] = useState<'list' | 'form'>('list');   // ← replaces showModal
-    const [units, setUnits] = useState<Seats[]>([]);
-    const [properties, setProperties] = useState<Property[]>([]);
+    const [view, setView] = useState<'list' | 'form'>('list');
     const [editingWorkspace, setEditingWorkspace] = useState<Seats | null>(null);
-    const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [formData, setFormData] = useState<Partial<Seats>>(EMPTY_FORM);
     const [showMediaModal, setShowMediaModal] = useState(false);
     const [mediaModalType, setMediaModalType] = useState<'main' | 'gallery'>('main');
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState<string>('all');
     const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [loading, setLoading] = useState(true);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
     const [filterProperty, setFilterProperty] = useState<string>(searchParams.get('propertyId') || 'all');
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -81,39 +77,39 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
     useEffect(() => { setMounted(true); }, []);
 
-    useEffect(() => {
-        if (!mounted) return;
-        if (!isAuthenticated || !user) { router.push('/login'); return; }
-        loadData();
-    }, [user, isAuthenticated, mounted, router, urlPropertyId, activeTenantId, activeOwnerId, tenantType]);
+    // --- TanStack Queries ---
 
-    // ── DATA LOADING ──────────────────────────────────────────────────────────
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+    const queryClient = useQueryClient();
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+    const { data: rawPropertiesData, isLoading: propsLoading } = useQuery({
+        queryKey: ['properties', mode, tenantId, activeOwnerId, tenantType],
+        queryFn: async () => {
             const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
-
-            const propsRes = await propertyService.getProperties(token, {
+            const res = await propertyService.getProperties(token!, {
                 tenantId: tenantId || undefined,
                 industryType,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId }),
             });
+            if (!res.success) throw new Error(res.message || 'Failed to fetch properties');
+            return res.data?.properties || res.data || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            let loadedProperties: Property[] = [];
-            if (propsRes.success && propsRes.data) {
-                const rawProps = propsRes.data.properties || propsRes.data || [];
-                loadedProperties = rawProps.map((p: any) => ({
-                    id: p.id,
-                    name: p.title || p.name,
-                } as unknown as Property));
-                setProperties(loadedProperties);
-            }
+    const properties = useMemo(() => {
+        const rawProps = Array.isArray(rawPropertiesData) ? rawPropertiesData : [];
+        return rawProps.map((p: any) => ({
+            id: p.id,
+            name: p.title || p.name,
+        } as unknown as Property));
+    }, [rawPropertiesData]);
 
+    const { data: rawUnitsData, isLoading: unitsLoading } = useQuery({
+        queryKey: ['units', mode, tenantId, activeOwnerId, urlPropertyId, tenantType],
+        queryFn: async () => {
+            const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
             const unitsParams: any = {
                 tenantId: tenantId || undefined,
                 industryType,
@@ -121,53 +117,124 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             };
             if (urlPropertyId) unitsParams.propertyId = urlPropertyId;
 
-            const unitsRes = await unitService.getUnits(token, unitsParams);
-            if (unitsRes.success && unitsRes.data?.units) {
-                setUnits(unitsRes.data.units.map((u: any) => {
-                    const prop = loadedProperties.find(p => p.id === u.propertyId);
-                    const fixed = u.unitPricing?.find((p: any) => p.pricingModel === 1)?.price || 0;
-                    const monthly = u.unitPricing?.find((p: any) => p.pricingModel === 4)?.price || 0;
-                    const re = u.realEstateDetails || {};
-                    return {
-                        id: u.id,
-                        name: u.unitCode || 'Unit ' + u.id.substring(0, 4),
-                        slug: u.slug || u.id,
-                        type: u.unitCategory === 1 ? 'apartment' : u.unitCategory === 2 ? 'house' : u.unitCategory === 3 ? 'office' : 'shop',
-                        floorNo: u.floorNo || 0,
-                        sizeSqft: u.sizeSqft || 0,
-                        bedrooms: re.bedrooms,
-                        bathrooms: re.bathrooms,
-                        furnishing: re.furnishing,
-                        parkingSlots: re.parkingSlots,
-                        facing: re.facing,
-                        price: parseFloat(fixed),
-                        monthlyRate: parseFloat(monthly),
-                        spaceId: u.propertyId,
-                        space: prop as any,
-                        features: u.unitAmenities?.map((a: any) => a.amenity?.name) || [],
-                        status: u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : u.status === 3 ? 'maintenance' : u.status === 4 ? 'sold' : 'available',
-                        createdAt: u.createdAt,
-                        updatedAt: u.updatedAt,
-                        mainImageId: u.mainImageId || '',
-                        gallery: u.gallery || [],
-                        displayPrice: re.displayPrice !== undefined ? re.displayPrice : true,
-                    };
-                }));
-            }
+            const res = await unitService.getUnits(token!, unitsParams);
+            if (!res.success) throw new Error(res.message || 'Failed to fetch units');
+            return res.data?.units || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-            const mediaRes = await mediaService.getMedia(token, {
+    const units = useMemo(() => {
+        const rawUnits = Array.isArray(rawUnitsData) ? rawUnitsData : [];
+        return rawUnits.map((u: any) => {
+            const prop = properties.find(p => p.id === u.propertyId);
+            const fixed = u.unitPricing?.find((p: any) => p.pricingModel === 1)?.price || 0;
+            const monthly = u.unitPricing?.find((p: any) => p.pricingModel === 4)?.price || 0;
+            const re = u.realEstateDetails || {};
+            return {
+                id: u.id,
+                name: u.unitCode || 'Unit ' + u.id.substring(0, 4),
+                slug: u.slug || u.id,
+                type: (u.unitCategory === 1 ? 'apartment' : u.unitCategory === 2 ? 'house' : u.unitCategory === 3 ? 'office' : 'shop') as any,
+                floorNo: u.floorNo || 0,
+                sizeSqft: u.sizeSqft || 0,
+                bedrooms: re.bedrooms,
+                bathrooms: re.bathrooms,
+                furnishing: re.furnishing,
+                parkingSlots: re.parkingSlots,
+                facing: re.facing,
+                price: parseFloat(fixed),
+                monthlyRate: parseFloat(monthly),
+                spaceId: u.propertyId,
+                space: prop as any,
+                features: u.unitAmenities?.map((a: any) => a.amenity?.name) || [],
+                status: (u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : u.status === 3 ? 'maintenance' : u.status === 4 ? 'sold' : 'available') as any,
+                createdAt: u.createdAt,
+                updatedAt: u.updatedAt,
+                mainImageId: u.mainImageId || '',
+                gallery: u.gallery || [],
+                displayPrice: re.displayPrice !== undefined ? re.displayPrice : true,
+            };
+        });
+    }, [rawUnitsData, properties]);
+
+    const { data: mediaItems = [] } = useQuery({
+        queryKey: ['media', tenantId],
+        queryFn: async () => {
+            const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
+            const res = await mediaService.getMedia(token!, {
                 tenantId: tenantId || undefined,
                 industryType,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId }),
             });
-            if (mediaRes.success) setMediaItems(mediaRes.data.media);
+            return res.data?.media || [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
 
-        } catch (error) {
-            console.error('Failed to load data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const loading = unitsLoading || propsLoading;
+
+    // --- TanStack Mutations ---
+
+    const saveMutation = useMutation({
+        mutationFn: async (payload: any) => {
+            if (editingWorkspace) {
+                return unitService.updateUnit(token!, editingWorkspace.id, payload, tenantId);
+            }
+            return unitService.createUnit(token!, payload, tenantId);
+        },
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast(editingWorkspace ? 'Unit updated successfully!' : 'Unit added successfully!');
+                queryClient.invalidateQueries({ queryKey: ['units'] });
+                backToList();
+            } else {
+                showToast(res.message || 'Error saving unit', 'error');
+            }
+        },
+        onError: () => showToast('Error saving unit.', 'error')
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (ids: string[]) => {
+            const currentTenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            return Promise.all(ids.map(id => unitService.deleteUnit(token!, id, currentTenantId)));
+        },
+        onSuccess: () => {
+            showToast('Unit(s) deleted successfully');
+            queryClient.invalidateQueries({ queryKey: ['units'] });
+            setSelectedUnits([]);
+        },
+        onError: () => showToast('Error deleting unit(s)', 'error')
+    });
+
+    const duplicateMutation = useMutation({
+        mutationFn: async (payload: any) => unitService.createUnit(token!, payload, tenantId),
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('Unit duplicated successfully!');
+                queryClient.invalidateQueries({ queryKey: ['units'] });
+            } else {
+                showToast(res.message || 'Error duplicating unit', 'error');
+            }
+        },
+        onError: () => showToast('Error duplicating unit.', 'error')
+    });
+
+    const statusMutation = useMutation({
+        mutationFn: async ({ id, status }: { id: string, status: number }) => unitService.updateUnit(token!, id, { status }, tenantId),
+        onSuccess: (res) => {
+            if (res.success) {
+                showToast('Status updated successfully');
+                queryClient.invalidateQueries({ queryKey: ['units'] });
+            } else {
+                showToast(res.message || 'Error updating status', 'error');
+            }
+        },
+        onError: () => showToast('Error updating status.', 'error')
+    });
+
+
 
     // ── FILTERS ───────────────────────────────────────────────────────────────
 
@@ -233,142 +300,87 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
     // ── SUBMIT ────────────────────────────────────────────────────────────────
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!validateForm()) {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
-        try {
-            setIsSubmitting(true);
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
 
-            const unitCategoryMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
-            const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
+        const unitCategoryMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
+        const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
 
-            const payload = {
-                tenantId,
-                propertyId: formData.spaceId,
-                unitCode: formData.name,
-                slug: formData.slug || undefined,
-                unitCategory: unitCategoryMap[formData.type as keyof typeof unitCategoryMap] || 1,
-                floorNo: formData.floorNo,
-                sizeSqft: formData.sizeSqft,
-                status: statusMap[formData.status as keyof typeof statusMap] || 1,
-                price: formData.price,
-                monthlyRate: formData.monthlyRate,
-                currency: currencyCode,
-                mainImageId: formData.mainImageId,
-                gallery: formData.gallery,
-                realEstateDetails: {
-                    bedrooms: formData.bedrooms,
-                    bathrooms: formData.bathrooms,
-                    furnishing: formData.furnishing,
-                    parkingSlots: formData.parkingSlots,
-                    facing: formData.facing,
-                    displayPrice: formData.displayPrice,
-                },
-            };
+        const payload = {
+            tenantId,
+            propertyId: formData.spaceId,
+            unitCode: formData.name,
+            slug: formData.slug || undefined,
+            unitCategory: unitCategoryMap[formData.type as keyof typeof unitCategoryMap] || 1,
+            floorNo: formData.floorNo,
+            sizeSqft: formData.sizeSqft,
+            status: statusMap[formData.status as keyof typeof statusMap] || 1,
+            price: formData.price,
+            monthlyRate: formData.monthlyRate,
+            currency: currencyCode,
+            mainImageId: formData.mainImageId,
+            gallery: formData.gallery,
+            realEstateDetails: {
+                bedrooms: formData.bedrooms,
+                bathrooms: formData.bathrooms,
+                furnishing: formData.furnishing,
+                parkingSlots: formData.parkingSlots,
+                facing: formData.facing,
+                displayPrice: formData.displayPrice,
+            },
+        };
 
-            if (!tenantId) {
-                showToast('Session expired or tenant not found', 'error');
-                return;
-            }
-
-            if (editingWorkspace) {
-                await unitService.updateUnit(token, editingWorkspace.id, payload, tenantId);
-                showToast('Unit updated successfully!');
-            } else {
-                await unitService.createUnit(token, payload, tenantId);
-                showToast('Unit added successfully!');
-            }
-
-            await loadData();
-            backToList();
-        } catch (error) {
-            console.error('Failed to save unit:', error);
-            showToast('Error saving unit.', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
+        saveMutation.mutate(payload);
     };
+
+    const isSubmitting = saveMutation.isPending;
 
     // ── DELETE ────────────────────────────────────────────────────────────────
 
-    const handleDelete = async (id: string | string[]) => {
+    const handleDelete = (id: string | string[]) => {
         const ids = Array.isArray(id) ? id : [id];
         if (!window.confirm(`Delete ${ids.length > 1 ? ids.length + ' units' : 'this unit'}?`)) return;
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
-            await Promise.all(ids.map(unitId => unitService.deleteUnit(token, unitId, tenantId)));
-            showToast(`${ids.length > 1 ? ids.length + ' units' : 'Unit'} deleted successfully`);
-            setSelectedUnits(prev => prev.filter(uid => !ids.includes(uid)));
-            loadData();
-        } catch (error) {
-            console.error('Delete error:', error);
-            showToast('Error deleting unit(s)', 'error');
-        }
+        deleteMutation.mutate(ids);
     };
 
     // ── DUPLICATE ─────────────────────────────────────────────────────────────
 
-    const handleDuplicate = async (unit: Seats) => {
-        try {
-            setIsSubmitting(true);
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
-            const unitCategoryMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
-            const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
-            await unitService.createUnit(token, {
-                tenantId,
-                propertyId: unit.spaceId,
-                unitCode: `${unit.name} (Copy)`,
-                slug: `${unit.slug}-copy-${Math.floor(Math.random() * 1000)}`,
-                unitCategory: unitCategoryMap[unit.type as keyof typeof unitCategoryMap] || 1,
-                floorNo: unit.floorNo,
-                sizeSqft: unit.sizeSqft,
-                status: statusMap[unit.status as keyof typeof statusMap] || 1,
-                price: unit.price,
-                monthlyRate: unit.monthlyRate,
-                currency: currencyCode,
-                mainImageId: unit.mainImageId,
-                gallery: unit.gallery,
-                realEstateDetails: {
-                    bedrooms: unit.bedrooms, bathrooms: unit.bathrooms,
-                    furnishing: unit.furnishing, parkingSlots: unit.parkingSlots, facing: unit.facing,
-                },
-            }, tenantId);
-            showToast('Unit duplicated successfully!');
-            loadData();
-        } catch (error) {
-            console.error('Duplicate error:', error);
-            showToast('Error duplicating unit', 'error');
-        } finally {
-            setIsSubmitting(false);
-        }
+    const handleDuplicate = (unit: Seats) => {
+        const unitCategoryMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
+        const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
+
+        const payload = {
+            tenantId,
+            propertyId: unit.spaceId,
+            unitCode: `${unit.name} (Copy)`,
+            slug: `${unit.slug}-copy-${Math.floor(Math.random() * 1000)}`,
+            unitCategory: unitCategoryMap[unit.type as keyof typeof unitCategoryMap] || 1,
+            floorNo: unit.floorNo,
+            sizeSqft: unit.sizeSqft,
+            status: statusMap[unit.status as keyof typeof statusMap] || 1,
+            price: unit.price,
+            monthlyRate: unit.monthlyRate,
+            currency: currencyCode,
+            mainImageId: unit.mainImageId,
+            gallery: unit.gallery,
+            realEstateDetails: {
+                bedrooms: unit.bedrooms, bathrooms: unit.bathrooms,
+                furnishing: unit.furnishing, parkingSlots: unit.parkingSlots, facing: unit.facing,
+                displayPrice: unit.displayPrice
+            },
+        };
+        duplicateMutation.mutate(payload);
     };
 
     // ── STATUS CHANGE ─────────────────────────────────────────────────────────
 
-    const handleStatusChange = async (id: string, newStatus: Seats['status']) => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
-            const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
-            const statusLabels = { available: 'Available', occupied: 'Reserved', maintenance: 'Maintenance', sold: 'Sold Out' };
-            await unitService.updateUnit(token, id, { status: statusMap[newStatus] }, tenantId);
-            showToast(`Unit marked as ${statusLabels[newStatus]}`);
-            loadData();
-        } catch (error) {
-            console.error('Status update error:', error);
-            showToast('Error updating status', 'error');
-        }
+    const handleStatusChange = (id: string, newStatus: Seats['status']) => {
+        const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
+        statusMutation.mutate({ id, status: statusMap[newStatus] || 1 });
     };
 
     // ── EXPORT ────────────────────────────────────────────────────────────────
@@ -428,16 +440,15 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const executeImport = async () => {
         if (!formData.spaceId) { showToast('Please select a target property for import', 'error'); return; }
         setImportStep('progress'); setImportTotal(csvRows.length); setImportProgress(0);
-        const token = getAuthToken();
-        const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
-        if (!token || !tenantId) return;
+        const tenantIdValue = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+        if (!token || !tenantIdValue) return;
         const catMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
         for (let i = 0; i < csvRows.length; i++) {
             const row = csvRows[i];
             const get = (f: string) => { const h = mapping[f]; if (!h) return undefined; return row[csvHeaders.indexOf(h)]; };
             try {
                 await unitService.createUnit(token, {
-                    tenantId, propertyId: formData.spaceId,
+                    tenantId: tenantIdValue, propertyId: formData.spaceId,
                     unitCode: get('unitCode') || `Unit-${i + 1}`,
                     unitCategory: catMap[get('type') as keyof typeof catMap] || 1,
                     floorNo: parseInt(get('floorNo') || '0'), sizeSqft: parseInt(get('sizeSqft') || '0'),
@@ -448,12 +459,13 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                         furnishing: parseInt(get('furnishing') || '1'), parkingSlots: parseInt(get('parkingSlots') || '0'),
                         facing: parseInt(get('facing') || '1'), displayPrice: true,
                     },
-                }, tenantId);
+                }, tenantIdValue);
             } catch (err) { console.error('Import failed for row', i, err); }
             setImportProgress(i + 1);
         }
         showToast(`Import completed: ${csvRows.length} units processed`);
-        loadData(); setShowImportModal(false); setImportStep('file');
+        queryClient.invalidateQueries({ queryKey: ['units'] });
+        setShowImportModal(false); setImportStep('file');
     };
 
     // ── SELECTION ─────────────────────────────────────────────────────────────
@@ -478,7 +490,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         return <span className={`badge rounded-pill px-3 py-2 ${c.cls}`}>{c.text}</span>;
     };
 
-    const getMediaUrl = (id?: string) => mediaItems.find(m => m.id === id)?.url;
+    const getMediaUrl = (id?: string) => mediaItems.find((m: MediaItem) => m.id === id)?.url;
 
     if (!mounted || !isAuthenticated) return null;
 

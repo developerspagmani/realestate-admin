@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
 import Loader from '@/components/common/Loader';
@@ -12,16 +13,9 @@ import {
 } from 'recharts';
 
 export default function AdvancedAnalyticsPage() {
-    const [revenueFunnel, setRevenueFunnel] = useState<any>(null);
-    const [agentPerformance, setAgentPerformance] = useState<any[]>([]);
-    const [searchTrends, setSearchTrends] = useState<any>(null);
-    const [campaignStats, setCampaignStats] = useState<any[]>([]);
-    const [marketingInsights, setMarketingInsights] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
 
     // Filters
-    const [availableProperties, setAvailableProperties] = useState<any[]>([]);
-    const [availableCampaigns, setAvailableCampaigns] = useState<any[]>([]);
     const [filters, setFilters] = useState({
         dateRange: '30d', // 7d, 30d, custom
         startDate: '',
@@ -30,39 +24,30 @@ export default function AdvancedAnalyticsPage() {
         propertyId: ''
     });
 
-    useEffect(() => {
-        fetchInitialData();
-        // fetchData is handled by the useEffect watching filters
-    }, []);
-
-    useEffect(() => {
-        fetchData();
-    }, [filters.dateRange, filters.campaignId, filters.propertyId, filters.startDate, filters.endDate]);
-
-    const fetchInitialData = async () => {
-        try {
+    // Fetch Properties for Filter
+    const { data: availableProperties = [] } = useQuery({
+        queryKey: ['availableProperties'],
+        queryFn: async () => {
             const token = localStorage.getItem('authToken') || '';
-            const [propRes, campRes] = await Promise.all([
-                propertyService.getProperties(token, { limit: '1000' }),
-                marketingService.getCampaigns(token, { limit: '1000' })
-            ]);
-            if (propRes.success) {
-                const props = Array.isArray(propRes.data) ? propRes.data : (propRes.data?.properties || []);
-                setAvailableProperties(props);
-            }
-            if (campRes.success) {
-                const camps = Array.isArray(campRes.data) ? campRes.data : (campRes.data?.campaigns || []);
-                setAvailableCampaigns(camps);
-            }
-        } catch (error) {
-            console.error('Error fetching filter data:', error);
+            const res = await propertyService.getProperties(token, { limit: '1000' });
+            return Array.isArray(res.data) ? res.data : (res.data?.properties || []);
         }
-    };
+    });
 
-    const fetchData = async () => {
-        try {
-            setLoading(true);
+    // Fetch Campaigns for Filter
+    const { data: availableCampaigns = [] } = useQuery({
+        queryKey: ['availableCampaigns'],
+        queryFn: async () => {
+            const token = localStorage.getItem('authToken') || '';
+            const res = await marketingService.getCampaigns(token, { limit: '1000' });
+            return Array.isArray(res.data) ? res.data : (res.data?.campaigns || []);
+        }
+    });
 
+    // Fetch Analytics Data
+    const { data: analyticsData, isLoading, refetch } = useQuery({
+        queryKey: ['analytics', filters],
+        queryFn: async () => {
             // Compute dates based on filter
             let start = filters.startDate;
             let end = filters.endDate;
@@ -91,17 +76,19 @@ export default function AdvancedAnalyticsPage() {
                 analyticsProService.getMarketingInsights(queryParams)
             ]);
 
-            if (revRes.success) setRevenueFunnel(revRes.data);
-            if (agentRes.success) setAgentPerformance(agentRes.data);
-            if (campaignRes.success) setCampaignStats(campaignRes.data);
-            if (marketingRes.success) setMarketingInsights(marketingRes.data);
-
-        } catch (error) {
-            console.error('Failed to fetch analytics:', error);
-        } finally {
-            setLoading(false);
+            return {
+                revenueFunnel: revRes.success ? revRes.data : null,
+                agentPerformance: agentRes.success ? agentRes.data : [],
+                campaignStats: campaignRes.success ? campaignRes.data : [],
+                marketingInsights: marketingRes.success ? marketingRes.data : null
+            };
         }
-    };
+    });
+
+    const revenueFunnel = analyticsData?.revenueFunnel || null;
+    const agentPerformance = analyticsData?.agentPerformance || [];
+    const campaignStats = analyticsData?.campaignStats || [];
+    const marketingInsights = analyticsData?.marketingInsights || null;
 
     const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -122,7 +109,7 @@ export default function AdvancedAnalyticsPage() {
                             <button className="btn btn-outline-primary rounded-3 shadow-sm" onClick={() => setFilters({ ...filters, dateRange: '30d', campaignId: '', propertyId: '', startDate: '', endDate: '' })}>
                                 <i className="bi bi-x-circle me-2"></i>Clear Filters
                             </button>
-                            <button className="btn btn-light rounded-3 shadow-sm" onClick={fetchData}>
+                            <button className="btn btn-light rounded-3 shadow-sm" onClick={() => refetch()}>
                                 <i className="bi bi-arrow-clockwise me-2"></i>Refresh
                             </button>
                         </div>
@@ -192,7 +179,7 @@ export default function AdvancedAnalyticsPage() {
                         </div>
                     </div>
 
-                    {loading ? (
+                    {isLoading ? (
                         <Loader size="md" message="Loading analytics data..." />
                     ) : (
                         <div className="row g-4">
@@ -578,7 +565,7 @@ export default function AdvancedAnalyticsPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {agentPerformance.map((agent) => (
+                                                    {agentPerformance.map((agent: any) => (
                                                         <tr key={agent.id}>
                                                             <td className="px-4 py-3">
                                                                 <div className="d-flex align-items-center gap-2">

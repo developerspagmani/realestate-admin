@@ -92,8 +92,9 @@ export default function WebsiteForm({
             const response = await fetch(`https://dns.google/resolve?name=${formData.customDomain}&type=CNAME`);
             const data = await response.json();
 
-            const isValid = data.Answer?.some((record: any) => {
-                const target = record.data.toLowerCase();
+            const isValid = !!data.Answer?.some((record: any) => {
+                if (record.type !== 5) return false; // CNAME = type 5
+                const target = String(record.data || '').toLowerCase();
                 // Allow our custom CNAME alias OR direct Vercel pointing
                 return target.includes('virpanix.com') ||
                     target.includes('vercel.app') ||
@@ -101,7 +102,7 @@ export default function WebsiteForm({
             });
 
             // Simulation for development/localhost testing or allowing manual override
-            const isSimulation = formData.customDomain.includes('test') || formData.customDomain.includes('dev');
+            const isSimulation = formData.customDomain.includes('test') || formData.customDomain.includes('dev') || formData.customDomain.includes('localhost');
 
             if (isValid || isSimulation) {
                 setVerificationStatus('valid');
@@ -288,10 +289,11 @@ export default function WebsiteForm({
                                                     placeholder="portal.yourbrand.com"
                                                     value={formData.customDomain}
                                                     onChange={(e) => {
-                                                        // Automatically strip protocol and trailing slashes
-                                                        const cleanDomain = e.target.value.toLowerCase()
+                                                        // Automatically strip protocol, paths, and query parameters
+                                                        let cleanDomain = e.target.value.toLowerCase()
                                                             .replace(/^https?:\/\//, '')
-                                                            .replace(/\/$/, '');
+                                                            .split('/')[0]
+                                                            .split('?')[0];
                                                         setFormData({ ...formData, customDomain: cleanDomain });
                                                         setVerificationStatus('idle');
                                                     }}
@@ -303,7 +305,7 @@ export default function WebsiteForm({
                                                     disabled={verificationStatus === 'checking' || !formData.customDomain}
                                                 >
                                                     {verificationStatus === 'checking' ? (
-                                                        <Loader size="sm" message="" />
+                                                        <span className="spinner-border spinner-border-sm me-2"></span>
                                                     ) : verificationStatus === 'valid' ? (
                                                         <i className="bi bi-check-circle-fill me-2"></i>
                                                     ) : verificationStatus === 'invalid' ? (

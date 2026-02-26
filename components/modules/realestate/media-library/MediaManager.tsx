@@ -10,22 +10,22 @@ import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import ImageModal from '@/components/shared/ImageModal';
 import Loader from '@/components/common/Loader';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface MediaManagerProps {
     mode: 'admin' | 'owner';
 }
 
 export default function MediaManager({ mode }: MediaManagerProps) {
+    const queryClient = useQueryClient();
     const { user, isAuthenticated, isAdmin, isOwner } = useAuthContext();
     const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
     const [mounted, setMounted] = useState(false);
-    const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
     const [showUploadModal, setShowUploadModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
-    const [loading, setLoading] = useState(true);
     const [showPreview, setShowPreview] = useState(false);
     const [previewUrl, setPreviewUrl] = useState('');
 
@@ -58,7 +58,6 @@ export default function MediaManager({ mode }: MediaManagerProps) {
     // Upload states
     const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const router = useRouter();
@@ -67,51 +66,94 @@ export default function MediaManager({ mode }: MediaManagerProps) {
         setMounted(true);
     }, []);
 
-    const loadMediaItems = async () => {
-        setLoading(true);
-        try {
-            const token = getAuthToken();
-            if (!token) return;
+    const token = typeof window !== 'undefined' ? getAuthToken() : '';
 
+    // --- Queries ---
+
+    const { data: mediaRes, isLoading: loading } = useQuery({
+        queryKey: ['media', mode, activeTenantId, activeOwnerId, tenantType],
+        queryFn: async () => {
             const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
             const industryType = mode === 'admin' ? tenantType : undefined;
 
-            const response = await mediaService.getMedia(token, {
+            const response = await mediaService.getMedia(token!, {
                 tenantId: tenantId || undefined,
                 industryType,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
             });
+
             if (response.success) {
-                const mappedMedia = response.data.media.map((item: any) => ({
+                return response.data.media.map((item: any) => ({
                     ...item,
                     title: item.filename || 'Untitled',
                     uploadedAt: item.createdAt,
                     folder: item.category || 'general',
                     tags: item.tags || []
                 }));
-                setMediaItems(mappedMedia);
             }
-        } catch (error) {
-            console.error('Failed to load media items:', error);
-            showToast('Failed to load media items', 'error');
-        } finally {
-            setLoading(false);
+            return [];
+        },
+        enabled: !!token && mounted && isAuthenticated,
+    });
+
+    const mediaItems = mediaRes || [];
+
+    // --- Mutations ---
+
+    const uploadMutation = useMutation({
+        mutationFn: async ({ files, tenantId, ownerId }: { files: File[], tenantId?: string, ownerId?: string }) => {
+            setUploadProgress(0);
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const form = new FormData();
+                form.append('file', file);
+                form.append('alt', formData.alt);
+                form.append('description', formData.description);
+                form.append('category', formData.folder || 'general');
+
+                if (tenantId) form.append('tenantId', tenantId);
+                if (ownerId) form.append('ownerId', ownerId);
+
+                await mediaService.createMedia(token!, form, tenantId);
+                setUploadProgress(((i + 1) / files.length) * 100);
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['media'] });
+            setShowUploadModal(false);
+            setUploadFiles(null);
+            setFormData({ title: '', alt: '', caption: '', description: '', tags: '', folder: '' });
+            showToast('Upload successful');
+        },
+        onError: (err: any) => {
+            console.error('Upload failed:', err);
+            showToast('Upload failed', 'error');
         }
-    };
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => mediaService.deleteMedia(token!, id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['media'] });
+            showToast('Item deleted successfully');
+        },
+        onError: (err: any) => {
+            console.error('Delete failed:', err);
+            showToast('Failed to delete item', 'error');
+        }
+    });
 
     useEffect(() => {
         if (!mounted) return;
-        if (!isAuthenticated || !user) {
+        if (!isAuthenticated) {
             router.push('/login');
-            return;
         }
-        loadMediaItems();
-    }, [user, isAuthenticated, mounted, router, activeTenantId, activeOwnerId, tenantType]);
+    }, [isAuthenticated, mounted, router]);
 
-    const uniqueFolders = Array.from(new Set(mediaItems.map(item => item.folder))).sort();
+    const uniqueFolders = Array.from(new Set(mediaItems.map((item: any) => item.folder))).sort();
 
-    const filteredMedia = mediaItems
-        .filter(item => {
+    const filteredMedia = (mediaItems as any[])
+        .filter((item: any) => {
             const matchesSearch = searchTerm === '' ||
                 item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.filename.toLowerCase().includes(searchTerm.toLowerCase());
@@ -131,40 +173,11 @@ export default function MediaManager({ mode }: MediaManagerProps) {
         setUploadFiles(e.target.files);
     };
 
-    const handleUploadSubmit = async () => {
+    const handleUploadSubmit = () => {
         if (!uploadFiles || !user) return;
-        setIsUploading(true);
-        setUploadProgress(0);
-        try {
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
-            const ownerId = mode === 'admin' ? (activeOwnerId || user?.id) : user?.id;
-            const files = Array.from(uploadFiles);
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const form = new FormData();
-                form.append('file', file);
-                form.append('alt', formData.alt);
-                form.append('description', formData.description);
-                form.append('category', formData.folder || 'general');
-                const token = getAuthToken();
-                if (!token) throw new Error('No authentication token found');
-
-                if (tenantId) form.append('tenantId', tenantId);
-                if (ownerId) form.append('ownerId', ownerId);
-                await mediaService.createMedia(token, form, tenantId);
-                setUploadProgress(((i + 1) / files.length) * 100);
-            }
-            await loadMediaItems();
-            setShowUploadModal(false);
-            setUploadFiles(null);
-            setFormData({ title: '', alt: '', caption: '', description: '', tags: '', folder: '' });
-            showToast('Upload successful');
-        } catch (error) {
-            console.error('Upload failed:', error);
-            showToast('Upload failed', 'error');
-        } finally {
-            setIsUploading(false);
-        }
+        const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+        const ownerId = mode === 'admin' ? (activeOwnerId || user?.id) : user?.id;
+        uploadMutation.mutate({ files: Array.from(uploadFiles), tenantId, ownerId });
     };
 
     const handleViewImage = (url: string) => {
@@ -172,21 +185,12 @@ export default function MediaManager({ mode }: MediaManagerProps) {
         setShowPreview(true);
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
         if (!window.confirm('Delete this item?')) return;
-
-        const token = getAuthToken();
-        if (!token) return;
-
-        try {
-            await mediaService.deleteMedia(token, id);
-            loadMediaItems();
-            showToast('Item deleted successfully');
-        } catch (error) {
-            console.error('Delete failed:', error);
-            showToast('Failed to delete item', 'error');
-        }
+        deleteMutation.mutate(id);
     };
+
+    const isUploading = uploadMutation.isPending;
 
     const formatFileSize = (bytes: number) => {
         if (bytes === 0) return '0 B';
@@ -232,7 +236,7 @@ export default function MediaManager({ mode }: MediaManagerProps) {
                             <div className="col-md-2">
                                 <select className="form-select bg-light border-0" value={filterFolder} onChange={(e) => setFilterFolder(e.target.value)}>
                                     <option value="all">All Folders</option>
-                                    {uniqueFolders.map(f => <option key={f} value={f}>{f}</option>)}
+                                    {uniqueFolders.map((f: any) => <option key={f} value={f}>{f}</option>)}
                                 </select>
                             </div>
                             <div className="col-md-4 d-flex justify-content-end gap-2">

@@ -1,41 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { agentService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Loader from '@/components/common/Loader';
 
 export default function AgentCommissions() {
-    const [commissions, setCommissions] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        loadCommissions();
-    }, []);
-
-    const loadCommissions = async () => {
-        const token = getAuthToken();
-        if (!token) return;
-        setLoading(true);
-        try {
+    const { data: commissions = [], isLoading: loading } = useQuery({
+        queryKey: ['agent-commissions'],
+        queryFn: async () => {
+            const token = getAuthToken();
+            if (!token) return [];
             const res = await agentService.getMyCommissions(token);
-            if (res.success && res.data) {
-                setCommissions(res.data.commissions || []);
-            }
-        } catch (error) {
-            console.error('Failed to load commissions', error);
-        } finally {
-            setLoading(false);
+            return res.success && res.data ? (res.data.commissions || []) : [];
         }
-    };
+    });
 
     const totalEarned = commissions
-        .filter(c => c.status === 'PAID')
-        .reduce((sum, c) => sum + Number(c.amount), 0);
+        .filter((c: any) => c.status === 'PAID')
+        .reduce((sum: number, c: any) => sum + Number(c.amount), 0);
 
     const totalPending = commissions
-        .filter(c => c.status === 'PENDING')
-        .reduce((sum, c) => sum + Number(c.amount), 0);
+        .filter((c: any) => c.status === 'PENDING')
+        .reduce((sum: number, c: any) => sum + Number(c.amount), 0);
 
     return (
         <MainLayout activePage="commissions">
@@ -80,7 +68,7 @@ export default function AgentCommissions() {
                                     {loading ? (
                                         <tr>
                                             <td colSpan={5} className="text-center py-5">
-                                                <Loader size="sm" message="" />
+                                                <Loader size="md" message="" />
                                             </td>
                                         </tr>
                                     ) : commissions.length === 0 ? (
@@ -88,7 +76,7 @@ export default function AgentCommissions() {
                                             <td colSpan={5} className="text-center py-5 text-muted">No commissions recorded yet.</td>
                                         </tr>
                                     ) : (
-                                        commissions.map(item => (
+                                        commissions.map((item: any) => (
                                             <tr key={item.id}>
                                                 <td className="ps-4 small text-muted">
                                                     {new Date(item.createdAt).toLocaleDateString()}

@@ -39,7 +39,7 @@ export default function PropertiesList({
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={5} className="text-center py-5">
-                                        <Loader message="Loading properties..." size="sm" />
+                                        <Loader message="Loading properties..." size="md" />
                                     </td>
                                 </tr>
                             ) : properties.length > 0 ? (
