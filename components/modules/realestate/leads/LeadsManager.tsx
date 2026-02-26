@@ -11,6 +11,7 @@ import { Agent } from '@/types';
 import LeadEngagementInsights from './LeadEngagementInsights';
 import LeadsKanban from './LeadsKanban';
 import Loader from '@/components/common/Loader';
+import StructuredLossModal from './StructuredLossModal';
 
 export interface Lead {
     id: string;
@@ -33,6 +34,16 @@ export interface Lead {
     tags?: string[];
     userId?: string;
     enrollments?: Array<{ workflow: { name: string } }>;
+    lossData?: {
+        primaryReason: string;
+        secondaryReason?: string;
+        stageAtLoss: string;
+        competitorName?: string;
+        notes?: string;
+        lostImpactScore?: number;
+        revivalStatus?: number;
+        revivalDate?: string;
+    };
 }
 
 interface LeadsManagerProps {
@@ -81,6 +92,9 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [isConverting, setIsConverting] = useState(false);
     const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+    const [showLossModal, setShowLossModal] = useState(false);
+    const [leadToMarkLost, setLeadToMarkLost] = useState<Lead | null>(null);
+    const { hasModule } = useAuthContext();
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -258,7 +272,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                 budget: formData.budget,
                 notes: formData.notes,
                 priority: formData.priority || 2,
-                agentId: formData.agentId || undefined
+                agentId: formData.agentId || undefined,
+                lossData: formData.lossData
             };
 
             setIsSubmitting(true);
@@ -291,6 +306,15 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     };
 
     const handleStatusChange = async (id: string, newStatus: Lead['status']) => {
+        if (newStatus === 'lost' && hasModule('deal_intelligence')) {
+            const lead = leads.find(l => l.id === id);
+            if (lead) {
+                setLeadToMarkLost(lead);
+                setShowLossModal(true);
+                return;
+            }
+        }
+
         try {
             const token = getAuthToken();
             if (!token) return;
@@ -304,6 +328,30 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         } catch (error) {
             console.error('Failed to update status:', error);
             showToast('Failed to update status', 'error');
+        }
+    };
+
+    const confirmLoss = async (lossData: any) => {
+        if (!leadToMarkLost) return;
+        setIsSubmitting(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            const res = await leadService.markAsLost(token, leadToMarkLost.id, lossData, tenantId);
+            if (res.success) {
+                showToast('Lead marked as lost. Intelligence captured!');
+                setShowLossModal(false);
+                setLeadToMarkLost(null);
+                loadLeads();
+            } else {
+                showToast(res.message || 'Failed to mark as lost', 'error');
+            }
+        } catch (error) {
+            console.error('Loss confirmation failed:', error);
+            showToast('Failed to execute deal closer.', 'error');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -653,6 +701,9 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                                                 {isStale(lead) && (
                                                                     <span className="badge bg-danger rounded-4 extra-small-badge" title="No activity for 3+ days">REQUIRES ATTENTION</span>
                                                                 )}
+                                                                {lead.lossData?.revivalStatus === 2 && (
+                                                                    <span className="badge bg-success rounded-4 extra-small-badge pulse-revival" title="Ready for Smart Revival">REVIVAL CANDIDATE</span>
+                                                                )}
                                                                 <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
                                                             </div>
                                                             <div className="small text-muted">{lead.company || 'No Company'}</div>
@@ -841,6 +892,70 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                             <label className="form-label fw-bold small text-uppercase text-muted">Internal Notes</label>
                                             <textarea className="form-control bg-light border-0" rows={3} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Shared team notes..."></textarea>
                                         </div>
+
+                                        {formData.status === 'lost' && (
+                                            <div className="col-12 mt-4">
+                                                <div className="p-3 bg-danger-soft rounded-4 border border-danger border-opacity-10">
+                                                    <h6 className="fw-bold mb-3 d-flex align-items-center">
+                                                        <i className="bi bi-shield-x text-danger me-2"></i>
+                                                        Lost Deal Intelligence
+                                                    </h6>
+                                                    <div className="row g-3">
+                                                        <div className="col-md-6">
+                                                            <label className="form-label small fw-bold text-muted text-uppercase">Primary Reason</label>
+                                                            <select
+                                                                className="form-select bg-white border-0"
+                                                                value={formData.lossData?.primaryReason || ''}
+                                                                onChange={(e) => setFormData({
+                                                                    ...formData,
+                                                                    lossData: { ...(formData.lossData || { stageAtLoss: 'Enquiry', primaryReason: '' }), primaryReason: e.target.value }
+                                                                })}
+                                                            >
+                                                                <option value="">Select reason</option>
+                                                                <option value="Budget too high">Budget too high</option>
+                                                                <option value="Location mismatch">Location mismatch</option>
+                                                                <option value="Project amenities not suitable">Project amenities not suitable</option>
+                                                                <option value="Preferred competitor project">Preferred competitor project</option>
+                                                                <option value="Poor follow-up / delayed response">Poor follow-up / delayed response</option>
+                                                                <option value="Loan / eligibility issue">Loan / eligibility issue</option>
+                                                                <option value="Timeline mismatch">Timeline mismatch</option>
+                                                                <option value="Trust / credibility issue">Trust / credibility issue</option>
+                                                                <option value="Not genuine lead">Not genuine lead</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-md-6">
+                                                            <label className="form-label small fw-bold text-muted text-uppercase">Loss Stage</label>
+                                                            <select
+                                                                className="form-select bg-white border-0"
+                                                                value={formData.lossData?.stageAtLoss || 'Enquiry'}
+                                                                onChange={(e) => setFormData({
+                                                                    ...formData,
+                                                                    lossData: { ...(formData.lossData || { primaryReason: '', stageAtLoss: '' }), stageAtLoss: e.target.value }
+                                                                })}
+                                                            >
+                                                                <option value="Enquiry">Enquiry</option>
+                                                                <option value="Site Visit">Site Visit</option>
+                                                                <option value="Negotiation">Negotiation</option>
+                                                                <option value="Booking Stage">Booking Stage</option>
+                                                            </select>
+                                                        </div>
+                                                        <div className="col-12">
+                                                            <label className="form-label small fw-bold text-muted text-uppercase">Competitor Project</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control bg-white border-0"
+                                                                value={formData.lossData?.competitorName || ''}
+                                                                onChange={(e) => setFormData({
+                                                                    ...formData,
+                                                                    lossData: { ...(formData.lossData || { primaryReason: '', stageAtLoss: 'Enquiry' }), competitorName: e.target.value }
+                                                                })}
+                                                                placeholder="e.g. Prestige Heights"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="modal-footer border-0 p-4 pt-0">
@@ -927,6 +1042,15 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     </div>
                 </div>
             )}
+            {showLossModal && (
+                <StructuredLossModal
+                    show={showLossModal}
+                    onClose={() => setShowLossModal(false)}
+                    onConfirm={confirmLoss}
+                    leadName={leadToMarkLost?.name || ''}
+                    isSubmitting={isSubmitting}
+                />
+            )}
             {convertingLead && (
                 <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
                     <div className="modal-dialog modal-dialog-centered">
@@ -970,6 +1094,23 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     </div>
                 </div>
             )}
+            <style jsx>{`
+                .pulse-revival {
+                    animation: pulse-green 2s infinite;
+                    box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.4);
+                }
+                @keyframes pulse-green {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+                }
+                .pulse-ai { animation: pulse-blue 2s infinite; }
+                @keyframes pulse-blue {
+                    0% { opacity: 0.6; }
+                    50% { opacity: 1; transform: scale(1.2); }
+                    100% { opacity: 0.6; }
+                }
+            `}</style>
         </MainLayout>
     );
 }

@@ -169,7 +169,7 @@ function LoginContent() {
                   disabled={localLoading}
                 >
                   {localLoading ? (
-                    <Loader size="sm" message="" />
+                    <span className="spinner-border spinner-border-sm"></span>
                   ) : (
                     <i className="bi bi-box-arrow-in-right"></i>
                   )}

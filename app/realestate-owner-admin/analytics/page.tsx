@@ -234,6 +234,88 @@ export default function AdvancedAnalyticsPage() {
                                 </div>
                             </div>
 
+                            {/* High-Performing Properties and Opportunity Metric */}
+                            <div className="col-12">
+                                <div className="card border-0 shadow-sm rounded-4 border-start border-success border-5 mb-2">
+                                    <div className="card-body p-4">
+                                        <div className="d-flex align-items-center mb-3">
+                                            <div className="bg-success text-white rounded-3 p-2 me-3">
+                                                <i className="bi bi-graph-up-arrow fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <h5 className="fw-bold mb-0 text-dark">Identify high-performing properties and opportunity</h5>
+                                                <p className="text-muted small mb-0">Track your best performing assets and immediate growth gaps.</p>
+                                            </div>
+                                        </div>
+                                        <div className="row g-3">
+                                            <div className="col-md-6">
+                                                <div className="p-3 bg-light rounded-4 h-100 border">
+                                                    <div className="d-flex align-items-center justify-content-between mb-3">
+                                                        <div className="text-muted extra-small fw-bold text-uppercase">Top Assets Leaderboard</div>
+                                                    </div>
+                                                    {marketingInsights?.topProperties?.length > 0 ? (
+                                                        <div className="d-flex flex-column gap-3">
+                                                            {marketingInsights.topProperties.slice(0, 3).map((prop: any, index: number) => (
+                                                                <div key={index} className="transition-all hvr-translate-x">
+                                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                        <h6 className="fw-bold text-dark text-truncate mb-0" style={{ maxWidth: '75%' }}>
+                                                                            <span className={`badge ${index === 0 ? 'bg-success' : 'bg-secondary'} me-2 rounded-circle`} style={{ width: '22px', height: '22px', padding: '0', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{index + 1}</span>
+                                                                            {prop.title}
+                                                                        </h6>
+                                                                        <span className="small fw-bold text-muted">{prop.views} <i className="bi bi-eye ms-1"></i></span>
+                                                                    </div>
+                                                                    <div className="progress mt-2" style={{ height: '5px', backgroundColor: 'rgba(0,0,0,0.05)' }}>
+                                                                        <div className={`progress-bar ${index === 0 ? 'bg-success' : 'bg-success bg-opacity-50'}`} style={{ width: `${(prop.views / marketingInsights.topProperties[0].views) * 100}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="mb-0 small text-muted">Awaiting tracking data...</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="p-3 bg-light rounded-4 h-100 border">
+                                                    <div className="d-flex align-items-center justify-content-between mb-3">
+                                                        <div className="text-muted extra-small fw-bold text-uppercase">AI Opportunity Queue</div>
+                                                    </div>
+                                                    {marketingInsights?.forecastingAI?.length > 0 ? (
+                                                        <div className="d-flex flex-column gap-2">
+                                                            {marketingInsights.forecastingAI.slice(0, 2).map((opp: any, index: number) => (
+                                                                <div key={index} className="bg-white p-3 rounded-4 shadow-sm border border-light transition-all hvr-scale-sm">
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <span className={`badge ${opp.type === 'INVENTORY_SHORTAGE' ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary'} rounded-pill`}>
+                                                                            {opp.type === 'PRICE_OPTIMIZATION' ? 'Price Opt.' : 'Inv. Shortage'}
+                                                                        </span>
+                                                                        <span className={`extra-small fw-bold ${opp.demandLevel === 'Critical' ? 'text-danger' : 'text-primary'}`}>
+                                                                            {opp.demandLevel} Demand
+                                                                        </span>
+                                                                    </div>
+                                                                    <h6 className="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                                                                        <i className={`bi ${opp.type === 'PRICE_OPTIMIZATION' ? 'bi-cash-coin text-success' : 'bi-house-dash text-danger'}`}></i>
+                                                                        {opp.type === 'PRICE_OPTIMIZATION' ? 'Price Optimization' : `${opp.location && opp.location !== 'Unknown' && opp.location !== 'Global' ? opp.location + ' ' : ''}Market Gap`}
+                                                                    </h6>
+                                                                    <p className="mb-0 text-muted" style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>{opp.recommendation}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-100 d-flex flex-column align-items-center justify-content-center py-4 bg-white rounded-4 border border-light">
+                                                            <div className="bg-success text-white rounded-circle p-3 mb-2 d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px' }}>
+                                                                <i className="bi bi-shield-check fs-4"></i>
+                                                            </div>
+                                                            <h6 className="fw-bold text-dark mb-1">Perfectly Balanced</h6>
+                                                            <p className="mb-0 small text-muted text-center px-3">AI is analyzing incoming search traffic. No critical inventory or pricing gaps detected.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Forecasting AI Prediction */}
                             <div className="col-12">
                                 <div className="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10 overflow-hidden border-start border-primary border-5">
@@ -258,7 +340,11 @@ export default function AdvancedAnalyticsPage() {
                                                                 </span>
                                                                 <span className="extra-small text-muted fw-bold">{p.demandLevel} Demand</span>
                                                             </div>
-                                                            <h6 className="fw-bold text-dark">{p.location} Optimization</h6>
+                                                            <h6 className="fw-bold text-dark">
+                                                                {p.type === 'PRICE_OPTIMIZATION' ? 'Price Optimization' :
+                                                                    p.type === 'INVENTORY_SHORTAGE' ? `${p.location && p.location !== 'Unknown' && p.location !== 'Global' ? p.location + ' ' : ''}Inventory Shortage` :
+                                                                        `${p.location && p.location !== 'Unknown' ? p.location + ' ' : ''}Optimization`}
+                                                            </h6>
                                                             <p className="small text-muted mb-0">{p.recommendation}</p>
                                                         </div>
                                                     </div>

@@ -472,6 +472,14 @@ export const automationApi = {
         return response.json();
     },
 
+    getMatchedLeads: async (params?: any): Promise<any> => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        const response = await fetch(`${API_BASE_URL}/social/automation/matched-leads${query}`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
+    },
+
     createWorkflow: async (data: any): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/social/automation/workflows`, {
             method: 'POST',

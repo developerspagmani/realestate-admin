@@ -9,6 +9,7 @@ import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import SubscriptionSubTab from './SubscriptionSubTab';
 import SystemConfigSubTab from './SystemConfigSubTab';
+import EmailTemplatesSubTab from './EmailTemplatesSubTab';
 
 interface SettingsManagerProps {
     mode: 'admin' | 'owner';
@@ -62,7 +63,8 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
             cookieNotice: true,
             privacyLink: '',
             termsLink: '',
-        }
+        },
+        emailTemplates: {}
     });
 
     const [profile, setProfile] = useState<any>({
@@ -165,7 +167,8 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                             cookieNotice: dbSettings.privacy?.cookieNotice ?? true,
                             privacyLink: dbSettings.privacy?.privacyLink || '',
                             termsLink: dbSettings.privacy?.termsLink || '',
-                        }
+                        },
+                        emailTemplates: dbSettings.emailTemplates || {}
                     });
                 }
             }
@@ -473,6 +476,15 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                     <i className={`bi bi-shield-check me-3 ${activeTab === 'privacy' ? '' : 'text-primary'}`}></i>
                                     <span>Privacy & GDPR</span>
                                 </button>
+                                {mode === 'admin' && (
+                                    <button
+                                        className={`list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center py-3 ${activeTab === 'emailTemplates' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-muted'}`}
+                                        onClick={() => setActiveTab('emailTemplates')}
+                                    >
+                                        <i className={`bi bi-envelope-check-fill me-3 ${activeTab === 'emailTemplates' ? '' : 'text-primary'}`}></i>
+                                        <span>Email Templates</span>
+                                    </button>
+                                )}
                                 {mode === 'owner' && (
                                     <button
                                         className={`list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center py-3 ${activeTab === 'subscription' ? 'bg-primary text-white shadow-sm fw-bold' : 'text-muted'}`}
@@ -812,6 +824,14 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
                                                     </div>
                                                 </div>
                                             </div>
+                                        )}
+                                        {activeTab === 'emailTemplates' && (
+                                            <EmailTemplatesSubTab
+                                                settings={settings}
+                                                setSettings={setSettings}
+                                                onSave={handleSaveSettings}
+                                                saving={saving}
+                                            />
                                         )}
                                         {activeTab === 'backup' && (
                                             <div>

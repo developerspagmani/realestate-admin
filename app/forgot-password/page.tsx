@@ -123,7 +123,7 @@ export default function ForgotPasswordPage() {
                       className="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
                       disabled={loading}
                     >
-                      {loading ? <Loader size="sm" message="" /> : <i className="bi bi-send-fill"></i>}
+                      {loading ? <span className="spinner-border spinner-border-sm"></span> : <i className="bi bi-send-fill"></i>}
                       {loading ? 'Sending Request...' : 'Send Recovery Link'}
                     </button>
                   </form>

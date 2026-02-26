@@ -16,4 +16,10 @@ export const analyticsProService = {
     getDemandIntelligence: async (params?: any) => {
         return await makeApiCall(analyticsProEndpoints.getDemandIntelligence(params));
     },
+    getDealIntelligence: async (params?: any) => {
+        return await makeApiCall(analyticsProEndpoints.getDealIntelligence(params));
+    },
+    getPreventionInsights: async (params?: any) => {
+        return await makeApiCall(analyticsProEndpoints.getPreventionInsights(params));
+    },
 };

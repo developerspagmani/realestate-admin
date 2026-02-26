@@ -100,7 +100,7 @@ export default function ForecastingPage() {
 
     if (loading && !data) {
         return (
-            <MainLayout activePage="analytics-forecasting">
+            <MainLayout activePage="forecasting">
                 <div className="p-4 text-center mt-5">
                     <Loader size="md" message="Analyzing market demand signals..." />
                 </div>
@@ -110,7 +110,7 @@ export default function ForecastingPage() {
 
     return (
         <ModuleGuard moduleSlug="analytics_pro">
-            <MainLayout activePage="analytics-forecasting">
+            <MainLayout activePage="forecasting">
                 <div className="p-4">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <div>

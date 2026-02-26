@@ -28,3 +28,5 @@ export * from './upgradeRequest';
 export { default as cmsService } from './cms';
 export * from './analyticsPro';
 export * from './portal';
+export * from './task';
+

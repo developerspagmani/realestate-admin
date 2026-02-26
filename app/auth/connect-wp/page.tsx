@@ -142,8 +142,8 @@ function ConnectWPContent() {
                                 >
                                     {loading ? (
                                         <>
-                                            <Loader size="sm" message="" />
-                                            <span className="ms-2">Connecting...</span>
+                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            Connecting...
                                         </>
                                     ) : 'Authorize & Connect'}
                                 </button>

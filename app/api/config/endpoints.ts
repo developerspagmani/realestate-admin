@@ -239,6 +239,8 @@ export const leadEndpoints = {
     `/leads/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
   updateStatus: (id: string, tenantId?: string) =>
     `/leads/${id}/status${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  markAsLost: (id: string, tenantId?: string) =>
+    `/leads/${id}/lost${tenantId ? `?tenantId=${tenantId}` : ''}`,
   delete: (id: string, tenantId?: string) =>
     `/leads/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
 };
@@ -425,6 +427,10 @@ export const analyticsProEndpoints = {
     params ? `/admin/analytics-pro/marketing-insights?${buildQueryString(params)}` : '/admin/analytics-pro/marketing-insights',
   getDemandIntelligence: (params?: Record<string, any>) =>
     params ? `/admin/analytics-pro/demand-intelligence?${buildQueryString(params)}` : '/admin/analytics-pro/demand-intelligence',
+  getDealIntelligence: (params?: Record<string, any>) =>
+    params ? `/admin/analytics-pro/deal-intelligence?${buildQueryString(params)}` : '/admin/analytics-pro/deal-intelligence',
+  getPreventionInsights: (params?: Record<string, any>) =>
+    params ? `/admin/analytics-pro/prevention-insights?${buildQueryString(params)}` : '/admin/analytics-pro/prevention-insights',
 };
 
 // Category endpoints
@@ -493,6 +499,17 @@ export const portalEndpoints = {
   getConnectedAccounts: (params?: Record<string, any>) =>
     params ? `/social/accounts?${buildQueryString(params)}` : '/social/accounts',
 };
+
+// Task endpoints
+export const taskEndpoints = {
+  create: () => '/tasks',
+  getAll: (params?: Record<string, any>) =>
+    params ? `/tasks?${buildQueryString(params)}` : '/tasks',
+  getMyTasks: () => '/tasks/my-tasks',
+  updateStatus: (id: string) => `/tasks/${id}/status`,
+  delete: (id: string) => `/tasks/${id}`,
+};
+
 
 
 

@@ -174,7 +174,9 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-owner-admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', active: activePage === 'dashboard' },
             { href: '/realestate-owner-admin/bookings', label: 'Bookings', icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
             { href: '/realestate-owner-admin/leads', label: 'Leads', icon: 'bi-funnel-fill', active: activePage === 'leads' },
+            { href: '/realestate-owner-admin/tasks', label: 'Task Management', icon: 'bi-check2-square', active: activePage === 'tasks' },
             { href: '/realestate-owner-admin/agents', label: 'My Agents', icon: 'bi-person-badge-fill', active: activePage === 'agents' },
+
           ]
         },
         {
@@ -194,21 +196,25 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-owner-admin/categories', label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },
           ]
         },
-        ...(hasModule('marketing_hub') || hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') || hasModule('widget_creator') || hasModule('website_cms') || hasModule('discovery') || hasModule('analytics_pro') || hasModule('portal_market') ? [{
+        ...(hasModule('marketing_hub') || hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') || hasModule('widget_creator') || hasModule('website_cms') || hasModule('discovery') || hasModule('analytics_pro') || hasModule('portal_market') || hasModule('deal_intelligence') ? [{
           title: 'Premium Channels',
           items: [
             ...(hasModule('marketing_hub') ? [
               { href: '/realestate-owner-admin/marketing', label: 'Email Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
             ] : []),
-            ...(hasModule('analytics_pro') ? [
+            ...(hasModule('analytics_pro') || hasModule('deal_intelligence') ? [
               {
                 href: '/realestate-owner-admin/analytics',
                 label: 'Advanced Analytics',
                 icon: 'bi-bar-chart-line-fill',
-                active: activePage === 'analytics' || activePage === 'analytics-forecasting',
+                active: activePage === 'analytics' || activePage === 'forecasting' || activePage === 'deal-intelligence' || activePage === 'deal-prevention',
                 children: [
                   { href: '/realestate-owner-admin/analytics', label: 'Performance Reports', icon: 'bi-grid-fill', active: activePage === 'analytics' },
-                  { href: '/realestate-owner-admin/analytics/forecasting', label: 'AI Demand Forecasting', icon: 'bi-robot', active: activePage === 'analytics-forecasting' }
+                  { href: '/realestate-owner-admin/analytics/forecasting', label: 'AI Demand Forecasting', icon: 'bi-robot', active: activePage === 'forecasting' },
+                  ...(hasModule('deal_intelligence') ? [
+                    { href: '/realestate-owner-admin/analytics/deal-intelligence', label: 'Deal Closer (Lost)', icon: 'bi-shield-x', active: activePage === 'deal-intelligence' },
+                    { href: '/realestate-owner-admin/analytics/deal-prevention', label: 'Risk Prevention', icon: 'bi-lightning-charge-fill', active: activePage === 'deal-prevention' }
+                  ] : [])
                 ]
               },
             ] : []),
@@ -268,7 +274,9 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             { href: '/realestate-agent/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', active: activePage === 'dashboard' },
             { href: '/realestate-agent/leads', label: 'My Leads', icon: 'bi-person-badge', active: activePage === 'leads' },
+            { href: '/realestate-agent/tasks', label: 'My Tasks', icon: 'bi-check2-square', active: activePage === 'tasks' },
             { href: '/realestate-agent/commissions', label: 'Commissions', icon: 'bi-cash-stack', active: activePage === 'commissions' },
+
           ]
         },
         {
@@ -309,14 +317,21 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
   const menuItems = baseMenuItems.map((section: any) => ({
     ...section,
     items: section.items.map((item: any) => {
+      // Parent is active if its ID matches OR its href matches OR it's a prefix
       const isItemActive = item.active || (pathname && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href + '/'))));
+
       return {
         ...item,
         active: isItemActive,
-        children: item.children ? item.children.map((child: any) => ({
-          ...child,
-          active: child.active || (pathname && (pathname === child.href || (child.href !== '/' && pathname.startsWith(child.href + '/'))))
-        })) : undefined
+        children: item.children ? item.children.map((child: any) => {
+          // For children, be more strict: only active if explicit ID matches OR exact href match
+          // This prevents '/analytics' from matching '/analytics/forecasting'
+          const isChildActive = child.active || (pathname && pathname === child.href);
+          return {
+            ...child,
+            active: isChildActive
+          };
+        }) : undefined
       };
     })
   }));
@@ -408,7 +423,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               {section.items.map((item: any) => {
                 const hasChildren = item.children && item.children.length > 0;
                 const isParentActive = item.active || (hasChildren && item.children.some((c: any) => c.active));
-                const isOpen = isParentActive || (openMenus[item.label] ?? false);
+                const isOpen = openMenus[item.label] ?? isParentActive;
 
                 return (
                   <div key={item.label} className="mb-1">

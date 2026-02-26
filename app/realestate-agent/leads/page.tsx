@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { agentService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Loader from '@/components/common/Loader';
+import { useAuthContext } from '@/app/contexts/AuthContext';
+import StructuredLossModal from '@/components/modules/realestate/leads/StructuredLossModal';
 
 export default function AgentLeads() {
     const [leads, setLeads] = useState<any[]>([]);
@@ -11,6 +13,9 @@ export default function AgentLeads() {
     const [selectedLead, setSelectedLead] = useState<any>(null);
     const [statusUpdate, setStatusUpdate] = useState({ status: 1, notes: '' });
     const [saving, setSaving] = useState(false);
+    const [showLossModal, setShowLossModal] = useState(false);
+    const [leadToMarkLost, setLeadToMarkLost] = useState<any>(null);
+    const { hasModule } = useAuthContext();
 
     useEffect(() => {
         loadLeads();
@@ -34,7 +39,12 @@ export default function AgentLeads() {
 
     const handleUpdateStatus = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedLead) return;
+        if (statusUpdate.status === 5 && hasModule('deal_intelligence')) {
+            setLeadToMarkLost(selectedLead);
+            setSelectedLead(null);
+            setShowLossModal(true);
+            return;
+        }
 
         const token = getAuthToken();
         if (!token) return;
@@ -56,6 +66,31 @@ export default function AgentLeads() {
         } catch (error) {
             console.error('Update error', error);
             alert('Failed to update status');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const confirmLoss = async (lossData: any) => {
+        if (!leadToMarkLost) return;
+
+        const token = getAuthToken();
+        if (!token) return;
+
+        setSaving(true);
+        try {
+            const { leadService } = await import('@/app/services/api');
+            const res = await leadService.markAsLost(token, leadToMarkLost.id, lossData);
+            if (res.success) {
+                alert('Lead marked as lost correctly.');
+                setShowLossModal(false);
+                setLeadToMarkLost(null);
+                setStatusUpdate({ status: 1, notes: '' });
+                loadLeads();
+            }
+        } catch (error) {
+            console.error('Error marking lead as lost:', error);
+            alert('Failed to mark lead as lost');
         } finally {
             setSaving(false);
         }
@@ -190,6 +225,17 @@ export default function AgentLeads() {
                         </div>
                     </div>
                 )}
+
+                <StructuredLossModal
+                    show={showLossModal}
+                    onClose={() => {
+                        setShowLossModal(false);
+                        setLeadToMarkLost(null);
+                    }}
+                    onConfirm={confirmLoss}
+                    leadName={leadToMarkLost?.name || ''}
+                    isSubmitting={saving}
+                />
             </div>
         </MainLayout>
     );

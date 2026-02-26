@@ -34,6 +34,14 @@ export const leadService = {
         });
     },
 
+    markAsLost: async (token: string, leadId: string, data: any, tenantId?: string) => {
+        return await makeApiCall(leadEndpoints.markAsLost(leadId, tenantId), {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data),
+        });
+    },
+
     deleteLead: async (token: string, leadId: string, tenantId?: string) => {
         return await makeApiCall(leadEndpoints.delete(leadId, tenantId), {
             method: 'DELETE',
