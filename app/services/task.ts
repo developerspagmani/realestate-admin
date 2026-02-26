@@ -19,6 +19,12 @@ export const taskService = {
             body: JSON.stringify({ status }),
         });
     },
+    update: async (id: string, data: any) => {
+        return await makeApiCall(taskEndpoints.update(id), {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
     delete: async (id: string) => {
         return await makeApiCall(taskEndpoints.delete(id), {
             method: 'DELETE',

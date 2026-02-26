@@ -507,6 +507,7 @@ export const taskEndpoints = {
     params ? `/tasks?${buildQueryString(params)}` : '/tasks',
   getMyTasks: () => '/tasks/my-tasks',
   updateStatus: (id: string) => `/tasks/${id}/status`,
+  update: (id: string) => `/tasks/${id}`,
   delete: (id: string) => `/tasks/${id}`,
 };
 

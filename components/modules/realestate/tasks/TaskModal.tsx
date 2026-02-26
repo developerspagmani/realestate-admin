@@ -12,35 +12,49 @@ interface TaskModalProps {
     agentName?: string;
     agents?: any[];
     leads?: any[];
+    task?: any; // Add task prop for editing
     onSuccess: () => void;
 }
 
-export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, agentName, agents, leads, onSuccess }: TaskModalProps) {
+export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, agentName, agents, leads, task, onSuccess }: TaskModalProps) {
     const [loading, setLoading] = useState(false);
-    const [title, setTitle] = useState(leadName ? `Follow up with ${leadName}` : '');
+    const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState(2);
     const [dueDate, setDueDate] = useState('');
-    const [selectedAgentId, setSelectedAgentId] = useState(agentId || '');
-    const [selectedLeadId, setSelectedLeadId] = useState(leadId || '');
+    const [selectedAgentId, setSelectedAgentId] = useState('');
+    const [selectedLeadId, setSelectedLeadId] = useState('');
+
+    const isEditing = !!task;
 
     // Sync state with props when modal opens or props change
     React.useEffect(() => {
         if (isOpen) {
-            setSelectedAgentId(agentId || '');
-            setSelectedLeadId(leadId || '');
-            setTitle(leadName ? `Follow up with ${leadName}` : '');
-            setDescription('');
-            setPriority(2);
-            setDueDate('');
+            if (task) {
+                // Pre-fill for editing
+                setTitle(task.title || '');
+                setDescription(task.description || '');
+                setPriority(task.priority || 2);
+                setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
+                setSelectedAgentId(task.assignedTo || '');
+                setSelectedLeadId(task.leadId || '');
+            } else {
+                // Default for new task
+                setSelectedAgentId(agentId || '');
+                setSelectedLeadId(leadId || '');
+                setTitle(leadName ? `Follow up with ${leadName}` : '');
+                setDescription('');
+                setPriority(2);
+                setDueDate('');
+            }
         }
-    }, [isOpen, agentId, leadId, leadName]);
+    }, [isOpen, task, agentId, leadId, leadName]);
 
     // Update title when lead changes if it was empty or auto-generated
     const handleLeadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const id = e.target.value;
         setSelectedLeadId(id);
-        if (leads) {
+        if (leads && !isEditing) {
             const lead = leads.find(l => l.id === id);
             if (lead && (!title || title.startsWith('Follow up with'))) {
                 setTitle(`Follow up with ${lead.name}`);
@@ -53,22 +67,29 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
         e.preventDefault();
         try {
             setLoading(true);
-            const res = await taskService.create({
+            const taskData = {
                 title,
                 description,
                 priority,
                 dueDate: dueDate || null,
                 assignedTo: selectedAgentId || null,
                 leadId: selectedLeadId || null
-            });
+            };
+
+            let res;
+            if (isEditing) {
+                res = await taskService.update(task.id, taskData);
+            } else {
+                res = await taskService.create(taskData);
+            }
 
             if (res.success) {
                 onSuccess();
                 onClose();
             }
         } catch (error: any) {
-            console.error('Failed to create task:', error);
-            alert(error.message || 'Failed to create task. Please try again.');
+            console.error(isEditing ? 'Failed to update task:' : 'Failed to create task:', error);
+            alert(error.message || `Failed to ${isEditing ? 'update' : 'create'} task. Please try again.`);
         } finally {
             setLoading(false);
         }
@@ -80,9 +101,11 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
     return (
         <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content border-0 shadow rounded-4">
+                <div className="modal-content border-0 shadow rounded-4 text-dark">
                     <div className="modal-header border-0 pb-0">
-                        <h5 className="modal-title fw-bold">Assign Task to Agent</h5>
+                        <h5 className="modal-title fw-bold">
+                            {isEditing ? 'Edit Task Details' : 'Assign Task to Agent'}
+                        </h5>
                         <button type="button" className="btn-close" onClick={onClose}></button>
                     </div>
                     <form onSubmit={handleSubmit}>
@@ -130,40 +153,39 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
                                     />
                                 </div>
                             </div>
-                            {!agentId && agents && (
-                                <div className="mb-3">
-                                    <label className="form-label small fw-bold">Assign to Agent</label>
-                                    <select
-                                        className="form-select rounded-3"
-                                        value={selectedAgentId}
-                                        onChange={(e) => setSelectedAgentId(e.target.value)}
-                                        required
-                                    >
-                                        <option value="">Select an Agent...</option>
-                                        {agents.map(a => (
-                                            <option key={a.id} value={a.id}>{a.user?.name || a.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
 
-                            {!leadId && leads && (
-                                <div className="mb-3">
-                                    <label className="form-label small fw-bold">Related Lead (Optional)</label>
-                                    <select
-                                        className="form-select rounded-3"
-                                        value={selectedLeadId}
-                                        onChange={handleLeadChange}
-                                    >
-                                        <option value="">No specific lead</option>
-                                        {leads.map(l => (
-                                            <option key={l.id} value={l.id}>{l.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
+                            <div className="mb-3">
+                                <label className="form-label small fw-bold">Assign to Agent</label>
+                                <select
+                                    className="form-select rounded-3"
+                                    value={selectedAgentId}
+                                    onChange={(e) => setSelectedAgentId(e.target.value)}
+                                    required
+                                    disabled={loading}
+                                >
+                                    <option value="">Select an Agent...</option>
+                                    {Array.isArray(agents) && agents.map(a => (
+                                        <option key={a.id} value={a.id}>{a.user?.name || a.name}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                            {((agentName && agentId) || (leadName && leadId)) && (
+                            <div className="mb-3">
+                                <label className="form-label small fw-bold">Related Lead (Optional)</label>
+                                <select
+                                    className="form-select rounded-3"
+                                    value={selectedLeadId}
+                                    onChange={handleLeadChange}
+                                    disabled={loading}
+                                >
+                                    <option value="">No specific lead</option>
+                                    {Array.isArray(leads) && leads.map(l => (
+                                        <option key={l.id} value={l.id}>{l.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {!isEditing && ((agentName && agentId) || (leadName && leadId)) && (
                                 <div className="p-3 bg-light rounded-3 mb-0 border border-white shadow-sm">
                                     {agentName && agentId && (
                                         <p className="small mb-1 text-muted">
@@ -182,7 +204,7 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
                         <div className="modal-footer border-0 pt-0 pb-4 justify-content-center">
                             <button type="button" className="btn btn-light rounded-pill px-4" onClick={onClose}>Cancel</button>
                             <button type="submit" className="btn btn-primary rounded-pill px-4" disabled={loading}>
-                                {loading ? 'Creating...' : 'Assign Task'}
+                                {loading ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Assign Task')}
                             </button>
                         </div>
                     </form>

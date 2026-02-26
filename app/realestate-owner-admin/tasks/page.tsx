@@ -89,6 +89,18 @@ export default function OwnerTasksPage() {
         }
     };
 
+    const [selectedTask, setSelectedTask] = useState<any>(null);
+
+    const handleEdit = (task: any) => {
+        setSelectedTask(task);
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setSelectedTask(null);
+    };
+
     return (
         <MainLayout activePage="tasks">
             <div className="container-fluid py-4 text-dark">
@@ -99,7 +111,10 @@ export default function OwnerTasksPage() {
                     </div>
                     <button
                         className="btn btn-primary rounded-pill px-4 shadow-sm"
-                        onClick={() => setModalOpen(true)}
+                        onClick={() => {
+                            setSelectedTask(null);
+                            setModalOpen(true);
+                        }}
                     >
                         <i className="bi bi-plus-lg me-2"></i> Create New Task
                     </button>
@@ -214,13 +229,22 @@ export default function OwnerTasksPage() {
                                             <td>{getStatusLabel(task.status)}</td>
                                             <td>{getPriorityBadge(task.priority)}</td>
                                             <td className="text-end px-4">
-                                                <button
-                                                    className="btn btn-link text-danger p-0 border-0"
-                                                    onClick={() => handleDelete(task.id)}
-                                                    title="Delete Task"
-                                                >
-                                                    <i className="bi bi-trash3 fs-5"></i>
-                                                </button>
+                                                <div className="d-flex justify-content-end gap-2">
+                                                    <button
+                                                        className="btn btn-link text-primary p-0 border-0"
+                                                        onClick={() => handleEdit(task)}
+                                                        title="Edit Task"
+                                                    >
+                                                        <i className="bi bi-pencil-square fs-5"></i>
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-link text-danger p-0 border-0"
+                                                        onClick={() => handleDelete(task.id)}
+                                                        title="Delete Task"
+                                                    >
+                                                        <i className="bi bi-trash3 fs-5"></i>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -243,11 +267,12 @@ export default function OwnerTasksPage() {
 
             <TaskModal
                 isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
+                onClose={handleCloseModal}
                 agents={agents}
                 leads={leads}
+                task={selectedTask}
                 onSuccess={() => {
-                    showToast('Task created and assigned successfully!', 'success');
+                    showToast(selectedTask ? 'Task updated successfully!' : 'Task created and assigned successfully!', 'success');
                     fetchData();
                 }}
             />
