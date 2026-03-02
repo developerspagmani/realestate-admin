@@ -172,43 +172,61 @@ export function middleware(request: NextRequest) {
     '/profile'
   ];
 
-  // Admin routes: Base admin paths + shared routes
+  // Admin-only routes
   const adminRoutes = [
+    '/realestate-admin/dashboard',
+    '/realestate-admin/workspace',
+    '/realestate-admin/workspaces',
+    '/realestate-admin/users',
+    '/realestate-admin/bookings',
+    '/realestate-admin/owners',
+    '/realestate-admin/properties',
+    '/realestate-admin/units',
+    '/realestate-admin/leads',
+    '/realestate-admin/property-3d',
+    '/realestate-admin/media-library',
+    '/realestate-admin/whatsapp-business',
     '/realestate-admin',
     '/cart',
     '/checkout',
-    '/booking-confirmation',
-    '/profile',
-    '/user'
+    '/booking-confirmation'
   ];
 
-  // Owner routes: Base owner paths + shared routes
+  // owner-admin-only routes
   const ownerRoutes = [
+    '/realestate-owner-admin/dashboard',
+    '/realestate-owner-admin/workspace',
+    '/realestate-owner-admin/workspaces',
+    '/realestate-owner-admin/bookings',
+    '/realestate-owner-admin/properties',
+    '/realestate-owner-admin/units',
+    '/realestate-owner-admin/users',
+    '/realestate-owner-admin/leads',
+    '/realestate-owner-admin/media-library',
+    '/realestate-owner-admin/marketing-tool',
+    '/realestate-owner-admin/settings',
     '/realestate-owner-admin',
-    '/cart',
-    '/checkout',
-    '/booking-confirmation',
-    '/profile',
-    '/user'
   ];
 
-  // Agent routes: Base agent paths + shared routes
+  // Agent-only routes
   const agentRoutes = [
+    '/realestate-agent/dashboard',
+    '/realestate-agent/leads',
+    '/realestate-agent/commissions',
+    '/realestate-agent/profile',
     '/realestate-agent',
-    '/cart',
-    '/checkout',
-    '/booking-confirmation',
-    '/profile',
-    '/user'
   ];
 
-  // User routes: Base user paths + shared routes
+  // User-only routes
   const userRoutes = [
-    '/user',
+    '/user/dashboard',
+    '/user/cart',
+    '/user/checkout',
+    '/user/my-bookings',
+    '/user/profile',
     '/cart',
     '/checkout',
-    '/booking-confirmation',
-    '/profile'
+    '/booking-confirmation'
   ];
 
   // Public exceptions inside protected paths

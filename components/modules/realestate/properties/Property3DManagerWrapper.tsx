@@ -93,7 +93,7 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
                                         {loading ? (
                                             <tr>
                                                 <td colSpan={3} className="text-center py-5">
-                                                    <Loader message="" fullPage={false} size="md" />
+                                                    <Loader message="" fullPage={false} />
                                                     Loading properties...
                                                 </td>
                                             </tr>
