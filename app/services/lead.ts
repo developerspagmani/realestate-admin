@@ -8,21 +8,19 @@ export const leadService = {
     },
 
     createLead: async (token: string, leadData: any) => {
-        const { userId, id, agent, property, unit, enrollments, tenant, createdAt, updatedAt, _count, ...rest } = leadData;
         return await makeApiCall(leadEndpoints.create(), {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(rest),
+            body: JSON.stringify(leadData),
         });
     },
 
     updateLead: async (token: string, leadId: string, leadData: any, tenantId?: string) => {
-        const { userId, id, agent, property, unit, enrollments, tenant, createdAt, updatedAt, _count, ...rest } = leadData;
         return await makeApiCall(leadEndpoints.update(leadId, tenantId), {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({
-                ...rest,
+                ...leadData,
                 ...(tenantId ? { tenantId } : {})
             }),
         });

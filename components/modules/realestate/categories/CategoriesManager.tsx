@@ -7,7 +7,6 @@ import { categoryService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import Loader from '@/components/common/Loader';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 interface Category {
@@ -29,14 +28,16 @@ interface CategoriesManagerProps {
 }
 
 export default function CategoriesManager({ mode }: CategoriesManagerProps) {
-    const queryClient = useQueryClient();
     const { user, isAuthenticated } = useAuthContext();
     const { activeTenantId } = useManagementContext();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -74,60 +75,33 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
     }, []);
 
     useEffect(() => {
-        if (mounted && !isAuthenticated) {
+        if (mounted && isAuthenticated) {
+            loadCategories();
+        } else if (mounted && !isAuthenticated) {
             router.push('/login');
         }
     }, [mounted, isAuthenticated]);
 
-    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const loadCategories = async () => {
+        try {
+            setLoading(true);
+            const token = getAuthToken();
+            if (!token) return;
 
-    // --- Queries ---
-
-    const { data: categoriesRes, isLoading: loading } = useQuery({
-        queryKey: ['categories'],
-        queryFn: () => categoryService.getCategories(token!),
-        enabled: !!token && mounted && isAuthenticated,
-    });
-
-    const categories = categoriesRes?.data?.categories || [];
-
-    // --- Mutations ---
-
-    const saveMutation = useMutation({
-        mutationFn: async (payload: any) => {
-            const submitData = {
-                ...payload,
-                parentId: payload.parentId || null
-            };
-            if (editingCategory) return categoryService.updateCategory(token!, editingCategory.id, submitData);
-            return categoryService.createCategory(token!, submitData);
-        },
-        onSuccess: (res) => {
-            if (res.success) {
-                queryClient.invalidateQueries({ queryKey: ['categories'] });
-                showToast(editingCategory ? 'Category updated successfully' : 'Category created successfully');
-                handleCloseModal();
-            } else {
-                showToast(res.message || 'Failed to save category', 'error');
+            const response = await categoryService.getCategories(token);
+            if (response.success) {
+                setCategories(response.data.categories || []);
             }
-        },
-        onError: () => showToast('Error saving category', 'error')
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => categoryService.deleteCategory(token!, id),
-        onSuccess: (res) => {
-            if (res.success) {
-                queryClient.invalidateQueries({ queryKey: ['categories'] });
-                showToast('Category deleted successfully');
-            } else {
-                showToast(res.message || 'Failed to delete category', 'error');
-            }
-        },
-        onError: (err: any) => showToast(err.message || 'Error deleting category', 'error')
-    });
+        } catch (error) {
+            console.error('Failed to load categories:', error);
+            showToast('Failed to load categories', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleEdit = (category: Category) => {
+        // Can only edit own categories
         if (mode === 'owner' && !category.tenantId) {
             showToast("You cannot edit global system categories.", 'error');
             return;
@@ -145,19 +119,55 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         setShowModal(true);
     };
 
-    const handleDelete = (id: string, tenantId: string | null) => {
+    const handleDelete = async (id: string, tenantId: string | null) => {
         if (mode === 'owner' && !tenantId) {
             showToast("You cannot delete global system categories.", 'error');
             return;
         }
 
         if (!window.confirm('Are you sure you want to delete this category?')) return;
-        deleteMutation.mutate(id);
+
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+
+            await categoryService.deleteCategory(token, id);
+            setCategories(categories.filter(c => c.id !== id));
+            showToast('Category deleted successfully');
+        } catch (error: any) {
+            console.error('Failed to delete category:', error);
+            showToast(error.message || 'Error deleting category.', 'error');
+        }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        saveMutation.mutate(formData);
+        try {
+            setIsSubmitting(true);
+            const token = getAuthToken();
+            if (!token) return;
+
+            const submitData = {
+                ...formData,
+                parentId: formData.parentId || null
+            };
+
+            if (editingCategory) {
+                await categoryService.updateCategory(token, editingCategory.id, submitData);
+                showToast('Category updated successfully');
+            } else {
+                await categoryService.createCategory(token, submitData);
+                showToast('Category created successfully');
+            }
+
+            await loadCategories();
+            handleCloseModal();
+        } catch (error) {
+            console.error('Failed to save category:', error);
+            showToast('Error saving category.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleCloseModal = () => {
@@ -166,23 +176,21 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         setFormData({ name: '', description: '', icon: 'bi-folder', parentId: '', sortOrder: 0, status: 1 });
     };
 
-    const isSubmitting = saveMutation.isPending;
-
     // Get parent categories (excluding the one being edited)
     const getAvailableParentCategories = () => {
-        return categories.filter((c: any) =>
+        return categories.filter(c =>
             c.tenantId && // Only tenant categories can be parents
             (!editingCategory || c.id !== editingCategory.id)
         );
     };
 
-    const filteredCategories = categories.filter((c: any) =>
+    const filteredCategories = categories.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Group categories by parent
-    const rootCategories = filteredCategories.filter((c: any) => !c.parentId);
-    const childCategories = filteredCategories.filter((c: any) => c.parentId);
+    const rootCategories = filteredCategories.filter(c => !c.parentId);
+    const childCategories = filteredCategories.filter(c => c.parentId);
 
     if (!mounted || !user) return null;
 
@@ -238,7 +246,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                     </div>
                 ) : (
                     <div className="row g-4">
-                        {rootCategories.map((category: any) => (
+                        {rootCategories.map(category => (
                             <div key={category.id} className="col-md-6 col-lg-4">
                                 <div className="card h-100 border-0 shadow-sm hover-shadow transition-all">
                                     <div className="card-body p-4">
@@ -287,11 +295,11 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                                         </div>
 
                                         {/* Show child categories */}
-                                        {childCategories.filter((c: any) => c.parentId === category.id).length > 0 && (
+                                        {childCategories.filter(c => c.parentId === category.id).length > 0 && (
                                             <div className="mt-3 pt-3 border-top">
                                                 <small className="text-muted fw-semibold">Subcategories:</small>
                                                 <div className="d-flex flex-wrap gap-2 mt-2">
-                                                    {childCategories.filter((c: any) => c.parentId === category.id).map((child: any) => (
+                                                    {childCategories.filter(c => c.parentId === category.id).map(child => (
                                                         <span key={child.id} className="badge bg-light text-dark border d-flex align-items-center gap-1">
                                                             <i className={`bi ${child.icon || 'bi-folder'} small`}></i>
                                                             {child.name}
@@ -306,7 +314,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                         ))}
 
                         {/* Orphaned child categories (parent not visible in search) */}
-                        {childCategories.filter((c: any) => !rootCategories.find((r: any) => r.id === c.parentId)).map((category: any) => (
+                        {childCategories.filter(c => !rootCategories.find(r => r.id === c.parentId)).map(category => (
                             <div key={category.id} className="col-md-6 col-lg-4">
                                 <div className="card h-100 border-0 shadow-sm hover-shadow transition-all border-start border-primary border-3">
                                     <div className="card-body p-4">
@@ -395,7 +403,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                                                         onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
                                                     >
                                                         <option value="">None (Top Level)</option>
-                                                        {getAvailableParentCategories().map((cat: any) => (
+                                                        {getAvailableParentCategories().map(cat => (
                                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                                         ))}
                                                     </select>

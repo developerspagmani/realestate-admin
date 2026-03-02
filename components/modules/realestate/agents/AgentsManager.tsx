@@ -8,25 +8,29 @@ import Toast from '@/components/common/Toast';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import Loader from '@/components/common/Loader';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface AgentsManagerProps {
     mode: 'owner' | 'admin';
 }
 
 export default function AgentsManager({ mode }: AgentsManagerProps) {
-    const queryClient = useQueryClient();
-    const { user, tenantId: authTenantId, isAuthenticated } = useAuthContext();
+    const { user, tenantId: authTenantId } = useAuthContext();
     const { activeTenantId } = useManagementContext();
-
-    // UI states
+    const [agents, setAgents] = useState<Agent[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
     const [viewingCommissions, setViewingCommissions] = useState<Agent | null>(null);
     const [viewingAgent, setViewingAgent] = useState<Agent | null>(null);
+    const [viewingAgentProperties, setViewingAgentProperties] = useState<any[]>([]);
+    const [viewingAgentLeads, setViewingAgentLeads] = useState<any[]>([]);
+    const [commissions, setCommissions] = useState<Commission[]>([]);
     const [showAssignModal, setShowAssignModal] = useState<'leads' | 'properties' | null>(null);
     const [targetAgent, setTargetAgent] = useState<Agent | null>(null);
+    const [unassignedLeads, setUnassignedLeads] = useState<any[]>([]);
+    const [allProperties, setAllProperties] = useState<any[]>([]);
     const [assignedItems, setAssignedItems] = useState<string[]>([]);
+    const [agentAssignments, setAgentAssignments] = useState<any[]>([]);
     const [newlyCreatedAgent, setNewlyCreatedAgent] = useState<any | null>(null);
 
     const [formData, setFormData] = useState({
@@ -50,144 +54,42 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
         setToast({ show: true, message, type });
     };
 
-    const token = typeof window !== 'undefined' ? getAuthToken() : '';
-    const tenantId = (mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || (typeof window !== 'undefined' ? localStorage.getItem('tenant-id') : null);
+    useEffect(() => {
+        loadAgents();
+    }, []);
 
-    // --- Queries ---
+    const loadAgents = async () => {
+        const token = getAuthToken();
+        if (!token) return;
 
-    const { data: agentsRes, isLoading: agentsLoading } = useQuery({
-        queryKey: ['agents', mode, tenantId],
-        queryFn: () => agentService.getAgents(token!, { tenantId }),
-        enabled: !!token && isAuthenticated && !!tenantId,
-    });
-
-    const agents = agentsRes?.data?.agents || [];
-
-    const { data: commissionsRes } = useQuery({
-        queryKey: ['commissions', viewingCommissions?.id],
-        queryFn: () => agentService.getCommissions(token!, viewingCommissions!.id),
-        enabled: !!token && !!viewingCommissions?.id,
-    });
-
-    const commissions = commissionsRes?.data?.commissions || [];
-
-    // Assignment Queries
-    const { data: unassignedLeadsRes } = useQuery({
-        queryKey: ['unassigned-leads', tenantId],
-        queryFn: () => leadService.getLeads(token!, { status: '1', tenantId: tenantId || undefined }),
-        enabled: !!token && showAssignModal === 'leads' && !!tenantId,
-    });
-
-    const unassignedLeads = unassignedLeadsRes?.data?.leads || [];
-
-    const { data: agentLeadsRes } = useQuery({
-        queryKey: ['agent-leads', targetAgent?.id],
-        queryFn: () => agentService.getAgentLeads(token!, targetAgent!.id),
-        enabled: !!token && showAssignModal === 'leads' && !!targetAgent?.id,
-    });
-
-    const agentLeads = agentLeadsRes?.data || [];
-
-    const { data: allPropertiesRes } = useQuery({
-        queryKey: ['properties', tenantId],
-        queryFn: () => propertyService.getProperties(token!, { tenantId: tenantId || undefined }),
-        enabled: !!token && showAssignModal === 'properties' && !!tenantId,
-    });
-
-    const allProperties = allPropertiesRes?.data?.properties || [];
-
-    const { data: agentPropertiesRes } = useQuery({
-        queryKey: ['agent-properties', targetAgent?.id],
-        queryFn: () => agentService.getAssignments(token!, targetAgent!.id),
-        enabled: !!token && (showAssignModal === 'properties' || !!viewingAgent?.id) && (!!targetAgent?.id || !!viewingAgent?.id),
-    });
-
-    const agentProperties = agentPropertiesRes?.data || [];
-
-    // For viewing agent details (leads)
-    const { data: viewingAgentLeadsRes } = useQuery({
-        queryKey: ['agent-leads', viewingAgent?.id],
-        queryFn: () => agentService.getAgentLeads(token!, viewingAgent!.id),
-        enabled: !!token && !!viewingAgent?.id,
-    });
-
-    const viewingAgentLeads = viewingAgentLeadsRes?.data || [];
-
-    // For viewing agent details (properties)
-    const { data: viewingAgentPropertiesRes } = useQuery({
-        queryKey: ['agent-properties', viewingAgent?.id],
-        queryFn: () => agentService.getAssignments(token!, viewingAgent!.id),
-        enabled: !!token && !!viewingAgent?.id,
-    });
-
-    const viewingAgentProperties = viewingAgentPropertiesRes?.data || [];
-
-    // --- Mutations ---
-
-    const saveMutation = useMutation({
-        mutationFn: async (payload: any) => {
-            if (editingAgent) {
-                return agentService.updateAgent(token!, editingAgent.id, {
-                    specialization: payload.specialization,
-                    commissionRate: payload.commissionRate,
-                    status: payload.status
-                });
+        setLoading(true);
+        try {
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const res = await agentService.getAgents(token, { tenantId });
+            if (res.success && res.data) {
+                setAgents(res.data.agents);
             }
-            return agentService.createAgent(token!, { ...payload, tenantId });
-        },
-        onSuccess: (res) => {
-            if (res.success) {
-                if (!editingAgent) {
-                    setNewlyCreatedAgent({ ...formData, id: res.data.agent.id });
-                }
-                setShowModal(false);
-                queryClient.invalidateQueries({ queryKey: ['agents'] });
-            } else {
-                showToast(res.message || 'Failed to save agent', 'error');
-            }
-        },
-        onError: () => showToast('Failed to save agent', 'error')
-    });
+        } catch (error) {
+            console.error('Failed to load agents', error);
 
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => agentService.deleteAgent(token!, id),
-        onSuccess: (res) => {
-            if (res.success) {
-                queryClient.invalidateQueries({ queryKey: ['agents'] });
-                showToast('Agent deleted successfully');
-            } else {
-                showToast(res.message || 'Failed to delete agent', 'error');
-            }
-        },
-        onError: () => showToast('Error deleting agent', 'error')
-    });
-
-    const assignMutation = useMutation({
-        mutationFn: async ({ toAdd, toRemove, type }: { toAdd: string[], toRemove: any[], type: 'leads' | 'properties' }) => {
-            const agentId = targetAgent!.id;
-            if (type === 'leads') {
-                await Promise.all([
-                    ...toAdd.map(leadId => agentService.assignLead(token!, { agentId, leadId })),
-                    ...toRemove.map(a => agentService.unassignLead(token!, a.id))
-                ]);
-            } else {
-                await Promise.all([
-                    ...toAdd.map(propertyId => agentService.assignProperty(token!, { agentId, propertyId })),
-                    ...toRemove.map(a => agentService.unassignProperty(token!, a.id))
-                ]);
-            }
-        },
-        onSuccess: () => {
-            showToast('Assignments updated successfully');
-            setShowAssignModal(null);
-            queryClient.invalidateQueries({ queryKey: ['agents'] });
-            queryClient.invalidateQueries({ queryKey: ['agent-leads', targetAgent?.id] });
-            queryClient.invalidateQueries({ queryKey: ['agent-properties', targetAgent?.id] });
-        },
-        onError: (err: any) => {
-            showToast('Failed to update assignments: ' + (err.response?.data?.message || err.message), 'error');
+        } finally {
+            setLoading(false);
         }
-    });
+    };
+
+    const loadCommissions = async (agentId: string) => {
+        const token = getAuthToken();
+        if (!token) return;
+        try {
+            const res = await agentService.getCommissions(token, agentId);
+            if (res.success && res.data) {
+                setCommissions(res.data.commissions);
+            }
+        } catch (error) {
+            console.error('Failed to load commissions', error);
+
+        }
+    };
 
     const handleEdit = (agent: Agent) => {
         setEditingAgent(agent);
@@ -219,39 +121,144 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
         setShowModal(true);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        saveMutation.mutate(formData);
+        const token = getAuthToken();
+        if (!token) return;
+
+        try {
+            if (editingAgent) {
+                // Update
+                const res = await agentService.updateAgent(token, editingAgent.id, {
+                    specialization: formData.specialization,
+                    commissionRate: formData.commissionRate,
+                    status: formData.status
+                });
+                if (res.success) {
+                    setShowModal(false);
+                    loadAgents();
+                }
+            } else {
+                // Create
+                const tenantId = (mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || localStorage.getItem('tenant-id');
+                const res = await agentService.createAgent(token, { ...formData, tenantId });
+                if (res.success) {
+                    setNewlyCreatedAgent({
+                        ...formData,
+                        id: res.data.agent.id
+                    });
+                    setShowModal(false);
+                    loadAgents();
+                }
+            }
+        } catch (error) {
+            console.error('Submit error', error);
+            showToast('Failed to save agent', 'error');
+        }
     };
 
-    const handleAssignClick = (type: 'leads' | 'properties', agent: Agent) => {
+    const handleAssignClick = async (type: 'leads' | 'properties', agent: Agent) => {
         setTargetAgent(agent);
         setShowAssignModal(type);
-        setAssignedItems([]); // This will be set by useEffect when data loads
+        setAssignedItems([]);
+        setAgentAssignments([]);
+
+        const token = getAuthToken();
+        if (!token) return;
+
+        try {
+            const tenantId = (mode === 'admin' ? activeTenantId : authTenantId) || user?.tenantId || localStorage.getItem('tenant-id');
+
+            if (!tenantId) {
+                showToast('No Tenant ID found. Please refresh or select a tenant.', 'error');
+                return;
+            }
+
+            if (type === 'leads') {
+                const [leadsRes, assignRes] = await Promise.all([
+                    leadService.getLeads(token, { status: '1', tenantId: tenantId || undefined }),
+                    agentService.getAgentLeads(token, agent.id)
+                ]);
+
+                if (leadsRes.success) {
+                    setUnassignedLeads(leadsRes.data.leads || []);
+                }
+
+                if (assignRes.success) {
+                    const current = assignRes.data || [];
+                    setAgentAssignments(current);
+                    setAssignedItems(current.map((a: any) => a.leadId));
+                }
+            } else {
+                // Fetch ALL properties and CURRENT assignments in parallel
+                const [propsRes, assignRes] = await Promise.all([
+                    propertyService.getProperties(token, { tenantId: tenantId || undefined }),
+                    agentService.getAssignments(token, agent.id)
+                ]);
+
+                if (propsRes.success) {
+                    setAllProperties(propsRes.data.properties || []);
+                }
+
+                if (assignRes.success) {
+                    const current = assignRes.data || [];
+                    setAgentAssignments(current);
+                    // Pre-select already assigned properties
+                    setAssignedItems(current.map((a: any) => a.propertyId));
+                }
+            }
+        } catch (err: any) {
+            console.error('Failed to load assignment data', err);
+        }
     };
 
-    // Effect to set assigned items when data is ready
-    useEffect(() => {
-        if (showAssignModal === 'leads' && agentLeads) {
-            setAssignedItems(agentLeads.map((a: any) => a.leadId));
-        } else if (showAssignModal === 'properties' && agentProperties) {
-            setAssignedItems(agentProperties.map((a: any) => a.propertyId));
-        }
-    }, [showAssignModal, agentLeads, agentProperties]);
-
-    const confirmAssignment = () => {
+    const confirmAssignment = async () => {
         if (!targetAgent) return;
+        const token = getAuthToken();
+        if (!token) return;
 
-        if (showAssignModal === 'leads') {
-            const currentLeadIds = agentLeads.map((a: any) => a.leadId);
-            const toAdd = assignedItems.filter(id => !currentLeadIds.includes(id));
-            const toRemove = agentLeads.filter((a: any) => !assignedItems.includes(a.leadId));
-            assignMutation.mutate({ toAdd, toRemove, type: 'leads' });
-        } else {
-            const currentPropIds = agentProperties.map((a: any) => a.propertyId);
-            const toAdd = assignedItems.filter(id => !currentPropIds.includes(id));
-            const toRemove = agentProperties.filter((a: any) => !assignedItems.includes(a.propertyId));
-            assignMutation.mutate({ toAdd, toRemove, type: 'properties' });
+        try {
+            const agentId = targetAgent.id;
+            const tenantId = (mode === 'admin' ? activeTenantId : authTenantId) || localStorage.getItem('tenant-id');
+
+            // Many-to-Many Assignment Logic for both Properties and Leads
+            if (showAssignModal === 'leads') {
+                const currentLeadIds = agentAssignments.map(a => a.leadId);
+                const toAdd = assignedItems.filter(id => !currentLeadIds.includes(id));
+                const toRemove = agentAssignments.filter(a => !assignedItems.includes(a.leadId));
+
+                await Promise.all([
+                    ...toAdd.map(leadId =>
+                        agentService.assignLead(token, { agentId, leadId })
+                    ),
+                    ...toRemove.map(a =>
+                        agentService.unassignLead(token, a.id)
+                    )
+                ]);
+            } else {
+                const currentPropIds = agentAssignments.map(a => a.propertyId);
+
+                // 1. Identify what to ADD
+                const toAdd = assignedItems.filter(id => !currentPropIds.includes(id));
+
+                // 2. Identify what to REMOVE
+                const toRemove = agentAssignments.filter(a => !assignedItems.includes(a.propertyId));
+
+                await Promise.all([
+                    ...toAdd.map(propertyId =>
+                        agentService.assignProperty(token, { agentId, propertyId })
+                    ),
+                    ...toRemove.map(a =>
+                        agentService.unassignProperty(token, a.id)
+                    )
+                ]);
+            }
+            showToast('Assignments updated successfully');
+            setShowAssignModal(null);
+            loadAgents();
+        } catch (err: any) {
+            console.error('Assignment failed', err);
+            showToast('Failed to update assignments: ' + (err.response?.data?.message || err.message), 'error');
         }
     };
 
@@ -260,20 +267,52 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
         showToast('Copied to clipboard!');
     };
 
-    const handleDeleteAgent = (agentId: string) => {
+    const handleDeleteAgent = async (agentId: string) => {
         if (!window.confirm('Are you sure you want to delete this agent? This will also delete their login account.')) return;
-        deleteMutation.mutate(agentId);
+
+        const token = getAuthToken();
+        if (!token) return;
+
+        try {
+            const res = await agentService.deleteAgent(token, agentId);
+            if (res.success) {
+                loadAgents();
+                showToast('Agent deleted successfully');
+            } else {
+                showToast(res.message || 'Failed to delete agent', 'error');
+            }
+        } catch (error) {
+            console.error('Delete error', error);
+            showToast('Error deleting agent', 'error');
+        }
     };
 
     const handleViewCommissions = (agent: Agent) => {
         setViewingCommissions(agent);
+        loadCommissions(agent.id);
     };
 
-    const handleViewDetails = (agent: Agent) => {
+    const handleViewDetails = async (agent: Agent) => {
         setViewingAgent(agent);
-    };
+        const token = getAuthToken();
+        if (!token) return;
 
-    const loading = agentsLoading;
+        try {
+            const [propRes, leadsRes] = await Promise.all([
+                agentService.getAssignments(token, agent.id),
+                agentService.getAgentLeads(token, agent.id)
+            ]);
+
+            if (propRes.success) {
+                setViewingAgentProperties(propRes.data || []);
+            }
+            if (leadsRes.success) {
+                setViewingAgentLeads(leadsRes.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to load agent details', error);
+        }
+    };
 
     return (
         <MainLayout activePage="agents">
@@ -316,7 +355,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                             </td>
                                         </tr>
                                     ) : (
-                                        agents.map((agent: any) => (
+                                        agents.map(agent => (
                                             <tr key={agent.id}>
                                                 <td className="px-4 py-3">
                                                     <div className="d-flex align-items-center">
@@ -543,7 +582,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                         <h5 className="modal-title fw-bold">Commission History</h5>
                                         <p className="text-muted small mb-0">For {viewingCommissions.user?.name}</p>
                                     </div>
-                                    <button type="button" className="btn-close" onClick={() => { setViewingCommissions(null); }}></button>
+                                    <button type="button" className="btn-close" onClick={() => { setViewingCommissions(null); setCommissions([]); }}></button>
                                 </div>
                                 <div className="modal-body p-0">
                                     <div className="vi-table-responsive">
@@ -564,7 +603,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                         </td>
                                                     </tr>
                                                 ) : (
-                                                    commissions.map((comm: any) => (
+                                                    commissions.map(comm => (
                                                         <tr key={comm.id}>
                                                             <td className="ps-4 small text-muted">
                                                                 {new Date(comm.createdAt).toLocaleDateString()}
@@ -589,7 +628,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                     </div>
                                 </div>
                                 <div className="modal-footer border-0 p-4">
-                                    <button type="button" className="btn btn-light" onClick={() => { setViewingCommissions(null); }}>Close</button>
+                                    <button type="button" className="btn btn-light" onClick={() => { setViewingCommissions(null); setCommissions([]); }}>Close</button>
                                 </div>
                             </div>
                         </div>
@@ -602,7 +641,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                             <div className="modal-content border-0 shadow-lg rounded-4">
                                 <div className="modal-header border-0 p-4">
                                     <h5 className="modal-title fw-bold">
-                                        Assign {showAssignModal === 'leads' ? 'Leads' : 'Properties'} to {targetAgent?.user?.firstName} {targetAgent?.user?.lastName}
+                                        Assign {showAssignModal === 'leads' ? 'Leads' : 'Properties'} to {targetAgent?.user?.name}
                                     </h5>
                                     <button type="button" className="btn-close" onClick={() => setShowAssignModal(null)}></button>
                                 </div>
@@ -611,7 +650,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                     <div className="list-group rounded-3 max-vh-50 overflow-auto border-0">
                                         {showAssignModal === 'leads' ? (
                                             unassignedLeads.length === 0 ? <p className="text-center py-4 bg-light rounded">No unassigned leads found.</p> :
-                                                unassignedLeads.map((lead: any) => (
+                                                unassignedLeads.map(lead => (
                                                     <label key={lead.id} className="list-group-item list-group-item-action border-0 mb-1 rounded-3 bg-light d-flex align-items-center">
                                                         <input
                                                             className="form-check-input me-3"
@@ -630,7 +669,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                 ))
                                         ) : (
                                             allProperties.length === 0 ? <p className="text-center py-4 bg-light rounded">No properties found.</p> :
-                                                allProperties.map((prop: any) => (
+                                                allProperties.map(prop => (
                                                     <label key={prop.id} className="list-group-item list-group-item-action border-0 mb-1 rounded-3 bg-light d-flex align-items-center">
                                                         <input
                                                             className="form-check-input me-3"
@@ -783,7 +822,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                         </div>
                                                     ) : (
                                                         <div className="list-group list-group-flush">
-                                                            {viewingAgentProperties.map((assign: any) => (
+                                                            {viewingAgentProperties.map(assign => (
                                                                 <div key={assign.id} className="list-group-item p-3">
                                                                     <div className="d-flex align-items-center">
                                                                         <div className="rounded-3 bg-light me-3 d-flex align-items-center justify-content-center overflow-hidden" style={{ width: '48px', height: '48px' }}>
@@ -820,12 +859,12 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                 <div className="max-vh-50 overflow-auto">
                                                     {viewingAgentLeads.length === 0 ? (
                                                         <div className="p-5 text-center text-muted">
-                                                            <i className="bi bi-person fs-1 opacity-25 mb-3 d-block"></i>
+                                                            <i className="bi bi-people fs-1 opacity-25 mb-3 d-block"></i>
                                                             No leads assigned.
                                                         </div>
                                                     ) : (
                                                         <div className="list-group list-group-flush">
-                                                            {viewingAgentLeads.map((assign: any) => (
+                                                            {viewingAgentLeads.map(assign => (
                                                                 <div key={assign.id} className="list-group-item p-3">
                                                                     <div className="d-flex align-items-center">
                                                                         <div className="rounded-circle bg-primary-subtle text-primary me-3 d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px' }}>

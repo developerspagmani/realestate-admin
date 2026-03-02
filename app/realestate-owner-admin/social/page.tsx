@@ -7,7 +7,6 @@ import { analyticsApi, connectedAccountsApi, publishedPostsApi, scheduledPostsAp
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
 import Loader from '@/components/common/Loader';
-import { useQuery } from '@tanstack/react-query';
 
 export default function SocialDashboard() {
     return (
@@ -35,25 +34,41 @@ interface RecentActivity {
 function DashboardContent() {
     const router = useRouter();
     const pathname = usePathname();
-    const { data: overviewRes, isLoading: loading } = useQuery({
-        queryKey: ['social-dashboard-overview'],
-        queryFn: () => analyticsApi.getOverview(),
-    });
-
-    const stats = overviewRes?.data?.summary || {
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<DashboardStats>({
         connectedAccounts: 0,
         scheduledPosts: 0,
         publishedPosts: 0,
         drafts: 0
-    };
-    const recentActivity = overviewRes?.data?.recentActivity || [];
+    });
+    const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
 
     // Determine the base path (either /realestate-admin or /realestate-owner-admin)
     const basePath = pathname.includes('/realestate-owner-admin')
         ? '/realestate-owner-admin'
         : '/realestate-admin';
 
+    useEffect(() => {
+        loadDashboardData();
+    }, []);
 
+    const loadDashboardData = async () => {
+        try {
+            setLoading(true);
+            const [overviewRes] = await Promise.all([
+                analyticsApi.getOverview()
+            ]);
+
+            if (overviewRes.success) {
+                setStats(overviewRes.data.summary);
+                setRecentActivity(overviewRes.data.recentActivity || []);
+            }
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const navigateTo = (path: string) => {
         router.push(`${basePath}${path}`);
@@ -136,7 +151,7 @@ function DashboardContent() {
                                     </thead>
                                     <tbody>
                                         {recentActivity.length > 0 ? (
-                                            recentActivity.map((activity: RecentActivity, idx: number) => (
+                                            recentActivity.map((activity, idx) => (
                                                 <tr key={idx}>
                                                     <td className="px-4 py-3 border-0">
                                                         <div className="d-flex align-items-center gap-2">

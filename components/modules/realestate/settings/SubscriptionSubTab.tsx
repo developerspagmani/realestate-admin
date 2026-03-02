@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { licenseKeyService, getAuthToken, moduleService, tenantService } from '@/app/services/api';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 
@@ -11,67 +10,69 @@ interface SubscriptionSubTabProps {
 
 export default function SubscriptionSubTab({ showToast }: SubscriptionSubTabProps) {
     const { user } = useAuthContext();
-    const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(true);
+    const [activating, setActivating] = useState(false);
     const [showKey, setShowKey] = useState(false);
     const [licenseKey, setLicenseKey] = useState('');
+    const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
+    const [activeModules, setActiveModules] = useState<any[]>([]);
 
-    const token = typeof window !== 'undefined' ? getAuthToken() || '' : '';
+    useEffect(() => {
+        loadData();
+    }, []);
 
-    const { data: subscriptionInfo, isLoading: tenantLoading } = useQuery({
-        queryKey: ['tenant-subscription', user?.tenantId],
-        queryFn: async () => {
-            if (!user?.tenantId) return null;
-            const res = await tenantService.getTenantById(token, user.tenantId);
-            return res.success ? res.data : null;
-        },
-        enabled: !!user?.tenantId && !!token
-    });
+    const loadData = async () => {
+        if (!user?.tenantId) return;
+        setLoading(true);
+        try {
+            const token = getAuthToken() || '';
 
-    const { data: activeModules = [], isLoading: modulesLoading } = useQuery({
-        queryKey: ['tenant-modules', user?.tenantId],
-        queryFn: async () => {
-            if (!user?.tenantId) return [];
-            const res = await moduleService.getTenantModules(token, user.tenantId);
-            if (res.success) {
-                return (res.data || []).map((assignment: any) => ({
+            // 1. Get Tenant Info (Plan)
+            const tenantRes = await tenantService.getTenantById(token, user.tenantId);
+            if (tenantRes.success) {
+                setSubscriptionInfo(tenantRes.data);
+            }
+
+            // 2. Get Active Modules
+            const modulesRes = await moduleService.getTenantModules(token, user.tenantId);
+            if (modulesRes.success) {
+                // The API returns an array of TenantModule assignments with nested module info
+                const modules = (modulesRes.data || []).map((assignment: any) => ({
                     ...assignment.module,
                     isActive: assignment.isActive
                 })).filter((m: any) => m.isActive);
+                setActiveModules(modules);
             }
-            return [];
-        },
-        enabled: !!user?.tenantId && !!token
-    });
+        } catch (error) {
+            console.error('Failed to load subscription info:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const activateMutation = useMutation({
-        mutationFn: async (key: string) => {
-            return await licenseKeyService.activate(token, key);
-        },
-        onSuccess: (res) => {
+    const handleActivate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!licenseKey.trim()) return;
+
+        setActivating(true);
+        try {
+            const token = getAuthToken() || '';
+            const res = await licenseKeyService.activate(token, licenseKey);
             if (res.success) {
                 showToast('License key activated successfully! Your plan has been updated.', 'success');
                 setLicenseKey('');
-                queryClient.invalidateQueries({ queryKey: ['tenant-subscription'] });
-                queryClient.invalidateQueries({ queryKey: ['tenant-modules'] });
-                // Reload to apply changes across the app
+                loadData();
+                // We might want to trigger a session reload or notify user to refresh
                 setTimeout(() => window.location.reload(), 2000);
             } else {
                 showToast(res.message || 'Activation failed', 'error');
             }
-        },
-        onError: (error: any) => {
+        } catch (error: any) {
             showToast(error.message || 'Failed to activate key', 'error');
+        } finally {
+            setActivating(false);
         }
-    });
-
-    const handleActivate = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!licenseKey.trim()) return;
-        activateMutation.mutate(licenseKey);
     };
-
-    const loading = tenantLoading || modulesLoading;
-    const activating = activateMutation.isPending;
 
     if (loading) {
         return (

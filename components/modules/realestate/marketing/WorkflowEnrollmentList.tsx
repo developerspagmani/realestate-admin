@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Loader from '@/components/common/Loader';
 import { marketingService, getAuthToken } from '@/app/services/api';
-import { useQuery } from '@tanstack/react-query';
 
 interface EnrollmentLog {
     id: string;
@@ -36,30 +35,45 @@ interface WorkflowEnrollmentListProps {
 }
 
 export default function WorkflowEnrollmentList({ workflowId, workflowName, onClose }: WorkflowEnrollmentListProps) {
+    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedEnrollment, setSelectedEnrollment] = useState<string | null>(null);
+    const [enrollmentLogs, setEnrollmentLogs] = useState<EnrollmentLog[]>([]);
+    const [loadingLogs, setLoadingLogs] = useState(false);
 
-    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    useEffect(() => {
+        const loadEnrollments = async () => {
+            try {
+                const token = getAuthToken();
+                if (!token) return;
+                const res = await marketingService.getWorkflowEnrollments(token, workflowId);
+                if (res.success) {
+                    setEnrollments(res.data);
+                }
+            } catch (error) {
+                console.error('Failed to load enrollments:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const { data: enrollmentsRes, isLoading: loading } = useQuery({
-        queryKey: ['workflow-enrollments', workflowId],
-        queryFn: () => marketingService.getWorkflowEnrollments(token!, workflowId),
-        enabled: !!token && !!workflowId,
-    });
+        loadEnrollments();
+    }, [workflowId]);
 
-    const { data: logsRes, isLoading: loadingLogs } = useQuery({
-        queryKey: ['workflow-enrollment-logs', selectedEnrollment],
-        queryFn: () => marketingService.getWorkflowEnrollmentLogs(token!, selectedEnrollment!),
-        enabled: !!token && !!selectedEnrollment,
-    });
-
-    const enrollments = enrollmentsRes?.data || [];
-    const enrollmentLogs = logsRes?.data || [];
-
-    const handleToggleLogs = (enrollmentId: string) => {
-        if (selectedEnrollment === enrollmentId) {
-            setSelectedEnrollment(null);
-        } else {
-            setSelectedEnrollment(enrollmentId);
+    const loadLogs = async (enrollmentId: string) => {
+        setSelectedEnrollment(enrollmentId);
+        setLoadingLogs(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.getWorkflowEnrollmentLogs(token, enrollmentId);
+            if (res.success) {
+                setEnrollmentLogs(res.data);
+            }
+        } catch (error) {
+            console.error('Failed to load logs:', error);
+        } finally {
+            setLoadingLogs(false);
         }
     };
 
@@ -103,7 +117,7 @@ export default function WorkflowEnrollmentList({ workflowId, workflowName, onClo
                                 </tr>
                             </thead>
                             <tbody>
-                                {enrollments.map((item: Enrollment) => (
+                                {enrollments.map(item => (
                                     <React.Fragment key={item.id}>
                                         <tr className={selectedEnrollment === item.id ? 'bg-light' : ''}>
                                             <td className="px-4 py-3">
@@ -114,7 +128,7 @@ export default function WorkflowEnrollmentList({ workflowId, workflowName, onClo
                                             <td className="px-4 py-3 text-end">
                                                 <button
                                                     className="btn btn-sm btn-outline-primary extra-small px-3 rounded-pill"
-                                                    onClick={() => handleToggleLogs(item.id)}
+                                                    onClick={() => selectedEnrollment === item.id ? setSelectedEnrollment(null) : loadLogs(item.id)}
                                                 >
                                                     {selectedEnrollment === item.id ? 'Hide Logs' : 'View History'}
                                                 </button>
@@ -133,7 +147,7 @@ export default function WorkflowEnrollmentList({ workflowId, workflowName, onClo
                                                             <div className="text-center py-3 extra-small text-muted">No logs recorded yet.</div>
                                                         ) : (
                                                             <div className="log-timeline">
-                                                                {enrollmentLogs.map((log: EnrollmentLog) => (
+                                                                {enrollmentLogs.map(log => (
                                                                     <div key={log.id} className="log-item mb-3 d-flex gap-3">
                                                                         <div className="log-time extra-small text-muted pt-1" style={{ width: '70px' }}>
                                                                             {new Date(log.occurredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

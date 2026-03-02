@@ -1,107 +1,118 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { marketingService, leadService, propertyService, getAuthToken } from '@/app/services/api';
 import Loader from '@/components/common/Loader';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface AudienceManagerProps {
     tenantId: string;
 }
 
 export default function AudienceManager({ tenantId }: AudienceManagerProps) {
-    const queryClient = useQueryClient();
     const [activeAudienceTab, setActiveAudienceTab] = useState<'groups' | 'contacts'>('groups');
+    const [groups, setGroups] = useState<any[]>([]);
+    const [leads, setLeads] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
     const [groupData, setGroupData] = useState({
-        name: '', description: '', isDynamic: false, leadIds: [] as string[], propertyId: '', listingId: ''
+        name: '',
+        description: '',
+        isDynamic: false,
+        leadIds: [] as string[],
+        propertyId: '',
+        listingId: ''
     });
+    const [properties, setProperties] = useState<any[]>([]);
     const [viewingGroup, setViewingGroup] = useState<any | null>(null);
     const [leadSearchTerm, setLeadSearchTerm] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
     const [loadingGroup, setLoadingGroup] = useState(false);
 
-    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
 
-    const { data: groupsRes, isLoading: groupsLoading } = useQuery({
-        queryKey: ['audience-groups', tenantId],
-        queryFn: () => marketingService.getAudienceGroups(token!, { tenantId }),
-        enabled: !!token && !!tenantId,
-    });
-
-    const { data: leadsRes, isLoading: leadsLoading } = useQuery({
-        queryKey: ['contacts', tenantId],
-        queryFn: () => leadService.getLeads(token!, { tenantId }),
-        enabled: !!token && !!tenantId,
-    });
-
-    const { data: propsRes } = useQuery({
-        queryKey: ['properties-list', tenantId],
-        queryFn: () => propertyService.getProperties(token!, { tenantId }),
-        enabled: !!token && !!tenantId,
-    });
-
-    const groups = groupsRes?.data || [];
-    const leads = leadsRes?.data?.leads || [];
-    const properties = propsRes?.data?.properties || [];
-    const loading = groupsLoading || leadsLoading;
-
-    // --- Mutations ---
-
-    const saveMutation = useMutation({
-        mutationFn: (payload: any) => {
-            if (isEditing && currentGroupId) return marketingService.updateAudienceGroup(token!, currentGroupId, payload);
-            return marketingService.createAudienceGroup(token!, payload);
-        },
-        onSuccess: (res) => {
-            if (res.success) {
-                setShowModal(false);
-                queryClient.invalidateQueries({ queryKey: ['audience-groups'] });
-                resetForm();
+            // Load Groups
+            const groupsRes = await marketingService.getAudienceGroups(token, { tenantId });
+            if (groupsRes.success) {
+                setGroups(groupsRes.data);
             }
-        }
-    });
 
-    const removeLeadMutation = useMutation({
-        mutationFn: ({ groupId, payload }: { groupId: string, payload: any }) => marketingService.updateAudienceGroup(token!, groupId, payload),
-        onSuccess: (res) => {
-            if (res.success) queryClient.invalidateQueries({ queryKey: ['audience-groups'] });
-        }
-    });
+            // Load All Leads (Contacts)
+            const leadsRes = await leadService.getLeads(token, { tenantId });
+            if (leadsRes.success && leadsRes.data?.leads) {
+                setLeads(leadsRes.data.leads);
+            }
 
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => marketingService.deleteAudienceGroup(token!, id),
-        onSuccess: (res) => {
-            if (res.success) queryClient.invalidateQueries({ queryKey: ['audience-groups'] });
+            // Load Properties for Linking
+            const propRes = await propertyService.getProperties(token, { tenantId });
+            if (propRes.success) {
+                setProperties(propRes.data?.properties || []);
+            }
+        } catch (error) {
+            console.error('Failed to load audience data:', error);
+        } finally {
+            setLoading(false);
         }
-    });
-
-    const handleSave = () => {
-        if (!groupData.name) return;
-        const payload = {
-            ...groupData,
-            tenantId,
-            propertyId: groupData.propertyId || groupData.listingId,
-            listingId: groupData.propertyId || groupData.listingId
-        };
-        saveMutation.mutate(payload);
     };
 
-    const isSaving = saveMutation.isPending;
+    useEffect(() => {
+        loadData();
+    }, [tenantId]);
+
+    const handleSave = async () => {
+        if (!groupData.name) return;
+        setIsSaving(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+
+            // Log for debugging (intentional for dev to see data structure)
+            console.log('Saving Group Data:', { ...groupData, tenantId });
+
+            let res;
+            const payload = {
+                ...groupData,
+                tenantId,
+                // Ensure both naming conventions are satisfied
+                propertyId: groupData.propertyId || groupData.listingId,
+                listingId: groupData.propertyId || groupData.listingId
+            };
+
+            if (isEditing && currentGroupId) {
+                res = await marketingService.updateAudienceGroup(token, currentGroupId, payload);
+            } else {
+                res = await marketingService.createAudienceGroup(token, payload);
+            }
+
+            if (res.success) {
+                setShowModal(false);
+                await loadData();
+                resetForm();
+            }
+        } catch (error) {
+            console.error('Failed to save group:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const fetchGroupDetails = async (groupId: string) => {
         setLoadingGroup(true);
         try {
             const token = getAuthToken();
             if (!token) return null;
+
+            // Try to get group by ID to ensure we have full relations (leads)
             const res = await marketingService.getAudienceGroupById(token, groupId);
             if (res.success) {
-                queryClient.setQueryData(['audience-groups', tenantId], (old: any) => {
-                    const list = old?.data || [];
-                    return { ...old, data: list.map((g: any) => g.id === groupId ? res.data : g) };
-                });
+                // Update groups list with new data
+                setGroups(prev => prev.map(g => g.id === groupId ? res.data : g));
                 return res.data;
             }
         } catch (error) {
@@ -112,18 +123,46 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
         return null;
     };
 
-    const handleRemoveLead = (groupId: string, leadId: string) => {
+    const handleRemoveLead = async (groupId: string, leadId: string) => {
         if (!window.confirm('Are you sure you want to remove this lead from the group?')) return;
-        const group = groups.find((g: any) => g.id === groupId);
-        if (!group) return;
-        const currentIds = getAssociatedLeadIds(group);
-        const updatedIds = currentIds.filter(id => id !== leadId);
-        removeLeadMutation.mutate({ groupId, payload: { ...group, leadIds: updatedIds, tenantId } });
+
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+
+            const group = groups.find(g => g.id === groupId);
+            if (!group) return;
+
+            const currentIds = getAssociatedLeadIds(group);
+            const updatedIds = currentIds.filter(id => id !== leadId);
+
+            const res = await marketingService.updateAudienceGroup(token, groupId, {
+                ...group,
+                leadIds: updatedIds,
+                tenantId
+            });
+
+            if (res.success) {
+                await loadData();
+            }
+        } catch (error) {
+            console.error('Failed to remove lead:', error);
+        }
     };
 
-    const handleDelete = (id: string, name: string) => {
+    const handleDelete = async (id: string, name: string) => {
         if (!window.confirm(`Are you sure you want to delete "${name}"? This will not delete the leads themselves.`)) return;
-        deleteMutation.mutate(id);
+
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.deleteAudienceGroup(token, id);
+            if (res.success) {
+                loadData();
+            }
+        } catch (error) {
+            console.error('Failed to delete group:', error);
+        }
     };
 
     const getAssociatedLeadIds = (group: any): string[] => {
@@ -183,21 +222,21 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
         }));
     };
 
-    const filteredLeads = leads.filter((l: any) =>
+    const filteredLeads = leads.filter(l =>
     (l.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         l.email?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    const selectableLeads = leads.filter((l: any) =>
+    const selectableLeads = leads.filter(l =>
         l.name?.toLowerCase().includes(leadSearchTerm.toLowerCase()) ||
         l.email?.toLowerCase().includes(leadSearchTerm.toLowerCase())
     );
 
     if (viewingGroup) {
         // Use the most up-to-date version of the group from state
-        const liveGroup = groups.find((g: any) => g.id === viewingGroup.id) || viewingGroup;
+        const liveGroup = groups.find(g => g.id === viewingGroup.id) || viewingGroup;
         const memberIds = getAssociatedLeadIds(liveGroup);
-        const groupMembers = leads.filter((l: any) => memberIds.includes(l.id));
+        const groupMembers = leads.filter(l => memberIds.includes(l.id));
 
         return (
             <div className="audience-manager">
@@ -241,7 +280,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                                     {leads.length === 0 && <p className="extra-small text-info mt-1">Contacts list is empty or still loading...</p>}
                                                 </td>
                                             </tr>
-                                        ) : groupMembers.map((lead: any) => (
+                                        ) : groupMembers.map(lead => (
                                             <tr key={lead.id}>
                                                 <td className="px-4 py-3 fw-bold small">{lead.name || 'Anonymous'}</td>
                                                 <td className="py-3 small text-muted">{lead.email}</td>
@@ -316,7 +355,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                     </div>
                 ) : (
                     <div className="row g-4">
-                        {groups.map((group: any) => (
+                        {groups.map(group => (
                             <div key={group.id} className="col-md-6 col-lg-4">
                                 <div className="card border-0 shadow-sm rounded-4 p-4 h-100 group-card">
                                     <div className="d-flex justify-content-between align-items-start mb-3">
@@ -341,7 +380,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                             <div className="d-flex align-items-center gap-2 mb-3 px-3 py-2 bg-light rounded-3">
                                                 <i className="bi bi-building small text-primary"></i>
                                                 <span className="extra-small text-muted text-truncate" title="Linked Property">
-                                                    {properties.find((p: any) => p.id === (group.propertyId || group.listingId || group.filters?.propertyId))?.title || 'Linked Property'}
+                                                    {properties.find(p => p.id === (group.propertyId || group.listingId || group.filters?.propertyId))?.title || 'Linked Property'}
                                                 </span>
                                             </div>
                                         )}
@@ -374,7 +413,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                             <tbody>
                                 {filteredLeads.length === 0 ? (
                                     <tr><td colSpan={5} className="text-center py-5 text-muted">No contacts found.</td></tr>
-                                ) : filteredLeads.map((lead: any) => (
+                                ) : filteredLeads.map(lead => (
                                     <tr key={lead.id}>
                                         <td className="px-4 py-3">
                                             <div className="d-flex align-items-center gap-3">
@@ -450,7 +489,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                         onChange={e => setGroupData({ ...groupData, propertyId: e.target.value, listingId: e.target.value })}
                                     >
                                         <option value="">No property linked</option>
-                                        {properties.map((p: any) => (
+                                        {properties.map(p => (
                                             <option key={p.id} value={p.id}>{p.title}</option>
                                         ))}
                                     </select>
@@ -471,7 +510,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                             <input type="text" className="form-control border-start-0" placeholder="Search contacts list..." value={leadSearchTerm} onChange={e => setLeadSearchTerm(e.target.value)} />
                                         </div>
                                         <div className="lead-list bg-light rounded-3 p-2 custom-scrollbar" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                            {selectableLeads.map((lead: any) => (
+                                            {selectableLeads.map(lead => (
                                                 <div key={lead.id}
                                                     className={`d-flex align-items-center justify-content-between p-2 rounded-2 mb-1 cursor-pointer transition-all ${groupData.leadIds.includes(lead.id) ? 'bg-success bg-opacity-10' : 'hover-bg-white'}`}
                                                     onClick={() => toggleLeadSelection(lead.id)}

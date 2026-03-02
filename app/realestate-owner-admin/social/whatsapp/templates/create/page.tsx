@@ -188,7 +188,7 @@ export default function CreateWhatsAppTemplatePage() {
                                 disabled={loading}
                                 className="btn btn-success px-5 rounded-pill shadow-sm"
                             >
-                                {loading && <span className="spinner-border spinner-border-sm me-2"></span>}
+                                {loading && <Loader size="sm" message="" />}
                                 Submit for Approval
                             </button>
                         </div>

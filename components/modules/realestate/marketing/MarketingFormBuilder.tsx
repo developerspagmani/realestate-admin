@@ -3,15 +3,16 @@
 import { useState, useEffect } from 'react';
 import { marketingService, getAuthToken } from '@/app/services/api';
 import FormRenderer from '../widgets/FormRenderer';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface MarketingFormBuilderProps {
     tenantId: string;
 }
 
 export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderProps) {
-    const queryClient = useQueryClient();
+    const [forms, setForms] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     // Form Configuration State
     const [currentForm, setCurrentForm] = useState<any>({
@@ -28,46 +29,31 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
         }
     });
 
-    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const [audienceGroups, setAudienceGroups] = useState<any[]>([]);
 
-    const { data: formsRes, isLoading: formsLoading } = useQuery({
-        queryKey: ['marketing-forms', tenantId],
-        queryFn: () => marketingService.getForms(token!, { tenantId }),
-        enabled: !!token && !!tenantId,
-    });
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
 
-    const { data: groupsRes } = useQuery({
-        queryKey: ['audience-groups', tenantId],
-        queryFn: () => marketingService.getAudienceGroups(token!, { tenantId }),
-        enabled: !!token && !!tenantId,
-    });
+            const [formsRes, groupsRes] = await Promise.all([
+                marketingService.getForms(token, { tenantId }),
+                marketingService.getAudienceGroups(token, { tenantId })
+            ]);
 
-    const forms = formsRes?.data || [];
-    const audienceGroups = groupsRes?.data || [];
-    const loading = formsLoading;
-
-    // --- Mutations ---
-
-    const saveMutation = useMutation({
-        mutationFn: (payload: any) => {
-            if (payload.id) return marketingService.updateForm(token!, payload.id, payload);
-            return marketingService.createForm(token!, payload);
-        },
-        onSuccess: (res) => {
-            if (res.success) {
-                setIsEditing(false);
-                queryClient.invalidateQueries({ queryKey: ['marketing-forms'] });
-                resetCurrentForm();
-            }
+            if (formsRes.success) setForms(formsRes.data);
+            if (groupsRes.success) setAudienceGroups(groupsRes.data);
+        } catch (error) {
+            console.error('Failed to load marketing forms:', error);
+        } finally {
+            setLoading(false);
         }
-    });
+    };
 
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => marketingService.deleteForm(token!, id),
-        onSuccess: (res) => {
-            if (res.success) queryClient.invalidateQueries({ queryKey: ['marketing-forms'] });
-        }
-    });
+    useEffect(() => {
+        loadData();
+    }, [tenantId]);
 
     const addField = () => {
         const newField = {
@@ -108,19 +94,46 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
         });
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!currentForm.name) {
             alert('Please provide a form name');
             return;
         }
-        saveMutation.mutate({ ...currentForm, tenantId });
+        setSaving(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+
+            const payload = { ...currentForm, tenantId };
+            let res;
+            if (currentForm.id) {
+                res = await marketingService.updateForm(token, currentForm.id, payload);
+            } else {
+                res = await marketingService.createForm(token, payload);
+            }
+
+            if (res.success) {
+                setIsEditing(false);
+                loadData();
+                resetCurrentForm();
+            }
+        } catch (error) {
+            console.error('Save failed:', error);
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const saving = saveMutation.isPending;
-
-    const handleDelete = (id: string, name: string) => {
+    const handleDelete = async (id: string, name: string) => {
         if (!window.confirm(`Are you sure you want to delete form "${name}"?`)) return;
-        deleteMutation.mutate(id);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.deleteForm(token, id);
+            if (res.success) loadData();
+        } catch (error) {
+            console.error('Delete failed:', error);
+        }
     };
 
     const openEdit = (form: any) => {
@@ -203,7 +216,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                                     onChange={e => setCurrentForm({ ...currentForm, targetGroupId: e.target.value })}
                                 >
                                     <option value="">Do not add to any group</option>
-                                    {audienceGroups.map((g: any) => (
+                                    {audienceGroups.map(g => (
                                         <option key={g.id} value={g.id}>{g.name}</option>
                                     ))}
                                 </select>
@@ -363,7 +376,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                 </div>
             ) : (
                 <div className="row g-4">
-                    {forms.map((form: any) => (
+                    {forms.map(form => (
                         <div key={form.id} className="col-md-6 col-lg-4">
                             <div className="card border-0 shadow-sm rounded-4 p-4 h-100 position-relative transition-all hover-translate-up">
                                 <div className="d-flex justify-content-between align-items-start mb-3">

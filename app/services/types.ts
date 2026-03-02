@@ -85,26 +85,6 @@ export interface Property {
     };
     units?: any[];
     agentId?: string;
-    priceType?: string;
-    area?: number | string;
-    sizeSqft?: number | string;
-    squareFootage?: number | string;
-    features?: string[];
-    photos?: any[];
-    rating?: number;
-    totalReviews?: number;
-    yearBuilt?: number | string;
-    neighborhood?: string;
-    parkingSpaces?: number;
-    propertyAmenities?: any[];
-    displayPrice?: string | number;
-    videoUrl?: string;
-    categoryId?: string;
-    bedrooms?: number;
-    bathrooms?: number | string;
-    lotSize?: number | string;
-    latitude?: number;
-    longitude?: number;
     metadata?: any;
 }
 

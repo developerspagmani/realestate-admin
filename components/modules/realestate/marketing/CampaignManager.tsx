@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
@@ -11,7 +11,6 @@ import MarketingFormBuilder from './MarketingFormBuilder';
 import WorkflowManager from './WorkflowManager';
 import CampaignDesigner from './CampaignDesigner';
 import { marketingService, getAuthToken } from '@/app/services/api';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface CampaignManagerProps {
     mode?: 'admin' | 'owner';
@@ -19,12 +18,13 @@ interface CampaignManagerProps {
 
 export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
-    const queryClient = useQueryClient();
     const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
+    const [loading, setLoading] = useState(true);
+    const [campaigns, setCampaigns] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'campaigns' | 'audience' | 'templates' | 'automation' | 'forms'>('campaigns');
     const [showDesigner, setShowDesigner] = useState(false);
     const [editingCampaign, setEditingCampaign] = useState<any>(null);
-    const [launchingId, setLaunchingId] = useState<string | null>(null);
+    const [launching, setLaunching] = useState<string | null>(null);
 
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
@@ -36,60 +36,45 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
         setToast({ show: true, message, type });
     };
 
-    const token = typeof window !== 'undefined' ? getAuthToken() : '';
-    const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+    const [marketingStats, setMarketingStats] = useState<any>(null);
 
-    const { data: statsData } = useQuery({
-        queryKey: ['marketing-stats', mode, tenantId, activeOwnerId, tenantType],
-        queryFn: () => marketingService.getMarketingStats(token!, {
-            tenantId: tenantId || undefined,
-            industryType: mode === 'admin' ? tenantType : undefined,
-            ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
-        }),
-        enabled: !!token && !!isAuthenticated,
-    });
+    const loadStats = async () => {
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const industryType = mode === 'admin' ? tenantType : undefined;
 
-    const { data: campaignsRes, isLoading: campaignsLoading } = useQuery({
-        queryKey: ['campaigns', tenantId],
-        queryFn: () => marketingService.getCampaigns(token!, { tenantId: tenantId || undefined }),
-        enabled: !!token && !!isAuthenticated,
-    });
+            const res = await marketingService.getMarketingStats(token, {
+                tenantId: tenantId || undefined,
+                industryType,
+                ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
+            });
+            if (res.success) setMarketingStats(res.data);
+        } catch (e) { console.error(e); }
+    };
 
-    const marketingStats = statsData?.data || null;
-    const campaigns = campaignsRes?.data || [];
-    const loading = campaignsLoading;
-
-    // --- Mutations ---
-
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => marketingService.deleteCampaign(token!, id),
-        onSuccess: (res) => {
+    const loadCampaigns = async () => {
+        setLoading(true);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const res = await marketingService.getCampaigns(token, { tenantId: tenantId || undefined });
             if (res.success) {
-                showToast('Campaign deleted');
-                queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-            } else {
-                showToast(res.message || 'Failed to delete campaign', 'error');
+                setCampaigns(res.data);
             }
-        },
-        onError: () => showToast('Failed to delete campaign', 'error')
-    });
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const launchMutation = useMutation({
-        mutationFn: (id: string) => marketingService.launchCampaign(token!, id),
-        onSuccess: (res) => {
-            if (res.success) {
-                showToast(res.message || 'Campaign launched successfully!');
-                queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-                queryClient.invalidateQueries({ queryKey: ['marketing-stats'] });
-            } else {
-                showToast(res.message || 'Failed to launch campaign', 'error');
-            }
-        },
-        onError: () => showToast('Error launching campaign', 'error'),
-        onSettled: () => setLaunchingId(null)
-    });
-
-    const launching = launchingId;
+    useEffect(() => {
+        loadCampaigns();
+        loadStats();
+    }, [activeTenantId, activeOwnerId, tenantType, mode, user]);
 
     const stats = [
         {
@@ -134,9 +119,19 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
         },
     ];
 
-    const handleDelete = (id: string, name: string) => {
+    const handleDelete = async (id: string, name: string) => {
         if (!window.confirm(`Are you sure you want to delete campaign "${name}"?`)) return;
-        deleteMutation.mutate(id);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.deleteCampaign(token, id);
+            if (res.success) {
+                showToast('Campaign deleted');
+                loadCampaigns();
+            }
+        } catch (err) {
+            showToast('Failed to delete campaign', 'error');
+        }
     };
 
     const handleEdit = (campaign: any) => {
@@ -144,7 +139,7 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
         setShowDesigner(true);
     };
 
-    const handleLaunch = (campaign: any) => {
+    const handleLaunch = async (campaign: any) => {
         if (!campaign.groupId) {
             showToast('Please select a target group before launching.', 'error');
             return;
@@ -156,8 +151,23 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
 
         if (!window.confirm(`Are you sure you want to launch "${campaign.name}"? This will send emails to all leads in the "${campaign.group?.name}" group immediately.`)) return;
 
-        setLaunchingId(campaign.id);
-        launchMutation.mutate(campaign.id);
+        setLaunching(campaign.id);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await marketingService.launchCampaign(token, campaign.id);
+            if (res.success) {
+                showToast(res.message || 'Campaign launched successfully!');
+                loadCampaigns();
+                loadStats();
+            } else {
+                showToast(res.message || 'Failed to launch campaign', 'error');
+            }
+        } catch (err) {
+            showToast('Error launching campaign', 'error');
+        } finally {
+            setLaunching(null);
+        }
     };
 
     return (
@@ -227,7 +237,7 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
                                 onClose={() => {
                                     setShowDesigner(false);
                                     setEditingCampaign(null);
-                                    queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+                                    loadCampaigns();
                                 }}
                             />
                         ) : (
@@ -263,7 +273,7 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
                                                                 <p className="mt-3">No campaigns found. Start your first marketing blast today!</p>
                                                             </td>
                                                         </tr>
-                                                    ) : campaigns.map((campaign: any) => (
+                                                    ) : campaigns.map(campaign => (
                                                         <tr key={campaign.id}>
                                                             <td className="px-4 py-3">
                                                                 <div className="fw-bold">{campaign.name}</div>

@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
 import { analyticsProService } from '@/app/services/api';
@@ -21,19 +20,32 @@ export default function DealIntelligencePage() {
 
 function DealIntelligenceContent({ mode }: { mode: string }) {
     const { currencySymbol } = useManagementContext();
+    const [loading, setLoading] = useState(true);
+    const [metrics, setMetrics] = useState<any>(null);
+    const [topReasons, setTopReasons] = useState<any[]>([]);
+    const [employeeAnalysis, setEmployeeAnalysis] = useState<any[]>([]);
+    const [projectAnalysis, setProjectAnalysis] = useState<any[]>([]);
 
-    const { data: intelligenceData, isLoading, refetch } = useQuery({
-        queryKey: ['dealIntelligence'],
-        queryFn: async () => {
+    useEffect(() => {
+        fetchDealIntelligence();
+    }, []);
+
+    const fetchDealIntelligence = async () => {
+        try {
+            setLoading(true);
             const res = await analyticsProService.getDealIntelligence();
-            return res.success ? res.data : null;
+            if (res.success && res.data) {
+                setMetrics(res.data.metrics);
+                setTopReasons(res.data.topReasons);
+                setEmployeeAnalysis(res.data.employeeAnalysis);
+                setProjectAnalysis(res.data.projectAnalysis);
+            }
+        } catch (error) {
+            console.error('Failed to fetch deal intelligence:', error);
+        } finally {
+            setLoading(false);
         }
-    });
-
-    const metrics = intelligenceData?.metrics || null;
-    const topReasons = intelligenceData?.topReasons || [];
-    const employeeAnalysis = intelligenceData?.employeeAnalysis || [];
-    const projectAnalysis = intelligenceData?.projectAnalysis || [];
+    };
 
     const COLORS = ['#4f46e5', '#ec4899', '#f59e0b', '#10b981', '#6366f1'];
 
@@ -43,16 +55,16 @@ function DealIntelligenceContent({ mode }: { mode: string }) {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h2 className="fw-bold text-dark mb-0 d-flex align-items-center">
-                            <i className="bi bi-shield-x me-2 text-danger"></i> Deal Lost Intelligence
+                            <i className="bi bi-shield-x me-2 text-danger"></i> Deal Closer Intelligence
                         </h2>
                         <p className="text-muted">Transforming lost deals into actionable sales intelligence</p>
                     </div>
-                    <button className="btn btn-primary btn-sm rounded-3" onClick={() => refetch()}>
-                        <i className={`bi bi-arrow-clockwise ${isLoading ? 'spin' : ''} me-1`}></i> Refresh Data
+                    <button className="btn btn-primary btn-sm rounded-3" onClick={fetchDealIntelligence}>
+                        <i className={`bi bi-arrow-clockwise ${loading ? 'spin' : ''} me-1`}></i> Refresh Data
                     </button>
                 </div>
 
-                {isLoading ? (
+                {loading ? (
                     <div className="text-center py-5">
                         <div className="spinner-border text-primary" role="status">
                             <span className="visually-hidden">Loading...</span>
@@ -168,7 +180,7 @@ function DealIntelligenceContent({ mode }: { mode: string }) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {employeeAnalysis.map((emp: any, i: number) => (
+                                                {employeeAnalysis.map((emp, i) => (
                                                     <tr key={i}>
                                                         <td className="px-4 fw-medium"><i className="bi bi-person me-2"></i> {emp.agent}</td>
                                                         <td>
@@ -204,7 +216,7 @@ function DealIntelligenceContent({ mode }: { mode: string }) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {projectAnalysis.map((proj: any, i: number) => (
+                                                {projectAnalysis.map((proj, i) => (
                                                     <tr key={i}>
                                                         <td className="px-4 fw-medium"><i className="bi bi-building me-2"></i> {proj.title}</td>
                                                         <td>{proj.lostCount}</td>

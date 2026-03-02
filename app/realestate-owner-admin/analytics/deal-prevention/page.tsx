@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
 import { analyticsProService } from '@/app/services/api';
@@ -12,6 +11,8 @@ import {
 import Toast from '@/components/common/Toast';
 import TaskModal from '@/components/modules/realestate/tasks/TaskModal';
 
+
+
 export default function DealPreventionPage() {
     return (
         <ModuleGuard moduleSlug="deal_intelligence">
@@ -21,6 +22,11 @@ export default function DealPreventionPage() {
 }
 
 function DealPreventionContent({ mode }: { mode: string }) {
+    const [loading, setLoading] = useState(true);
+    const [highRiskDeals, setHighRiskDeals] = useState<any[]>([]);
+    const [topRiskSignals, setTopRiskSignals] = useState<any[]>([]);
+    const [agentCoaching, setAgentCoaching] = useState<any[]>([]);
+    const [agents, setAgents] = useState<any[]>([]);
     const [selectedDeal, setSelectedDeal] = useState<any>(null);
     const [taskModalOpen, setTaskModalOpen] = useState(false);
 
@@ -34,39 +40,37 @@ function DealPreventionContent({ mode }: { mode: string }) {
         setToast({ show: true, message, type });
     };
 
-    const { data: preventionData, isLoading, refetch } = useQuery({
-        queryKey: ['preventionInsights'],
-        queryFn: async () => {
-            const res = await analyticsProService.getPreventionInsights();
-            return res.success ? res.data : null;
-        }
-    });
+    useEffect(() => {
+        fetchPreventionData();
+        fetchAgents();
+    }, []);
 
-    const { data: leads = [] } = useQuery({
-        queryKey: ['leads'],
-        queryFn: async () => {
-            const token = localStorage.getItem('authToken') || '';
-            const { leadService } = await import('@/app/services/api');
-            const res = await leadService.getLeads(token, { limit: '100' });
-            const data = res.data;
-            return Array.isArray(data) ? data : (data?.leads || []);
-        }
-    });
-
-    const { data: agents = [] } = useQuery({
-        queryKey: ['agents'],
-        queryFn: async () => {
+    const fetchAgents = async () => {
+        try {
             const token = localStorage.getItem('authToken') || '';
             const { agentService } = await import('@/app/services/api');
             const res = await agentService.getAgents(token);
-            const data = res.data;
-            return Array.isArray(data) ? data : (data?.agents || []);
+            if (res.success) setAgents(res.data);
+        } catch (error) {
+            showToast('Failed to fetch agents', 'error');
         }
-    });
+    };
 
-    const highRiskDeals = preventionData?.highRiskDeals || [];
-    const topRiskSignals = preventionData?.topRiskSignals || [];
-    const agentCoaching = preventionData?.agentCoaching || [];
+    const fetchPreventionData = async () => {
+        try {
+            setLoading(true);
+            const res = await analyticsProService.getPreventionInsights();
+            if (res.success && res.data) {
+                setHighRiskDeals(res.data.highRiskDeals);
+                setTopRiskSignals(res.data.topRiskSignals);
+                setAgentCoaching(res.data.agentCoaching);
+            }
+        } catch (error) {
+            showToast('Failed to fetch prevention insights', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleAssignTask = (deal: any, agent?: any) => {
         const aId = agent?.agentId || deal.agentId || deal.agentLeads?.[0]?.agentId;
@@ -84,7 +88,7 @@ function DealPreventionContent({ mode }: { mode: string }) {
 
     const onTaskAssigned = () => {
         showToast("Task assigned successfully!", "success");
-        refetch();
+        fetchPreventionData();
     };
 
 
@@ -99,12 +103,12 @@ function DealPreventionContent({ mode }: { mode: string }) {
                         </h2>
                         <p className="text-muted">Proactive risk assessment & coaching to increase conversion</p>
                     </div>
-                    <button className="btn btn-dark btn-sm rounded-3 px-3" onClick={() => refetch()}>
-                        <i className={`bi bi-arrow-clockwise ${isLoading ? 'spin' : ''} me-1`}></i> Sync Intelligence
+                    <button className="btn btn-dark btn-sm rounded-3 px-3" onClick={fetchPreventionData}>
+                        <i className={`bi bi-arrow-clockwise ${loading ? 'spin' : ''} me-1`}></i> Sync Intelligence
                     </button>
                 </div>
 
-                {isLoading ? (
+                {loading ? (
                     <div className="text-center py-5">
                         <div className="spinner-border text-primary" role="status">
                             <span className="visually-hidden">Loading...</span>
@@ -149,7 +153,7 @@ function DealPreventionContent({ mode }: { mode: string }) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {highRiskDeals.map((deal: any, i: number) => (
+                                                {highRiskDeals.map((deal, i) => (
                                                     <tr key={i}>
                                                         <td className="px-4 fw-medium text-primary">{deal.name}</td>
                                                         <td>
@@ -240,7 +244,7 @@ function DealPreventionContent({ mode }: { mode: string }) {
                                     </div>
                                     <div className="card-body p-4 pt-0">
                                         <div className="row g-4">
-                                            {agentCoaching.map((coach: any, i: number) => (
+                                            {agentCoaching.map((coach, i) => (
                                                 <div key={i} className="col-md-6 col-xl-4">
                                                     <div className="p-4 bg-light rounded-4 h-100 border border-white">
                                                         <div className="d-flex align-items-center justify-content-between mb-3">
@@ -309,7 +313,6 @@ function DealPreventionContent({ mode }: { mode: string }) {
                 agentId={selectedDeal?.agentId}
                 agentName={selectedDeal?.agentName}
                 agents={agents}
-                leads={leads}
                 onSuccess={onTaskAssigned}
             />
 

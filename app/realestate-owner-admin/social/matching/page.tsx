@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { automationApi } from '@/lib/api/social';
 import ModuleGuard from '@/components/common/ModuleGuard';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Toast from '@/components/common/Toast';
 
 export default function MatchingEnginePage() {
@@ -18,77 +16,80 @@ export default function MatchingEnginePage() {
 }
 
 function MatchingContent() {
-    const router = useRouter();
-    const queryClient = useQueryClient();
     const { user } = useAuthContext();
+    const [loading, setLoading] = useState(true);
+    const [waitingLeads, setWaitingLeads] = useState<any[]>([]);
+    const [matchedLeads, setMatchedLeads] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'waiting' | 'matched'>('waiting');
     const [matchingLeadId, setMatchingLeadId] = useState<string | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'info' });
 
-    const { data: leadsData, isLoading: loading, refetch } = useQuery({
-        queryKey: ['automation-matching-leads', user?.tenantId],
-        queryFn: async () => {
-            if (!user?.tenantId) return { waiting: [], matched: [] };
+    const fetchLeads = async (showRefreshToast = false) => {
+        if (!user?.tenantId) return;
+        setLoading(true);
+        try {
             const [waitingRes, matchedRes] = await Promise.all([
                 automationApi.getWaitingLeads({ tenantId: user.tenantId }),
                 automationApi.getMatchedLeads({ tenantId: user.tenantId })
             ]);
-            return {
-                waiting: waitingRes.success ? waitingRes.data : [],
-                matched: matchedRes.success ? matchedRes.data : []
-            };
-        },
-        enabled: !!user?.tenantId
-    });
 
-    const waitingLeads = leadsData?.waiting || [];
-    const matchedLeads = leadsData?.matched || [];
+            let waitCount = 0;
+            let matchCount = 0;
 
-    const fetchLeads = async (showRefreshToast = false) => {
-        const { data } = await refetch();
-        if (showRefreshToast && data) {
-            const waitCount = data.waiting.length;
-            const matchCount = data.matched.length;
-            if (waitCount === 0 && matchCount > 0) {
-                setToast({ show: true, message: 'Engine refreshed. All your leads have already been successfully matched with properties!', type: 'success' });
-            } else {
-                setToast({ show: true, message: 'Engine refreshed successfully.', type: 'info' });
+            if (waitingRes.success) {
+                setWaitingLeads(waitingRes.data);
+                waitCount = waitingRes.data.length;
             }
+            if (matchedRes.success) {
+                setMatchedLeads(matchedRes.data);
+                matchCount = matchedRes.data.length;
+            }
+
+            if (showRefreshToast) {
+                if (waitCount === 0 && matchCount > 0) {
+                    setToast({ show: true, message: 'Engine refreshed. All your leads have already been successfully matched with properties!', type: 'success' });
+                } else {
+                    setToast({ show: true, message: 'Engine refreshed successfully.', type: 'info' });
+                }
+            }
+
+        } catch (error) {
+            console.error('Failed to fetch leads:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
+    useEffect(() => {
+        if (user?.tenantId) {
+            fetchLeads();
+        }
+    }, [user?.tenantId]);
 
-    const forceMatchMutation = useMutation({
-        mutationFn: async (leadId: string) => {
-            setMatchingLeadId(leadId);
-            return await automationApi.forceMatch(leadId, user?.tenantId);
-        },
-        onSuccess: (res) => {
+    const handleForceMatch = async (leadId: string) => {
+        setMatchingLeadId(leadId);
+        try {
+            const res = await automationApi.forceMatch(leadId, user?.tenantId);
             if (res.success) {
                 if (res.data.matchCount > 0) {
                     setToast({ show: true, message: `Match found! ${res.data.matchCount} properties found. Automated outreach started.`, type: 'success' });
-                    queryClient.invalidateQueries({ queryKey: ['automation-matching-leads'] });
+                    fetchLeads();
                 } else {
                     setToast({ show: true, message: 'No exact property matches found for their criteria at this time.', type: 'info' });
                 }
             } else {
                 setToast({ show: true, message: res.message || 'Failed to trigger matching engine.', type: 'error' });
             }
-        },
-        onError: () => {
+        } catch (error) {
+            console.error('Force match failed:', error);
             setToast({ show: true, message: 'Failed to execute matching engine.', type: 'error' });
-        },
-        onSettled: () => {
+        } finally {
             setMatchingLeadId(null);
         }
-    });
-
-    const handleForceMatch = (leadId: string) => {
-        forceMatchMutation.mutate(leadId);
     };
 
     const handleViewLead = (leadId: string) => {
-        router.push(`/realestate-owner-admin/leads?id=${leadId}`);
+        window.location.href = `/realestate-owner-admin/leads?id=${leadId}`;
     };
 
     return (
@@ -154,7 +155,7 @@ function MatchingContent() {
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                waitingLeads.map((lead: any) => (
+                                                waitingLeads.map(lead => (
                                                     <tr key={lead.id}>
                                                         <td className="px-4">
                                                             <div className="d-flex align-items-center gap-3">
@@ -200,7 +201,7 @@ function MatchingContent() {
                                                     </td>
                                                 </tr>
                                             ) : (
-                                                matchedLeads.map((lead: any) => (
+                                                matchedLeads.map(lead => (
                                                     <tr key={lead.id}>
                                                         <td className="px-4">
                                                             <div className="d-flex align-items-center gap-3">

@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { taskService } from '@/app/services/api';
-import { useMutation } from '@tanstack/react-query';
 
 interface TaskModalProps {
     isOpen: boolean;
@@ -18,6 +17,7 @@ interface TaskModalProps {
 }
 
 export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, agentName, agents, leads, task, onSuccess }: TaskModalProps) {
+    const [loading, setLoading] = useState(false);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState(2);
@@ -26,26 +26,6 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
     const [selectedLeadId, setSelectedLeadId] = useState('');
 
     const isEditing = !!task;
-
-    const mutation = useMutation({
-        mutationFn: async (taskData: any) => {
-            if (isEditing) return taskService.update(task.id, taskData);
-            return taskService.create(taskData);
-        },
-        onSuccess: (res) => {
-            if (res.success) {
-                onSuccess();
-                onClose();
-            } else {
-                alert(res.message || `Failed to ${isEditing ? 'update' : 'create'} task.`);
-            }
-        },
-        onError: (error: any) => {
-            alert(error.message || `Failed to ${isEditing ? 'update' : 'create'} task.`);
-        }
-    });
-
-    const loading = mutation.isPending;
 
     // Sync state with props when modal opens or props change
     React.useEffect(() => {
@@ -83,17 +63,36 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
     };
 
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const taskData = {
-            title,
-            description,
-            priority,
-            dueDate: dueDate || null,
-            assignedTo: selectedAgentId || null,
-            leadId: selectedLeadId || null
-        };
-        mutation.mutate(taskData);
+        try {
+            setLoading(true);
+            const taskData = {
+                title,
+                description,
+                priority,
+                dueDate: dueDate || null,
+                assignedTo: selectedAgentId || null,
+                leadId: selectedLeadId || null
+            };
+
+            let res;
+            if (isEditing) {
+                res = await taskService.update(task.id, taskData);
+            } else {
+                res = await taskService.create(taskData);
+            }
+
+            if (res.success) {
+                onSuccess();
+                onClose();
+            }
+        } catch (error: any) {
+            console.error(isEditing ? 'Failed to update task:' : 'Failed to create task:', error);
+            alert(error.message || `Failed to ${isEditing ? 'update' : 'create'} task. Please try again.`);
+        } finally {
+            setLoading(false);
+        }
     };
 
 
@@ -165,10 +164,8 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
                                     disabled={loading}
                                 >
                                     <option value="">Select an Agent...</option>
-                                    {(Array.isArray(agents) ? agents : (agents as any)?.agents || []).map((a: any) => (
-                                        <option key={a.id} value={a.id}>
-                                            {a.user?.name || (a.user?.firstName ? `${a.user.firstName} ${a.user?.lastName || ''}`.trim() : null) || a.user?.email || a.name || 'Unknown Agent'}
-                                        </option>
+                                    {Array.isArray(agents) && agents.map(a => (
+                                        <option key={a.id} value={a.id}>{a.user?.name || a.name}</option>
                                     ))}
                                 </select>
                             </div>
@@ -182,7 +179,7 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
                                     disabled={loading}
                                 >
                                     <option value="">No specific lead</option>
-                                    {(Array.isArray(leads) ? leads : (leads as any)?.leads || []).map((l: any) => (
+                                    {Array.isArray(leads) && leads.map(l => (
                                         <option key={l.id} value={l.id}>{l.name}</option>
                                     ))}
                                 </select>

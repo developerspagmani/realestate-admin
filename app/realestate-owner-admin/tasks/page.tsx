@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
-import { taskService, agentService, leadService, getAuthToken } from '@/app/services/api';
+import { taskService, agentService, leadService } from '@/app/services/api';
 import TaskModal from '@/components/modules/realestate/tasks/TaskModal';
 import Toast from '@/components/common/Toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function OwnerTasksPage() {
-    const queryClient = useQueryClient();
+    const [loading, setLoading] = useState(true);
+    const [tasks, setTasks] = useState<any[]>([]);
+    const [agents, setAgents] = useState<any[]>([]);
+    const [leads, setLeads] = useState<any[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
-    const [selectedTask, setSelectedTask] = useState<any>(null);
     const [filter, setFilter] = useState({
         status: '',
         priority: '',
@@ -28,54 +29,47 @@ export default function OwnerTasksPage() {
     };
 
 
-    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    useEffect(() => {
+        fetchData();
+    }, [filter]);
 
-    const { data: tasksData, isLoading: tasksLoading } = useQuery({
-        queryKey: ['tasks', filter],
-        queryFn: () => taskService.getAll(filter),
-        enabled: !!token,
-    });
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('authToken') || '';
 
-    const { data: agentsData } = useQuery({
-        queryKey: ['agents'],
-        queryFn: () => agentService.getAgents(token!),
-        enabled: !!token,
-    });
+            const [tasksRes, agentsRes, leadsRes] = await Promise.all([
+                taskService.getAll(filter),
+                agentService.getAgents(token),
+                leadService.getLeads(token, { limit: '100' })
+            ]);
 
-    const { data: leadsData } = useQuery({
-        queryKey: ['leads', { limit: '100' }],
-        queryFn: () => leadService.getLeads(token!, { limit: '100' }),
-        enabled: !!token,
-    });
-
-    const tasks = tasksData?.data || [];
-    const agents = useMemo(() => {
-        const res = agentsData?.data;
-        return Array.isArray(res) ? res : (res?.agents || []);
-    }, [agentsData]);
-    const leads = useMemo(() => {
-        const res = leadsData?.data;
-        return Array.isArray(res) ? res : (res?.leads || []);
-    }, [leadsData]);
-
-    const loading = tasksLoading;
-
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => taskService.delete(id),
-        onSuccess: (res) => {
-            if (res.success) {
-                queryClient.invalidateQueries({ queryKey: ['tasks'] });
-                showToast('Task deleted successfully');
-            } else {
-                showToast(res.message || 'Failed to delete task', 'error');
+            if (tasksRes.success) setTasks(tasksRes.data);
+            if (agentsRes.success) {
+                const agentData = Array.isArray(agentsRes.data) ? agentsRes.data : (agentsRes.data?.agents || []);
+                setAgents(agentData);
             }
-        },
-        onError: () => showToast('Failed to delete task', 'error')
-    });
+            if (leadsRes.success) {
+                const leadData = Array.isArray(leadsRes.data) ? leadsRes.data : (leadsRes.data?.leads || []);
+                setLeads(leadData);
+            }
+        } catch (error) {
+            console.error('Failed to fetch data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this task?')) return;
-        deleteMutation.mutate(id);
+        try {
+            const res = await taskService.delete(id);
+            if (res.success) {
+                fetchData();
+            }
+        } catch (error) {
+            showToast('Failed to delete task', 'error');
+        }
     };
 
     const getStatusLabel = (status: number) => {
@@ -94,6 +88,8 @@ export default function OwnerTasksPage() {
             default: return <span className="badge bg-light text-dark border">Low</span>;
         }
     };
+
+    const [selectedTask, setSelectedTask] = useState<any>(null);
 
     const handleEdit = (task: any) => {
         setSelectedTask(task);
@@ -160,9 +156,7 @@ export default function OwnerTasksPage() {
                                 >
                                     <option value="">All Agents</option>
                                     {Array.isArray(agents) && agents.map(a => (
-                                        <option key={a.id} value={a.id}>
-                                            {a.user?.name || (a.user?.firstName ? `${a.user.firstName} ${a.user?.lastName || ''}`.trim() : null) || a.user?.email || a.name || 'Unknown Agent'}
-                                        </option>
+                                        <option key={a.id} value={a.id}>{a.user?.name || a.name}</option>
                                     ))}
 
                                 </select>
@@ -215,11 +209,11 @@ export default function OwnerTasksPage() {
                                             <td>
                                                 <div className="d-flex align-items-center gap-2">
                                                     <div className="avatar-xs bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
-                                                        {(task.agent?.user?.name || (task.agent?.user?.firstName ? `${task.agent.user.firstName}` : null) || task.agent?.user?.email || task.agent?.name || 'U')[0].toUpperCase()}
+                                                        {(task.agent?.user?.name || task.agent?.name || 'U')[0]}
                                                     </div>
-                                                    <div className="small fw-medium">
-                                                        {task.agent?.user?.name || (task.agent?.user?.firstName ? `${task.agent.user.firstName} ${task.agent.user?.lastName || ''}`.trim() : null) || task.agent?.user?.email || task.agent?.name || 'Unassigned'}
-                                                    </div>
+                                                    <div className="small fw-medium">{task.agent?.user?.name || task.agent?.name || 'Unassigned'}</div>
+
+
                                                 </div>
                                             </td>
                                             <td>
@@ -279,7 +273,7 @@ export default function OwnerTasksPage() {
                 task={selectedTask}
                 onSuccess={() => {
                     showToast(selectedTask ? 'Task updated successfully!' : 'Task created and assigned successfully!', 'success');
-                    queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                    fetchData();
                 }}
             />
 

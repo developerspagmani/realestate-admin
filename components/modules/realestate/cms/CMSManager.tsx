@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { cmsService } from '@/app/services/cms';
 import { mediaService } from '@/app/services/media';
@@ -10,7 +10,6 @@ import CMSForm from '@/components/modules/realestate/cms/CMSForm';
 import CMSList from '@/components/modules/realestate/cms/CMSList';
 import Toast from '@/components/common/Toast';
 import Loader from '@/components/common/Loader';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface CMSManagerProps {
     mode?: 'admin' | 'owner';
@@ -28,12 +27,14 @@ const INITIAL_FORM_DATA = {
 };
 
 export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
-    const queryClient = useQueryClient();
     const { user, isAuthenticated } = useAuthContext();
     const { activeTenantId } = useManagementContext();
+    const [pages, setPages] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingPage, setEditingPage] = useState<any>(null);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
+    const [mediaItems, setMediaItems] = useState<any[]>([]);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -44,75 +45,93 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
         setToast({ show: true, message, type });
     };
 
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
-    const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadPages();
+            loadMedia();
+        }
+    }, [isAuthenticated, activeTenantId]);
 
-    const { data: pagesRes, isLoading: loading } = useQuery({
-        queryKey: ['cms-pages', tenantId],
-        queryFn: () => cmsService.getPages(token, tenantId),
-        enabled: isAuthenticated && !!tenantId,
-    });
+    const loadPages = async () => {
+        try {
+            setLoading(true);
+            const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const response = await cmsService.getPages(token, tenantId);
+            if (response.success) {
+                setPages(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to load pages:', error);
+            showToast('Failed to load pages', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const { data: mediaRes } = useQuery({
-        queryKey: ['media-list', tenantId],
-        queryFn: () => mediaService.getMedia(token, { tenantId }),
-        enabled: isAuthenticated && !!tenantId,
-    });
+    const loadMedia = async () => {
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const response = await mediaService.getMedia(token, { tenantId });
+            if (response.success) {
+                // Handle both paginated and non-paginated responses
+                const items = Array.isArray(response.data) ? response.data : (response.data?.media || []);
+                setMediaItems(items);
+            }
+        } catch (error) {
+            console.error('Failed to load media:', error);
+        }
+    };
 
-    const pages = pagesRes?.data || [];
-    const mediaItems = useMemo(() => {
-        if (!mediaRes?.success) return [];
-        return Array.isArray(mediaRes.data) ? mediaRes.data : (mediaRes.data?.media || []);
-    }, [mediaRes]);
+    const handleSubmit = async (data: any) => {
+        try {
+            let response;
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
 
-    // --- Mutations ---
+            const finalData = {
+                ...data,
+                tenantId
+            };
 
-    const saveMutation = useMutation({
-        mutationFn: (data: any) => {
-            const finalData = { ...data, tenantId };
-            if (editingPage) return cmsService.updatePage(token, editingPage.id, finalData, tenantId);
-            return cmsService.createPage(token, finalData);
-        },
-        onSuccess: (res) => {
-            if (res.success) {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
+            if (editingPage) {
+                response = await cmsService.updatePage(token, editingPage.id, finalData, tenantId);
+            } else {
+                response = await cmsService.createPage(token, finalData);
+            }
+
+            if (response.success) {
                 setShowForm(false);
                 setEditingPage(null);
                 setFormData(INITIAL_FORM_DATA);
-                queryClient.invalidateQueries({ queryKey: ['cms-pages'] });
+                loadPages();
                 showToast(editingPage ? 'Page updated successfully' : 'Page created successfully');
             } else {
-                showToast(res.message || 'Failed to save page', 'error');
+                showToast(response.message || 'Failed to save page', 'error');
             }
-        },
-        onError: (error: any) => {
+        } catch (error: any) {
             console.error('Failed to save page:', error);
             showToast(error.response?.data?.message || 'Error saving page. Make sure Slug is unique.', 'error');
         }
-    });
+    };
 
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => cmsService.deletePage(token, id, tenantId),
-        onSuccess: (res) => {
-            if (res.success) {
-                queryClient.invalidateQueries({ queryKey: ['cms-pages'] });
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this page?')) return;
+        try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const response = await cmsService.deletePage(token, id, tenantId);
+            if (response.success) {
+                loadPages();
                 showToast('Page deleted successfully');
             } else {
-                showToast(res.message || 'Failed to delete page', 'error');
+                showToast(response.message || 'Failed to delete page', 'error');
             }
-        },
-        onError: (error) => {
+        } catch (error) {
             console.error('Failed to delete page:', error);
             showToast('Failed to delete page', 'error');
         }
-    });
-
-    const handleSubmit = async (data: any) => {
-        saveMutation.mutate(data);
-    };
-
-    const handleDelete = (id: string) => {
-        if (!confirm('Are you sure you want to delete this page?')) return;
-        deleteMutation.mutate(id);
     };
 
     const handleEdit = (page: any) => {
@@ -145,7 +164,7 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
                         initialData={editingPage}
                         onSubmit={handleSubmit}
                         onCancel={() => setShowForm(false)}
-                        isSubmitting={saveMutation.isPending}
+                        isSubmitting={false}
                         mediaItems={mediaItems}
                     />
                 )}

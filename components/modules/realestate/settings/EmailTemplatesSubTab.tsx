@@ -80,7 +80,7 @@ export default function EmailTemplatesSubTab({ settings, setSettings, onSave, sa
                         </div>
                         <div className="card-body p-2 pt-0">
                             <ul className="list-group list-group-flush">
-                                {templatesList.map((t: any) => (
+                                {templatesList.map(t => (
                                     <button
                                         key={t.id}
                                         onClick={() => setActiveTemplate(t.id)}

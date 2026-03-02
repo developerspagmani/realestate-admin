@@ -8,7 +8,6 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Owner {
     id: string;
@@ -38,10 +37,12 @@ interface OwnersManagerProps {
 }
 
 export default function OwnersManager({ mode }: OwnersManagerProps) {
-    const queryClient = useQueryClient();
     const { user, isAuthenticated, isAdmin, loading: authLoading } = useAuthContext();
     const { activeTenantId } = useManagementContext();
     const [mounted, setMounted] = useState(false);
+    const [owners, setOwners] = useState<Owner[]>([]);
+    const [allKeys, setAllKeys] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
     const [formData, setFormData] = useState({
@@ -61,38 +62,39 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
     const [showExtendModal, setShowExtendModal] = useState(false);
     const [extendingOwner, setExtendingOwner] = useState<Owner | null>(null);
     const [extendDays, setExtendDays] = useState('15');
+    const [extending, setExtending] = useState(false);
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
     };
 
     const router = useRouter();
+
     const basePath = mode === 'realestate-admin' ? '/realestate-admin/owners' : '/realestate-admin/owners';
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    const token = typeof window !== 'undefined' ? getAuthToken() : '';
+    const loadOwners = async () => {
+        try {
+            setLoading(true);
+            const token = getAuthToken();
+            if (!token) return;
 
-    // --- Queries ---
-
-    const { data: ownersData, isLoading: loading } = useQuery({
-        queryKey: ['owners', activeTenantId],
-        queryFn: async () => {
             const tenantId = activeTenantId || (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            const { licenseKeyService } = await import('@/app/services/api');
             const [ownerRes, keyRes] = await Promise.all([
-                userService.getOwners(token!, { tenantId }),
-                licenseKeyService.getAll(token!, { status: 2 })
+                userService.getOwners(token, { tenantId }),
+                import('@/app/services/api').then(m => m.licenseKeyService.getAll(token, { status: 2 }))
             ]);
 
             if (ownerRes.success && ownerRes.data) {
                 const ownersList = ownerRes.data.users || ownerRes.data.owners || (Array.isArray(ownerRes.data) ? ownerRes.data : []);
                 const keys: any[] = keyRes.success ? (keyRes.data?.keys || []) : [];
+                setAllKeys(keys);
 
                 // Join keys to owners by tenantId
-                return ownersList.map((o: any) => {
+                const mappedOwners = ownersList.map((o: any) => {
                     const matchedKey = keys.find((k: any) => k.tenantId === o.tenantId) || null;
                     return {
                         ...o,
@@ -102,94 +104,78 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                             activatedAt: matchedKey.activatedAt,
                             plan: matchedKey.plan
                         } : null
-                    } as Owner;
+                    };
                 });
+                setOwners(mappedOwners);
             }
-            return [];
-        },
-        enabled: !!token && mounted && isAuthenticated && isAdmin,
-    });
-
-    const owners = ownersData || [];
-
-    // --- Mutations ---
-
-    const saveMutation = useMutation({
-        mutationFn: async (data: any) => {
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            if (editingOwner) {
-                return userService.updateUser(token!, editingOwner.id, {
-                    name: data.name,
-                    phone: data.phone,
-                    status: data.status
-                });
-            }
-            return userService.createUser(token!, {
-                ...data,
-                role: 3, // Owner
-                tenantId: tenantId,
-                password: data.password || 'Temporary123!'
-            });
-        },
-        onSuccess: (res) => {
-            if (res.success) {
-                queryClient.invalidateQueries({ queryKey: ['owners'] });
-                showToast(editingOwner ? 'Owner updated successfully' : 'Owner created successfully');
-                resetForm();
-            } else {
-                showToast(res.message || 'Failed to save owner', 'error');
-            }
-        },
-        onError: () => showToast('Error saving owner', 'error')
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: (id: string) => userService.deleteUser(token!, id),
-        onSuccess: (res) => {
-            if (res.success) {
-                queryClient.invalidateQueries({ queryKey: ['owners'] });
-                showToast('Owner deleted successfully');
-            } else {
-                showToast(res.message || 'Failed to delete owner', 'error');
-            }
-        },
-        onError: () => showToast('Error deleting owner', 'error')
-    });
-
-    const extendTrialMutation = useMutation({
-        mutationFn: async ({ tenantId, days }: { tenantId: string, days: number }) => {
-            const { adminService } = await import('@/app/services/admin');
-            return adminService.extendTrial(token!, tenantId, days);
-        },
-        onSuccess: (res) => {
-            if (res.success) {
-                queryClient.invalidateQueries({ queryKey: ['owners'] });
-                showToast(`Trial extended`);
-                setShowExtendModal(false);
-            } else {
-                showToast(res.message || 'Failed to extend trial', 'error');
-            }
-        },
-        onError: () => showToast('Error extending trial', 'error')
-    });
+        } catch (error) {
+            console.error('Failed to load owners:', error);
+            showToast('Failed to load owners', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!mounted || authLoading) return;
+
         if (!isAuthenticated || !user || !isAdmin) {
             router.push('/login');
+            return;
         }
-    }, [user, isAuthenticated, isAdmin, mounted, authLoading, router]);
+
+        loadOwners();
+    }, [user, isAuthenticated, isAdmin, mounted, authLoading, router, activeTenantId]);
 
     const filteredOwners = useMemo(() => {
-        return owners.filter((owner: any) =>
+        return owners.filter(owner =>
             owner.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             owner.email?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [owners, searchTerm]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        saveMutation.mutate(formData);
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+
+            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+
+            if (editingOwner) {
+                const response = await userService.updateUser(token, editingOwner.id, {
+                    name: formData.name,
+                    phone: formData.phone,
+                    status: formData.status
+                });
+                if (response.success) {
+                    setShowModal(false);
+                    loadOwners();
+                    showToast('Owner updated successfully');
+                }
+            } else {
+                const response = await userService.createUser(token, {
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password || 'Temporary123!',
+                    phone: formData.phone,
+                    role: 3, // Owner
+                    tenantId: tenantId,
+                    status: formData.status
+                });
+
+                if (response.success) {
+                    setShowModal(false);
+                    loadOwners();
+                    showToast('Owner created successfully');
+                } else {
+                    showToast(response.message || 'Failed to create owner', 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Error saving owner:', error);
+            showToast('An error occurred while saving the owner', 'error');
+        }
     };
 
     const handleEdit = (owner: Owner) => {
@@ -204,15 +190,49 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
         setShowModal(true);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this owner? This will also remove their access.')) return;
-        deleteMutation.mutate(id);
+
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const response = await userService.deleteUser(token, id);
+            if (response.success) {
+                loadOwners();
+                showToast('Owner deleted successfully');
+            } else {
+                showToast(response.message || 'Failed to delete owner', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting owner:', error);
+            showToast('Error deleting owner', 'error');
+        }
     };
 
-    const handleExtendTrial = (e: React.FormEvent) => {
+    const handleExtendTrial = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!extendingOwner || !extendingOwner.tenantId) return;
-        extendTrialMutation.mutate({ tenantId: extendingOwner.tenantId, days: parseInt(extendDays) });
+
+        setExtending(true);
+        try {
+            const { adminService } = await import('@/app/services/admin');
+            const token = getAuthToken();
+            if (!token) return;
+
+            const response = await adminService.extendTrial(token, extendingOwner.tenantId, parseInt(extendDays));
+            if (response.success) {
+                showToast(`Trial extended for ${extendingOwner.name}`);
+                setShowExtendModal(false);
+                loadOwners();
+            } else {
+                showToast(response.message || 'Failed to extend trial', 'error');
+            }
+        } catch (error) {
+            console.error('Extension error:', error);
+            showToast('Error extending trial', 'error');
+        } finally {
+            setExtending(false);
+        }
     };
 
     const resetForm = () => {
@@ -220,9 +240,6 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
         setEditingOwner(null);
         setShowModal(false);
     };
-
-    const extending = extendTrialMutation.isPending;
-    const isSubmitting = saveMutation.isPending;
 
     if (!mounted || !isAuthenticated) return null;
 
@@ -266,7 +283,7 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                                 <div>
                                     <div className="text-muted small">Managed Properties</div>
                                     <div className="fw-bold fs-4">
-                                        {owners.reduce((acc: number, o: any) => acc + (o._count?.properties || 0), 0)}
+                                        {owners.reduce((acc, o) => acc + (o._count?.properties || 0), 0)}
                                     </div>
                                 </div>
                             </div>
@@ -315,12 +332,12 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
                                             <div className="text-muted">No owners found matching your search.</div>
                                         </td>
                                     </tr>
-                                ) : filteredOwners.map((owner: any) => (
+                                ) : filteredOwners.map((owner) => (
                                     <tr key={owner.id} className="transition-all">
                                         <td className="px-4 py-3">
                                             <div className="d-flex align-items-center gap-3">
                                                 <div className="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px' }}>
-                                                    {owner.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2) || '??'}
+                                                    {owner.name?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || '??'}
                                                 </div>
                                                 <div>
                                                     <div className="fw-bold text-dark">{owner.name}</div>

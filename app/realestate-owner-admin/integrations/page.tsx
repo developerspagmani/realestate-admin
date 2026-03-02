@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { integrationService } from '@/app/services/integration';
 import { useAuthContext } from '@/app/contexts/AuthContext';
@@ -11,61 +10,60 @@ import Loader from '@/components/common/Loader';
 
 export default function IntegrationsPage() {
     const { isAuthenticated, loading: authLoading } = useAuthContext();
-    const queryClient = useQueryClient();
+    const [integrations, setIntegrations] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-    const { data: integrations = [], isLoading: loading } = useQuery({
-        queryKey: ['integrations'],
-        queryFn: async () => {
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadIntegrations();
+        }
+    }, [isAuthenticated]);
+
+    const loadIntegrations = async () => {
+        setLoading(true);
+        try {
             const token = getAuthToken();
-            if (!token) return [];
+            if (!token) return;
             const res = await integrationService.getIntegrations(token);
-            return res.success ? res.data : [];
-        },
-        enabled: isAuthenticated,
-    });
-
-    const toggleMutation = useMutation({
-        mutationFn: async (id: string) => {
-            const token = getAuthToken();
-            if (!token) throw new Error('No token');
-            return await integrationService.toggleStatus(token, id);
-        },
-        onSuccess: (res) => {
             if (res.success) {
-                setToast({ message: 'Integration status updated.', type: 'success' });
-                queryClient.invalidateQueries({ queryKey: ['integrations'] });
+                setIntegrations(res.data);
             }
-        },
-        onError: () => {
-            setToast({ message: 'Failed to update status.', type: 'error' });
+        } catch (error) {
+            console.error('Failed to load integrations:', error);
+        } finally {
+            setLoading(false);
         }
-    });
-
-    const deleteMutation = useMutation({
-        mutationFn: async (id: string) => {
-            const token = getAuthToken();
-            if (!token) throw new Error('No token');
-            return await integrationService.deleteIntegration(token, id);
-        },
-        onSuccess: (res) => {
-            if (res.success) {
-                setToast({ message: 'Integration removed.', type: 'success' });
-                queryClient.invalidateQueries({ queryKey: ['integrations'] });
-            }
-        },
-        onError: () => {
-            setToast({ message: 'Failed to remove integration.', type: 'error' });
-        }
-    });
-
-    const handleToggleStatus = (id: string) => {
-        toggleMutation.mutate(id);
     };
 
-    const handleDelete = (id: string) => {
+    const handleToggleStatus = async (id: string) => {
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await integrationService.toggleStatus(token, id);
+            if (res.success) {
+                setToast({ message: 'Integration status updated.', type: 'success' });
+                loadIntegrations();
+            }
+        } catch (error) {
+            setToast({ message: 'Failed to update status.', type: 'error' });
+        }
+    };
+
+    const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to remove this connection? This will break the integration on the external site.')) return;
-        deleteMutation.mutate(id);
+
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const res = await integrationService.deleteIntegration(token, id);
+            if (res.success) {
+                setToast({ message: 'Integration removed.', type: 'success' });
+                loadIntegrations();
+            }
+        } catch (error) {
+            setToast({ message: 'Failed to remove integration.', type: 'error' });
+        }
     };
 
     if (authLoading) return <div className="p-5 text-center">Loading...</div>;
@@ -96,7 +94,7 @@ export default function IntegrationsPage() {
                                 </thead>
                                 <tbody>
                                     {loading ? (
-                                        <tr><td colSpan={6} className="text-center py-5"><Loader size="md" message="" /></td></tr>
+                                        <tr><td colSpan={6} className="text-center py-5"><Loader size="sm" message="" /></td></tr>
                                     ) : integrations.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="text-center py-5">
@@ -112,7 +110,7 @@ export default function IntegrationsPage() {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ) : integrations.map((int: any) => (
+                                    ) : integrations.map((int) => (
                                         <tr key={int.id}>
                                             <td className="px-4">
                                                 <div className="d-flex align-items-center gap-3">
