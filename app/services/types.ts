@@ -48,12 +48,17 @@ export interface Booking {
     notes?: string;
     specialRequests?: string;
     tenantId?: string;
+    guestName?: string;
+    guestEmail?: string;
+    guestPhone?: string;
+    propertyId?: string;
     createdAt: string;
     updatedAt: string;
     user?: User;
     agentId?: string;
     agent?: any;
     unit?: any;
+    property?: any;
 }
 
 export interface Property {

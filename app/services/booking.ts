@@ -2,9 +2,10 @@ import { makeApiCall, bookingEndpoints } from '@/app/api/config/endpoints';
 import { Booking } from './types';
 
 export const bookingService = {
-    getBookings: async (token: string, params?: { page?: string; limit?: string; status?: string; userId?: string; unitId?: string; startDate?: string; endDate?: string; tenantId?: string; ownerId?: string; industryType?: number | string }) => {
+    getBookings: async (token: string, params?: { page?: string; limit?: string; status?: string; userId?: string; unitId?: string; startDate?: string; endDate?: string; tenantId?: string; ownerId?: string; industryType?: number | string }, skipCache: boolean = false) => {
         return await makeApiCall(bookingEndpoints.getAll(params), {
             headers: { 'Authorization': `Bearer ${token}` },
+            ...({ skipCache } as any)
         });
     },
 
@@ -28,31 +29,34 @@ export const bookingService = {
     },
 
     updateBooking: async (token: string, bookingId: string, bookingData: Partial<Booking>) => {
-        return await makeApiCall(`/bookings/${bookingId}`, {
+        return await makeApiCall(bookingEndpoints.update(bookingId, (bookingData as any).tenantId), {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(bookingData),
         });
     },
 
-    updateBookingStatus: async (token: string, bookingId: string, status: number, notes?: string) => {
-        return await makeApiCall(`/bookings/${bookingId}/status`, {
+    updateBookingStatus: async (token: string, bookingId: string, status: number, notes?: string, tenantId?: string) => {
+        const url = tenantId ? `/bookings/${bookingId}/status?tenantId=${tenantId}` : `/bookings/${bookingId}/status`;
+        return await makeApiCall(url, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ status, notes }),
         });
     },
 
-    cancelBooking: async (token: string, bookingId: string, reason?: string) => {
-        return await makeApiCall(`/bookings/${bookingId}/cancel`, {
+    cancelBooking: async (token: string, bookingId: string, reason?: string, tenantId?: string) => {
+        const url = tenantId ? `/bookings/${bookingId}/cancel?tenantId=${tenantId}` : `/bookings/${bookingId}/cancel`;
+        return await makeApiCall(url, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ reason }),
         });
     },
 
-    deleteBooking: async (token: string, bookingId: string) => {
-        return await makeApiCall(`/bookings/${bookingId}`, {
+    deleteBooking: async (token: string, bookingId: string, tenantId?: string) => {
+        const url = tenantId ? `/bookings/${bookingId}?tenantId=${tenantId}` : `/bookings/${bookingId}`;
+        return await makeApiCall(url, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` },
         });

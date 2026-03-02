@@ -65,7 +65,10 @@ export async function makeApiCall(endpoint: string, options: RequestInit = {}) {
       loadingState.show();
     }
 
+    // const skipCache = (options as any).skipCache === true;
+
     const response = await fetch(url, {
+      ...(!isMutating ? { cache: 'force-cache', next: { revalidate: 0 } } : {}),
       ...fetchOptions,
       headers,
     });

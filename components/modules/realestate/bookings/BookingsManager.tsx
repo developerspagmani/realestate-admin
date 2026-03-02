@@ -18,17 +18,19 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
     const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
     const [mounted, setMounted] = useState(false);
-    const [bookings, setBookings] = useState<any[]>([]);
+    const [bookings, setBookings] = useState<Booking[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [units, setUnits] = useState<Unit[]>([]);
     const [properties, setProperties] = useState<Property[]>([]);
     const [agents, setAgents] = useState<any[]>([]);
     const [showModal, setShowModal] = useState(false);
-    const [editingBooking, setEditingBooking] = useState<any | null>(null);
+    const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    const [formData, setFormData] = useState<any>({
+    const [formData, setFormData] = useState({
         userId: '',
         unitId: '',
         propertyId: '',
@@ -53,6 +55,17 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     const [availabilityStatus, setAvailabilityStatus] = useState<{ loading: boolean; available?: boolean; conflicts?: any[]; price?: number }>({ loading: false });
     const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
     const [availabilityForm, setAvailabilityForm] = useState({ propertyId: '', unitId: '', startAt: '', endAt: '' });
+    const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
+
+    // Import states
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importStep, setImportStep] = useState<'file' | 'mapping' | 'progress'>('file');
+    const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+    const [csvRows, setCsvRows] = useState<string[][]>([]);
+    const [mapping, setMapping] = useState<Record<string, string>>({});
+    const [importProgress, setImportProgress] = useState(0);
+    const [importTotal, setImportTotal] = useState(0);
+
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -92,7 +105,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             const [bookingsRes, usersRes, propertiesRes, unitsRes, agentsRes] = await Promise.all([
                 bookingService.getBookings(token, {
                     ...params,
-                    industryType
+                    industryType,
+                    limit: '10'
                 }),
                 userService.getUsers(token, { tenantId: tenantId || undefined }),
                 propertyService.getProperties(token, {
@@ -158,33 +172,60 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
 
             let matchesTab = true;
             const now = new Date();
-            const end = new Date(booking.endAt);
+            const start = new Date(booking.startAt);
+            const end = booking.endAt ? new Date(booking.endAt) : new Date(start.getTime() + 60 * 60 * 1000);
 
             if (activeTab === 'pending') {
                 matchesTab = booking.status === 1;
             } else if (activeTab === 'confirmed') {
-                matchesTab = booking.status === 2 && end >= now;
+                // Show both pending and confirmed in Upcoming as long as they haven't ended
+                matchesTab = (booking.status === 1 || booking.status === 2) && end >= now;
             } else if (activeTab === 'past') {
-                matchesTab = booking.status === 4 || booking.status === 3 || (booking.status === 2 && end < now);
+                // Show completed, cancelled, or confirmed/pending that have already passed
+                matchesTab = booking.status === 4 || booking.status === 3 || ((booking.status === 1 || booking.status === 2) && end < now);
             }
 
             return matchesSearch && matchesStatus && matchesTab;
         });
     }, [bookings, searchTerm, filterStatus, activeTab]);
 
+    const paginatedBookings = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredBookings.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredBookings, currentPage, itemsPerPage]);
+
+    const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus, activeTab, itemsPerPage]);
+
     const checkAvailability = async (isManual: boolean = false) => {
         const targetForm = isManual ? availabilityForm : formData;
-        if (!targetForm.unitId || !targetForm.startAt || !targetForm.endAt) return;
+        if (!targetForm.unitId || !targetForm.startAt) return;
 
         try {
             setAvailabilityStatus({ loading: true });
             const token = getAuthToken();
             if (!token) return;
 
+            const startDate = new Date(targetForm.startAt);
+            let endDate;
+
+            if (targetForm.endAt) {
+                endDate = new Date(targetForm.endAt);
+            } else {
+                endDate = new Date(startDate);
+                endDate.setHours(endDate.getHours() + 1);
+            }
+
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+
             const params: any = {
                 unitId: targetForm.unitId,
-                startAt: new Date(targetForm.startAt).toISOString(),
-                endAt: new Date(targetForm.endAt).toISOString(),
+                startAt: startDate.toISOString(),
+                endAt: endDate.toISOString(),
+                tenantId: tenantId || localStorage.getItem('tenant-id') || '',
             };
 
             if (!isManual && editingBooking) {
@@ -219,11 +260,28 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
+            if (!formData.startAt) {
+                showToast('Please select a visit date and time', 'error');
+                return;
+            }
+
+            const startDate = new Date(formData.startAt);
+            let endDate;
+
+            if (formData.endAt) {
+                endDate = new Date(formData.endAt);
+            } else {
+                endDate = new Date(startDate);
+                endDate.setHours(endDate.getHours() + 1);
+            }
+
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+
             const payload = {
                 ...formData,
-                tenantId: (user as any)?.tenantId || localStorage.getItem('tenant-id'),
-                startAt: new Date(formData.startAt).toISOString(),
-                endAt: new Date(formData.endAt).toISOString(),
+                tenantId: tenantId || localStorage.getItem('tenant-id'),
+                startAt: startDate.toISOString(),
+                endAt: endDate.toISOString(),
             };
 
             let response;
@@ -251,7 +309,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const response = await bookingService.updateBookingStatus(token, id, status);
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const response = await bookingService.updateBookingStatus(token, id, status, undefined, tenantId || '');
             if (response.success) {
                 loadData();
                 showToast('Booking status updated');
@@ -268,36 +327,166 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const booking = bookings.find(b => b.id === id);
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
-            const response = await bookingService.sendVisitInfo(token, id, tenantId as string);
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const response = await bookingService.sendVisitInfo(token, id, (tenantId || localStorage.getItem('tenant-id')) as string);
             if (response.success) {
                 showToast('Visit information email sent to prospect');
             } else {
-                showToast(response.message || 'Failed to send email', 'error');
+                showToast(response.message || 'Failed to send visit info', 'error');
             }
         } catch (error) {
-            console.error('Error sending email:', error);
-            showToast('Error sending email', 'error');
+            console.error('Error sending visit info:', error);
+            showToast('Error sending visit info', 'error');
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this booking?')) return;
+    const handleDelete = async (id: string | string[]) => {
+        const ids = Array.isArray(id) ? id : [id];
+        if (!window.confirm(`Delete ${ids.length > 1 ? ids.length + ' visits' : 'this visit'}?`)) return;
         try {
             const token = getAuthToken();
             if (!token) return;
-            const response = await bookingService.deleteBooking(token, id);
-            if (response.success) {
-                loadData();
-                showToast('Booking deleted successfully');
-            } else {
-                showToast(response.message || 'Failed to delete booking', 'error');
-            }
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+
+            await Promise.all(ids.map(bookingId => bookingService.deleteBooking(token, bookingId, tenantId || '')));
+            showToast(`${ids.length > 1 ? ids.length + ' visits' : 'Visit'} deleted successfully`);
+            setSelectedBookings(prev => prev.filter(uid => !ids.includes(uid)));
+            loadData();
         } catch (error) {
-            console.error('Error deleting booking:', error);
-            showToast('Error deleting booking', 'error');
+            console.error('Delete error:', error);
+            showToast('Error deleting visit(s)', 'error');
         }
+    };
+
+    const toggleSelectAll = () => {
+        setSelectedBookings(selectedBookings.length === filteredBookings.length && filteredBookings.length > 0 ? [] : filteredBookings.map(u => u.id));
+    };
+
+    const toggleSelect = (id: string) => {
+        setSelectedBookings(prev => prev.includes(id) ? prev.filter(uid => uid !== id) : [...prev, id]);
+    };
+
+    const handleExport = () => {
+        const exportList = selectedBookings.length > 0
+            ? filteredBookings.filter(u => selectedBookings.includes(u.id))
+            : filteredBookings;
+        if (exportList.length === 0) { showToast('No visits to export', 'error'); return; }
+
+        const headers = ['Visit ID', 'Date', 'Time', 'Guest Name', 'Email', 'Phone', 'Property', 'Unit', 'Status'];
+        const rows = exportList.map(b => [
+            `"${b.id}"`,
+            `"${new Date(b.startAt).toLocaleDateString()}"`,
+            `"${new Date(b.startAt).toLocaleTimeString()}"`,
+            `"${b.guestName || b.user?.name || 'Guest'}"`,
+            `"${b.guestEmail || b.user?.email || ''}"`,
+            `"${b.guestPhone || b.user?.phone || ''}"`,
+            `"${b.unit?.property?.title || b.property?.title || 'Unknown'}"`,
+            `"${b.unit?.unitCode || 'N/A'}"`,
+            `"${getStatusLabel(b.status).label}"`
+        ]);
+
+        const csv = [headers, ...rows].map(r => r.join(',').replace(/\r?\n|\r/g, ' ')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `visits_export_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showToast(`${exportList.length} visit${exportList.length !== 1 ? 's' : ''} exported successfully`);
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const lines = (event.target?.result as string).split('\n').filter(l => l.trim());
+            if (lines.length < 2) { showToast('Invalid CSV file', 'error'); return; }
+            const headers = lines[0].split(',').map(h => h.trim());
+            const rows = lines.slice(1).map(l => l.split(',').map(c => c.trim()));
+            setCsvHeaders(headers);
+            setCsvRows(rows);
+
+            const fields = ['guestName', 'guestEmail', 'guestPhone', 'unitCode', 'startAt', 'notes'];
+            const init: Record<string, string> = {};
+            fields.forEach(f => {
+                const match = headers.find(h => h.toLowerCase().includes(f.toLowerCase().replace(/([A-Z])/g, ' $1').trim().toLowerCase()));
+                if (match) init[f] = match;
+            });
+            setMapping(init);
+            setImportStep('mapping');
+        };
+        reader.readAsText(file);
+    };
+
+    const executeImport = async () => {
+        setImportStep('progress');
+        setImportTotal(csvRows.length);
+        setImportProgress(0);
+        const token = getAuthToken();
+        const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId || localStorage.getItem('tenant-id');
+        if (!token || !tenantId) return;
+
+        for (let i = 0; i < csvRows.length; i++) {
+            const row = csvRows[i];
+            const get = (f: string) => { const h = mapping[f]; if (!h) return undefined; return row[csvHeaders.indexOf(h)]; };
+
+            try {
+                const guestEmail = (get('guestEmail') || '').trim();
+                const guestName = (get('guestName') || '').trim();
+                const guestPhone = (get('guestPhone') || '').trim();
+                const notes = (get('notes') || '').trim();
+                const unitCode = (get('unitCode') || '').trim();
+
+                // 1. Resolve Unit
+                let resolvedUnitId = formData.unitId || '';
+                if (unitCode) {
+                    const match = units.find(u => u.unitCode.toLowerCase() === unitCode.toLowerCase());
+                    if (match) resolvedUnitId = match.id;
+                }
+
+                if (!resolvedUnitId) {
+                    console.warn('Skipping import row due to missing unit:', row);
+                    continue;
+                }
+
+                // 2. Resolve User by Email if possible
+                let resolvedUserId = '';
+                let systemUserName = '';
+                if (guestEmail) {
+                    const match = users.find(u => u.email?.toLowerCase() === guestEmail.toLowerCase());
+                    if (match) {
+                        resolvedUserId = match.id;
+                        systemUserName = match.name || '';
+                    }
+                }
+
+                const startDate = get('startAt') ? new Date(get('startAt')!) : new Date();
+                const endDate = new Date(startDate);
+                endDate.setHours(endDate.getHours() + 1);
+
+                await bookingService.createBooking(token, {
+                    tenantId: tenantId as string,
+                    unitId: resolvedUnitId,
+                    userId: resolvedUserId || undefined,
+                    guestName: guestName,
+                    guestEmail: guestEmail,
+                    guestPhone: guestPhone,
+                    startAt: startDate.toISOString(),
+                    endAt: endDate.toISOString(),
+                    notes: notes,
+                    status: 1 // pending
+                });
+            } catch (err) {
+                console.error('Import failed for row', i, err);
+            }
+            setImportProgress(i + 1);
+        }
+        showToast(`Import completed: ${csvRows.length} visits processed`);
+        loadData();
+        setShowImportModal(false);
+        setImportStep('file');
     };
 
     const getStatusLabel = (status: number) => {
@@ -356,10 +545,18 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                 {/* Header Section */}
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h2 className="fw-bold mb-1">{mode === 'admin' ? 'Visit Schedules' : 'My Visit Visits'}</h2>
+                        <h2 className="fw-bold mb-1">{mode === 'admin' ? 'Visit Schedules' : 'My Visits'}</h2>
                         <p className="text-muted small mb-0">Manage property visits and site schedules</p>
                     </div>
                     <div className="d-flex gap-2">
+                        <button className="btn btn-light d-flex align-items-center gap-2 px-3 shadow-sm border" onClick={handleExport}>
+                            <i className="bi bi-download"></i>
+                            <span className="d-none d-md-inline">Export{selectedBookings.length > 0 ? ` (${selectedBookings.length})` : ''}</span>
+                        </button>
+                        <button className="btn btn-light d-flex align-items-center gap-2 px-3 shadow-sm border" onClick={() => setShowImportModal(true)}>
+                            <i className="bi bi-upload"></i>
+                            <span className="d-none d-md-inline">Import</span>
+                        </button>
                         <button
                             className="btn btn-outline-primary d-flex align-items-center gap-2 px-4 shadow-sm"
                             onClick={() => {
@@ -471,6 +668,11 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                 <div className="vr h-50 mx-2"></div>
                                 <span className="text-primary fw-bold">
                                     {filteredBookings.length} <span className="text-muted fw-normal">Matches</span>
+                                    {selectedBookings.length > 0 && (
+                                        <button className="btn btn-sm btn-outline-danger border-0 ms-2" onClick={() => handleDelete(selectedBookings)} title="Delete Selected">
+                                            <i className="bi bi-trash-fill"></i>
+                                        </button>
+                                    )}
                                 </span>
                             </div>
                         </div>
@@ -484,7 +686,13 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                             <table className="table table-hover align-middle mb-0">
                                 <thead className="bg-light">
                                     <tr>
-                                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted">Guest Details</th>
+                                        <th className="py-3 px-4" style={{ width: 40 }}>
+                                            <input className="form-check-input shadow-none cursor-pointer" type="checkbox"
+                                                checked={selectedBookings.length === filteredBookings.length && filteredBookings.length > 0}
+                                                onChange={toggleSelectAll}
+                                            />
+                                        </th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">Guest Details</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Property & Unit</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Schedule</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Financials</th>
@@ -496,22 +704,27 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                 <tbody>
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={7} className="text-center py-5">
+                                            <td colSpan={8} className="text-center py-5">
                                                 <Loader message="Fetching bookings..." />
                                             </td>
                                         </tr>
-                                    ) : filteredBookings.length === 0 ? (
+                                    ) : paginatedBookings.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} className="text-center py-5">
+                                            <td colSpan={8} className="text-center py-5">
                                                 <i className="bi bi-calendar-x display-4 text-muted mb-3 d-block"></i>
                                                 <p className="text-muted">No reservations found matching your criteria</p>
                                             </td>
                                         </tr>
-                                    ) : filteredBookings.map((booking) => {
+                                    ) : paginatedBookings.map((booking) => {
                                         const status = getStatusLabel(booking.status);
+                                        const isSelected = selectedBookings.includes(booking.id);
                                         return (
-                                            <tr key={booking.id} className="cursor-pointer" onClick={() => { setSelectedBooking(booking); setShowDetailModal(true); }}>
-                                                <td className="px-4 py-3">
+                                            <tr key={booking.id} className={`cursor-pointer ${isSelected ? 'table-active' : ''}`} onClick={() => { setSelectedBooking(booking); setShowDetailModal(true); }}>
+                                                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                                    <input className="form-check-input shadow-none cursor-pointer" type="checkbox"
+                                                        checked={isSelected} onChange={() => toggleSelect(booking.id)} />
+                                                </td>
+                                                <td className="py-3">
                                                     <div className="d-flex align-items-center gap-3">
                                                         <div className="bg-primary-soft text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px' }}>
                                                             {(booking.guestName || booking.user?.name || 'G').charAt(0)}
@@ -535,8 +748,6 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                     </div>
                                                     <div className="text-muted small">
                                                         {new Date(booking.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        {' - '}
-                                                        {new Date(booking.endAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </div>
                                                 </td>
                                                 <td className="py-3">
@@ -601,6 +812,51 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                 </tbody>
                             </table>
                         </div>
+                        {filteredBookings.length > itemsPerPage && (
+                            <div className="card-footer border-0 bg-white p-3 border-top">
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <div className="d-flex align-items-center gap-3 text-muted small">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <span>Rows per page:</span>
+                                            <select
+                                                className="form-select form-select-sm bg-light border-0 w-auto"
+                                                value={itemsPerPage}
+                                                onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+                                            >
+                                                <option value="5">5</option>
+                                                <option value="10">10</option>
+                                                <option value="25">25</option>
+                                                <option value="50">50</option>
+                                                <option value="100">100</option>
+                                            </select>
+                                        </div>
+                                        <div className="vr h-15px"></div>
+                                        <div>
+                                            Showing <span className="fw-bold text-dark">{((currentPage - 1) * itemsPerPage) + 1}</span> to <span className="fw-bold text-dark">{Math.min(currentPage * itemsPerPage, filteredBookings.length)}</span> of <span className="fw-bold text-dark">{filteredBookings.length}</span> results
+                                        </div>
+                                    </div>
+                                    <nav>
+                                        <ul className="pagination pagination-sm mb-0 gap-1">
+                                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                                <button className="page-link rounded-2 border-0 bg-light text-dark" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                                                    <i className="bi bi-chevron-left"></i>
+                                                </button>
+                                            </li>
+                                            <li className="page-item disabled">
+                                                <span className="page-link border-0 bg-white text-dark small fw-bold">
+                                                    Page {currentPage} of {totalPages}
+                                                </span>
+                                            </li>
+                                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                                <button className="page-link rounded-2 border-0 bg-light text-dark" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
+                                                    <i className="bi bi-chevron-right"></i>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <CalendarView
@@ -739,24 +995,23 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             </select>
                                         </div>
 
-                                        <div className="col-md-6">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">Visit Start</label>
+                                        <div className="col-md-12">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Visit Date & Time</label>
                                             <input
                                                 type="datetime-local"
                                                 className="form-control bg-light border-0"
                                                 value={formatForInput(formData.startAt)}
-                                                onChange={(e) => setFormData({ ...formData, startAt: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-
-                                        <div className="col-md-6">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">Visit End (Estimated)</label>
-                                            <input
-                                                type="datetime-local"
-                                                className="form-control bg-light border-0"
-                                                value={formatForInput(formData.endAt)}
-                                                onChange={(e) => setFormData({ ...formData, endAt: e.target.value })}
+                                                onChange={(e) => {
+                                                    const startAt = e.target.value;
+                                                    // Auto-set endAt to 1 hour after startAt for backend compatibility
+                                                    let endAt = '';
+                                                    if (startAt) {
+                                                        const endDate = new Date(startAt);
+                                                        endDate.setHours(endDate.getHours() + 1);
+                                                        endAt = endDate.toISOString();
+                                                    }
+                                                    setFormData({ ...formData, startAt, endAt });
+                                                }}
                                                 required
                                             />
                                         </div>
@@ -790,8 +1045,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                         )}
                                                         <span className="fw-bold">
                                                             {availabilityStatus.loading ? 'Checking Availability...' :
-                                                                availabilityStatus.available === true ? 'Unit is Available' :
-                                                                    availabilityStatus.available === false ? 'Dates Conflict' : 'Select Unit & Dates'}
+                                                                availabilityStatus.available === true ? 'Visit is Available' :
+                                                                    availabilityStatus.available === false ? 'Visit is not Available' : 'Select Unit & Dates'}
                                                         </span>
                                                     </div>
                                                     <div className="text-end">
@@ -837,7 +1092,10 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             <select
                                                 className="form-select bg-light border-0"
                                                 value={availabilityForm.propertyId}
-                                                onChange={(e) => setAvailabilityForm({ ...availabilityForm, propertyId: e.target.value, unitId: '' })}
+                                                onChange={(e) => {
+                                                    setAvailabilityForm({ ...availabilityForm, propertyId: e.target.value, unitId: '' });
+                                                    setAvailabilityStatus({ available: undefined, loading: false });
+                                                }}
                                             >
                                                 <option value="">Select Property...</option>
                                                 {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
@@ -848,7 +1106,10 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                             <select
                                                 className="form-select bg-light border-0"
                                                 value={availabilityForm.unitId}
-                                                onChange={(e) => setAvailabilityForm({ ...availabilityForm, unitId: e.target.value })}
+                                                onChange={(e) => {
+                                                    setAvailabilityForm({ ...availabilityForm, unitId: e.target.value });
+                                                    setAvailabilityStatus({ available: undefined, loading: false });
+                                                }}
                                                 disabled={!availabilityForm.propertyId}
                                             >
                                                 <option value="">Select Unit...</option>
@@ -857,22 +1118,23 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                     .map(u => <option key={u.id} value={u.id}>{u.unitCode}</option>)}
                                             </select>
                                         </div>
-                                        <div className="col-6">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">From</label>
+                                        <div className="col-12">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Visit Date & Time</label>
                                             <input
                                                 type="datetime-local"
                                                 className="form-control bg-light border-0"
                                                 value={availabilityForm.startAt}
-                                                onChange={(e) => setAvailabilityForm({ ...availabilityForm, startAt: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="col-6">
-                                            <label className="form-label fw-bold small text-uppercase text-muted">To</label>
-                                            <input
-                                                type="datetime-local"
-                                                className="form-control bg-light border-0"
-                                                value={availabilityForm.endAt}
-                                                onChange={(e) => setAvailabilityForm({ ...availabilityForm, endAt: e.target.value })}
+                                                onChange={(e) => {
+                                                    const startAt = e.target.value;
+                                                    let endAt = '';
+                                                    if (startAt) {
+                                                        const endDate = new Date(startAt);
+                                                        endDate.setHours(endDate.getHours() + 1);
+                                                        endAt = endDate.toISOString();
+                                                    }
+                                                    setAvailabilityForm({ ...availabilityForm, startAt, endAt });
+                                                    setAvailabilityStatus({ available: undefined, loading: false });
+                                                }}
                                             />
                                         </div>
 
@@ -882,7 +1144,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                 disabled={!availabilityForm.unitId || !availabilityForm.startAt || !availabilityForm.endAt || availabilityStatus.loading}
                                                 onClick={() => checkAvailability(true)}
                                             >
-                                                {availabilityStatus.loading ? <Loader size="sm" message="" /> : 'Check Now'}
+                                                {availabilityStatus.loading ? 'Checking...' : 'Check Now'}
                                             </button>
                                         </div>
 
@@ -971,12 +1233,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                     <div className="p-3 border rounded-3">
                                         <div className="text-muted small text-uppercase fw-bold mb-2">Schedule</div>
                                         <div className="d-flex justify-content-between mb-1">
-                                            <span className="text-muted">In:</span>
+                                            <span className="text-muted">Datetime:</span>
                                             <span className="fw-bold">{new Date(selectedBooking.startAt).toLocaleString()}</span>
-                                        </div>
-                                        <div className="d-flex justify-content-between">
-                                            <span className="text-muted">Out:</span>
-                                            <span className="fw-bold">{new Date(selectedBooking.endAt).toLocaleString()}</span>
                                         </div>
                                     </div>
 
@@ -1042,6 +1300,70 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                     </div>
                 )
             }
+
+            {/* ── Import Modal ── */}
+            {showImportModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1060 }}>
+                    <div className="modal-dialog modal-lg modal-dialog-centered">
+                        <div className="modal-content border-0 shadow-lg rounded-4">
+                            <div className="modal-header border-0 p-4 pb-2">
+                                <h5 className="fw-bold mb-0">Import Visits from CSV</h5>
+                                <button type="button" className="btn-close" onClick={() => setShowImportModal(false)}></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                {importStep === 'file' && (
+                                    <div className="text-center py-5 border border-2 border-dashed rounded-4 bg-light">
+                                        <i className="bi bi-file-earmark-excel display-3 text-primary mb-3 d-block"></i>
+                                        <h5>Choose a CSV File</h5>
+                                        <p className="text-muted small mb-4">Select a .csv file containing visit details</p>
+                                        <input type="file" accept=".csv" className="d-none" id="csv-upload" onChange={handleFileChange} />
+                                        <label htmlFor="csv-upload" className="btn btn-primary px-4 fw-bold" style={{ cursor: 'pointer' }}>Select File</label>
+                                    </div>
+                                )}
+                                {importStep === 'mapping' && (
+                                    <div>
+                                        <div className="mb-4">
+                                            <label className="form-label fw-bold small text-muted text-uppercase">1. Default Unit (if not matched by code)</label>
+                                            <select className="form-select bg-light border-0" value={formData.unitId} onChange={e => setFormData({ ...formData, unitId: e.target.value })}>
+                                                <option value="">Select Target Unit...</option>
+                                                {units.map(u => <option key={u.id} value={u.id}>{u.unitCode} - {u.property?.title}</option>)}
+                                            </select>
+                                        </div>
+                                        <label className="form-label fw-bold small text-muted text-uppercase mb-3">2. Column Mapping</label>
+                                        <div className="row g-2 overflow-auto" style={{ maxHeight: 320 }}>
+                                            {['guestName', 'guestEmail', 'guestPhone', 'unitCode', 'startAt', 'notes'].map(field => (
+                                                <div key={field} className="col-md-6">
+                                                    <div className="p-2 bg-light rounded border d-flex align-items-center">
+                                                        <div className="flex-grow-1 small fw-bold text-capitalize">{field.replace(/([A-Z])/g, ' $1')}</div>
+                                                        <select className="form-select form-select-sm border-0 bg-white shadow-none" style={{ width: 150 }} value={mapping[field] || ''} onChange={e => setMapping({ ...mapping, [field]: e.target.value })}>
+                                                            <option value="">Skip</option>
+                                                            {csvHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="d-flex justify-content-between mt-4 pt-3 border-top">
+                                            <button className="btn btn-light px-4" onClick={() => setImportStep('file')}>Back</button>
+                                            <button className="btn btn-primary px-4 fw-bold shadow-sm" onClick={executeImport}>Execute Import ({csvRows.length} records)</button>
+                                        </div>
+                                    </div>
+                                )}
+                                {importStep === 'progress' && (
+                                    <div className="text-center py-5">
+                                        <div className="spinner-border text-primary mb-3" style={{ width: '3rem', height: '3rem' }}></div>
+                                        <h5>Importing Data...</h5>
+                                        <p className="text-muted mb-4">Processing {importProgress} of {importTotal} records</p>
+                                        <div className="progress rounded-4 bg-light" style={{ height: 12, maxWidth: 400, margin: '0 auto' }}>
+                                            <div className="progress-bar progress-bar-striped progress-bar-animated bg-primary" style={{ width: `${importTotal > 0 ? (importProgress / importTotal) * 100 : 0}%` }}></div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style jsx>{`
         .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
