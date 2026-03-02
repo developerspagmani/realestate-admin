@@ -21,7 +21,7 @@ export default function ClientProviders({ children }: ClientProvidersProps) {
 
     useEffect(() => {
         // Initialize Bootstrap JS
-        require('bootstrap/dist/js/bootstrap.bundle.min.js');
+        import('bootstrap/dist/js/bootstrap.bundle.min.js');
     }, []);
 
     // PERF: Bypass heavy providers for legal/public pages to improve load speed
