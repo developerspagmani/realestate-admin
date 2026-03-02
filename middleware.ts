@@ -172,61 +172,43 @@ export function middleware(request: NextRequest) {
     '/profile'
   ];
 
-  // Admin-only routes
+  // Admin routes: Base admin paths + shared routes
   const adminRoutes = [
-    '/realestate-admin/dashboard',
-    '/realestate-admin/workspace',
-    '/realestate-admin/workspaces',
-    '/realestate-admin/users',
-    '/realestate-admin/bookings',
-    '/realestate-admin/owners',
-    '/realestate-admin/properties',
-    '/realestate-admin/units',
-    '/realestate-admin/leads',
-    '/realestate-admin/property-3d',
-    '/realestate-admin/media-library',
-    '/realestate-admin/whatsapp-business',
     '/realestate-admin',
     '/cart',
     '/checkout',
-    '/booking-confirmation'
+    '/booking-confirmation',
+    '/profile',
+    '/user'
   ];
 
-  // owner-admin-only routes
+  // Owner routes: Base owner paths + shared routes
   const ownerRoutes = [
-    '/realestate-owner-admin/dashboard',
-    '/realestate-owner-admin/workspace',
-    '/realestate-owner-admin/workspaces',
-    '/realestate-owner-admin/bookings',
-    '/realestate-owner-admin/properties',
-    '/realestate-owner-admin/units',
-    '/realestate-owner-admin/users',
-    '/realestate-owner-admin/leads',
-    '/realestate-owner-admin/media-library',
-    '/realestate-owner-admin/marketing-tool',
-    '/realestate-owner-admin/settings',
     '/realestate-owner-admin',
-  ];
-
-  // Agent-only routes
-  const agentRoutes = [
-    '/realestate-agent/dashboard',
-    '/realestate-agent/leads',
-    '/realestate-agent/commissions',
-    '/realestate-agent/profile',
-    '/realestate-agent',
-  ];
-
-  // User-only routes
-  const userRoutes = [
-    '/user/dashboard',
-    '/user/cart',
-    '/user/checkout',
-    '/user/my-bookings',
-    '/user/profile',
     '/cart',
     '/checkout',
-    '/booking-confirmation'
+    '/booking-confirmation',
+    '/profile',
+    '/user'
+  ];
+
+  // Agent routes: Base agent paths + shared routes
+  const agentRoutes = [
+    '/realestate-agent',
+    '/cart',
+    '/checkout',
+    '/booking-confirmation',
+    '/profile',
+    '/user'
+  ];
+
+  // User routes: Base user paths + shared routes
+  const userRoutes = [
+    '/user',
+    '/cart',
+    '/checkout',
+    '/booking-confirmation',
+    '/profile'
   ];
 
   // Public exceptions inside protected paths
