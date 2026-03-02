@@ -79,7 +79,7 @@ function sanitizePath(pathname: string): string {
   return pathname.replace(/\.\./g, '').replace(/\/+/g, '/');
 }
 
-export default function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host');
   const pathname = sanitizePath(request.nextUrl.pathname);
 
