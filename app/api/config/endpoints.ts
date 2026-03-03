@@ -50,9 +50,18 @@ export async function makeApiCall(endpoint: string, options: RequestInit = {}) {
   }
 
   // Extract non-header options to pass to fetch
-  const { headers: _optionsHeaders, ...fetchOptions } = options;
+  const { headers: _optionsHeaders, tags: _tags, ...fetchOptions } = options as any;
 
   const isMutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method?.toUpperCase() || 'GET');
+  const skipCache = (options as any).skipCache === true;
+  const tags = (options as any).tags || [];
+
+  // Add cache control headers if skipping cache
+  if (skipCache) {
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    headers['Pragma'] = 'no-cache';
+    headers['Expires'] = '0';
+  }
 
   const isStandalone = typeof window !== 'undefined' && (
     window.location.pathname.includes('/standalone/') ||
@@ -65,10 +74,17 @@ export async function makeApiCall(endpoint: string, options: RequestInit = {}) {
       loadingState.show();
     }
 
-    // const skipCache = (options as any).skipCache === true;
+    // Determine cache strategy
+    // We disable browser-side force-cache because revalidateTag only works on the server.
+    // By using no-store on the client, we ensure every request reaches the server Route Handler.
+    const cacheStrategy: RequestCache = 'no-store';
+
+    if (tags.length > 0) {
+      headers['x-cache-tags'] = tags.join(',');
+    }
 
     const response = await fetch(url, {
-      ...(!isMutating ? { cache: 'force-cache', next: { revalidate: 0 } } : {}),
+      cache: cacheStrategy,
       ...fetchOptions,
       headers,
     });
@@ -411,6 +427,7 @@ export const agentEndpoints = {
   assignLead: () => '/agents/lead-assignments',
   getLeadAssignments: (id: string) => `/agents/${id}/lead-assignments`,
   unassignLead: (id: string) => `/agents/lead-assignments/${id}`,
+  sendCredentials: (id: string) => `/agents/${id}/send-credentials`,
   // Agent Dashboard (Role 4)
   getMyProfile: () => '/agents/my/profile',
   getMyLeads: () => '/agents/my/leads',

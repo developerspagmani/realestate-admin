@@ -20,9 +20,16 @@ export async function proxyRequest(request: NextRequest, endpoint: string) {
     // Ensure connection is handled correctly
     headers.set('Connection', 'keep-alive');
 
+    // Extract tags from custom header
+    const tagsHeader = request.headers.get('x-cache-tags');
+    const tags = tagsHeader ? tagsHeader.split(',').map(t => t.trim()) : [];
+
     const options: RequestInit = {
         method,
         headers,
+        // If it's a GET request with tags, we use the server-side data cache
+        cache: (method === 'GET' && tags.length > 0) ? 'force-cache' : 'no-store',
+        ...(tags.length > 0 ? { next: { tags } } : {}) as any
     };
 
     // Forward body for POST/PUT/PATCH

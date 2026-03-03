@@ -27,8 +27,19 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const [isSupportOpen, setIsSupportOpen] = useState(false);
+    const [showSupportModal, setShowSupportModal] = useState(false);
+    const [isSendingSupport, setIsSendingSupport] = useState(false);
+    const [supportForm, setSupportForm] = useState({
+        subject: '',
+        message: '',
+        priority: 'Medium'
+    });
+    const [attachments, setAttachments] = useState<File[]>([]);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const notifRef = useRef<HTMLDivElement>(null);
+    const supportRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
     const pathname = usePathname();
 
@@ -40,6 +51,9 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             }
             if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
                 setIsNotifOpen(false);
+            }
+            if (supportRef.current && !supportRef.current.contains(event.target as Node)) {
+                setIsSupportOpen(false);
             }
         };
         document.body.addEventListener('mousedown', handleClickOutside);
@@ -111,6 +125,46 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         if (window.confirm('Are you sure you want to log out?')) {
             logout();
             router.push('/login');
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const newFiles = Array.from(e.target.files);
+            setAttachments(prev => [...prev, ...newFiles]);
+        }
+    };
+
+    const removeAttachment = (index: number) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSupportSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSendingSupport(true);
+
+        try {
+            // In a real app, you would use a backend service or an email API like SendGrid/Mailgun
+            // For now, we simulate the process and show success.
+            console.log('Sending support ticket to support@virpanix.com', {
+                ...supportForm,
+                attachments: attachments.map(f => f.name),
+                userEmail: user?.email,
+                userName: user?.name
+            });
+
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            alert('Your support ticket has been sent to support@virpanix.com. We will get back to you soon.');
+            setShowSupportModal(false);
+            setSupportForm({ subject: '', message: '', priority: 'Medium' });
+            setAttachments([]);
+        } catch (error) {
+            console.error('Error sending support ticket:', error);
+            alert('Failed to send support ticket. Please try again later.');
+        } finally {
+            setIsSendingSupport(false);
         }
     };
 
@@ -265,8 +319,8 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     const profilePath = isAgent ? '/realestate-agent/profile' : '/user/profile';
 
     return (
-        <header className="admin-header bg-white border-bottom sticky-top shadow-sm px-3 px-md-4">
-            <div className="d-flex align-items-center justify-content-between h-100" style={{ height: '70px' }}>
+        <header className="admin-header bg-white border-bottom sticky-top shadow-sm">
+            <div className="d-flex align-items-center justify-content-between h-100" style={{ height: '80px' }}>
 
                 {/* Mobile Menu Toggle */}
                 <button
@@ -424,14 +478,84 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
                     {/* Quick Utils */}
                     <div className="d-flex align-items-center gap-2 border-end pe-3 me-2">
-                        <button className="btn btn-icon btn-light-soft rounded-3 position-relative" title="Quick Support">
-                            <i className="bi bi-question-circle text-muted"></i>
-                        </button>
+                        <div className="position-relative" ref={supportRef}>
+                            <button
+                                className={`btn btn-icon rounded-3 ${isSupportOpen ? 'btn-primary text-white shadow-sm' : 'btn-light-soft text-muted'}`}
+                                title="Quick Support"
+                                onClick={() => {
+                                    setIsSupportOpen(!isSupportOpen);
+                                    setIsNotifOpen(false);
+                                }}
+                            >
+                                <i className="bi bi-question-circle"></i>
+                            </button>
+
+                            {isSupportOpen && (
+                                <div className="dropdown-menu show border-0 shadow-lg mt-2 p-3 rounded-4 animate-fade-in" style={{ width: '260px', position: 'absolute', right: 0, zIndex: 1050 }}>
+                                    <div className="pb-2 mb-2 border-bottom">
+                                        <h6 className="fw-bold mb-0">Quick Support</h6>
+                                        <p className="extra-small text-muted mb-0">How can we help you today?</p>
+                                    </div>
+
+                                    <div className="d-flex flex-column gap-1">
+                                        <Link href="/docs" className="dropdown-item d-flex align-items-center gap-3 py-2 px-3 border-0">
+                                            <div className="rounded-circle bg-primary bg-opacity-10 p-2 d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                                                <i className="bi bi-book text-white small"></i>
+                                            </div>
+                                            <div>
+                                                <div className="fw-bold fs-14">Documentation</div>
+                                                <div className="extra-small text-muted">Step-by-step guides</div>
+                                            </div>
+                                        </Link>
+
+                                        <button
+                                            onClick={() => {
+                                                setShowSupportModal(true);
+                                                setIsSupportOpen(false);
+                                            }}
+                                            className="dropdown-item d-flex align-items-center gap-3 py-2 px-3 border-0 bg-transparent text-start m-0"
+                                        >
+                                            <div className="rounded-circle bg-success bg-opacity-10 p-2 d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                                                <i className="bi bi-ticket-perforated text-success small"></i>
+                                            </div>
+                                            <div>
+                                                <div className="fw-bold fs-14">Support Ticket</div>
+                                                <div className="extra-small text-muted">Report an issue</div>
+                                            </div>
+                                        </button>
+
+                                        <Link href="/tutorials" className="dropdown-item d-flex align-items-center gap-3 py-2 px-3 border-0">
+                                            <div className="rounded-circle bg-danger bg-opacity-10 p-2 d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                                                <i className="bi bi-play-circle text-danger small"></i>
+                                            </div>
+                                            <div>
+                                                <div className="fw-bold fs-14">Video Tutorials</div>
+                                                <div className="extra-small text-muted">Learn features fast</div>
+                                            </div>
+                                        </Link>
+
+                                        <div className="mt-2 pt-2 border-top">
+                                            <div className="d-flex justify-content-between align-items-center px-2">
+                                                <span className="extra-small fw-bold text-muted text-uppercase">System Status</span>
+                                                <div className="d-flex align-items-center gap-1">
+                                                    <span className="bg-success rounded-circle" style={{ width: '6px', height: '6px' }}></span>
+                                                    <span className="extra-small text-success fw-bold">Online</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="position-relative" ref={notifRef}>
                             <button
-                                className="btn btn-icon btn-light-soft rounded-3 position-relative"
+                                className={`btn btn-icon rounded-3 ${isNotifOpen ? 'btn-primary text-white shadow-sm' : 'btn-light-soft text-muted'}`}
                                 title="Notifications"
-                                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                                onClick={() => {
+                                    setIsNotifOpen(!isNotifOpen);
+                                    setIsSupportOpen(false);
+                                }}
                             >
                                 <i className="bi bi-bell text-muted"></i>
                                 {unreadCount > 0 && (
@@ -529,9 +653,139 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 </div>
             </div>
 
+            {/* Support Ticket Modal */}
+            {showSupportModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', zIndex: 2000 }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                            <form onSubmit={handleSupportSubmit}>
+                                <div className="modal-header bg-primary text-white border-0 p-4">
+                                    <div className="d-flex align-items-center gap-3">
+                                        <div className="bg-white bg-opacity-20 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }}>
+                                            <i className="bi bi-envelope-fill fs-4 text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <h5 className="modal-title fw-bold text-white">Support Center</h5>
+                                            <div className="d-flex flex-column">
+                                                <p className="extra-small mb-0 opacity-75 text-white">Submit a ticket to support@virpanix.com</p>
+                                                <div className="d-flex align-items-center gap-2 mt-1">
+                                                    <i className="bi bi-clock-history text-white opacity-75 extra-small"></i>
+                                                    <p className="extra-small mb-0 text-white" style={{ fontSize: '11px' }}>
+                                                        Live Service: 9:00 AM - 9:00 PM IST (GMT+5:30)
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" className="btn-close btn-close-white" onClick={() => setShowSupportModal(false)}></button>
+                                </div>
+
+                                <div className="modal-body p-4">
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold text-muted">Subject</label>
+                                        <input
+                                            type="text"
+                                            className="form-control bg-light border-0 py-2 rounded-3"
+                                            placeholder="What can we help you with?"
+                                            required
+                                            value={supportForm.subject}
+                                            onChange={(e) => setSupportForm({ ...supportForm, subject: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold text-muted">Priority</label>
+                                        <select
+                                            className="form-select bg-light border-0 py-2 rounded-3"
+                                            value={supportForm.priority}
+                                            onChange={(e) => setSupportForm({ ...supportForm, priority: e.target.value })}
+                                        >
+                                            <option value="Low">Low - General Question</option>
+                                            <option value="Medium">Medium - Feature Issue</option>
+                                            <option value="High">High - Urgent Bug</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold text-muted">Message</label>
+                                        <textarea
+                                            className="form-control bg-light border-0 py-2 rounded-3"
+                                            rows={4}
+                                            placeholder="Please describe your issue or question in detail..."
+                                            required
+                                            value={supportForm.message}
+                                            onChange={(e) => setSupportForm({ ...supportForm, message: e.target.value })}
+                                        ></textarea>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold text-muted">Attachments (Images/Docs)</label>
+                                        <div
+                                            className="border-2 border-dashed rounded-3 p-4 text-center cursor-pointer hover-bg-light transition-all"
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            <i className="bi bi-cloud-arrow-up fs-2 text-primary mb-2 d-block"></i>
+                                            <div className="fw-bold small">Click to upload files</div>
+                                            <div className="extra-small text-muted">Images, PDF, DOCX etc.</div>
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                className="d-none"
+                                                multiple
+                                                onChange={handleFileChange}
+                                            />
+                                        </div>
+
+                                        {attachments.length > 0 && (
+                                            <div className="mt-3 d-flex flex-wrap gap-2">
+                                                {attachments.map((file, idx) => (
+                                                    <div key={idx} className="badge bg-light border text-dark p-2 d-flex align-items-center gap-2 rounded-3">
+                                                        <i className={`bi ${file.type.startsWith('image/') ? 'bi-image' : 'bi-file-earmark-text'}`}></i>
+                                                        <span className="extra-small text-truncate" style={{ maxWidth: '100px' }}>{file.name}</span>
+                                                        <i className="bi bi-x-circle-fill text-danger cursor-pointer" onClick={() => removeAttachment(idx)}></i>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="modal-footer border-0 p-4 pt-0">
+                                    <button
+                                        type="button"
+                                        className="btn btn-light px-4 py-2 rounded-3 fw-bold"
+                                        onClick={() => setShowSupportModal(false)}
+                                        disabled={isSendingSupport}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary px-4 py-2 rounded-3 fw-bold d-flex align-items-center gap-2"
+                                        disabled={isSendingSupport}
+                                    >
+                                        {isSendingSupport ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm"></span>
+                                                Sending...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <i className="bi bi-send-fill"></i>
+                                                Send Ticket
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style jsx>{`
                 .admin-header {
-                    height: 70px;
+                    height: 80px;
                     z-index: 999;
                 }
                 .fs-14 { font-size: 14px; }

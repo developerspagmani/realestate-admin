@@ -1,49 +1,43 @@
-import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 
 /**
- * POST /api/revalidate
- * Body: { slug: string }
- *
- * Forces Next.js to purge the ISR cache for all standalone pages
- * belonging to the given website slug. Called from the WebsiteForm
- * "Clear Cache" button so admins can immediately see setting changes
- * (e.g. currency, theme, hero content) on the public-facing site.
+ * Server-side API Route for on-demand cache revalidation.
+ * This route allows the client component (via cacheManager) to trigger
+ * the server-only revalidateTag function.
  */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const slug = body?.slug as string | undefined;
+        const { tags } = body;
 
-        if (!slug) {
-            return NextResponse.json(
-                { success: false, message: 'slug is required' },
-                { status: 400 }
-            );
+        if (!tags || !Array.isArray(tags)) {
+            return NextResponse.json({
+                success: false,
+                message: 'No tags provided. Expected an array of tags.'
+            }, { status: 400 });
         }
 
-        // Revalidate all standalone routes that use this website slug
-        const paths = [
-            `/standalone/${slug}`,
-            `/standalone/${slug}/p/[propertySlug]`,
-            `/standalone/${slug}/u/[unitSlug]`,
-        ];
+        // We only revalidate valid tag strings
+        const validTags = tags.filter(tag => typeof tag === 'string');
 
-        for (const path of paths) {
-            revalidatePath(path);
+        // Execute revalidation for each tag
+        for (const tag of validTags) {
+            console.log(`[Cache] Server-side revalidation triggered for tag: ${tag}`);
+            (revalidateTag as any)(tag);
         }
 
         return NextResponse.json({
             success: true,
-            revalidated: true,
-            paths,
-            timestamp: new Date().toISOString(),
+            message: `Revalidated ${validTags.length} tags: ${validTags.join(', ')}`,
+            timestamp: new Date().toISOString()
         });
-    } catch (err: any) {
-        console.error('[revalidate] Error:', err);
-        return NextResponse.json(
-            { success: false, message: err?.message || 'Revalidation failed' },
-            { status: 500 }
-        );
+
+    } catch (error) {
+        console.error('[Cache] Revalidation route error:', error);
+        return NextResponse.json({
+            success: false,
+            message: 'Failed to revalidate cache. Server error.'
+        }, { status: 500 });
     }
 }

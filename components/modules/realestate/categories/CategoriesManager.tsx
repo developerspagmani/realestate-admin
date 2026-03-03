@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { categoryService, getAuthToken } from '@/app/services/api';
+import { categoryService, propertyService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import Loader from '@/components/common/Loader';
@@ -43,6 +43,11 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         message: '',
         type: 'success'
     });
+    const [modalTab, setModalTab] = useState<'details' | 'properties'>('details');
+    const [assignedProperties, setAssignedProperties] = useState<any[]>([]);
+    const [availableProperties, setAvailableProperties] = useState<any[]>([]);
+    const [propSearchTerm, setPropSearchTerm] = useState('');
+    const [isLoadingProps, setIsLoadingProps] = useState(false);
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -82,7 +87,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         }
     }, [mounted, isAuthenticated]);
 
-    const loadCategories = async () => {
+    const loadCategories = async (syncEditingId?: string) => {
         try {
             setLoading(true);
             const token = getAuthToken();
@@ -90,13 +95,109 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
 
             const response = await categoryService.getCategories(token);
             if (response.success) {
-                setCategories(response.data.categories || []);
+                const fetchedCategories = response.data.categories || [];
+                setCategories(fetchedCategories);
+
+                // Keep editingCategory in sync with the list
+                if (syncEditingId) {
+                    const updated = fetchedCategories.find((c: any) => c.id === syncEditingId);
+                    if (updated) setEditingCategory(updated);
+                }
             }
         } catch (error) {
             console.error('Failed to load categories:', error);
             showToast('Failed to load categories', 'error');
         } finally {
             setLoading(false);
+        }
+    };
+    const loadCategoryProperties = async (categoryId: string) => {
+        try {
+            setIsLoadingProps(true);
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = (activeTenantId || (user as any)?.tenantId) as string;
+            const res = await propertyService.getProperties(token, {
+                tenantId: tenantId ?? undefined,
+                categoryId: categoryId
+            } as any);
+            if (res.success) {
+                setAssignedProperties(res.data.properties || []);
+            }
+        } catch (error) {
+            console.error('Failed to load category properties:', error);
+        } finally {
+            setIsLoadingProps(false);
+        }
+    };
+
+    const searchAvailableProperties = async (search: string) => {
+        if (!search.trim()) {
+            setAvailableProperties([]);
+            return;
+        }
+        try {
+            setIsLoadingProps(true);
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = (activeTenantId || (user as any)?.tenantId) as string;
+            const res = await propertyService.getProperties(token, {
+                tenantId: tenantId ?? undefined,
+                search: search
+            });
+            if (res.success) {
+                // Filter out properties already assigned to this category
+                const props = (res.data.properties || []).filter(
+                    (p: any) => p.categoryId !== editingCategory?.id
+                );
+                setAvailableProperties(props);
+            }
+        } catch (error) {
+            console.error('Failed to search properties:', error);
+        } finally {
+            setIsLoadingProps(false);
+        }
+    };
+
+    useEffect(() => {
+        if (showModal && editingCategory && modalTab === 'properties') {
+            loadCategoryProperties(editingCategory.id);
+        }
+    }, [showModal, editingCategory, modalTab]);
+
+    const handleAssignProperty = async (propertyId: string) => {
+        if (!editingCategory) return;
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = activeTenantId || (user as any)?.tenantId;
+            await propertyService.updateProperty(token, propertyId, { categoryId: editingCategory.id } as any, tenantId as string);
+            showToast('Property assigned to category');
+            loadCategoryProperties(editingCategory.id);
+            if (propSearchTerm) searchAvailableProperties(propSearchTerm);
+            loadCategories(editingCategory.id); // Refresh and sync editingCategory for accurate counts
+        } catch (error) {
+            console.error('Failed to assign property:', error);
+            showToast('Failed to assign property', 'error');
+        }
+    };
+
+    const handleUnassignProperty = async (propertyId: string) => {
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = activeTenantId || (user as any)?.tenantId;
+            await propertyService.updateProperty(token, propertyId, { categoryId: null } as any, tenantId as string);
+            showToast('Property removed from category');
+            if (editingCategory) {
+                loadCategoryProperties(editingCategory.id);
+                loadCategories(editingCategory.id); // Refresh and sync
+            } else {
+                loadCategories();
+            }
+        } catch (error) {
+            console.error('Failed to unassign property:', error);
+            showToast('Failed to unassign property', 'error');
         }
     };
 
@@ -116,6 +217,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
             sortOrder: category.sortOrder || 0,
             status: category.status
         });
+        setModalTab('details');
         setShowModal(true);
     };
 
@@ -174,6 +276,10 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         setShowModal(false);
         setEditingCategory(null);
         setFormData({ name: '', description: '', icon: 'bi-folder', parentId: '', sortOrder: 0, status: 1 });
+        setModalTab('details');
+        setAssignedProperties([]);
+        setAvailableProperties([]);
+        setPropSearchTerm('');
     };
 
     // Get parent categories (excluding the one being edited)
@@ -201,7 +307,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                     <h1 className="fw-bold text-dark h3">Property Categories</h1>
                     <button
                         className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm"
-                        onClick={() => { setEditingCategory(null); setShowModal(true); }}
+                        onClick={() => { setEditingCategory(null); setModalTab('details'); setShowModal(true); }}
                     >
                         <i className="bi bi-plus-circle"></i>
                         Add Category
@@ -252,7 +358,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                                     <div className="card-body p-4">
                                         <div className="d-flex justify-content-between align-items-start mb-3">
                                             <div className="rounded-circle bg-primary bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px' }}>
-                                                <i className={`bi ${category.icon || 'bi-folder'} fs-4 text-primary`}></i>
+                                                <i className={`bi ${category.icon || 'bi-folder'} fs-4 text-white`}></i>
                                             </div>
                                             {(mode === 'admin' || category.tenantId) && (
                                                 <div className="dropdown">
@@ -363,115 +469,237 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                 <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1050 }}>
                     <div className="modal-dialog modal-dialog-centered modal-lg">
                         <div className="modal-content border-0 shadow-lg rounded-4">
-                            <div className="modal-header border-0 p-4">
-                                <h5 className="modal-title fw-bold">
-                                    {editingCategory ? 'Edit Category' : 'Add New Category'}
-                                </h5>
-                                <button type="button" className="btn-close" onClick={handleCloseModal}></button>
+                            <div className="modal-header border-0 p-4 pb-2">
+                                <div className="w-100">
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 className="modal-title fw-bold">
+                                            {editingCategory ? 'Edit Category' : 'Add New Category'}
+                                        </h5>
+                                        <button type="button" className="btn-close" onClick={handleCloseModal}></button>
+                                    </div>
+                                    {editingCategory && (
+                                        <ul className="nav nav-pills small fw-bold bg-light p-1 rounded-3 d-inline-flex">
+                                            <li className="nav-item">
+                                                <button
+                                                    type="button"
+                                                    className={`nav-link border-0 px-4 py-2 rounded-2 ${modalTab === 'details' ? 'bg-white shadow-sm text-white active' : 'text-muted'}`}
+                                                    onClick={() => setModalTab('details')}
+                                                >
+                                                    <i className="bi bi-info-circle me-2"></i>Details
+                                                </button>
+                                            </li>
+                                            <li className="nav-item">
+                                                <button
+                                                    type="button"
+                                                    className={`nav-link border-0 px-4 py-2 rounded-2 ${modalTab === 'properties' ? 'bg-white shadow-sm text-white active' : 'text-muted'}`}
+                                                    onClick={() => setModalTab('properties')}
+                                                >
+                                                    <i className="bi bi-building me-2"></i>Properties ({editingCategory._count?.properties || 0})
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    )}
+                                </div>
                             </div>
-                            <form onSubmit={handleSubmit}>
-                                <div className="modal-body p-4 pt-0">
-                                    <div className="row">
-                                        <div className="col-md-8">
-                                            <div className="mb-3">
-                                                <label className="form-label small fw-bold text-muted">Category Name *</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-control bg-light border-0"
-                                                    value={formData.name}
-                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    required
-                                                    placeholder="e.g. Luxury Villas"
-                                                />
-                                            </div>
-                                            <div className="mb-3">
-                                                <label className="form-label small fw-bold text-muted">Description</label>
-                                                <textarea
-                                                    className="form-control bg-light border-0"
-                                                    rows={3}
-                                                    value={formData.description}
-                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                    placeholder="Brief description of this category..."
-                                                />
-                                            </div>
-                                            <div className="row">
-                                                <div className="col-md-6 mb-3">
-                                                    <label className="form-label small fw-bold text-muted">Parent Category</label>
-                                                    <select
-                                                        className="form-select bg-light border-0"
-                                                        value={formData.parentId}
-                                                        onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
-                                                    >
-                                                        <option value="">None (Top Level)</option>
-                                                        {getAvailableParentCategories().map(cat => (
-                                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className="col-md-3 mb-3">
-                                                    <label className="form-label small fw-bold text-muted">Sort Order</label>
-                                                    <input
-                                                        type="number"
-                                                        className="form-control bg-light border-0"
-                                                        value={formData.sortOrder}
-                                                        onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
-                                                        min={0}
-                                                    />
-                                                </div>
-                                                <div className="col-md-3 mb-3">
-                                                    <label className="form-label small fw-bold text-muted">Status</label>
-                                                    <select
-                                                        className="form-select bg-light border-0"
-                                                        value={formData.status}
-                                                        onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
-                                                    >
-                                                        <option value={1}>Active</option>
-                                                        <option value={2}>Inactive</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="col-md-4">
-                                            <label className="form-label small fw-bold text-muted">Select Icon</label>
-                                            <div className="bg-light rounded-3 p-3" style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                                                <div className="d-flex flex-wrap gap-2">
-                                                    {popularIcons.map(icon => (
-                                                        <button
-                                                            key={icon}
-                                                            type="button"
-                                                            className={`btn btn-sm ${formData.icon === icon ? 'btn-primary' : 'btn-outline-secondary'}`}
-                                                            onClick={() => setFormData({ ...formData, icon })}
-                                                        >
-                                                            <i className={`bi ${icon}`}></i>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="mt-3">
-                                                <label className="form-label small fw-bold text-muted">Or enter custom icon</label>
-                                                <div className="input-group">
-                                                    <span className="input-group-text bg-light border-0">
-                                                        <i className={`bi ${formData.icon}`}></i>
-                                                    </span>
+
+                            {modalTab === 'details' ? (
+                                <form onSubmit={handleSubmit}>
+                                    <div className="modal-body p-4 pt-0">
+                                        <div className="row">
+                                            <div className="col-md-8">
+                                                <div className="mb-3">
+                                                    <label className="form-label small fw-bold text-muted">Category Name *</label>
                                                     <input
                                                         type="text"
                                                         className="form-control bg-light border-0"
-                                                        value={formData.icon}
-                                                        onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                                                        placeholder="bi-folder"
+                                                        value={formData.name}
+                                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                        required
+                                                        placeholder="e.g. Luxury Villas"
                                                     />
+                                                </div>
+                                                <div className="mb-3">
+                                                    <label className="form-label small fw-bold text-muted">Description</label>
+                                                    <textarea
+                                                        className="form-control bg-light border-0"
+                                                        rows={3}
+                                                        value={formData.description}
+                                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                        placeholder="Brief description of this category..."
+                                                    />
+                                                </div>
+                                                <div className="row">
+                                                    <div className="col-md-6 mb-3">
+                                                        <label className="form-label small fw-bold text-muted">Parent Category</label>
+                                                        <select
+                                                            className="form-select bg-light border-0"
+                                                            value={formData.parentId}
+                                                            onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
+                                                        >
+                                                            <option value="">None (Top Level)</option>
+                                                            {getAvailableParentCategories().map(cat => (
+                                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="col-md-3 mb-3">
+                                                        <label className="form-label small fw-bold text-muted">Sort Order</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control bg-light border-0"
+                                                            value={formData.sortOrder}
+                                                            onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                                                            min={0}
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-3 mb-3">
+                                                        <label className="form-label small fw-bold text-muted">Status</label>
+                                                        <select
+                                                            className="form-select bg-light border-0"
+                                                            value={formData.status}
+                                                            onChange={(e) => setFormData({ ...formData, status: parseInt(e.target.value) })}
+                                                        >
+                                                            <option value={1}>Active</option>
+                                                            <option value={2}>Inactive</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-4">
+                                                <label className="form-label small fw-bold text-muted">Select Icon</label>
+                                                <div className="bg-light rounded-3 p-3" style={{ maxHeight: '220px', overflowY: 'auto' }}>
+                                                    <div className="d-flex flex-wrap gap-2">
+                                                        {popularIcons.map(icon => (
+                                                            <button
+                                                                key={icon}
+                                                                type="button"
+                                                                className={`btn btn-sm ${formData.icon === icon ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                                                onClick={() => setFormData({ ...formData, icon })}
+                                                            >
+                                                                <i className={`bi ${icon}`}></i>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3">
+                                                    <label className="form-label small fw-bold text-muted">Or enter custom icon</label>
+                                                    <div className="input-group">
+                                                        <span className="input-group-text bg-light border-0">
+                                                            <i className={`bi ${formData.icon}`}></i>
+                                                        </span>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control bg-light border-0"
+                                                            value={formData.icon}
+                                                            onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                                                            placeholder="bi-folder"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                    <div className="modal-footer border-0 p-4 pt-0">
+                                        <button type="button" className="btn btn-light" onClick={handleCloseModal}>Cancel</button>
+                                        <button type="submit" className="btn btn-primary px-4" disabled={isSubmitting}>
+                                            {isSubmitting ? 'Saving...' : 'Save Category'}
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="modal-body p-4 pt-0">
+                                    <div className="mb-4">
+                                        <label className="form-label small fw-bold text-muted text-uppercase mb-3">Currently Assigned Properties</label>
+                                        <div className="assigned-props-list rounded-4 border bg-light p-3" style={{ minHeight: '150px', maxHeight: '300px', overflowY: 'auto' }}>
+                                            {isLoadingProps && assignedProperties.length === 0 ? (
+                                                <div className="text-center py-4 text-muted small">Loading...</div>
+                                            ) : assignedProperties.length === 0 ? (
+                                                <div className="text-center py-4 text-muted small">
+                                                    <i className="bi bi-building-dash d-block fs-2 mb-2 opacity-50"></i>
+                                                    No properties assigned to this category.
+                                                </div>
+                                            ) : (
+                                                <div className="d-flex flex-column gap-2">
+                                                    {assignedProperties.map(prop => (
+                                                        <div key={prop.id} className="d-flex justify-content-between align-items-center bg-white p-2 px-3 rounded-3 shadow-sm border">
+                                                            <div className="d-flex align-items-center gap-3">
+                                                                <div className="rounded bg-primary bg-opacity-10 p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                                    <i className="bi bi-building text-white"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <div className="fw-bold small">{prop.title || prop.name}</div>
+                                                                    <div className="extra-small text-muted">{prop.city}, {prop.state}</div>
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                                                                title="Unassign"
+                                                                onClick={() => handleUnassignProperty(prop.id)}
+                                                            >
+                                                                <i className="bi bi-x-circle"></i>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label small fw-bold text-muted text-uppercase mb-3">Assign New Properties</label>
+                                        <div className="input-group mb-3 shadow-sm">
+                                            <span className="input-group-text bg-white border-end-0">
+                                                <i className="bi bi-search text-muted"></i>
+                                            </span>
+                                            <input
+                                                type="text"
+                                                className="form-control border-start-0 ps-0"
+                                                placeholder="Search properties by name..."
+                                                value={propSearchTerm}
+                                                onChange={(e) => {
+                                                    setPropSearchTerm(e.target.value);
+                                                    searchAvailableProperties(e.target.value);
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="search-results rounded-4 border p-3" style={{ minHeight: '100px', maxHeight: '250px', overflowY: 'auto' }}>
+                                            {!propSearchTerm ? (
+                                                <div className="text-center py-4 text-muted small">Enter property name to search...</div>
+                                            ) : isLoadingProps ? (
+                                                <div className="text-center py-4 text-muted small">Searching...</div>
+                                            ) : availableProperties.length === 0 ? (
+                                                <div className="text-center py-4 text-muted small">No available properties found matching "{propSearchTerm}"</div>
+                                            ) : (
+                                                <div className="d-flex flex-column gap-2">
+                                                    {availableProperties.map(prop => (
+                                                        <div key={prop.id} className="d-flex justify-content-between align-items-center p-2 px-3 rounded-3 border-bottom">
+                                                            <div>
+                                                                <div className="fw-bold small">{prop.title || prop.name}</div>
+                                                                <div className="extra-small text-muted">
+                                                                    {prop.city}, {prop.state}
+                                                                    {prop.category && <span className="ms-2 badge bg-light text-dark border">Currently: {prop.category.name}</span>}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-sm btn-primary rounded-pill px-3 fw-bold"
+                                                                onClick={() => handleAssignProperty(prop.id)}
+                                                            >
+                                                                Assign
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="modal-footer border-0 p-4 pt-0">
+                                        <button type="button" className="btn btn-primary px-4" onClick={handleCloseModal}>Done</button>
+                                    </div>
                                 </div>
-                                <div className="modal-footer border-0 p-4 pt-0">
-                                    <button type="button" className="btn btn-light" onClick={handleCloseModal}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary px-4" disabled={isSubmitting}>
-                                        {isSubmitting ? 'Saving...' : 'Save Category'}
-                                    </button>
-                                </div>
-                            </form>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -109,6 +109,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-admin/media-library', label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' },
             { href: '/realestate-admin/plot-map', label: 'Plot Map Manager', icon: 'bi-map-fill', active: activePage === 'plot-map' },
             { href: '/realestate-admin/property-3d', label: '3D Architect Pro', icon: 'bi-vector-pen', active: activePage === 'property-3d' },
+            { href: '/realestate-admin/brochures', label: 'Brochure Intelligent', icon: 'bi-file-earmark-pdf-fill', active: activePage === 'brochures' },
             { href: '/realestate-admin/amenities', label: 'Amenities', icon: 'bi-ui-checks-grid', active: activePage === 'amenities' },
             { href: '/realestate-admin/categories', label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },
           ]
@@ -196,7 +197,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-owner-admin/categories', label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },
           ]
         },
-        ...(hasModule('marketing_hub') || hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') || hasModule('widget_creator') || hasModule('website_cms') || hasModule('discovery') || hasModule('analytics_pro') || hasModule('portal_market') || hasModule('deal_intelligence') ? [{
+        ...(hasModule('marketing_hub') || hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') || hasModule('widget_creator') || hasModule('website_cms') || hasModule('discovery') || hasModule('analytics_pro') || hasModule('portal_market') || hasModule('deal_intelligence') || hasModule('brochure_ai') ? [{
           title: 'Premium Channels',
           items: [
             ...(hasModule('marketing_hub') ? [
@@ -250,6 +251,9 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             ] : []),
             ...(hasModule('discovery') ? [
               { href: '/realestate-owner-admin/chatbot-config', label: 'AI Agent Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
+            ] : []),
+            ...(hasModule('brochure_ai') ? [
+              { href: '/realestate-owner-admin/brochures', label: 'Brochure Intelligent', icon: 'bi-robot', active: activePage === 'brochure-ai' },
             ] : []),
             ...(hasModule('widget_creator') ? [
               { href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' },

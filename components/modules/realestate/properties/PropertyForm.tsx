@@ -6,6 +6,8 @@ import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MapView from '@/components/common/MapView';
 import MediaSelector from '@/components/shared/MediaSelector';
+import CountrySelect from '@/components/common/CountrySelect';
+import SearchableSelect from '@/components/common/SearchableSelect';
 
 interface PropertyFormProps {
     initialData?: Property | null;
@@ -39,7 +41,7 @@ export default function PropertyForm({
         addressLine2: '',
         city: '',
         state: '',
-        country: 'USA',
+        country: 'United States',
         zipCode: '',
         latitude: 0,
         longitude: 0,
@@ -76,7 +78,7 @@ export default function PropertyForm({
                 addressLine2: (initialData as any).addressLine2 || '',
                 city: initialData.city,
                 state: initialData.state,
-                country: (initialData as any).country || 'USA',
+                country: (initialData as any).country || 'United States',
                 zipCode: initialData.zipCode,
                 latitude: (initialData as any).latitude || 0,
                 longitude: (initialData as any).longitude || 0,
@@ -241,12 +243,12 @@ export default function PropertyForm({
                         </div>
                         <div className="col-md-4">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Category</label>
-                            <select className="form-select bg-light border-0" value={(formData as any).categoryId || ''} onChange={e => setFormData({ ...formData, categoryId: e.target.value } as any)}>
-                                <option value="">No Category</option>
-                                {categories.filter(c => c.status === 1).map(cat => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                            </select>
+                            <SearchableSelect
+                                options={categories.filter(c => c.status === 1).map(c => ({ id: c.id, name: c.name }))}
+                                value={(formData as any).categoryId || ''}
+                                onChange={val => setFormData({ ...formData, categoryId: val } as any)}
+                                placeholder="Select Category..."
+                            />
                         </div>
                         <div className="col-md-4">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Status</label>
@@ -564,7 +566,10 @@ export default function PropertyForm({
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Country</label>
-                            <input type="text" className="form-control bg-light border-0" value={(formData as any).country || ''} onChange={e => setFormData({ ...formData, country: e.target.value } as any)} placeholder="e.g. India" />
+                            <CountrySelect
+                                value={(formData as any).country || ''}
+                                onChange={val => setFormData({ ...formData, country: val } as any)}
+                            />
                         </div>
 
                         {/* Map */}

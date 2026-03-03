@@ -152,6 +152,17 @@ export interface User {
   tenantId?: string;
   createdAt: string;
   lastLogin?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  zipCode?: string;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+  website?: string;
+  password?: string;
 }
 
 export interface Booking {

@@ -9,6 +9,7 @@ import { Seats, Property, MediaItem } from '@/types';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import MediaSelector from '@/components/shared/MediaSelector';
+import Loader from '@/components/common/Loader';
 
 interface UnitsManagerProps {
     mode: 'admin' | 'owner';
@@ -55,6 +56,10 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const [filterType, setFilterType] = useState<string>('all');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [loading, setLoading] = useState(true);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalUnits, setTotalUnits] = useState(0);
+    const [statusCounts, setStatusCounts] = useState({ available: 0, occupied: 0, maintenance: 0, sold: 0 });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
     const [filterProperty, setFilterProperty] = useState<string>(searchParams.get('propertyId') || 'all');
@@ -85,7 +90,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         if (!mounted) return;
         if (!isAuthenticated || !user) { router.push('/login'); return; }
         loadData();
-    }, [user, isAuthenticated, mounted, router, urlPropertyId, activeTenantId, activeOwnerId, tenantType]);
+    }, [user, isAuthenticated, mounted, router, urlPropertyId, activeTenantId, activeOwnerId, tenantType, currentPage, itemsPerPage, filterType, filterStatus, filterProperty, searchTerm]);
 
     // ── DATA LOADING ──────────────────────────────────────────────────────────
 
@@ -117,12 +122,26 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             const unitsParams: any = {
                 tenantId: tenantId || undefined,
                 industryType,
+                page: currentPage.toString(),
+                limit: itemsPerPage.toString(),
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId }),
             };
             if (urlPropertyId) unitsParams.propertyId = urlPropertyId;
+            if (filterType !== 'all') {
+                const catMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
+                unitsParams.unitCategory = catMap[filterType as keyof typeof catMap] || 1;
+            }
+            if (filterStatus !== 'all') {
+                const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
+                unitsParams.status = statusMap[filterStatus as keyof typeof statusMap] || 1;
+            }
+            if (filterProperty !== 'all') unitsParams.propertyId = filterProperty;
+            if (searchTerm) unitsParams.search = searchTerm;
 
             const unitsRes = await unitService.getUnits(token, unitsParams);
             if (unitsRes.success && unitsRes.data?.units) {
+                setTotalUnits(unitsRes.data.pagination?.total || unitsRes.data.units.length);
+                if (unitsRes.data.counts) setStatusCounts(unitsRes.data.counts);
                 setUnits(unitsRes.data.units.map((u: any) => {
                     const prop = loadedProperties.find(p => p.id === u.propertyId);
                     const fixed = u.unitPricing?.find((p: any) => p.pricingModel === 1)?.price || 0;
@@ -171,13 +190,11 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
     // ── FILTERS ───────────────────────────────────────────────────────────────
 
-    const filteredUnits = units.filter(unit => {
-        const matchesSearch = unit.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = filterType === 'all' || unit.type === filterType;
-        const matchesStatus = filterStatus === 'all' || unit.status === filterStatus;
-        const matchesProp = filterProperty === 'all' || unit.spaceId === filterProperty;
-        return matchesSearch && matchesType && matchesStatus && matchesProp;
-    });
+    const totalPages = Math.ceil(totalUnits / itemsPerPage);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterType, filterStatus, filterProperty, itemsPerPage]);
 
     // ── VIEW TRANSITIONS ──────────────────────────────────────────────────────
 
@@ -375,8 +392,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
     const handleExport = () => {
         const exportList = selectedUnits.length > 0
-            ? filteredUnits.filter(u => selectedUnits.includes(u.id))
-            : filteredUnits;
+            ? units.filter(u => selectedUnits.includes(u.id))
+            : units;
         if (exportList.length === 0) { showToast('No units to export', 'error'); return; }
         const headers = ['Unit Code', 'Property', 'Type', 'Price', 'Monthly Rent', 'Sqft', 'Floor', 'Bedrooms', 'Bathrooms', 'Status'];
         const rows = exportList.map(u => [
@@ -459,7 +476,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     // ── SELECTION ─────────────────────────────────────────────────────────────
 
     const toggleSelectAll = () => {
-        setSelectedUnits(selectedUnits.length === filteredUnits.length ? [] : filteredUnits.map(u => u.id));
+        setSelectedUnits(selectedUnits.length === units.length ? [] : units.map(u => u.id));
     };
     const toggleSelect = (id: string) => {
         setSelectedUnits(prev => prev.includes(id) ? prev.filter(uid => uid !== id) : [...prev, id]);
@@ -810,11 +827,11 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
     // ── STATS ─────────────────────────────────────────────────────────────────
     const unitStats = {
-        total: units.length,
-        available: units.filter(u => u.status === 'available').length,
-        occupied: units.filter(u => u.status === 'occupied').length,
-        maintenance: units.filter(u => u.status === 'maintenance').length,
-        sold: units.filter(u => u.status === 'sold').length,
+        total: totalUnits,
+        available: statusCounts.available,
+        occupied: statusCounts.occupied,
+        maintenance: statusCounts.maintenance,
+        sold: statusCounts.sold,
     };
 
     return (
@@ -825,7 +842,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h1 className="h3 fw-bold mb-1">Units</h1>
-                        <p className="text-muted small mb-0">{filteredUnits.length} unit{filteredUnits.length !== 1 ? 's' : ''} found
+                        <p className="text-muted small mb-0">{totalUnits} unit{totalUnits !== 1 ? 's' : ''} found
                             {selectedUnits.length > 0 && <span className="ms-2 badge bg-primary rounded-pill">{selectedUnits.length} selected</span>}
                         </p>
                     </div>
@@ -934,9 +951,11 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                             </div>
                             <div className="col-md-3">
                                 <div className="d-flex align-items-center gap-2">
-                                    <select className="form-select bg-light border-0 flex-grow-1" value={filterProperty} onChange={e => setFilterProperty(e.target.value)}>
-                                        <option value="all">Property: All</option>
-                                        {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    <select className="form-select bg-light border-0" value={itemsPerPage} onChange={e => setItemsPerPage(parseInt(e.target.value))}>
+                                        <option value={5}>5 per page</option>
+                                        <option value={10}>10 per page</option>
+                                        <option value={20}>20 per page</option>
+                                        <option value={50}>50 per page</option>
                                     </select>
                                     {selectedUnits.length > 0 && (
                                         <button className="btn btn-sm btn-outline-danger border-0" onClick={() => handleDelete(selectedUnits)} title="Delete Selected">
@@ -951,83 +970,134 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
                 {/* Table */}
                 {loading ? (
-                    <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
-                ) : (
-                    <div className="card border-0 shadow-sm rounded-4">
-                        <div className="table-responsive">
-                            <table className="table table-hover align-middle mb-0">
-                                <thead className="bg-light">
-                                    <tr>
-                                        <th className="py-3 px-4" style={{ width: 40 }}>
-                                            <input className="form-check-input shadow-none cursor-pointer" type="checkbox"
-                                                checked={selectedUnits.length === filteredUnits.length && filteredUnits.length > 0}
-                                                onChange={toggleSelectAll}
-                                            />
-                                        </th>
-                                        <th className="py-3 text-uppercase small fw-bold text-muted">Unit Details</th>
-                                        <th className="py-3 text-uppercase small fw-bold text-muted">Property</th>
-                                        <th className="py-3 text-uppercase small fw-bold text-muted">Type</th>
-                                        <th className="py-3 text-uppercase small fw-bold text-muted">Pricing</th>
-                                        <th className="py-3 text-uppercase small fw-bold text-muted">Status</th>
-                                        <th className="py-3 px-4 text-uppercase small fw-bold text-muted text-end">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredUnits.length === 0 ? (
-                                        <tr><td colSpan={7} className="text-center py-5 text-muted">
-                                            <i className="bi bi-inbox display-4 d-block mb-2 opacity-50"></i>
-                                            No units found
-                                        </td></tr>
-                                    ) : filteredUnits.map(unit => (
-                                        <tr key={unit.id} className={selectedUnits.includes(unit.id) ? 'table-active' : ''}>
-                                            <td className="px-4 py-3">
-                                                <input className="form-check-input shadow-none cursor-pointer" type="checkbox"
-                                                    checked={selectedUnits.includes(unit.id)} onChange={() => toggleSelect(unit.id)} />
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="fw-bold text-dark">{unit.name}</div>
-                                                <div className="small text-muted">{unit.bedrooms} BHK • {unit.sizeSqft} Sqft • Floor {unit.floorNo}</div>
-                                            </td>
-                                            <td className="py-3">
-                                                <div className="small fw-medium">{unit.space?.name || '—'}</div>
-                                            </td>
-                                            <td className="py-3">
-                                                <span className="text-capitalize small bg-light px-2 py-1 rounded text-muted">{unit.type}</span>
-                                            </td>
-                                            <td className="py-3">
-                                                {unit.monthlyRate ? (
-                                                    <div className="small fw-bold text-dark">{currencySymbol}{unit.monthlyRate.toLocaleString()}<span className="fw-normal text-muted">/mo</span></div>
-                                                ) : (
-                                                    <div className="small fw-bold text-dark">{currencySymbol}{(unit.price || 0).toLocaleString()}</div>
-                                                )}
-                                            </td>
-                                            <td className="py-3">{getStatusBadge(unit.status)}</td>
-                                            <td className="px-4 py-3 text-end">
-                                                <div className="dropdown">
-                                                    <button className="btn btn-sm btn-light border-0 rounded-circle d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} data-bs-toggle="dropdown">
-                                                        <i className="bi bi-three-dots-vertical"></i>
-                                                    </button>
-                                                    <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
-                                                        <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Actions</h6></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => openEdit(unit)}><i className="bi bi-pencil text-primary"></i>Edit Details</button></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleDuplicate(unit)}><i className="bi bi-files text-secondary"></i>Duplicate Unit</button></li>
-                                                        <li><hr className="dropdown-divider" /></li>
-                                                        <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Set Status</h6></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'available')} disabled={unit.status === 'available'}><i className="bi bi-check-circle text-success"></i>Available</button></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'occupied')} disabled={unit.status === 'occupied'}><i className="bi bi-clock-history text-warning"></i>Reserved</button></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'maintenance')} disabled={unit.status === 'maintenance'}><i className="bi bi-tools text-secondary"></i>Maintenance</button></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'sold')} disabled={unit.status === 'sold'}><i className="bi bi-tag text-danger"></i>Sold Out</button></li>
-                                                        <li><hr className="dropdown-divider" /></li>
-                                                        <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={() => handleDelete(unit.id)}><i className="bi bi-trash"></i>Delete</button></li>
-                                                    </ul>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div className="text-center py-5">
+                        <Loader message="Loading Units..." size="md" />
                     </div>
+                ) : (
+                    <>
+                        <div className="card border-0 shadow-sm rounded-4">
+                            <div className="table-responsive">
+                                <table className="table table-hover align-middle mb-0">
+                                    <thead className="bg-light">
+                                        <tr>
+                                            <th className="py-3 px-4" style={{ width: 40 }}>
+                                                <input className="form-check-input shadow-none cursor-pointer" type="checkbox"
+                                                    checked={selectedUnits.length === units.length && units.length > 0}
+                                                    onChange={toggleSelectAll}
+                                                />
+                                            </th>
+                                            <th className="py-3 text-uppercase small fw-bold text-muted">Unit Details</th>
+                                            <th className="py-3 text-uppercase small fw-bold text-muted">Property</th>
+                                            <th className="py-3 text-uppercase small fw-bold text-muted">Type</th>
+                                            <th className="py-3 text-uppercase small fw-bold text-muted">Pricing</th>
+                                            <th className="py-3 text-uppercase small fw-bold text-muted">Status</th>
+                                            <th className="py-3 px-4 text-uppercase small fw-bold text-muted text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {units.length === 0 ? (
+                                            <tr><td colSpan={7} className="text-center py-5 text-muted">
+                                                <i className="bi bi-inbox display-4 d-block mb-2 opacity-50"></i>
+                                                No units found
+                                            </td></tr>
+                                        ) : units.map(unit => (
+                                            <tr key={unit.id} className={selectedUnits.includes(unit.id) ? 'table-active' : ''}>
+                                                <td className="px-4 py-3">
+                                                    <input className="form-check-input shadow-none cursor-pointer" type="checkbox"
+                                                        checked={selectedUnits.includes(unit.id)} onChange={() => toggleSelect(unit.id)} />
+                                                </td>
+                                                <td className="py-3">
+                                                    <div className="fw-bold text-dark">{unit.name}</div>
+                                                    <div className="small text-muted">{unit.bedrooms} BHK • {unit.sizeSqft} Sqft • Floor {unit.floorNo}</div>
+                                                </td>
+                                                <td className="py-3">
+                                                    <div className="small fw-medium">{unit.space?.name || '—'}</div>
+                                                </td>
+                                                <td className="py-3">
+                                                    <span className="text-capitalize small bg-light px-2 py-1 rounded text-muted">{unit.type}</span>
+                                                </td>
+                                                <td className="py-3">
+                                                    {unit.monthlyRate ? (
+                                                        <div className="small fw-bold text-dark">{currencySymbol}{unit.monthlyRate.toLocaleString()}<span className="fw-normal text-muted">/mo</span></div>
+                                                    ) : (
+                                                        <div className="small fw-bold text-dark">{currencySymbol}{(unit.price || 0).toLocaleString()}</div>
+                                                    )}
+                                                </td>
+                                                <td className="py-3">{getStatusBadge(unit.status)}</td>
+                                                <td className="px-4 py-3 text-end">
+                                                    <div className="dropdown">
+                                                        <button className="btn btn-sm btn-light border-0 rounded-circle d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} data-bs-toggle="dropdown">
+                                                            <i className="bi bi-three-dots-vertical"></i>
+                                                        </button>
+                                                        <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                                                            <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Actions</h6></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => openEdit(unit)}><i className="bi bi-pencil text-primary"></i>Edit Details</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleDuplicate(unit)}><i className="bi bi-files text-secondary"></i>Duplicate Unit</button></li>
+                                                            <li><hr className="dropdown-divider" /></li>
+                                                            <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Set Status</h6></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'available')} disabled={unit.status === 'available'}><i className="bi bi-check-circle text-success"></i>Available</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'occupied')} disabled={unit.status === 'occupied'}><i className="bi bi-clock-history text-warning"></i>Reserved</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'maintenance')} disabled={unit.status === 'maintenance'}><i className="bi bi-tools text-secondary"></i>Maintenance</button></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2" onClick={() => handleStatusChange(unit.id, 'sold')} disabled={unit.status === 'sold'}><i className="bi bi-tag text-danger"></i>Sold Out</button></li>
+                                                            <li><hr className="dropdown-divider" /></li>
+                                                            <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={() => handleDelete(unit.id)}><i className="bi bi-trash"></i>Delete</button></li>
+                                                        </ul>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Pagination */}
+                        <div className="card border-0 shadow-sm rounded-4 mt-4">
+                            <div className="card-body p-3">
+                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                                    <div className="text-muted small">
+                                        Showing <span className="fw-bold text-dark">{totalUnits > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> to <span className="fw-bold text-dark">{Math.min(currentPage * itemsPerPage, totalUnits)}</span> of <span className="fw-bold text-dark">{totalUnits}</span> units
+                                    </div>
+                                    <nav>
+                                        <ul className="pagination pagination-sm mb-0 gap-1">
+                                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                                <button className="page-link rounded-3 border-0 bg-light shadow-none" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}>
+                                                    <i className="bi bi-chevron-left"></i>
+                                                </button>
+                                            </li>
+                                            {Array.from({ length: Math.ceil(totalUnits / itemsPerPage) }).map((_, i) => {
+                                                const pageNum = i + 1;
+                                                if (
+                                                    pageNum === 1 ||
+                                                    pageNum === Math.ceil(totalUnits / itemsPerPage) ||
+                                                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                                                ) {
+                                                    return (
+                                                        <li key={pageNum} className={`page-item ${currentPage === pageNum ? 'active' : ''}`}>
+                                                            <button className={`page-link rounded-3 border-0 ${currentPage === pageNum ? 'bg-primary text-white' : 'bg-light text-dark shadow-none'}`} onClick={() => setCurrentPage(pageNum)}>
+                                                                {pageNum}
+                                                            </button>
+                                                        </li>
+                                                    );
+                                                } else if (
+                                                    pageNum === currentPage - 2 ||
+                                                    pageNum === currentPage + 2
+                                                ) {
+                                                    return <li key={pageNum} className="page-item disabled"><span className="page-link border-0 bg-transparent">...</span></li>;
+                                                }
+                                                return null;
+                                            })}
+                                            <li className={`page-item ${currentPage === Math.ceil(totalUnits / itemsPerPage) || totalUnits === 0 ? 'disabled' : ''}`}>
+                                                <button className="page-link rounded-3 border-0 bg-light shadow-none" onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalUnits / itemsPerPage), prev + 1))}>
+                                                    <i className="bi bi-chevron-right"></i>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            </div>
+                        </div>
+                    </>
                 )}
             </div>
 

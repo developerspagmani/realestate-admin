@@ -8,9 +8,13 @@ interface PropertiesListProps {
     properties: Property[];
     isLoading: boolean;
     onEdit: (property: Property) => void;
-    onDelete: (id: string) => void;
+    onDelete: (id: string | string[]) => void;
     onNavigateToUnits: (id: string) => void;
     userRole?: number; // 2=Admin, 3=Owner
+    selectedProperties: string[];
+    onToggleSelect: (id: string) => void;
+    onToggleSelectAll: () => void;
+    onGenerateBrochure?: (property: Property) => void;
 }
 
 export default function PropertiesList({
@@ -19,7 +23,11 @@ export default function PropertiesList({
     onEdit,
     onDelete,
     onNavigateToUnits,
-    userRole
+    userRole,
+    selectedProperties,
+    onToggleSelect,
+    onToggleSelectAll,
+    onGenerateBrochure
 }: PropertiesListProps) {
     return (
         <div className="card border-0 shadow-sm overflow-hidden">
@@ -28,7 +36,16 @@ export default function PropertiesList({
                     <table className="table table-hover align-middle mb-0">
                         <thead className="bg-light text-muted small text-uppercase fw-bold">
                             <tr>
-                                <th className="px-4 py-3 border-0">Property</th>
+                                <th className="px-4 py-3 border-0" style={{ width: '40px' }}>
+                                    <input
+                                        type="checkbox"
+                                        className="form-check-input ms-0"
+                                        checked={properties.length > 0 && selectedProperties.length === properties.length}
+                                        onChange={onToggleSelectAll}
+                                        disabled={isLoading || properties.length === 0}
+                                    />
+                                </th>
+                                <th className="py-3 border-0">Property</th>
                                 <th className="py-3 border-0">Type</th>
                                 <th className="py-3 border-0">Location</th>
                                 <th className="py-3 border-0">Status</th>
@@ -38,14 +55,22 @@ export default function PropertiesList({
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-5">
-                                        <Loader message="Loading properties..." size="sm" />
+                                    <td colSpan={6} className="text-center py-5">
+                                        <Loader message="Loading properties..." size="md" />
                                     </td>
                                 </tr>
                             ) : properties.length > 0 ? (
                                 properties.map((property) => (
-                                    <tr key={property.id}>
+                                    <tr key={property.id} className={selectedProperties.includes(property.id) ? 'bg-primary-soft' : ''}>
                                         <td className="px-4 py-3">
+                                            <input
+                                                type="checkbox"
+                                                className="form-check-input ms-0"
+                                                checked={selectedProperties.includes(property.id)}
+                                                onChange={() => onToggleSelect(property.id)}
+                                            />
+                                        </td>
+                                        <td className="py-3">
                                             <div className="d-flex align-items-center">
                                                 <div className="bg-light rounded-3 p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }}>
                                                     <i className="bi bi-building text-primary h5 mb-0"></i>
@@ -117,13 +142,23 @@ export default function PropertiesList({
                                                 <button
                                                     className="btn btn-sm btn-outline-success rounded-circle p-0 d-flex align-items-center justify-content-center"
                                                     style={{ width: '32px', height: '32px' }}
-                                                    onClick={() => onNavigateToUnits(property.id)} // We should ideally add a New prop for onPublish
+                                                    onClick={() => onNavigateToUnits(property.id)}
                                                     title="Manage Units"
                                                 >
                                                     <i className="bi bi-layout-three-columns"></i>
                                                 </button>
 
-                                                {/* 🆕 Portal Publish Button */}
+                                                {/* Brochure Download Button */}
+                                                <button
+                                                    className="btn btn-sm btn-outline-secondary rounded-circle p-0 d-flex align-items-center justify-content-center"
+                                                    style={{ width: '32px', height: '32px' }}
+                                                    onClick={() => onGenerateBrochure && onGenerateBrochure(property)}
+                                                    title="Generate Brochure PDF"
+                                                >
+                                                    <i className="bi bi-file-earmark-pdf"></i>
+                                                </button>
+
+                                                {/* Portal Publish Button */}
                                                 <Link
                                                     href={`/realestate-admin/social/portals?propertyId=${property.id}`}
                                                     className="btn btn-sm btn-outline-dark rounded-circle p-0 d-flex align-items-center justify-content-center"
@@ -138,7 +173,7 @@ export default function PropertiesList({
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-5">
+                                    <td colSpan={6} className="text-center py-5">
                                         <div className="mb-3">
                                             <i className="bi bi-building-x text-muted display-4 opacity-25"></i>
                                         </div>
@@ -152,10 +187,10 @@ export default function PropertiesList({
                 </div>
             </div>
             <style jsx>{`
-        .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
-        .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
-        .extra-small { font-size: 11px; }
-      `}</style>
+                .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
+                .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
+                .extra-small { font-size: 11px; }
+            `}</style>
         </div>
     );
 }

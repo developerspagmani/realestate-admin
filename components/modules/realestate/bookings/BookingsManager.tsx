@@ -788,7 +788,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                                 setFormData({
                                                                     userId: booking.userId || '',
                                                                     unitId: booking.unitId || '',
-                                                                    propertyId: booking.unit?.property?.id || booking.unit?.propertyId || '',
+                                                                    propertyId: booking.propertyId || booking.property?.id || booking.unit?.propertyId || booking.unit?.property?.id || '',
                                                                     startAt: booking.startAt,
                                                                     endAt: booking.endAt,
                                                                     status: booking.status || 1,

@@ -99,4 +99,11 @@ export const agentService = {
             headers: { 'Authorization': `Bearer ${token}` },
         });
     },
+    sendCredentials: async (token: string, agentId: string, password: string) => {
+        return await makeApiCall(agentEndpoints.sendCredentials(agentId), {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ password }),
+        });
+    },
 };

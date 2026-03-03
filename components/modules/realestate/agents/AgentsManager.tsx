@@ -32,6 +32,9 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
     const [assignedItems, setAssignedItems] = useState<string[]>([]);
     const [agentAssignments, setAgentAssignments] = useState<any[]>([]);
     const [newlyCreatedAgent, setNewlyCreatedAgent] = useState<any | null>(null);
+    const [recentPasswords, setRecentPasswords] = useState<Record<string, string>>({});
+    const [showPassModal, setShowPassModal] = useState(false);
+    const [passModalData, setPassModalData] = useState<{ agent: Agent | null; password: '' }>({ agent: null, password: '' });
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -41,7 +44,8 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
         password: '',
         specialization: '',
         commissionRate: 2.5,
-        status: 1
+        status: 1,
+        sendEmail: true
     });
 
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -101,7 +105,8 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
             password: '', // Don't fill password
             specialization: agent.specialization || '',
             commissionRate: agent.commissionRate,
-            status: agent.status
+            status: agent.status,
+            sendEmail: false
         });
         setShowModal(true);
     };
@@ -113,10 +118,11 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
             lastName: '',
             email: '',
             phone: '',
-            password: '',
+            password: Math.random().toString(36).slice(-8), // Auto-generate password
             specialization: '',
             commissionRate: 2.5,
-            status: 1
+            status: 1,
+            sendEmail: true
         });
         setShowModal(true);
     };
@@ -130,11 +136,14 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
             if (editingAgent) {
                 // Update
                 const res = await agentService.updateAgent(token, editingAgent.id, {
-                    specialization: formData.specialization,
-                    commissionRate: formData.commissionRate,
-                    status: formData.status
+                    ...formData,
+                    id: editingAgent.id
                 });
                 if (res.success) {
+                    if (formData.sendEmail && formData.password) {
+                        await agentService.sendCredentials(token, editingAgent.id, formData.password);
+                    }
+                    showToast('Agent updated successfully');
                     setShowModal(false);
                     loadAgents();
                 }
@@ -143,9 +152,19 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                 const tenantId = (mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || localStorage.getItem('tenant-id');
                 const res = await agentService.createAgent(token, { ...formData, tenantId });
                 if (res.success) {
+                    const agentId = res.data.agent.id;
+                    if (formData.sendEmail) {
+                        try {
+                            await agentService.sendCredentials(token, agentId, formData.password);
+                            showToast('Credentials email sent!');
+                        } catch (e) {
+                            console.error('Email send failed', e);
+                        }
+                    }
+                    setRecentPasswords(prev => ({ ...prev, [agentId]: formData.password }));
                     setNewlyCreatedAgent({
                         ...formData,
-                        id: res.data.agent.id
+                        id: agentId
                     });
                     setShowModal(false);
                     loadAgents();
@@ -265,6 +284,48 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         showToast('Copied to clipboard!');
+    };
+
+    const handleSendEmail = async (agent: Agent, password?: string) => {
+        if (password) {
+            // If password provided (from success modal), send directly
+            const token = getAuthToken();
+            if (!token) return;
+            try {
+                const res = await agentService.sendCredentials(token, agent.id, password);
+                if (res.success) {
+                    showToast('Credentials email sent successfully');
+                } else {
+                    showToast('Failed to send email', 'error');
+                }
+            } catch (error: any) {
+                showToast(error.message || 'Error sending email', 'error');
+            }
+        } else {
+            // Otherwise show modal to enter/confirm password
+            setPassModalData({ agent, password: '' });
+            setShowPassModal(true);
+        }
+    };
+
+    const confirmSendEmail = async () => {
+        const { agent, password } = passModalData;
+        if (!agent || !password) return;
+
+        const token = getAuthToken();
+        if (!token) return;
+
+        try {
+            const res = await agentService.sendCredentials(token, agent.id, password);
+            if (res.success) {
+                showToast('Credentials email sent successfully');
+                setShowPassModal(false);
+            } else {
+                showToast('Failed to send email', 'error');
+            }
+        } catch (error: any) {
+            showToast(error.message || 'Error sending email', 'error');
+        }
     };
 
     const handleDeleteAgent = async (agentId: string) => {
@@ -428,8 +489,19 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                             <li><hr className="dropdown-divider" /></li>
                                                             <li><h6 className="dropdown-header small text-uppercase">Account</h6></li>
                                                             <li>
-                                                                <button className="dropdown-item rounded-2" onClick={() => copyToClipboard(`Email: ${agent.user?.email}\nPhone: ${agent.user?.phone}`)}>
+                                                                <button
+                                                                    className="dropdown-item rounded-2"
+                                                                    onClick={() => {
+                                                                        const pass = recentPasswords[agent.id] || '[Hidden for Security]';
+                                                                        copyToClipboard(`Email: ${agent.user?.email}\nPhone: ${agent.user?.phone}\nPassword: ${pass}`);
+                                                                    }}
+                                                                >
                                                                     <i className="bi bi-clipboard-check me-2"></i> Copy Login Info
+                                                                </button>
+                                                            </li>
+                                                            <li>
+                                                                <button className="dropdown-item rounded-2" onClick={() => handleSendEmail(agent)}>
+                                                                    <i className="bi bi-envelope-at me-2 text-primary"></i> Send Credentials Email
                                                                 </button>
                                                             </li>
                                                             <li>
@@ -463,62 +535,91 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                 <form onSubmit={handleSubmit}>
                                     <div className="modal-body p-4 pt-0">
                                         <div className="row g-3">
-                                            {!editingAgent && (
-                                                <>
-                                                    <div className="col-md-6">
-                                                        <label className="form-label small text-muted text-uppercase fw-bold">First Name</label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control bg-light border-0"
-                                                            required
-                                                            value={formData.firstName}
-                                                            onChange={e => setFormData({ ...formData, firstName: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <label className="form-label small text-muted text-uppercase fw-bold">Last Name</label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control bg-light border-0"
-                                                            required
-                                                            value={formData.lastName}
-                                                            onChange={e => setFormData({ ...formData, lastName: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div className="col-12">
-                                                        <label className="form-label small text-muted text-uppercase fw-bold">Email</label>
-                                                        <input
-                                                            type="email"
-                                                            className="form-control bg-light border-0"
-                                                            required
-                                                            value={formData.email}
-                                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div className="col-12">
-                                                        <label className="form-label small text-muted text-uppercase fw-bold">Phone Number (Username)</label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control bg-light border-0"
-                                                            required
-                                                            placeholder="+1234567890"
-                                                            value={formData.phone}
-                                                            onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                                        />
-                                                    </div>
-                                                    <div className="col-12">
-                                                        <label className="form-label small text-muted text-uppercase fw-bold">Password</label>
-                                                        <input
-                                                            type="password"
-                                                            className="form-control bg-light border-0"
-                                                            required
-                                                            minLength={6}
-                                                            value={formData.password}
-                                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                                        />
-                                                    </div>
-                                                </>
-                                            )}
+                                            <div className="col-md-6">
+                                                <label className="form-label small text-muted text-uppercase fw-bold">First Name</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control bg-light border-0"
+                                                    required
+                                                    value={formData.firstName}
+                                                    onChange={e => setFormData({ ...formData, firstName: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small text-muted text-uppercase fw-bold">Last Name</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control bg-light border-0"
+                                                    required
+                                                    value={formData.lastName}
+                                                    onChange={e => setFormData({ ...formData, lastName: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="col-12">
+                                                <label className="form-label small text-muted text-uppercase fw-bold">Email</label>
+                                                <input
+                                                    type="email"
+                                                    className="form-control bg-light border-0"
+                                                    required
+                                                    disabled={!!editingAgent}
+                                                    value={formData.email}
+                                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                                />
+                                                {editingAgent && <div className="form-text small">Email cannot be changed after creation</div>}
+                                            </div>
+                                            <div className="col-12">
+                                                <label className="form-label small text-muted text-uppercase fw-bold">Phone Number (Username)</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control bg-light border-0"
+                                                    required={!editingAgent}
+                                                    placeholder="+1234567890"
+                                                    value={formData.phone}
+                                                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="col-12">
+                                                <label className="form-label small text-muted text-uppercase fw-bold">{editingAgent ? 'Update Password' : 'Password'}</label>
+                                                <div className="input-group">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control bg-light border-0"
+                                                        required={!editingAgent}
+                                                        placeholder={editingAgent ? "Set new password (leave blank to keep current)" : "Enter login password"}
+                                                        minLength={6}
+                                                        value={formData.password}
+                                                        onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-primary border-0 bg-light"
+                                                        onClick={() => {
+                                                            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+                                                            let pass = "";
+                                                            for (let i = 0; i < 10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                                                            setFormData({ ...formData, password: pass });
+                                                        }}
+                                                    >
+                                                        <i className="bi bi-key-fill me-1"></i> Generate
+                                                    </button>
+                                                </div>
+                                                {!editingAgent && <div className="form-text small text-primary">Password auto-generated. You can change it.</div>}
+                                            </div>
+
+                                            <div className="col-12">
+                                                <div className="form-check form-switch bg-light-subtle p-3 rounded-3 border">
+                                                    <input
+                                                        className="form-check-input ms-0 me-3"
+                                                        type="checkbox"
+                                                        id="sendEmailSwitch"
+                                                        checked={formData.sendEmail}
+                                                        onChange={e => setFormData({ ...formData, sendEmail: e.target.checked })}
+                                                    />
+                                                    <label className="form-check-label fw-bold small text-primary" htmlFor="sendEmailSwitch">
+                                                        {editingAgent ? 'Send new credentials to agent via email' : 'Send login credentials email to agent'}
+                                                    </label>
+                                                </div>
+                                            </div>
                                             <div className="col-md-6">
                                                 <label className="form-label small text-muted text-uppercase fw-bold">Specialization</label>
                                                 <input
@@ -705,6 +806,72 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                     </div>
                 )}
 
+                {/* Password Entry Modal for Sending Credentials */}
+                {showPassModal && (
+                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1150 }}>
+                        <div className="modal-dialog modal-dialog-centered">
+                            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                                <div className="modal-header border-0 p-4 bg-primary text-white">
+                                    <h5 className="modal-title fw-bold text-white">Send Credentials</h5>
+                                    <button type="button" className="btn-close btn-close-white" onClick={() => setShowPassModal(false)}></button>
+                                </div>
+                                <div className="modal-body p-4">
+                                    <div className="text-center mb-4">
+                                        <div className="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: '64px', height: '64px' }}>
+                                            <i className="bi bi-shield-lock fs-2"></i>
+                                        </div>
+                                        <h6 className="fw-bold mb-1">Enter Agent Password</h6>
+                                        <p className="text-muted small">To send the credentials email to <strong>{passModalData.agent?.user?.firstName}</strong>, please provide the password to be included in the email.</p>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label small text-muted text-uppercase fw-bold">Agent Password</label>
+                                        <div className="input-group">
+                                            <span className="input-group-text bg-light border-0"><i className="bi bi-key text-muted"></i></span>
+                                            <input
+                                                type="text"
+                                                className="form-control bg-light border-0"
+                                                placeholder="Enter password..."
+                                                autoFocus
+                                                value={passModalData.password}
+                                                onChange={(e) => setPassModalData({ ...passModalData, password: e.target.value as any })}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') confirmSendEmail();
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-primary border-0 bg-light"
+                                                onClick={() => {
+                                                    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+                                                    let pass = "";
+                                                    for (let i = 0; i < 10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+                                                    setPassModalData({ ...passModalData, password: pass as any });
+                                                }}
+                                            >
+                                                <i className="bi bi-key-fill me-1"></i> Generate
+                                            </button>
+                                        </div>
+                                        <div className="form-text small mt-2">
+                                            <i className="bi bi-info-circle me-1"></i>
+                                            This password will be sent in plain text to the agent's email.
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="modal-footer border-0 p-4 pt-0">
+                                    <button className="btn btn-light rounded-3 px-4" onClick={() => setShowPassModal(false)}>Cancel</button>
+                                    <button
+                                        className="btn btn-primary rounded-3 px-4"
+                                        disabled={!passModalData.password}
+                                        onClick={confirmSendEmail}
+                                    >
+                                        <i className="bi bi-send me-2"></i> Send Email
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Newly Created Agent Success Modal */}
                 {newlyCreatedAgent && (
                     <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1100 }}>
@@ -715,7 +882,13 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                         <i className="bi bi-check-lg fs-2"></i>
                                     </div>
                                     <h4 className="fw-bold">Agent Account Created!</h4>
-                                    <p className="text-muted">Agent {newlyCreatedAgent.firstName} can now log in with these credentials.</p>
+                                    <p className="text-muted mb-0">Agent {newlyCreatedAgent.firstName} can now log in</p>
+                                    <button
+                                        className="btn btn-sm btn-link text-decoration-none"
+                                        onClick={() => copyToClipboard(`Email: ${newlyCreatedAgent.email}\nPhone: ${newlyCreatedAgent.phone}\nPassword: ${newlyCreatedAgent.password}`)}
+                                    >
+                                        <i className="bi bi-copy me-1"></i> Copy All Credentials
+                                    </button>
                                 </div>
                                 <div className="bg-light p-3 rounded-4 mb-4 text-start">
                                     <div className="mb-2">
@@ -740,9 +913,14 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                         </div>
                                     </div>
                                 </div>
-                                <button className="btn btn-primary w-100 py-2 rounded-3" onClick={() => setNewlyCreatedAgent(null)}>
-                                    Done
-                                </button>
+                                <div className="d-flex gap-2">
+                                    <button className="btn btn-outline-primary flex-grow-1 py-2 rounded-3" onClick={() => handleSendEmail({ id: newlyCreatedAgent.id } as any, newlyCreatedAgent.password)}>
+                                        <i className="bi bi-envelope-at me-2"></i> Email Him
+                                    </button>
+                                    <button className="btn btn-primary flex-grow-1 py-2 rounded-3" onClick={() => setNewlyCreatedAgent(null)}>
+                                        Done
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

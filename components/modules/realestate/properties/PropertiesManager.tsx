@@ -8,6 +8,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import PropertiesList from './PropertiesList';
 import PropertyForm from './PropertyForm';
+import BrochureManager from './BrochureManager';
 import Toast from '@/components/common/Toast';
 import { Property, MediaItem } from '@/types';
 
@@ -30,6 +31,16 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
     const [editingProperty, setEditingProperty] = useState<Property | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedProperties, setSelectedProperties] = useState<string[]>([]);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importStep, setImportStep] = useState<'file' | 'mapping' | 'progress'>('file');
+    const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+    const [csvRows, setCsvRows] = useState<string[][]>([]);
+    const [mapping, setMapping] = useState<Record<string, string>>({});
+    const [importProgress, setImportProgress] = useState(0);
+    const [importTotal, setImportTotal] = useState(0);
+    const [showBrochureModal, setShowBrochureModal] = useState(false);
+    const [selectedBrochureProperty, setSelectedBrochureProperty] = useState<Property | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -153,88 +164,100 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
 
     // ── CRUD ACTIONS ──────────────────────────────────────────────────────────
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this property?')) return;
+    const toggleSelectAll = () => {
+        if (selectedProperties.length === filteredProperties.length) setSelectedProperties([]);
+        else setSelectedProperties(filteredProperties.map(p => p.id));
+    };
+
+    const toggleSelect = (id: string) => {
+        setSelectedProperties(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
+    const handleDelete = async (id: string | string[]) => {
+        const ids = Array.isArray(id) ? id : [id];
+        if (!window.confirm(`Are you sure you want to delete ${ids.length} property(ies)?`)) return;
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId;
-            await propertyService.deleteProperty(token, id, tenantId);
-            showToast('Property deleted successfully');
-            setProperties(properties.filter(p => p.id !== id));
+            const tenantId = (mode === 'admin' && activeTenantId)
+                ? activeTenantId
+                : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
+
+            await Promise.all(ids.map(i => propertyService.deleteProperty(token, i, tenantId)));
+
+            showToast(`${ids.length} property(ies) deleted successfully`);
+            setProperties(prev => prev.filter(p => !ids.includes(p.id)));
+            setSelectedProperties([]);
         } catch (error) {
             console.error('Failed to delete property:', error);
             showToast('Error deleting property.', 'error');
         }
     };
 
+    const handleSaveProperty = async (data: Partial<Property>, propertyId?: string) => {
+        const token = getAuthToken();
+        if (!token) return;
+
+        const tenantId = (mode === 'admin' && activeTenantId)
+            ? activeTenantId
+            : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
+
+        if (!tenantId) throw new Error('Tenant ID is required');
+
+        const payload = {
+            tenantId,
+            title: data.name,
+            slug: (data as any).slug || undefined,
+            description: data.description,
+            addressLine1: data.address,
+            addressLine2: (data as any).addressLine2 || null,
+            city: data.city,
+            state: data.state,
+            country: (data as any).country || 'USA',
+            postalCode: data.zipCode,
+            latitude: (data as any).latitude || 0,
+            longitude: (data as any).longitude || 0,
+            propertyType: data.propertyType === 'residential' ? 1
+                : data.propertyType === 'commercial' ? 2
+                    : data.propertyType === 'industrial' ? 3 : 4,
+            status: data.status === 'active' ? 1 : data.status === 'inactive' ? 2 : 3,
+            mainImageId: data.mainImageId,
+            gallery: data.gallery,
+            area: data.area,
+            floorPlanId: data.floorPlanId,
+            brochureId: data.brochureId,
+            amenities: data.amenities,
+            yearBuilt: data.yearBuilt,
+            neighborhood: data.neighborhood,
+            parkingSpaces: data.parkingSpaces,
+            bedrooms: data.bedrooms,
+            bathrooms: data.bathrooms,
+            lotSize: data.lotSize,
+            listingType: data.listingType,
+            categoryId: (data as any).categoryId || null,
+            videoUrl: (data as any).videoUrl || null,
+            displayPrice: (data as any).displayPrice,
+            price: data.price,
+        };
+
+        if (propertyId) {
+            return await propertyService.updateProperty(token, propertyId, payload, tenantId);
+        } else {
+            return await propertyService.createProperty(token, payload, tenantId);
+        }
+    };
+
     const handleSubmit = async (formData: Partial<Property>) => {
         try {
             setIsSubmitting(true);
-            const token = getAuthToken();
-            if (!token) return;
-
-            const tenantId = (mode === 'admin' && activeTenantId)
-                ? activeTenantId
-                : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
-
-            if (!tenantId) {
-                showToast('Error: Tenant ID is required. Please select a company first.', 'error');
-                setIsSubmitting(false);
-                return;
-            }
-
-            const payload = {
-                tenantId,
-                title: formData.name,
-                slug: (formData as any).slug || undefined,
-                description: formData.description,
-                addressLine1: formData.address,
-                addressLine2: (formData as any).addressLine2 || null,
-                city: formData.city,
-                state: formData.state,
-                country: (formData as any).country || 'USA',
-                postalCode: formData.zipCode,
-                latitude: (formData as any).latitude || 0,
-                longitude: (formData as any).longitude || 0,
-                propertyType: formData.propertyType === 'residential' ? 1
-                    : formData.propertyType === 'commercial' ? 2
-                        : formData.propertyType === 'industrial' ? 3 : 4,
-                status: formData.status === 'active' ? 1 : formData.status === 'inactive' ? 2 : 3,
-                mainImageId: formData.mainImageId,
-                gallery: formData.gallery,
-                area: formData.area,
-                floorPlanId: formData.floorPlanId,
-                brochureId: formData.brochureId,
-                amenities: formData.amenities,
-                yearBuilt: formData.yearBuilt,
-                neighborhood: formData.neighborhood,
-                parkingSpaces: formData.parkingSpaces,
-                bedrooms: formData.bedrooms,
-                bathrooms: formData.bathrooms,
-                lotSize: formData.lotSize,
-                listingType: formData.listingType,
-                categoryId: (formData as any).categoryId || null,
-                videoUrl: (formData as any).videoUrl || null,
-                displayPrice: (formData as any).displayPrice,
-                price: formData.price,
-            };
-
-            if (editingProperty) {
-                await propertyService.updateProperty(token, editingProperty.id, payload, tenantId);
-                showToast('Property updated successfully!');
-            } else {
-                await propertyService.createProperty(token, payload, tenantId);
-                showToast('Property registered successfully!');
-            }
-
+            await handleSaveProperty(formData, editingProperty?.id);
+            showToast(editingProperty ? 'Property updated successfully!' : 'Property registered successfully!');
             await loadData();
             setIsSubmitting(false);
             handleBackToList();
-
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to save property:', error);
-            showToast('Error saving property.', 'error');
+            showToast(error.message || 'Error saving property.', 'error');
             setIsSubmitting(false);
         }
     };
@@ -249,6 +272,107 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
         p.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.state.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleGenerateBrochure = (property: Property) => {
+        setSelectedBrochureProperty(property);
+        setShowBrochureModal(true);
+    };
+
+    const handleExport = () => {
+        const exportList = selectedProperties.length > 0
+            ? properties.filter(p => selectedProperties.includes(p.id))
+            : filteredProperties;
+
+        if (exportList.length === 0) { showToast('No properties to export', 'error'); return; }
+
+        const headers = ['Property ID', 'Name', 'Description', 'Type', 'Address', 'City', 'State', 'Zip', 'Price', 'Area', 'Bedrooms', 'Bathrooms', 'Status'];
+        const rows = exportList.map(p => [
+            `"${p.id}"`,
+            `"${p.name}"`,
+            `"${p.description?.replace(/"/g, '""')}"`,
+            `"${p.propertyType}"`,
+            `"${p.address}"`,
+            `"${p.city}"`,
+            `"${p.state}"`,
+            `"${p.zipCode}"`,
+            `"${p.price}"`,
+            `"${p.area}"`,
+            `"${p.bedrooms}"`,
+            `"${p.bathrooms}"`,
+            `"${p.status}"`
+        ]);
+
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `properties_export_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        showToast(`${exportList.length} properties exported`);
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const lines = (event.target?.result as string).split('\n').filter(l => l.trim());
+            if (lines.length < 2) { showToast('Invalid CSV file', 'error'); return; }
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+            const rows = lines.slice(1).map(l => l.split(',').map(c => c.trim().replace(/^"|"$/g, '')));
+            setCsvHeaders(headers);
+            setCsvRows(rows);
+
+            const fields = ['name', 'description', 'propertyType', 'address', 'city', 'state', 'zipCode', 'price', 'area', 'bedrooms', 'bathrooms'];
+            const init: Record<string, string> = {};
+            fields.forEach(f => {
+                const match = headers.find(h => h.toLowerCase().includes(f.toLowerCase().replace(/([A-Z])/g, ' $1').trim().toLowerCase()));
+                if (match) init[f] = match;
+            });
+            setMapping(init);
+            setImportStep('mapping');
+        };
+        reader.readAsText(file);
+    };
+
+    const executeImport = async () => {
+        setImportStep('progress');
+        setImportTotal(csvRows.length);
+        const token = getAuthToken();
+        const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId || localStorage.getItem('tenant-id');
+        if (!token || !tenantId) return;
+
+        for (let i = 0; i < csvRows.length; i++) {
+            const row = csvRows[i];
+            const get = (f: string) => { const h = mapping[f]; if (!h) return undefined; return row[csvHeaders.indexOf(h)]; };
+
+            try {
+                const payload = {
+                    name: get('name') || 'Imported Property',
+                    description: get('description'),
+                    propertyType: get('propertyType') || 'residential',
+                    address: get('address'),
+                    city: get('city'),
+                    state: get('state'),
+                    zipCode: get('zipCode'),
+                    price: Number(get('price')) || 0,
+                    area: Number(get('area')) || 0,
+                    bedrooms: Number(get('bedrooms')) || 0,
+                    bathrooms: Number(get('bathrooms')) || 0,
+                    status: 'active'
+                };
+                await handleSaveProperty(payload as any);
+            } catch (err) {
+                console.error('Import row failed', i, err);
+            }
+            setImportProgress(i + 1);
+        }
+        showToast(`Import completed: ${csvRows.length} processed`);
+        setShowImportModal(false);
+        setImportStep('file');
+        loadData();
+    };
 
     if (!mounted || !isAuthenticated) return null;
 
@@ -293,14 +417,39 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                             {filteredProperties.length} propert{filteredProperties.length !== 1 ? 'ies' : 'y'} found
                         </p>
                     </div>
-                    <button
-                        id="add-property-btn"
-                        className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm"
-                        onClick={handleCreate}
-                    >
-                        <i className="bi bi-plus-circle"></i>
-                        Add Property
-                    </button>
+                    <div className="d-flex gap-2">
+                        {selectedProperties.length > 0 && (
+                            <button
+                                className="btn btn-outline-danger d-flex align-items-center gap-2 px-3 shadow-sm"
+                                onClick={() => handleDelete(selectedProperties)}
+                            >
+                                <i className="bi bi-trash3"></i>
+                                Delete Selected ({selectedProperties.length})
+                            </button>
+                        )}
+                        <button
+                            className="btn btn-outline-secondary d-flex align-items-center gap-2 px-3 shadow-sm"
+                            onClick={handleExport}
+                        >
+                            <i className="bi bi-download"></i>
+                            Export
+                        </button>
+                        <button
+                            className="btn btn-outline-primary d-flex align-items-center gap-2 px-3 shadow-sm"
+                            onClick={() => setShowImportModal(true)}
+                        >
+                            <i className="bi bi-upload"></i>
+                            Import
+                        </button>
+                        <button
+                            id="add-property-btn"
+                            className="btn btn-primary d-flex align-items-center gap-2 px-4 shadow-sm"
+                            onClick={handleCreate}
+                        >
+                            <i className="bi bi-plus-circle"></i>
+                            Add Property
+                        </button>
+                    </div>
                 </div>
 
                 {/* Search Bar */}
@@ -335,8 +484,91 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     onDelete={handleDelete}
                     onNavigateToUnits={handleNavigateToUnits}
                     userRole={user?.role}
+                    selectedProperties={selectedProperties}
+                    onToggleSelect={toggleSelect}
+                    onToggleSelectAll={toggleSelectAll}
+                    onGenerateBrochure={handleGenerateBrochure}
                 />
+
+                {/* Import Modal */}
+                {showImportModal && (
+                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+                        <div className="modal-dialog modal-dialog-centered modal-lg">
+                            <div className="modal-content border-0 shadow-lg rounded-4">
+                                <div className="modal-header border-0 p-4">
+                                    <h5 className="modal-title fw-bold">Import Properties from CSV</h5>
+                                    <button type="button" className="btn-close" onClick={() => setShowImportModal(false)}></button>
+                                </div>
+                                <div className="modal-body p-4 pt-0">
+                                    {importStep === 'file' && (
+                                        <div className="text-center py-5 border-2 border-dashed rounded-4 bg-light">
+                                            <i className="bi bi-file-earmark-spreadsheet display-4 text-primary opacity-50 mb-3 d-block"></i>
+                                            <h5>Choose a CSV file</h5>
+                                            <p className="text-muted small mb-4">Exported CSV files can be re-imported to batch create properties.</p>
+                                            <input type="file" accept=".csv" onChange={handleFileChange} className="d-none" id="csvUpload" />
+                                            <label htmlFor="csvUpload" className="btn btn-primary px-4">Browse Files</label>
+                                        </div>
+                                    )}
+
+                                    {importStep === 'mapping' && (
+                                        <div>
+                                            <h6 className="fw-bold mb-3">Map CSV Columns to Property Fields</h6>
+                                            <div className="row g-3">
+                                                {['name', 'description', 'propertyType', 'address', 'city', 'state', 'zipCode', 'price', 'area', 'bedrooms', 'bathrooms'].map(field => (
+                                                    <div className="col-md-6" key={field}>
+                                                        <label className="form-label small text-muted text-uppercase fw-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
+                                                        <select
+                                                            className="form-select bg-light border-0"
+                                                            value={mapping[field] || ''}
+                                                            onChange={e => setMapping({ ...mapping, [field]: e.target.value })}
+                                                        >
+                                                            <option value="">Select Column...</option>
+                                                            {csvHeaders.map(h => <option key={h} value={h}>{h}</option>)}
+                                                        </select>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="mt-4 text-end">
+                                                <button className="btn btn-primary px-4" onClick={executeImport}>Start Import ({csvRows.length} rows)</button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {importStep === 'progress' && (
+                                        <div className="text-center py-4">
+                                            <h6 className="fw-bold mb-3">Importing Properties...</h6>
+                                            <div className="progress mb-2" style={{ height: '10px' }}>
+                                                <div
+                                                    className="progress-bar progress-bar-striped progress-bar-animated"
+                                                    style={{ width: `${(importProgress / importTotal) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                            <p className="text-muted small">{importProgress} / {importTotal} processed</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
+
+            <BrochureManager
+                show={showBrochureModal}
+                property={selectedBrochureProperty}
+                properties={filteredProperties}
+                mode={mode}
+                allAmenities={amenities}
+                allMedia={mediaItems}
+                onPropertyChange={(id) => {
+                    const found = filteredProperties.find(p => p.id === id);
+                    if (found) setSelectedBrochureProperty(found);
+                }}
+                onClose={() => {
+                    setShowBrochureModal(false);
+                    setSelectedBrochureProperty(null);
+                }}
+            />
 
             <Toast
                 show={toast.show}

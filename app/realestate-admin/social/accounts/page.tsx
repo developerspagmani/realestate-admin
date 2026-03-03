@@ -6,6 +6,7 @@ import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import { connectedAccountsApi } from '@/lib/api/social';
 import Loader from '@/components/common/Loader';
+import Toast from '@/components/common/Toast';
 
 interface ConnectedAccount {
     id: string;
@@ -35,6 +36,16 @@ export default function ConnectedAccountsPage() {
     const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<AccountStats>({ total: 0, active: 0, inactive: 0 });
+    const [confirmingAccountId, setConfirmingAccountId] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success',
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     // Determine the base path (either /realestate-admin or /realestate-owner-admin)
     const basePath = pathname.includes('/realestate-owner-admin')
@@ -123,14 +134,14 @@ export default function ConnectedAccountsPage() {
                                 });
 
                                 if (res.success) {
-                                    alert('Facebook connected successfully!');
+                                    showToast('Facebook connected successfully!', 'success');
                                     loadAccounts();
                                 } else {
-                                    alert(res.message || 'Failed to connect Facebook');
+                                    showToast(res.message || 'Failed to connect Facebook', 'error');
                                 }
                             } catch (e) {
                                 console.error(e);
-                                alert('An error occurred while connecting');
+                                showToast('An error occurred while connecting', 'error');
                             } finally {
                                 setLoading(false);
                             }
@@ -155,15 +166,21 @@ export default function ConnectedAccountsPage() {
     };
 
     const handleDisconnect = async (id: string) => {
-        if (!confirm('Are you sure you want to disconnect this account?')) return;
-
         try {
+            setLoading(true);
             const res = await connectedAccountsApi.disconnect(id);
             if (res.success) {
+                showToast('Account disconnected successfully', 'success');
+                setConfirmingAccountId(null);
                 loadAccounts();
+            } else {
+                showToast(res.message || 'Failed to disconnect account', 'error');
             }
         } catch (error) {
             console.error('Error disconnecting account:', error);
+            showToast('Error disconnecting account', 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -171,10 +188,14 @@ export default function ConnectedAccountsPage() {
         try {
             const res = await connectedAccountsApi.refreshToken(id);
             if (res.success) {
+                showToast('Token refreshed successfully', 'success');
                 loadAccounts();
+            } else {
+                showToast(res.message || 'Failed to refresh token', 'error');
             }
         } catch (error) {
             console.error('Error refreshing token:', error);
+            showToast('Error refreshing token', 'error');
         }
     };
 
@@ -266,7 +287,7 @@ export default function ConnectedAccountsPage() {
                                                             <i className="bi bi-arrow-clockwise me-1"></i> Refresh
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDisconnect(account.id)}
+                                                            onClick={() => setConfirmingAccountId(account.id)}
                                                             className="btn btn-sm btn-outline-danger flex-grow-1 rounded-pill"
                                                         >
                                                             <i className="bi bi-link-45deg me-1"></i> Disconnect
@@ -296,6 +317,37 @@ export default function ConnectedAccountsPage() {
                     </div>
                 </div>
             </div>
+
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
+
+            {/* Confirmation Action Toast */}
+            {confirmingAccountId && (
+                <div
+                    className="position-fixed bottom-0 start-50 translate-middle-x mb-4 shadow-lg animate__animated animate__slideInUp"
+                    style={{ zIndex: 1100, minWidth: '400px' }}
+                >
+                    <div className="bg-white border-0 rounded-4 p-4 d-flex align-items-center justify-content-between gap-4 border-start border-danger border-5">
+                        <div className="d-flex align-items-center gap-3">
+                            <div className="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                <i className="bi bi-exclamation-triangle-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 className="fw-bold mb-0">Unlink Account?</h6>
+                                <p className="text-muted small mb-0">This will stop all active integrations.</p>
+                            </div>
+                        </div>
+                        <div className="d-flex gap-2">
+                            <button className="btn btn-light btn-sm px-3 rounded-pill" onClick={() => setConfirmingAccountId(null)}>Cancel</button>
+                            <button className="btn btn-danger btn-sm px-4 rounded-pill fw-bold" onClick={() => handleDisconnect(confirmingAccountId)}>Disconnect</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </MainLayout>
     );
 }
