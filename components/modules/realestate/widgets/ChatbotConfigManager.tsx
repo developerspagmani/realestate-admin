@@ -203,7 +203,7 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
                                             </div>
                                             <div className="form-check form-switch">
                                                 <input
-                                                    className="form-switch-input"
+                                                    className="form-check-input"
                                                     type="checkbox"
                                                     style={{ width: '40px', height: '20px', cursor: 'pointer' }}
                                                     checked={config.flow.includes(step.id)}

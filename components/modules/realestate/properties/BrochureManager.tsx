@@ -369,7 +369,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
             </div>
 
             {/* Preview Area */}
-            <div className="col-md-8 col-lg-9 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-center h-100 overflow-auto py-5" style={{ background: '#f0f2f5' }}>
+            <div className="col-md-8 col-lg-9 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-start h-100 overflow-auto py-5" style={{ background: '#f0f2f5' }}>
                 {!property ? (
                     <div className="text-muted text-center animate-pulse">
                         <i className="bi bi-building-slash display-1 opacity-25 mb-4 d-block"></i>
@@ -377,7 +377,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
                         <p>Select a property from the sidebar to visualize your brochure.</p>
                     </div>
                 ) : (
-                    <div className="preview-container position-relative">
+                    <div className="preview-container position-relative mt-4">
                         <div className="preview-badge position-absolute top-0 start-50 translate-middle-x z-3 px-3 py-1 bg-dark text-white rounded-pill small fw-bold shadow-lg" style={{ marginTop: '-40px' }}>
                             Digital Proof (A4 Scale)
                         </div>

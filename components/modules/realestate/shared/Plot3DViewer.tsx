@@ -325,7 +325,7 @@ export default function Plot3DViewer({ svgContent, mapping, units, theme, curren
                             <span className={`badge px-2 py-1 ${selectedUnit.status === 'available' ? 'bg-success text-white' : 'bg-danger text-white'}`}>{selectedUnit.status.toUpperCase()}</span>
                         </div>
                         <div className="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
-                            <span className="fw-bold text-primary">{currencySymbol}{selectedUnit.price?.toLocaleString()}</span>
+                            <span className="fw-bold text-primary">{currencySymbol}{selectedUnit.price?.toLocaleString('en-US')}</span>
                             {onBookingSelect && (
                                 <button
                                     className="btn btn-primary btn-sm rounded-4 px-3 fw-bold"

@@ -71,11 +71,11 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                     </div>
 
                     <div className="col-lg-5">
-                        <div className="glass-panel p-4 rounded-4 h-100 d-flex flex-column justify-content-between">
+                        <div className="glass-panel p-4 rounded-4 d-flex flex-column justify-content-between">
                             <div>
                                 <div className="d-flex justify-content-between align-items-start mb-1">
-                                    <h3 className="fw-bold mb-0">{selectedProperty.title}</h3>
-                                    {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
+                                    <h3 className="fw-bold mb-0" style={{ color: theme.primaryColor }}>{selectedProperty.title}</h3>
+                                    {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking !== false) && (
                                         <button
                                             className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm d-md-none"
                                             style={{ backgroundColor: theme.primaryColor, border: 'none' }}
@@ -105,7 +105,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                     <div className="col-6">
                                         <div className="feature-box p-3">
                                             <span className="d-block text-muted extra-small">Internal Area</span>
-                                            <span className="fw-bold small">{selectedProperty.area?.toLocaleString() || 0} sqft</span>
+                                            <span className="fw-bold small">{selectedProperty.area?.toLocaleString('en-US') || 0} sqft</span>
                                         </div>
                                     </div>
                                     <div className="col-6">
@@ -133,22 +133,27 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                 </button>
                             )}
 
-                            <button
-                                className="btn btn-primary w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 transition-all hover:translate-y-[-2px]"
-                                style={{ backgroundColor: theme.primaryColor, border: 'none' }}
-                                onClick={() => setCurrentView('TOUR')}
-                            >
-                                <i className="bi bi-view-stacked fs-5"></i>
-                                <span className="fw-bold">Experience Full 3D Walkthrough</span>
-                            </button>
 
-                            {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
+
+                            {widget.configuration.builder?.enableTour !== false && (
+                                <button
+                                    className="btn btn-primary w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 transition-all hover:translate-y-[-2px] mb-3"
+                                    style={{ backgroundColor: theme.primaryColor, border: 'none' }}
+                                    onClick={() => setCurrentView('TOUR')}
+                                >
+                                    <i className="bi bi-view-stacked fs-5"></i>
+                                    <span className="fw-bold">Experience Full 3D Walkthrough</span>
+                                </button>
+                            )}
+
+                            {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking !== false) && (
                                 <button
                                     className="btn btn-dark w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 mt-3 transition-all hover:translate-y-[-2px]"
                                     onClick={() => {
                                         setBookingUnit(null);
                                         setShowBookingModal(true);
                                     }}
+                                    style={{ backgroundColor: theme.primaryColor, border: 'none' }}
                                 >
                                     <i className="bi bi-calendar-plus fs-5"></i>
                                     <span className="fw-bold">Reserve Property Now</span>
@@ -159,11 +164,11 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
 
                     <div className="col-12 mt-4">
                         <div className="card border-0 shadow-sm rounded-4 p-4">
-                            <h5 className="fw-bold mb-3 d-flex align-items-center">
+                            <h5 className="fw-bold mb-3 d-flex align-items-center" style={{ color: theme.primaryColor }}>
                                 <i className="bi bi-info-circle me-2 text-primary" style={{ color: theme.primaryColor }}></i>
                                 Property Description
                             </h5>
-                            <p className="text-muted lh-lg mb-4 small">{selectedProperty.description}</p>
+                            <p className="text-muted lh-lg mb-4 small" >{selectedProperty.description}</p>
 
                             <hr className="opacity-10 my-4" />
 
@@ -204,7 +209,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 <div className="bg-light p-2 rounded-3 text-primary"><i className="bi bi-aspect-ratio text-primary"></i></div>
                                                 <div>
                                                     <span className="d-block extra-small text-muted">Lot Size</span>
-                                                    <span className="fw-bold small">{selectedProperty.lotSize?.toLocaleString()} sqft</span>
+                                                    <span className="fw-bold small">{selectedProperty.lotSize?.toLocaleString('en-US')} sqft</span>
                                                 </div>
                                             </div>
                                         )}
@@ -256,7 +261,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                         </div>
                     </div>
 
-                    {selectedProperty.metadata?.interactiveSvg && (
+                    {widget.configuration.builder?.enable3D !== false && selectedProperty.metadata?.interactiveSvg && (
                         <div className="col-12 mt-5">
                             <div className="glass-panel p-4 rounded-4 shadow-sm">
                                 <h5 className="fw-bold mb-4 d-flex align-items-center justify-content-between">
@@ -368,9 +373,11 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         </div>
                                         <div className="p-3">
                                             <div className="d-flex justify-content-between align-items-center mb-2">
-                                                <span className="fw-extrabold text-primary" style={{ color: theme.primaryColor }}>
-                                                    {getFormattedPrice(unit)}
-                                                </span>
+                                                {widget.configuration.builder?.showPrice !== false && (
+                                                    <span className="fw-extrabold text-primary" style={{ color: theme.primaryColor }}>
+                                                        {getFormattedPrice(unit)}
+                                                    </span>
+                                                )}
                                                 {(() => {
                                                     const statusNum = Number(unit.status);
                                                     if (statusNum === 2) return <span className="badge bg-warning bg-opacity-10 text-warning extra-small">Reserved</span>;
@@ -379,7 +386,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                     return <span className="badge bg-success bg-opacity-10 text-success extra-small">Available</span>;
                                                 })()}
                                             </div>
-                                            <h6 className="fw-bold mb-1 text-truncate">{unit.name || `${unit.unitCode}`}</h6>
+                                            <h6 className="fw-bold mb-1 text-truncate" style={{ color: theme.primaryColor }}>{unit.name || `${unit.unitCode}`}</h6>
                                             <div className="d-flex gap-2 mb-3">
                                                 <span className="extra-small text-muted"><i className="bi bi-bed me-1"></i>{unit.realEstateDetails?.bedrooms || 0} Bed</span>
                                                 <span className="extra-small text-muted"><i className="bi bi-arrows-fullscreen me-1"></i>{unit.sizeSqft || 0} sqft</span>
@@ -393,7 +400,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 >
                                                     View Details
                                                 </button>
-                                                {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && Number(unit.status) === 1 && (
+                                                {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking !== false) && Number(unit.status) === 1 && (
                                                     <button
                                                         className="btn btn-dark btn-sm flex-grow-1 rounded-4 extra-small fw-bold"
                                                         onClick={(e) => {
@@ -413,7 +420,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                         </div>
                     </div>
 
-                    {widget.configuration.inquiryForm?.enabled && (
+                    {(widget.configuration.inquiryForm?.enabled || widget.configuration.builder?.showInquiry !== false) && (
                         <div className="col-12 mt-5">
                             <div className="glass-panel p-4 rounded-4 inquiry-form-container border-primary border-opacity-25" style={{ borderLeft: `4px solid ${theme.primaryColor}` }}>
                                 <h5 className="fw-bold mb-4 d-flex align-items-center">

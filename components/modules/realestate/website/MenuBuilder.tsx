@@ -168,7 +168,7 @@ export default function MenuBuilder({ label, items = [], onChange, cmsPages }: M
                                     checked={newItemType === 'page'}
                                     onChange={() => setNewItemType('page')}
                                 />
-                                <label className="btn btn-outline-primary btn-sm" htmlFor={`page-${label}`}>CMS Page</label>
+                                <label className="btn btn-primary btn-sm" htmlFor={`page-${label}`}>CMS Page</label>
 
                                 <input
                                     type="radio"

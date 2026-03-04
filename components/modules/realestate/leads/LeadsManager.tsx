@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { leadService, agentService, marketingService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
@@ -12,6 +12,7 @@ import LeadEngagementInsights from './LeadEngagementInsights';
 import LeadsKanban from './LeadsKanban';
 import Loader from '@/components/common/Loader';
 import StructuredLossModal from './StructuredLossModal';
+import ConfirmationModal from '@/components/common/ConfirmationModal';
 
 export interface Lead {
     id: string;
@@ -76,7 +77,12 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterSource, setFilterSource] = useState<string>('all');
     const [filterTag, setFilterTag] = useState<string>('all');
-    const [filterBudget, setFilterBudget] = useState<number | ''>('');
+    const searchParams = useSearchParams();
+    const initialMaxBudget = searchParams.get('budget') || searchParams.get('maxBudget');
+    const initialMinBudget = searchParams.get('minBudget');
+
+    const [filterBudget, setFilterBudget] = useState<number | ''>(initialMaxBudget ? Number(initialMaxBudget) : '');
+    const [minBudget, setMinBudget] = useState<number | ''>(initialMinBudget ? Number(initialMinBudget) : '');
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [groupName, setGroupName] = useState('');
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -94,6 +100,21 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
     const [showLossModal, setShowLossModal] = useState(false);
     const [leadToMarkLost, setLeadToMarkLost] = useState<Lead | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [confirmModal, setConfirmModal] = useState<{
+        show: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type: 'danger' | 'primary' | 'warning' | 'success';
+    }>({
+        show: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        type: 'primary'
+    });
     const { hasModule } = useAuthContext();
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -120,6 +141,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             const response = await leadService.getLeads(token, {
                 tenantId: tenantId || undefined,
                 industryType,
+                limit: '1000',
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
             });
 
@@ -213,9 +235,17 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         const matchesStatus = filterStatus === 'all' || lead.status === filterStatus;
         const matchesSource = filterSource === 'all' || lead.source === filterSource;
         const matchesTag = filterTag === 'all' || lead.tags?.includes(filterTag);
-        const matchesBudget = filterBudget === '' || lead.budget <= Number(filterBudget);
-        return matchesSearch && matchesStatus && matchesSource && matchesTag && matchesBudget;
+        const matchesMaxBudget = filterBudget === '' || lead.budget <= Number(filterBudget);
+        const matchesMinBudget = minBudget === '' || lead.budget >= Number(minBudget);
+        return matchesSearch && matchesStatus && matchesSource && matchesTag && matchesMaxBudget && matchesMinBudget;
     });
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus, filterSource, filterTag, filterBudget, minBudget]);
+
+    const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+    const paginatedLeads = filteredLeads.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     const handleSaveAsGroup = async () => {
         if (!groupName) return;
@@ -355,8 +385,17 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Delete this lead?')) return;
+    const handleDelete = (id: string) => {
+        setConfirmModal({
+            show: true,
+            title: 'Delete Lead',
+            message: 'Are you sure you want to delete this lead? This action cannot be undone.',
+            type: 'danger',
+            onConfirm: () => executeDelete(id)
+        });
+    };
+
+    const executeDelete = async (id: string) => {
         try {
             const token = getAuthToken();
             if (!token) return;
@@ -367,6 +406,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         } catch (error) {
             console.error('Delete error:', error);
             showToast('Error deleting lead', 'error');
+        } finally {
+            setConfirmModal(prev => ({ ...prev, show: false }));
         }
     };
 
@@ -384,14 +425,23 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         );
     };
 
-    const handleBulkDelete = async () => {
-        if (!window.confirm(`Are you sure you want to delete ${selectedLeads.length} leads?`)) return;
+    const handleBulkDelete = () => {
+        if (selectedLeads.length === 0) return;
+        setConfirmModal({
+            show: true,
+            title: 'Bulk Delete Leads',
+            message: `Are you sure you want to delete ${selectedLeads.length} leads? This action is permanent.`,
+            type: 'danger',
+            onConfirm: () => executeBulkDelete()
+        });
+    };
+
+    const executeBulkDelete = async () => {
         try {
             const token = getAuthToken();
             if (!token) return;
             const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
 
-            // Sequential delete for safety if bulk endpoint isn't ready
             for (const id of selectedLeads) {
                 await leadService.deleteLead(token, id, tenantId);
             }
@@ -402,6 +452,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         } catch (error) {
             console.error('Bulk delete error:', error);
             showToast('Error during bulk deletion', 'error');
+        } finally {
+            setConfirmModal(prev => ({ ...prev, show: false }));
         }
     };
 
@@ -675,9 +727,9 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredLeads.length === 0 ? (
-                                        <tr><td colSpan={9} className="text-center py-5 text-muted">No leads found</td></tr>
-                                    ) : filteredLeads.map(lead => (
+                                    {paginatedLeads.length === 0 ? (
+                                        <tr><td colSpan={11} className="text-center py-5 text-muted">No leads found</td></tr>
+                                    ) : paginatedLeads.map(lead => (
                                         <tr key={lead.id} className={`${isStale(lead) ? 'bg-stale' : ''} ${selectedLeads.includes(lead.id) ? 'bg-primary bg-opacity-10' : ''}`}>
                                             <td className="px-4 py-3">
                                                 <div className="form-check mb-0">
@@ -782,6 +834,38 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                 </tbody>
                             </table>
                         </div>
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="card-footer bg-white border-top-0 p-4 d-flex justify-content-between align-items-center">
+                                <div className="small text-muted">
+                                    Showing <span className="fw-bold">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="fw-bold">{Math.min(currentPage * itemsPerPage, filteredLeads.length)}</span> of <span className="fw-bold">{filteredLeads.length}</span> leads
+                                </div>
+                                <nav aria-label="Page navigation">
+                                    <ul className="pagination pagination-sm mb-0 gap-1">
+                                        <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                            <button className="page-link rounded-3 border-0 bg-light text-dark shadow-xs px-2" onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                                                <i className="bi bi-chevron-left small"></i>
+                                            </button>
+                                        </li>
+                                        {[...Array(totalPages)].map((_, i) => (
+                                            <li key={i} className={`page-item ${currentPage === i + 1 ? 'active' : ''}`}>
+                                                <button
+                                                    className={`page-link rounded-3 border-0 mx-1 shadow-xs ${currentPage === i + 1 ? 'bg-primary text-white font-weight-bold' : 'bg-light text-dark'}`}
+                                                    onClick={() => setCurrentPage(i + 1)}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            </li>
+                                        ))}
+                                        <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                            <button className="page-link rounded-3 border-0 bg-light text-dark shadow-xs px-2" onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}>
+                                                <i className="bi bi-chevron-right small"></i>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <LeadsKanban
@@ -1094,6 +1178,16 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     </div>
                 </div>
             )}
+
+            <ConfirmationModal
+                show={confirmModal.show}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+            />
+
             <style jsx>{`
                 .pulse-revival {
                     animation: pulse-green 2s infinite;

@@ -93,7 +93,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
                         <div className="bg-primary bg-opacity-10 p-2 rounded-3">
                             <i className="bi bi-calendar-check text-primary fs-5" style={{ color: theme.primaryColor }}></i>
                         </div>
-                        <h5 className="fw-bold mb-0">Reserve Your Selection</h5>
+                        <h5 className="fw-bold mb-0" style={{ color: theme.primaryColor }}>Reserve Your Selection</h5>
                     </div>
                     <button className="btn btn-light rounded-circle p-2" onClick={onClose}>
                         <i className="bi bi-x-lg"></i>
@@ -110,14 +110,14 @@ const BookingModal: React.FC<BookingModalProps> = ({
                             ) : null}
                             <div>
                                 <span className="d-block extra-small text-muted fw-bold text-uppercase">Requesting Reservation</span>
-                                <h6 className="fw-bold mb-1">
+                                <h6 className="fw-bold mb-1" style={{ color: theme.primaryColor }}>
                                     {selectedUnit ? (
                                         <>{selectedProperty?.title} - {selectedUnit.unitCode || selectedUnit.name}</>
                                     ) : (
                                         selectedProperty?.title
                                     )}
                                 </h6>
-                                <span className="small text-primary fw-bold" style={{ color: theme.primaryColor }}>{selectedProperty?.city}</span>
+                                <span className="small text-black fw-bold" >City: {selectedProperty?.city}</span>
                             </div>
                         </div>
                     </div>

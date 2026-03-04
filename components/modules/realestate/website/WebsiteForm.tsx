@@ -37,9 +37,7 @@ export default function WebsiteForm({
     const [activeTab, setActiveTab] = useState<'basics' | 'domain' | 'style' | 'builder' | 'footer' | 'modules' | 'navigation'>('basics');
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
     const [showMediaSelector, setShowMediaSelector] = useState(false);
-    const [mediaTarget, setMediaTarget] = useState<'logoUrl' | 'heroBgUrl' | null>(null);
-    const [cacheClearing, setCacheClearing] = useState(false);
-    const [cacheClearStatus, setCacheClearStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [mediaTarget, setMediaTarget] = useState<'logoUrl' | 'heroBgUrl' | 'faviconUrl' | null>(null);
     const [modularMediaIndex, setModularMediaIndex] = useState<number | null>(null);
     const [modularSlideIndex, setModularSlideIndex] = useState<number | null>(null);
 
@@ -114,27 +112,6 @@ export default function WebsiteForm({
         }
     };
 
-    const clearWebsiteCache = async () => {
-        const slug = editingWebsite?.slug || formData?.slug;
-        if (!slug) return;
-        setCacheClearing(true);
-        setCacheClearStatus('idle');
-        try {
-            const res = await fetch('/api/revalidate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug }),
-            });
-            const data = await res.json();
-            setCacheClearStatus(data.success ? 'success' : 'error');
-        } catch {
-            setCacheClearStatus('error');
-        } finally {
-            setCacheClearing(false);
-            // Auto-reset the status badge after 4 seconds
-            setTimeout(() => setCacheClearStatus('idle'), 4000);
-        }
-    };
 
     const handleMediaSelect = (media: any) => {
         if (media) {
@@ -256,6 +233,22 @@ export default function WebsiteForm({
                                                 onChange={(e) => toggleNestedConfig('seo', 'description', e.target.value)}
                                             />
                                         </div>
+                                        <div className="col-md-12">
+                                            <label className="form-label small fw-bold">Custom Favicon URL (.ico, .png)</label>
+                                            <div className="input-group">
+                                                <input
+                                                    type="text"
+                                                    className="form-control rounded-start-3"
+                                                    placeholder="https://example.com/favicon.png"
+                                                    value={formData.configuration.builder?.faviconUrl || ''}
+                                                    onChange={(e) => toggleNestedConfig('builder', 'faviconUrl', e.target.value)}
+                                                />
+                                                <button type="button" className="btn btn-outline-secondary rounded-end-3" onClick={() => { setMediaTarget('faviconUrl' as any); setShowMediaSelector(true); }}>
+                                                    <i className="bi bi-bookmark-star"></i>
+                                                </button>
+                                            </div>
+                                            <div className="extra-small text-muted mt-1">Recommended size: 32x32 or 64x64 pixels.</div>
+                                        </div>
                                     </div>
                                 )}
 
@@ -303,7 +296,7 @@ export default function WebsiteForm({
                                                     disabled={verificationStatus === 'checking' || !formData.customDomain}
                                                 >
                                                     {verificationStatus === 'checking' ? (
-                                                        <Loader size="sm" message="" />
+                                                        'Checking...'
                                                     ) : verificationStatus === 'valid' ? (
                                                         <i className="bi bi-check-circle-fill me-2"></i>
                                                     ) : verificationStatus === 'invalid' ? (
@@ -433,18 +426,35 @@ export default function WebsiteForm({
                                             </div>
                                         </div>
                                         <div className="col-md-6">
-                                            <label className="form-label small fw-bold">Global Typography</label>
+                                            <label className="form-label small fw-bold">Global Typography (Google Fonts)</label>
                                             <select
                                                 className="form-select rounded-3 shadow-sm border-light-subtle"
-                                                value={formData.configuration?.theme?.fontFamily || 'Inter, sans-serif'}
+                                                value={formData.configuration?.theme?.fontFamily || 'Inter'}
                                                 onChange={(e) => toggleNestedConfig('theme', 'fontFamily', e.target.value)}
                                             >
-                                                <option value="Inter, sans-serif">Inter (Modern)</option>
-                                                <option value="'Roboto', sans-serif">Roboto (Clean)</option>
-                                                <option value="'Poppins', sans-serif">Poppins (Playful)</option>
-                                                <option value="'Montserrat', sans-serif">Montserrat (Bold)</option>
-                                                <option value="'Outfit', sans-serif">Outfit (Premium)</option>
+                                                <optgroup label="Modern Sans-Serif">
+                                                    <option value="Inter">Inter (Default)</option>
+                                                    <option value="Roboto">Roboto</option>
+                                                    <option value="Poppins">Poppins</option>
+                                                    <option value="Montserrat">Montserrat</option>
+                                                    <option value="Outfit">Outfit (Premium)</option>
+                                                    <option value="Public Sans">Public Sans</option>
+                                                    <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                                                </optgroup>
+                                                <optgroup label="Elegant Serif">
+                                                    <option value="Playfair Display">Playfair Display</option>
+                                                    <option value="Lora">Lora</option>
+                                                    <option value="Cormorant Garamond">Cormorant Garamond</option>
+                                                    <option value="Cinzel">Cinzel (Classical)</option>
+                                                </optgroup>
+                                                <optgroup label="Luxury & Specialized">
+                                                    <option value="Syne">Syne (Ultra Modern)</option>
+                                                    <option value="Manrope">Manrope</option>
+                                                    <option value="Urbanist">Urbanist</option>
+                                                    <option value="Space Grotesk">Space Grotesk</option>
+                                                </optgroup>
                                             </select>
+                                            <div className="extra-small text-muted mt-1">Dynamic Google Font loading enabled.</div>
                                         </div>
                                     </div>
                                 )}
@@ -481,38 +491,6 @@ export default function WebsiteForm({
                                 {activeTab === 'builder' && (
                                     <div className="row g-4 animate-fade-in overflow-auto max-vh-60 pe-2">
 
-                                        {/* Cache Clear Banner */}
-                                        <div className="col-12">
-                                            <div className="d-flex align-items-center justify-content-between p-3 rounded-4 border border-warning-subtle bg-warning-subtle">
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <i className="bi bi-lightning-charge-fill text-warning fs-5"></i>
-                                                    <div>
-                                                        <div className="fw-bold small">Clear Public Site Cache</div>
-                                                        <div className="extra-small text-muted">Force refresh the live website to apply your latest changes (currency, theme, content).</div>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    className={`btn btn-sm rounded-4 px-3 fw-bold flex-shrink-0 ms-3 ${cacheClearStatus === 'success' ? 'btn-success' :
-                                                        cacheClearStatus === 'error' ? 'btn-danger' :
-                                                            'btn-warning'
-                                                        }`}
-                                                    onClick={clearWebsiteCache}
-                                                    disabled={cacheClearing || !editingWebsite}
-                                                    title={!editingWebsite ? 'Save the website first to enable cache clearing' : ''}
-                                                >
-                                                    {cacheClearing ? (
-                                                        <><Loader size="sm" message="" />Clearing...</>
-                                                    ) : cacheClearStatus === 'success' ? (
-                                                        <><i className="bi bi-check-circle-fill me-2"></i>Cache Cleared!</>
-                                                    ) : cacheClearStatus === 'error' ? (
-                                                        <><i className="bi bi-x-circle-fill me-2"></i>Failed – Retry</>
-                                                    ) : (
-                                                        <><i className="bi bi-arrow-clockwise me-2"></i>Clear Cache</>
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </div>
 
                                         <div className="col-12">
                                             <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Header & Hero Content</h6>
@@ -659,7 +637,7 @@ export default function WebsiteForm({
                                                             <div key={module.id} className="card border border-light-subtle rounded-4 shadow-sm overflow-hidden animate-fade-in">
                                                                 <div className="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
                                                                     <div className="d-flex align-items-center gap-3">
-                                                                        <div className="bg-primary bg-opacity-10 text-primary p-2 rounded-3">
+                                                                        <div className="bg-primary bg-opacity-10 text-white p-2 rounded-3">
                                                                             <i className={`bi ${module.type === 'hero-slider' ? 'bi-images' :
                                                                                 module.type === 'search' ? 'bi-search' :
                                                                                     module.type === 'text-image' || module.type === 'image-text' ? 'bi-layout-split' :
@@ -967,6 +945,100 @@ export default function WebsiteForm({
                                                         />
                                                     </div>
                                                 </div>
+
+                                                {formData.configuration.chatbot?.enabled && (
+                                                    <div className="mt-4 border-top pt-4 animate-fade-up">
+                                                        <div className="row g-4">
+                                                            <div className="col-md-6">
+                                                                <label className="form-label fw-bold extra-small text-uppercase text-muted">Welcome Title</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-control rounded-4 shadow-sm border-0"
+                                                                    value={formData.configuration.chatbot?.welcomeMessage || ''}
+                                                                    onChange={(e) => toggleNestedConfig('chatbot', 'welcomeMessage', e.target.value)}
+                                                                    placeholder="e.g. Looking for a new home?"
+                                                                />
+                                                            </div>
+                                                            <div className="col-md-6">
+                                                                <label className="form-label fw-bold extra-small text-uppercase text-muted">Welcome Subtext</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-control rounded-4 shadow-sm border-0"
+                                                                    value={formData.configuration.chatbot?.welcomeSubtext || ''}
+                                                                    onChange={(e) => toggleNestedConfig('chatbot', 'welcomeSubtext', e.target.value)}
+                                                                    placeholder="e.g. Find your dream home in seconds."
+                                                                />
+                                                            </div>
+                                                            <div className="col-md-6">
+                                                                <label className="form-label fw-bold extra-small text-uppercase text-muted">Bot Theme Color</label>
+                                                                <div className="d-flex gap-2">
+                                                                    <div
+                                                                        className="rounded-circle shadow-sm border overflow-hidden"
+                                                                        style={{
+                                                                            width: '40px',
+                                                                            height: '40px',
+                                                                            backgroundColor: formData.configuration.chatbot?.primaryColor || '#6366f1',
+                                                                            position: 'relative'
+                                                                        }}
+                                                                    >
+                                                                        <input
+                                                                            type="color"
+                                                                            className="position-absolute top-50 start-50 translate-middle border-0 p-0"
+                                                                            style={{ width: '150%', height: '150%', cursor: 'pointer' }}
+                                                                            value={formData.configuration.chatbot?.primaryColor || '#6366f1'}
+                                                                            onChange={(e) => toggleNestedConfig('chatbot', 'primaryColor', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <input
+                                                                        type="text"
+                                                                        className="form-control rounded-4 shadow-sm border-0 font-monospace"
+                                                                        value={formData.configuration.chatbot?.primaryColor || '#6366f1'}
+                                                                        onChange={(e) => toggleNestedConfig('chatbot', 'primaryColor', e.target.value)}
+                                                                        placeholder="#6366f1"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-md-6">
+                                                                <label className="form-label fw-bold extra-small text-uppercase text-muted">Lead Strategy</label>
+                                                                <select
+                                                                    className="form-select rounded-4 shadow-sm border-0"
+                                                                    value={formData.configuration.chatbot?.leadCaptureMode || 'both'}
+                                                                    onChange={(e) => toggleNestedConfig('chatbot', 'leadCaptureMode', e.target.value)}
+                                                                >
+                                                                    <option value="email">Email Address Only</option>
+                                                                    <option value="mobile">WhatsApp/Mobile Only</option>
+                                                                    <option value="both">Both Email & WhatsApp</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="col-12 mt-3">
+                                                                <label className="form-label fw-bold extra-small text-uppercase text-muted d-block mb-3">AI Sales Engine</label>
+                                                                <div className="d-flex flex-wrap gap-4 p-3 bg-white rounded-4 border border-light-subtle shadow-sm">
+                                                                    <div className="form-check form-switch">
+                                                                        <input
+                                                                            className="form-check-input"
+                                                                            type="checkbox"
+                                                                            checked={formData.configuration.chatbot?.upsellEnabled !== false}
+                                                                            onChange={(e) => toggleNestedConfig('chatbot', 'upsellEnabled', e.target.checked)}
+                                                                        />
+                                                                        <label className="form-check-label small fw-bold">Premium Inventory Upsell</label>
+                                                                        <p className="extra-small text-muted mb-0">Suggests higher-value properties matching criteria.</p>
+                                                                    </div>
+                                                                    <div className="vr d-none d-md-block"></div>
+                                                                    <div className="form-check form-switch">
+                                                                        <input
+                                                                            className="form-check-input"
+                                                                            type="checkbox"
+                                                                            checked={formData.configuration.chatbot?.crossSellEnabled !== false}
+                                                                            onChange={(e) => toggleNestedConfig('chatbot', 'crossSellEnabled', e.target.checked)}
+                                                                        />
+                                                                        <label className="form-check-label small fw-bold">Service Cross-sell</label>
+                                                                        <p className="extra-small text-muted mb-0">Recommends legal, financing and maintenance.</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 

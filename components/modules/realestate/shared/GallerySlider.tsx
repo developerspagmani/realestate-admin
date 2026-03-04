@@ -24,7 +24,7 @@ const GallerySlider: React.FC<GallerySliderProps> = ({ images, currentIndex = 0,
     const [thumbsSwiper, setThumbsSwiper] = React.useState<any>(null);
     const [mainSwiper, setMainSwiper] = React.useState<any>(null);
     const [showPopup, setShowPopup] = React.useState(false);
-    const [popupImageUrl, setPopupImageUrl] = React.useState('');
+    const [popupIndex, setPopupIndex] = React.useState(0);
 
     // Sync swiper with currentIndex prop if external control is needed
     React.useEffect(() => {
@@ -57,8 +57,8 @@ const GallerySlider: React.FC<GallerySliderProps> = ({ images, currentIndex = 0,
         </div>
     );
 
-    const handleImageClick = (url: string) => {
-        setPopupImageUrl(url);
+    const handleImageClick = (index: number) => {
+        setPopupIndex(index);
         setShowPopup(true);
     };
 
@@ -92,7 +92,7 @@ const GallerySlider: React.FC<GallerySliderProps> = ({ images, currentIndex = 0,
 
                         return (
                             <SwiperSlide key={img.id || idx}>
-                                <div className="w-100 h-100 position-relative cursor-zoom-in slider-image-container" onClick={() => handleImageClick(imgUrl)}>
+                                <div className="w-100 h-100 position-relative cursor-zoom-in slider-image-container" onClick={() => handleImageClick(idx)}>
                                     <img
                                         src={imgUrl}
                                         className="w-100 h-100 object-fit-cover shadow-inner main-slide-img"
@@ -166,7 +166,8 @@ const GallerySlider: React.FC<GallerySliderProps> = ({ images, currentIndex = 0,
 
             <ImageModal
                 show={showPopup}
-                imageUrl={popupImageUrl}
+                images={images}
+                startIndex={popupIndex}
                 onClose={() => setShowPopup(false)}
             />
 

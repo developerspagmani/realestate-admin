@@ -25,15 +25,15 @@ export default function ListingCard({ workspace, type, showOwner = false, compac
 
       switch (priceType) {
         case 'fixed':
-          return `$${price.toLocaleString()}`;
+          return `$${price.toLocaleString('en-US')}`;
         case 'per_month':
-          return `$${price.toLocaleString()}/mo`;
+          return `$${price.toLocaleString('en-US')}/mo`;
         case 'per_year':
-          return `$${price.toLocaleString()}/yr`;
+          return `$${price.toLocaleString('en-US')}/yr`;
         case 'per_sqft':
           return `$${price}/sqft`;
         default:
-          return `$${price.toLocaleString()}`;
+          return `$${price.toLocaleString('en-US')}`;
       }
     } else if (space) {
       return `$${space.availableWorkspaces > 0 ? 'From $25/hr' : 'Fully Booked'}`;
@@ -64,7 +64,7 @@ export default function ListingCard({ workspace, type, showOwner = false, compac
     if (isProperty && property) {
       return {
         title: property.propertyType.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        subtitle: `${property.squareFootage.toLocaleString()} sq ft`,
+        subtitle: `${property.squareFootage.toLocaleString('en-US')} sq ft`,
         details: [
           property.bedrooms && `${property.bedrooms} bed`,
           property.bathrooms && `${property.bathrooms} bath`,

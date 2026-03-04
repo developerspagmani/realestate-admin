@@ -312,7 +312,7 @@ function AccountsContent() {
                         ) : (
                             <div className="text-center py-5 text-muted small">
                                 <i className="bi bi-link-45deg display-4 mb-2 d-block opacity-25"></i>
-                                <p className="mb-0">No active social media connections</p>
+                                <h4 className="mb-0 text-muted text-primary">No active social media connections</h4>
                             </div>
                         )}
                     </div>

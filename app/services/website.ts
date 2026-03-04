@@ -37,7 +37,9 @@ export const websiteService = {
     },
 
     getPublicWebsite: async (slugOrDomain: string) => {
-        return await makeApiCall(websiteEndpoints.getPublic(slugOrDomain));
+        return await makeApiCall(websiteEndpoints.getPublic(slugOrDomain), {
+            tags: ['websites', `website-${slugOrDomain}`]
+        } as any);
     },
 
     createPublicLead: async (id: string, leadData: any) => {

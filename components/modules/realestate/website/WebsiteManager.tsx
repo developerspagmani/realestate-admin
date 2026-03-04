@@ -10,6 +10,7 @@ import WebsiteForm from '@/components/modules/realestate/website/WebsiteForm';
 import WebsiteCard from '@/components/modules/realestate/website/WebsiteCard';
 import WebsiteQRCodeGenerator from '@/components/modules/realestate/website/WebsiteQRCodeGenerator';
 import Toast from '@/components/common/Toast';
+import { cacheManager, CacheTags } from '@/app/services/cacheManager';
 
 interface WebsiteManagerProps {
     mode?: 'admin' | 'owner';
@@ -245,6 +246,11 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
                 }
                 loadWebsites();
                 showToast(editingWebsite ? 'Website updated successfully' : 'Website created successfully');
+
+                // Automate revalidation
+                if (finalData.slug) {
+                    cacheManager.invalidate([CacheTags.WEBSITES, `website-${finalData.slug}`]);
+                }
             } else {
                 showToast(response.message || 'Failed to save website', 'error');
             }
@@ -264,6 +270,8 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
             if (response.success) {
                 loadWebsites();
                 showToast('Website deleted successfully');
+                // Invalidate cache
+                cacheManager.invalidate(CacheTags.WEBSITES);
             } else {
                 showToast(response.message || 'Failed to delete website', 'error');
             }

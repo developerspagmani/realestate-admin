@@ -7,6 +7,7 @@ import { tenantService, userService, getAuthToken, dashboardService, leadService
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import Loader from '@/components/common/Loader';
+import Toast from './common/Toast';
 
 interface AdminHeaderProps {
     onMenuClick?: () => void;
@@ -29,6 +30,8 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [isSupportOpen, setIsSupportOpen] = useState(false);
     const [showSupportModal, setShowSupportModal] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [logoutQuote, setLogoutQuote] = useState('');
     const [isSendingSupport, setIsSendingSupport] = useState(false);
     const [supportForm, setSupportForm] = useState({
         subject: '',
@@ -42,6 +45,16 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
     const pathname = usePathname();
+
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
+
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ show: true, message, type });
+    };
 
     // Close dropdowns on outside click
     useEffect(() => {
@@ -117,15 +130,29 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 setTenantType(Number(selectedOwner.tenantType));
             }
         } else {
-            console.warn('AdminHeader: Owner not found in list:', ownerId);
+            showToast('Owner not found', 'error');
         }
     };
 
-    const handleLogout = () => {
-        if (window.confirm('Are you sure you want to log out?')) {
-            logout();
-            router.push('/login');
-        }
+    const quotes = [
+        "Success in sales comes to those who consistently show up, follow up, and never give up.",
+        "Your income in sales is directly proportional to the value you bring to your customers.",
+        "Great salespeople don't push products — they solve problems.",
+        "Every 'no' brings you closer to a 'yes.' Keep going.",
+        "Sales is not about convincing; it's about understanding and helping.",
+        "Confidence, persistence, and preparation are the keys to closing any deal.",
+        "The best sales strategy is building trust first and selling second."
+    ];
+
+    const handleLogoutInitiate = () => {
+        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+        setLogoutQuote(randomQuote);
+        setShowLogoutModal(true);
+    };
+
+    const confirmLogout = () => {
+        logout();
+        router.push('/login');
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,13 +183,12 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            alert('Your support ticket has been sent to support@virpanix.com. We will get back to you soon.');
+            showToast('Support ticket sent successfully', 'success');
             setShowSupportModal(false);
             setSupportForm({ subject: '', message: '', priority: 'Medium' });
             setAttachments([]);
         } catch (error) {
-            console.error('Error sending support ticket:', error);
-            alert('Failed to send support ticket. Please try again later.');
+            showToast('Failed to send support ticket', 'error');
         } finally {
             setIsSendingSupport(false);
         }
@@ -643,7 +669,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
                             <li><hr className="dropdown-divider opacity-50" /></li>
                             <li>
-                                <button className="dropdown-item d-flex align-items-center gap-3 py-2 text-danger" onClick={handleLogout}>
+                                <button className="dropdown-item d-flex align-items-center gap-3 py-2 text-danger" onClick={handleLogoutInitiate}>
                                     <i className="bi bi-box-arrow-right fs-4"></i>
                                     <span className="fw-bold">Logout</span>
                                 </button>
@@ -783,6 +809,55 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 </div>
             )}
 
+            {showLogoutModal && (
+                <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)', zIndex: 2050 }}>
+                    <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '400px' }}>
+                        <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden text-center">
+                            <div className="modal-header border-0 p-4 pb-0 justify-content-center">
+                                <div className="bg-danger bg-opacity-10 rounded-circle p-3 mb-2 d-flex align-items-center justify-content-center" style={{ width: '80px', height: '80px' }}>
+                                    <i className="bi bi-door-open-fill fs-1 text-danger"></i>
+                                </div>
+                            </div>
+                            <div className="modal-body p-4 pt-0">
+                                <h3 className="fw-bold text-dark mb-3">Ready to leave?</h3>
+
+                                <div className="p-4 bg-light rounded-4 mb-4 border border-primary border-opacity-10 position-relative mx-3">
+                                    <i className="bi bi-quote fs-1 position-absolute top-0 start-0 translate-middle text-primary opacity-10"></i>
+                                    <p className="fst-italic text-dark mb-0 fs-15 line-height-1" style={{ fontSize: '15px' }}>
+                                        "{logoutQuote}"
+                                    </p>
+                                </div>
+
+                                <p className="text-muted small px-3">
+                                    We've saved your progress. Come back soon to close your next big deal!
+                                </p>
+                            </div>
+                            <div className="modal-footer border-0 p-4 d-flex gap-3 pt-0">
+                                <button
+                                    type="button"
+                                    className="btn btn-light px-4 py-2 flex-grow-1 rounded-3 fw-bold border-0 shadow-sm transition-all"
+                                    onClick={() => setShowLogoutModal(false)}
+                                >
+                                    Stay Here
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-danger px-4 py-2 flex-grow-1 rounded-3 fw-bold shadow-sm transition-all"
+                                    onClick={confirmLogout}
+                                >
+                                    Log Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
             <style jsx>{`
                 .admin-header {
                     height: 80px;

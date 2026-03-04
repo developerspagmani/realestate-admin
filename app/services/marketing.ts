@@ -225,4 +225,51 @@ export const marketingService = {
             body: JSON.stringify({ workflow, testLead }),
         });
     },
+
+    // Intelligent Email Automation
+    getIntelligentConfig: async (token: string, tenantId: string) => {
+        return await makeApiCall(`/marketing/intelligent/config?tenantId=${tenantId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
+    saveIntelligentConfig: async (token: string, tenantId: string, config: any) => {
+        return await makeApiCall(`/marketing/intelligent/config?tenantId=${tenantId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(config),
+        });
+    },
+
+    getIntelligentLogs: async (token: string, tenantId: string) => {
+        return await makeApiCall(`/marketing/intelligent/logs?tenantId=${tenantId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
+    getIntelligentStats: async (token: string, tenantId: string) => {
+        return await makeApiCall(`/marketing/intelligent/stats?tenantId=${tenantId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
+    getLeadSegments: async (token: string, tenantId: string) => {
+        return await makeApiCall(`/marketing/intelligent/segments?tenantId=${tenantId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
+    getIntelligentHeatmap: async (token: string, tenantId: string) => {
+        return await makeApiCall(`/marketing/intelligent/heatmap?tenantId=${tenantId}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
+    testIntelligentEmail: async (token: string, tenantId: string, data: { email: string, budget: number }) => {
+        return await makeApiCall(`/marketing/intelligent/test?tenantId=${tenantId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data),
+        });
+    },
 };

@@ -351,7 +351,7 @@ export default function WidgetPreview({ formData, tenantType, deviceMode: extern
                             right: '20px',
                             width: '45px',
                             height: '45px',
-                            backgroundColor: theme.primaryColor
+                            backgroundColor: config.chatbot?.primaryColor || theme.primaryColor
                         }}
                     >
                         <i className="bi bi-chat-dots-fill"></i>

@@ -59,5 +59,5 @@ export const getCurrencyConfig = (input?: string) => {
 
 export const formatCurrency = (amount: number, input?: string) => {
     const config = getCurrencyConfig(input);
-    return `${config.symbol}${amount.toLocaleString()}`;
+    return `${config.symbol}${amount.toLocaleString('en-US')}`;
 };

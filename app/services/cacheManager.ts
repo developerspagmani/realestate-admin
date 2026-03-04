@@ -11,6 +11,7 @@ export const CacheTags = {
     AGENTS: 'agents',
     DASHBOARD: 'dashboard',
     TENANTS: 'tenants',
+    WEBSITES: 'websites',
 } as const;
 
 /**

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { marketingService, propertyService, getAuthToken } from '@/app/services/api';
 import { Property } from '@/app/services/types';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 const DEFAULT_THEMES = [
     {
@@ -22,7 +23,7 @@ const DEFAULT_THEMES = [
                     <div style="background-color: #f1f1f1; padding: 20px; text-align: center; border-top: 1px solid #eee;">
                         <p style="margin: 0; font-size: 12px; color: #888;">${design.footerText || '&copy; 2026 Real Estate Platform. All rights reserved.'}</p>
                         <div style="margin-top: 10px;">
-                            <a href="#" style="color: ${design.primaryColor}; text-decoration: none; margin: 0 10px; font-size: 12px;">Unsubscribe</a>
+                            <a href="{{unsubscribe_url}}" style="color: ${design.primaryColor}; text-decoration: none; margin: 0 10px; font-size: 12px;">Unsubscribe</a>
                         </div>
                     </div>
                 </div>
@@ -42,7 +43,8 @@ const DEFAULT_THEMES = [
                     ${content}
                     ${renderSocialIcons(design)}
                     <div style="margin-top: 50px; font-size: 11px; color: #999; text-align: center;">
-                        ${design.footerText || 'Sent via Intelligent Real Estate CRM'}
+                        <p style="margin-bottom: 5px;">${design.footerText || 'Sent via Intelligent Real Estate CRM'}</p>
+                        <a href="{{unsubscribe_url}}" style="color: ${design.primaryColor}; text-decoration: none;">Unsubscribe</a>
                     </div>
                 </div>
             </div>
@@ -65,7 +67,8 @@ const DEFAULT_THEMES = [
                     </div>
                     ${renderSocialIcons(design, true)}
                     <div style="margin-top: 40px; text-align: center; border-top: 1px solid #333; padding-top: 20px; font-size: 12px; color: #666;">
-                        ${design.footerText || '&copy; 2026 High-End Estates'}
+                        <p style="margin-bottom: 5px;">${design.footerText || '&copy; 2026 High-End Estates'}</p>
+                        <a href="{{unsubscribe_url}}" style="color: ${design.primaryColor}; text-decoration: none; font-size: 11px; letter-spacing: 1px;">UNSUBSCRIBE</a>
                     </div>
                 </div>
             </div>
@@ -109,11 +112,18 @@ interface designState {
 }
 
 const renderSocialIcons = (design: designState, isDark = false) => {
+    const socialIcons: any = {
+        facebook: 'https://cdn-icons-png.flaticon.com/512/733/733547.png',
+        twitter: 'https://cdn-icons-png.flaticon.com/512/733/733579.png',
+        instagram: 'https://cdn-icons-png.flaticon.com/512/2111/2111463.png',
+        linkedin: 'https://cdn-icons-png.flaticon.com/512/145/145807.png'
+    };
+
     const links = [
-        { id: 'facebook', icon: 'fb' },
-        { id: 'twitter', icon: 'tw' },
-        { id: 'instagram', icon: 'ig' },
-        { id: 'linkedin', icon: 'ln' }
+        { id: 'facebook' },
+        { id: 'twitter' },
+        { id: 'instagram' },
+        { id: 'linkedin' }
     ].filter(s => (design as any)[s.id]);
 
     if (links.length === 0) return '';
@@ -121,7 +131,9 @@ const renderSocialIcons = (design: designState, isDark = false) => {
     return `
         <div style="padding: 10px 40px; text-align: center;">
             ${links.map(l => `
-                <a href="${(design as any)[l.id]}" style="display: inline-block; margin: 0 10px; color: ${isDark ? design.primaryColor : '#888'}; text-decoration: none; font-weight: bold;">${l.icon.toUpperCase()}</a>
+                <a href="${(design as any)[l.id]}" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                    <img src="${socialIcons[l.id]}" width="24" height="24" style="display: block; border: 0;" alt="${l.id}" />
+                </a>
             `).join('')}
         </div>
     `;
@@ -132,6 +144,7 @@ interface TemplateManagerProps {
 }
 
 export default function TemplateManager({ tenantId }: TemplateManagerProps) {
+    const { currencySymbol, activeTenant } = useManagementContext();
     const [templates, setTemplates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -190,8 +203,11 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
     };
 
     const addPropertyToTemplate = (property: Property) => {
-        const baseUrl = process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : 'https://virpanix.com';
+        const websiteDomain = activeTenant?.customDomain || (activeTenant?.slug ? `${activeTenant.slug}.virpanix.com` : 'virpanix.com');
+        const baseUrl = websiteDomain.startsWith('http') ? websiteDomain : `https://${websiteDomain}`;
+
         const propertyHtml = `
+            <!-- START_PROPERTY_BLOCK -->
             <div style="margin-top: 30px; text-align: center; margin-bottom: 20px;">
                 <h2 style="font-size: 20px; color: ${design.primaryColor}; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Featured Property</h2>
                 <div style="width: 40px; height: 2px; background-color: ${design.primaryColor}; margin: 10px auto;"></div>
@@ -212,7 +228,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                     <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fcfcfc; border-radius: 8px; border: 1px solid #f0f0f0;">
                         <tr>
                             <td style="padding: 15px;">
-                                <div style="font-weight: 700; color: ${design.primaryColor}; font-size: 24px;">$${Number(property.price || 0).toLocaleString()}</div>
+                                <div style="font-weight: 700; color: ${design.primaryColor}; font-size: 24px;">${currencySymbol?.trim() || '$'} ${Number(property.price || 0).toLocaleString()}</div>
                                 <div style="font-size: 11px; color: #999999; text-transform: uppercase; margin-top: 2px;">${property.city || 'Prime Location'}</div>
                             </td>
                             <td style="padding: 15px; text-align: right;">
@@ -222,13 +238,23 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                     </table>
                 </div>
             </div>
+            <!-- END_PROPERTY_BLOCK -->
         `;
-        insertHtmlAtCursor(propertyHtml);
+
+        // Append to the end instead of cursor as requested
+        setTemplateData(prev => ({ ...prev, content: prev.content + "\n" + propertyHtml }));
         setShowPropertyPicker(false);
     };
 
+    const handleRemoveProperties = () => {
+        const regex = /<!-- START_PROPERTY_BLOCK -->[\s\S]*?<!-- END_PROPERTY_BLOCK -->/g;
+        const newContent = templateData.content.replace(regex, '');
+        setTemplateData({ ...templateData, content: newContent.trim() });
+    };
+
     const addPropertyGridToTemplate = (selectedProperties: Property[]) => {
-        const baseUrl = process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : 'https://virpanix.com';
+        const websiteDomain = activeTenant?.customDomain || (activeTenant?.slug ? `${activeTenant.slug}.virpanix.com` : 'virpanix.com');
+        const baseUrl = websiteDomain.startsWith('http') ? websiteDomain : `https://${websiteDomain}`;
 
         // Split into chunks of 2 for rows
         const rows: Property[][] = [];
@@ -237,6 +263,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
         }
 
         let gridHtml = `
+            <!-- START_PROPERTY_BLOCK -->
             <div style="margin-top: 30px; text-align: center; margin-bottom: 25px;">
                 <h2 style="font-size: 18px; color: ${design.primaryColor}; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Properties for You</h2>
                 <div style="width: 40px; height: 1px; background-color: #ddd; margin: 10px auto;"></div>
@@ -256,7 +283,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                             </div>` : ''}
                             <div style="padding: 15px;">
                                 <h4 style="margin: 0 0 5px 0; color: #111111; font-size: 14px; font-weight: bold; height: 34px; overflow: hidden;">${prop.title}</h4>
-                                <div style="color: ${design.primaryColor}; font-weight: bold; font-size: 16px; margin-bottom: 10px;">$${Number(prop.price || 0).toLocaleString()}</div>
+                                <div style="color: ${design.primaryColor}; font-weight: bold; font-size: 16px; margin-bottom: 10px;">${currencySymbol?.trim() || '$'} ${Number(prop.price || 0).toLocaleString()}</div>
                                 <a href="${baseUrl}/properties/${prop.slug}" style="display: block; text-align: center; background-color: ${design.primaryColor}10; color: ${design.primaryColor}; padding: 8px; text-decoration: none; border-radius: 4px; font-size: 11px; font-weight: bold;">VIEW PROPERTY</a>
                             </div>
                         </div>
@@ -270,8 +297,11 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
             gridHtml += `</tr>`;
         });
 
-        gridHtml += `</table>`;
-        insertHtmlAtCursor(gridHtml);
+        gridHtml += `</table>
+            <!-- END_PROPERTY_BLOCK -->`;
+
+        // Append to the end as requested
+        setTemplateData(prev => ({ ...prev, content: prev.content + "\n" + gridHtml }));
         setShowPropertyPicker(false);
         setSelectedPropertyIds([]);
     };
@@ -660,13 +690,24 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                             <div className="d-flex justify-content-between align-items-center mb-2">
                                                 <label className="form-label extra-small fw-bold text-uppercase text-muted mb-0">Body Content</label>
                                                 <div className="position-relative">
-                                                    <button
-                                                        className="btn btn-link btn-sm p-0 extra-small fw-bold text-primary text-decoration-none dropdown-toggle"
-                                                        type="button"
-                                                        onClick={(e) => { e.stopPropagation(); setShowPropertyPicker(!showPropertyPicker); }}
-                                                    >
-                                                        <i className="bi bi-plus-circle me-1"></i> Add Property
-                                                    </button>
+                                                    <div className="d-flex gap-2 align-items-center">
+                                                        {templateData.content.includes('START_PROPERTY_BLOCK') && (
+                                                            <button
+                                                                className="btn btn-link btn-sm p-0 extra-small fw-bold text-danger text-decoration-none"
+                                                                type="button"
+                                                                onClick={handleRemoveProperties}
+                                                            >
+                                                                <i className="bi bi-trash me-1"></i> Remove
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            className="btn btn-link btn-sm p-0 extra-small fw-bold text-primary text-decoration-none dropdown-toggle"
+                                                            type="button"
+                                                            onClick={(e) => { e.stopPropagation(); setShowPropertyPicker(!showPropertyPicker); }}
+                                                        >
+                                                            <i className="bi bi-plus-circle me-1"></i> Add Property
+                                                        </button>
+                                                    </div>
                                                     {showPropertyPicker && (
                                                         <div className="position-absolute end-0 shadow-lg border-0 rounded-4 p-3 bg-white overflow-auto" style={{ zIndex: 100, top: '25px', maxHeight: '420px', width: '320px' }}>
                                                             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -717,7 +758,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                                                                                     )}
                                                                                     <div className="text-truncate">
                                                                                         <div className="fw-bold extra-small text-dark">{prop.title}</div>
-                                                                                        <div style={{ fontSize: '9px' }} className="text-muted fw-bold">$ {Number(prop.price || 0).toLocaleString()}</div>
+                                                                                        <div style={{ fontSize: '9px' }} className="text-muted fw-bold">{currencySymbol?.trim() || '$'} {Number(prop.price || 0).toLocaleString()}</div>
                                                                                     </div>
                                                                                 </div>
                                                                             );

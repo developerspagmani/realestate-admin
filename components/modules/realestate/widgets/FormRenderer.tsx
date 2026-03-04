@@ -101,7 +101,7 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
 
     return (
         <div className="inquiry-form-container bg-white p-4 rounded-4 shadow-sm border animate-fade-in">
-            <h5 className="fw-bold mb-1">{localConfig.title || 'Inquiry Form'}</h5>
+            <h5 className="fw-bold mb-1" style={{ color: primaryColor }}>{localConfig.title || 'Inquiry Form'}</h5>
             <p className="extra-small text-muted mb-4">{localConfig.description}</p>
 
             <form onSubmit={handleSubmit}>

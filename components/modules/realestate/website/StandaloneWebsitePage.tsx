@@ -71,6 +71,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         loadWebsiteData();
     }, [loadWebsiteData]);
 
+
     const identifyLead = (id: string, email?: string) => {
         const identity = { id, email };
         setLeadIdentity(identity);
@@ -105,7 +106,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         const config = getCurrencyConfig(baseCurrency || website?.tenant?.country);
         const symbol = config?.symbol || '$';
 
-        return `${symbol}${Number(pricing.price).toLocaleString()}${label ? `/${label}` : ''}`;
+        return `${symbol}${Number(pricing.price).toLocaleString('en-US')}${label ? `/${label}` : ''}`;
     };
 
     // Helper to map units for the 3D Viewer
@@ -140,6 +141,16 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
 
     const theme = website.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif' };
     const builder = website.configuration?.builder || {};
+    const chatbotConfig = {
+        ...(website.tenant?.settings?.chatbotConfig || {}),
+        ...(data?.[0]?.metadata?.chatbotConfig || {}),
+        ...(website.configuration?.chatbot || {}),
+        // Handle specific renames/fallbacks
+        welcomeMessage: website.configuration?.chatbot?.welcomeMessage ||
+            website.configuration?.chatbot?.welcomeTitle ||
+            data?.[0]?.metadata?.chatbotConfig?.welcomeMessage ||
+            website.tenant?.settings?.chatbotConfig?.welcomeMessage
+    };
 
     const renderView = () => {
         const tenantSettings = website?.tenant?.settings || {};
@@ -254,7 +265,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     };
 
     return (
-        <div className="standalone-website min-vh-100 bg-white selection-none" style={{ '--primary-color': theme.primaryColor, fontFamily: theme.fontFamily } as any}>
+        <div className="standalone-website min-vh-100 bg-white selection-none" style={{ '--primary-color': theme.primaryColor, fontFamily: `'${theme.fontFamily}', sans-serif` } as any}>
             {/* Real Estate Premium Header */}
             {builder.showLogo !== false && (
                 <header className="py-3 bg-white backdrop-blur-md border-bottom sticky-top z-1050">
@@ -419,7 +430,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                     <button
                         className="btn rounded-circle shadow-lg floating-chat-btn d-flex align-items-center justify-content-center animate-bounce"
                         style={{
-                            backgroundColor: theme.primaryColor,
+                            backgroundColor: chatbotConfig.primaryColor || theme.primaryColor,
                             width: '60px',
                             height: '60px',
                             position: 'fixed',
@@ -450,7 +461,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         }}>
                             <ChatbotWidget
                                 properties={data}
-                                theme={theme}
+                                theme={{ ...theme, primaryColor: chatbotConfig.primaryColor || theme.primaryColor }}
                                 onClose={() => {
                                     setShowChat(false);
                                     setChatExpanded(false);
@@ -465,6 +476,15 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                     setChatExpanded(false);
                                     window.scrollTo(0, 0);
                                 }}
+                                // Global AI Settings Injection
+                                customWelcomeTitle={chatbotConfig.welcomeMessage}
+                                customWelcomeSubtext={chatbotConfig.welcomeSubtext}
+                                leadCaptureMode={chatbotConfig.leadCaptureMode}
+                                flow={chatbotConfig.flow}
+                                upsellEnabled={chatbotConfig.upsellEnabled}
+                                crossSellEnabled={chatbotConfig.crossSellEnabled}
+                                recommendationLogic={chatbotConfig.recommendationLogic}
+                                currencySymbol={getCurrencyConfig(website?.tenant?.settings?.general?.currency || website?.tenant?.country)?.symbol || '$'}
                                 onCreateLead={async (contact, name) => {
                                     try {
                                         const leadPayload: any = {
@@ -472,76 +492,26 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                             source: 'website_chatbot'
                                         };
 
-                                        // Parse contact string (Email vs Phone) - consistent with Widget logic
                                         if (contact && contact.includes('@')) {
                                             leadPayload.email = contact;
                                         } else if (contact) {
                                             leadPayload.phone = contact;
                                         }
 
-                                        // Handle combined email/phone format (email | phone) if present
                                         if (contact && contact.includes('|')) {
                                             const [e, p] = contact.split('|').map(s => s.trim());
                                             if (e && e.includes('@')) leadPayload.email = e;
                                             if (p) leadPayload.phone = p;
                                         }
 
-                                        console.log('Creating lead for website:', website.id, leadPayload);
                                         const res = await websiteService.createPublicLead(website.id, leadPayload);
-                                        const leadId = res.success ? (res.data?.id || res.id) : (res.data?.id || res.id);
-
-                                        if (leadId) {
-                                            identifyLead(leadId, leadPayload.email);
-                                        } else if (!res.success) {
-                                            console.error('Lead capture response missing success or ID:', res);
-                                            throw new Error(res.message || 'Failed to capture lead');
-                                        }
+                                        const leadId = res.success ? (res.data?.id || res.id) : null;
+                                        if (leadId) identifyLead(leadId, leadPayload.email);
                                     } catch (error) {
                                         console.error('Standalone chatbot lead capture error:', error);
                                         throw error;
                                     }
                                 }}
-                                // Advanced configuration from website settings
-                                customWelcomeTitle={
-                                    website.configuration?.chatbot?.welcomeMessage ||
-                                    website.configuration?.chatbot?.welcomeTitle ||
-                                    (data?.[0]?.metadata?.chatbotConfig?.welcomeMessage) ||
-                                    (website.tenant?.settings?.chatbotConfig?.welcomeMessage)
-                                }
-                                customWelcomeSubtext={
-                                    website.configuration?.chatbot?.welcomeSubtext ||
-                                    (data?.[0]?.metadata?.chatbotConfig?.welcomeSubtext) ||
-                                    (website.tenant?.settings?.chatbotConfig?.welcomeSubtext)
-                                }
-                                leadCaptureMode={
-                                    website.configuration?.chatbot?.leadCaptureMode ||
-                                    (data?.[0]?.metadata?.chatbotConfig?.leadCaptureMode) ||
-                                    (website.tenant?.settings?.chatbotConfig?.leadCaptureMode)
-                                }
-                                flow={
-                                    website.configuration?.chatbot?.flow ||
-                                    (data?.[0]?.metadata?.chatbotConfig?.flow) ||
-                                    (website.tenant?.settings?.chatbotConfig?.flow)
-                                }
-                                upsellEnabled={
-                                    website.configuration?.chatbot?.upsellEnabled !== undefined ?
-                                        website.configuration?.chatbot?.upsellEnabled :
-                                        (data?.[0]?.metadata?.chatbotConfig?.upsellEnabled !== undefined ?
-                                            data?.[0]?.metadata?.chatbotConfig?.upsellEnabled :
-                                            website.tenant?.settings?.chatbotConfig?.upsellEnabled)
-                                }
-                                crossSellEnabled={
-                                    website.configuration?.chatbot?.crossSellEnabled !== undefined ?
-                                        website.configuration?.chatbot?.crossSellEnabled :
-                                        (data?.[0]?.metadata?.chatbotConfig?.crossSellEnabled !== undefined ?
-                                            data?.[0]?.metadata?.chatbotConfig?.crossSellEnabled :
-                                            website.tenant?.settings?.chatbotConfig?.crossSellEnabled)
-                                }
-                                recommendationLogic={
-                                    website.configuration?.chatbot?.recommendationLogic ||
-                                    (data?.[0]?.metadata?.chatbotConfig?.recommendationLogic) ||
-                                    (website.tenant?.settings?.chatbotConfig?.recommendationLogic)
-                                }
                             />
                         </div>
                     )}

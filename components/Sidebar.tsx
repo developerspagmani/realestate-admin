@@ -6,6 +6,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import Image from 'next/image';
 import Link from 'next/link';
+import ConfirmationModal from '@/components/common/ConfirmationModal';
 
 
 interface SidebarProps {
@@ -22,6 +23,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
 
   const [mounted, setMounted] = useState(false);
   const [isMounting, setIsMounting] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -65,10 +67,12 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     }
   }, [collapsed, onSidebarCollapse]);
 
-  const handleLogout = () => {
-    if (window.confirm('Are you sure you want to log out?')) {
-      logout();
-    }
+  const handleLogoutInitiate = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    logout();
   };
 
   const settingsPath = isAdmin ? '/realestate-admin/settings' : isOwner ? '/realestate-owner-admin/settings' : isAgent ? '/realestate-agent/profile' : '/user/settings';
@@ -119,6 +123,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             ...(hasModule('marketing_hub') ? [
               { href: '/realestate-admin/marketing', label: 'Email Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
+              { href: '/realestate-admin/marketing/intelligent', label: 'Intelligent Email', icon: 'bi-robot', active: activePage === 'intelligent-email' },
             ] : []),
             ...(hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') ? [
               {
@@ -202,6 +207,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             ...(hasModule('marketing_hub') ? [
               { href: '/realestate-owner-admin/marketing', label: 'Email Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
+              { href: '/realestate-owner-admin/marketing/intelligent', label: 'Intelligent Email', icon: 'bi-robot', active: activePage === 'intelligent-email' },
             ] : []),
             ...(hasModule('analytics_pro') || hasModule('deal_intelligence') ? [
               {
@@ -490,7 +496,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           {/* Quick Logout Item for Sidebar (Optional, added for convenience) */}
           <div className="px-2 mt-4 pt-4 border-top">
             <button
-              onClick={handleLogout}
+              onClick={handleLogoutInitiate}
               className="nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all text-danger hover-bg-danger-light w-100 border-0 bg-transparent"
             >
               <i className="bi bi-box-arrow-right fs-5"></i>
@@ -523,7 +529,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                   <li><h6 className="dropdown-header small text-uppercase fw-bold text-muted">Account</h6></li>
                   <li><Link className="dropdown-item d-flex align-items-center gap-2" href={settingsPath}><i className="bi bi-person"></i> Profile</Link></li>
                   <li><hr className="dropdown-divider" /></li>
-                  <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={handleLogout}><i className="bi bi-box-arrow-right"></i> Logout</button></li>
+                  <li><button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={handleLogoutInitiate}><i className="bi bi-box-arrow-right"></i> Logout</button></li>
                 </ul>
               </div>
             )}
@@ -565,6 +571,17 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           padding-right: 0;
         }
       `}</style>
+
+      <ConfirmationModal
+        show={showLogoutModal}
+        title="Logging Out?"
+        message="Are you sure you want to end your session? We'll be here when you're ready to close more deals."
+        confirmText="Yes, Logout"
+        cancelText="Stay Here"
+        onConfirm={confirmLogout}
+        onCancel={() => setShowLogoutModal(false)}
+        type="danger"
+      />
     </div>
   );
 }

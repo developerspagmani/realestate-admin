@@ -31,7 +31,7 @@ export default function PropertyDetailClient({ propertySlug }: { propertySlug: s
     const getFormattedPrice = (unit: any) => {
         if (!unit.unitPricing?.length) return 'Price on Inquiry';
         const pricing = unit.unitPricing[0];
-        return `${currencySymbol}${Number(pricing.price).toLocaleString()}`;
+        return `${currencySymbol}${Number(pricing.price).toLocaleString('en-US')}`;
     };
 
     const mapUnitsToSeats = (units: any[]) => {

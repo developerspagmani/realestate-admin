@@ -63,7 +63,7 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                             <div>
                                 <div className="d-flex justify-content-between align-items-start mb-3">
                                     <div className="d-flex gap-2 align-items-center">
-                                        <span className="badge bg-dark rounded-4 px-3 py-2">Unit {selectedUnit.unitCode}</span>
+                                        <span className="badge bg-dark rounded-4 px-3 py-2" >{selectedUnit.unitCode}</span>
                                         {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking) && (
                                             <button
                                                 className="btn btn-primary btn-sm rounded-pill px-3 fw-bold d-md-none"
@@ -76,10 +76,14 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                     </div>
                                     <div className="text-end">
                                         <span className="d-block extra-small text-muted">Asking Price</span>
-                                        <span className="text-primary fw-extrabold fs-3" style={{ color: theme.primaryColor }}>{getFormattedPrice(selectedUnit)}</span>
+                                        {widget.configuration.builder?.showPrice !== false ? (
+                                            <span className="text-primary fw-extrabold fs-3" style={{ color: theme.primaryColor }}>{getFormattedPrice(selectedUnit)}</span>
+                                        ) : (
+                                            <span className="text-primary fw-extrabold fs-6" style={{ color: theme.primaryColor }}>Price on Request</span>
+                                        )}
                                     </div>
                                 </div>
-                                <h4 className="fw-bold mb-4">{selectedUnit.name || selectedProperty.title}</h4>
+                                <h1 className="fs-18 fw-bold mb-4" style={{ color: theme.primaryColor }}>{selectedUnit.name || selectedProperty.title}</h1>
 
                                 <div className="row g-3">
                                     <div className="col-6">
@@ -140,10 +144,10 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
 
                     <div className="col-12 mt-4">
                         <div className="row g-4">
-                            <div className="col-md-8">
+                            <div className={`col-md-${(widget.configuration.inquiryForm?.enabled || widget.configuration.builder?.showInquiry !== false) ? '8' : '12'}`}>
                                 <div className="card border-0 shadow-sm rounded-4 p-4 h-100">
-                                    <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                        <i className="bi bi-list-stars me-2 text-primary" style={{ color: theme.primaryColor }}></i>
+                                    <h5 className="fw-bold mb-4 d-flex align-items-center" style={{ color: theme.primaryColor }}>
+                                        <i className="bi bi-list-stars me-2 text-primary" ></i>
                                         Detailed Specifications
                                     </h5>
                                     <div className="row g-4 mb-4">
@@ -195,46 +199,48 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                 </div>
                             </div>
 
-                            <div className="col-md-4">
-                                <div className="glass-panel p-4 rounded-4 h-100 unit-inquiry-form shadow-sm">
-                                    <div className="text-center mb-4">
-                                        <div className="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-flex mb-3">
-                                            <i className="bi bi-headset fs-4 text-primary" style={{ color: theme.primaryColor }}></i>
+                            {(widget.configuration.inquiryForm?.enabled || widget.configuration.builder?.showInquiry !== false) && (
+                                <div className="col-md-4">
+                                    <div className="glass-panel p-4 rounded-4 h-100 unit-inquiry-form shadow-sm">
+                                        <div className="text-center mb-4">
+                                            <div className="rounded-4 p-3 d-inline-flex mb-3" style={{ backgroundColor: theme.primaryColor }}>
+                                                <i className="bi bi-headset fs-4 text-white"></i>
+                                            </div>
+                                            <h5 className="fw-bold">Contact Listing Agent</h5>
+                                            <p className="extra-small text-muted">Receive a call within 15 minutes</p>
                                         </div>
-                                        <h5 className="fw-bold">Contact Listing Agent</h5>
-                                        <p className="extra-small text-muted">Receive a call within 15 minutes</p>
+
+                                        <FormRenderer
+                                            config={widget.configuration.inquiryForm}
+                                            primaryColor={theme.primaryColor}
+                                            onSubmit={async (formData, configUsed) => {
+                                                const leadPayload: any = {
+                                                    source: 1,
+                                                    propertyId: selectedProperty.id,
+                                                    notes: `Unit Specific Inquiry: ${selectedUnit.unitCode}\n${(configUsed.fields || []).map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
+                                                };
+
+                                                (configUsed.fields || []).forEach((field: any) => {
+                                                    const val = formData[field.id];
+                                                    if (!val) return;
+                                                    if (field.type === 'email' && !leadPayload.email) leadPayload.email = val;
+                                                    else if (field.type === 'phone' && !leadPayload.phone) leadPayload.phone = val;
+                                                    else if ((field.type === 'text' || field.id === 'f1') && !leadPayload.name) leadPayload.name = val;
+                                                    else if (field.id === 'f2' && !leadPayload.email) leadPayload.email = val;
+                                                });
+
+                                                if (!leadPayload.name) leadPayload.name = 'Direct Unit Inquiry';
+                                                const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
+
+                                                if (res.success && res.data?.id) {
+                                                    const identity = { id: res.data.id, email: res.data.email };
+                                                    if (identifyLead) identifyLead(identity.id, identity.email);
+                                                }
+                                            }}
+                                        />
                                     </div>
-
-                                    <FormRenderer
-                                        config={widget.configuration.inquiryForm}
-                                        primaryColor={theme.primaryColor}
-                                        onSubmit={async (formData, configUsed) => {
-                                            const leadPayload: any = {
-                                                source: 1,
-                                                propertyId: selectedProperty.id,
-                                                notes: `Unit Specific Inquiry: ${selectedUnit.unitCode}\n${(configUsed.fields || []).map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
-                                            };
-
-                                            (configUsed.fields || []).forEach((field: any) => {
-                                                const val = formData[field.id];
-                                                if (!val) return;
-                                                if (field.type === 'email' && !leadPayload.email) leadPayload.email = val;
-                                                else if (field.type === 'phone' && !leadPayload.phone) leadPayload.phone = val;
-                                                else if ((field.type === 'text' || field.id === 'f1') && !leadPayload.name) leadPayload.name = val;
-                                                else if (field.id === 'f2' && !leadPayload.email) leadPayload.email = val;
-                                            });
-
-                                            if (!leadPayload.name) leadPayload.name = 'Direct Unit Inquiry';
-                                            const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
-
-                                            if (res.success && res.data?.id) {
-                                                const identity = { id: res.data.id, email: res.data.email };
-                                                if (identifyLead) identifyLead(identity.id, identity.email);
-                                            }
-                                        }}
-                                    />
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

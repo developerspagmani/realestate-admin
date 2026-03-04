@@ -106,7 +106,7 @@ export default function StandaloneProvider({
     const primaryHover = darkenColor(theme.primaryColor, 10);
     const primaryGhost = theme.primaryColor + '15'; // 15 is ~8% opacity in hex
 
-    // Initial load: check for stored identity
+    // 1. Initial load: check for stored identity
     useEffect(() => {
         const stored = localStorage.getItem(`website_lead_${website.id}`);
         if (stored) {
@@ -117,6 +117,45 @@ export default function StandaloneProvider({
             }
         }
     }, [website.id]);
+
+    // 2. Dynamic Portal Styling (Favicon & Fonts)
+    useEffect(() => {
+        if (!website) return;
+
+        // A. Favicon Injection
+        const faviconUrl = website.configuration?.builder?.faviconUrl;
+        if (faviconUrl) {
+            let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.getElementsByTagName('head')[0].appendChild(link);
+            }
+            link.href = faviconUrl;
+        }
+
+        // B. Google Font Injection
+        const fontName = website.configuration?.theme?.fontFamily || 'Inter';
+        const fontId = 'google-font-website';
+        let fontLink = document.getElementById(fontId) as HTMLLinkElement;
+
+        const fontUrl = `https://fonts.googleapis.com/css2?family=${fontName.replace(/\s+/g, '+')}:wght@300;400;500;600;700;800;900&display=swap`;
+
+        if (fontLink) {
+            fontLink.href = fontUrl;
+        } else {
+            fontLink = document.createElement('link');
+            fontLink.id = fontId;
+            fontLink.rel = 'stylesheet';
+            fontLink.href = fontUrl;
+            document.head.appendChild(fontLink);
+        }
+
+        // C. Dynamic SEO Title
+        if (website.configuration?.seo?.title) {
+            document.title = website.configuration.seo.title;
+        }
+    }, [website]);
 
     const identifyLead = (id: string, email?: string) => {
         const identity = { id, email };
@@ -180,7 +219,7 @@ export default function StandaloneProvider({
                     '--primary-color': theme.primaryColor,
                     '--primary-hover': primaryHover,
                     '--primary-ghost': primaryGhost,
-                    fontFamily: theme.fontFamily
+                    fontFamily: `'${theme.fontFamily}', sans-serif`
                 } as any}
             >
 
@@ -279,7 +318,7 @@ export default function StandaloneProvider({
                                             <i className="bi bi-envelope-open-fill me-2"></i>Contact Us
                                         </span>
                                     </div>
-                                    <h2 className="fw-black h3 mb-2">Have a Question?</h2>
+                                    <h2 className="fw-black h3 mb-2" style={{ color: theme.primaryColor }}>Have a Question?</h2>
                                     <p className="text-muted small">Fill in the form below and our team will get back to you shortly.</p>
                                 </div>
                                 <FormRenderer

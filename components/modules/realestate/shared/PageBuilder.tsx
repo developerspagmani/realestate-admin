@@ -340,6 +340,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                     height: 50px;
                     border-radius: 50%;
                     transition: all 0.3s ease;
+
                 }
                 .property-slider-section .swiper-button-next,
                 .property-slider-section .swiper-button-prev {
@@ -364,9 +365,15 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                     font-size: 18px;
                     font-weight: bold;
                 }
+                .hero-slider-section .swiper-button-prev svg,
+                .hero-slider-section .swiper-button-next svg{
+                    height: 36px;
+                    width: 36px;
+                    
+                }
                 .hero-slider-section .swiper-pagination-bullet,
                 .property-slider-section .swiper-pagination-bullet {
-                    background: ${theme.primaryColor};
+                    background: ${theme.primaryColor} !important;
                     opacity: 0.3;
                 }
                 .hero-slider-section .swiper-pagination-bullet-active,

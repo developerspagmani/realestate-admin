@@ -19,6 +19,7 @@ interface ChatbotProps {
     recommendationLogic?: 'price-match' | 'newest' | 'featured';
     previewMode?: boolean;
     trackAction?: (type: string, metadata?: any) => void;
+    currencySymbol?: string;
 }
 
 type Step = 'IDLE' | 'LEAD_CAPTURE' | 'HI' | 'DYNAMIC_FLOW' | 'RESULTS';
@@ -74,7 +75,8 @@ export default function ChatbotWidget({
     crossSellEnabled = true,
     recommendationLogic = 'price-match',
     previewMode = false,
-    trackAction
+    trackAction,
+    currencySymbol = '$'
 }: ChatbotProps) {
     const [step, setStep] = useState<Step>('IDLE');
     const [flowIndex, setFlowIndex] = useState(0);
@@ -213,19 +215,26 @@ export default function ChatbotWidget({
             }, 1000000);
 
             const budgetMatch = !currentAnswers.BUDGET?.length || currentAnswers.BUDGET.some((b: string) => {
-                if (b === 'Low (< $1k)') return minPrice < 1000;
-                if (b === 'Mid ($1k - $5k)') return minPrice >= 1000 && minPrice <= 5000;
-                if (b === 'High ($5k - $10k)') return minPrice > 5000 && minPrice <= 10000;
-                if (b === 'Luxury (> $10k)') return minPrice > 10000;
+                if (b.includes('<') || b.includes('Low')) return minPrice < 1000;
+                if (b.includes('-') && (b.includes('1k') || b.includes('5k'))) return minPrice >= 1000 && minPrice <= 5000;
+                if (b.includes('-') && (b.includes('5k') || b.includes('10k'))) return minPrice > 5000 && minPrice <= 10000;
+                if (b.includes('>') || b.includes('Luxury')) return minPrice > 10000;
                 return false;
             });
 
             const bedMatch = !currentAnswers.BEDROOMS?.length || currentAnswers.BEDROOMS.some((b: string) => {
                 const count = parseInt(b);
-                return prop.bedrooms === count;
+                const propBeds = prop.bedrooms || prop.realEstateDetails?.bedrooms;
+                if (propBeds === count) return true;
+                return prop.units?.some((u: any) => u.realEstateDetails?.bedrooms === count);
             });
 
-            return cityMatch && locMatch && budgetMatch && bedMatch;
+            const typeMatch = !currentAnswers.TYPE?.length || currentAnswers.TYPE.some((t: string) => {
+                const searchStr = `${prop.propertyTypeLabel} ${prop.listingType} ${prop.title}`.toLowerCase();
+                return searchStr.includes(t.toLowerCase());
+            });
+
+            return cityMatch && locMatch && budgetMatch && bedMatch && typeMatch;
         });
 
         // Apply Recommendation Logic
@@ -246,7 +255,12 @@ export default function ChatbotWidget({
 
             // Upsell Logic: Suggest one slightly more premium property if available
             if (upsellEnabled && properties.length > sorted.length) {
-                const premium = properties.find(p => !sorted.find(s => s.id === p.id) && (p.bedrooms || 0) >= (parseInt(currentAnswers.BEDROOMS?.[0]) || 0));
+                const premium = properties.find(p => {
+                    const isAlreadyIn = sorted.find(s => s.id === p.id);
+                    const pBeds = p.bedrooms || p.realEstateDetails?.bedrooms || 0;
+                    const requestedBeds = parseInt(currentAnswers.BEDROOMS?.[0]) || 0;
+                    return !isAlreadyIn && pBeds >= requestedBeds;
+                });
                 if (premium) {
                     addMessage('bot', `I also found a premium option that might interest you: ${premium.title}. ✨`);
                 }
@@ -318,10 +332,10 @@ export default function ChatbotWidget({
         }
         if (currentStepKey === 'BUDGET') {
             return [
-                { label: 'Low (< $1k)', value: 'Low (< $1k)' },
-                { label: 'Mid ($1k - $5k)', value: 'Mid ($1k - $5k)' },
-                { label: 'High ($5k - $10k)', value: 'High ($5k - $10k)' },
-                { label: 'Luxury (> $10k)', value: 'Luxury (> $10k)' }
+                { label: `Low (< ${currencySymbol}1k)`, value: 'Low' },
+                { label: `Mid (${currencySymbol}1k - ${currencySymbol}5k)`, value: 'Mid' },
+                { label: `High (${currencySymbol}5k - ${currencySymbol}10k)`, value: 'High' },
+                { label: `Luxury (> ${currencySymbol}10k)`, value: 'Luxury' }
             ];
         }
         if (currentStepKey === 'BEDROOMS') {
@@ -392,10 +406,10 @@ export default function ChatbotWidget({
                 ) : step === 'LEAD_CAPTURE' ? (
                     <div className="lead-capture py-4 px-2">
                         <div className="text-center mb-4">
-                            <div className="bg-light rounded-circle shadow-sm d-inline-flex p-3 mb-3">
-                                <i className="bi bi-shield-lock-fill fs-3" style={{ color: theme.primaryColor }}></i>
+                            <div className="bg-light rounded-4 shadow-sm d-inline-flex p-3 mb-3">
+                                <i className="bi bi-robot fs-3" style={{ color: theme.primaryColor }}></i>
                             </div>
-                            <h6 className="fw-bold">Let's Get Started!</h6>
+                            <h6 className="fw-bold" style={{ color: theme.primaryColor }}>Let's Get Started!</h6>
                             <p className="extra-small text-muted mb-0">Please share your WhatsApp or Email to continue.</p>
                         </div>
 
@@ -489,8 +503,8 @@ export default function ChatbotWidget({
                                     className={`p-2 px-3 rounded-4 small shadow-sm ${m.role === 'bot' ? 'rounded-tl-0' : 'rounded-tr-0'}`}
                                     style={{
                                         maxWidth: '85%',
-                                        backgroundColor: m.role === 'user' ? theme.primaryColor : 'white',
-                                        color: m.role === 'user' ? 'white' : 'inherit',
+                                        backgroundColor: m.role === 'user' ? theme.primaryColor : '#fff',
+                                        color: m.role === 'user' ? '#fff' : '#000',
                                         border: m.role === 'bot' ? '1px solid #eee' : 'none'
                                     }}
                                 >
@@ -512,8 +526,13 @@ export default function ChatbotWidget({
                                                 {res.mainImage ? <img src={res.mainImage.url} className="w-100 h-100 object-fit-cover" /> : <i className="bi bi-building p-2 opacity-50"></i>}
                                             </div>
                                             <div className="flex-grow-1 overflow-hidden">
-                                                <h6 className="extra-small fw-bold mb-0 text-truncate">{res.title}</h6>
-                                                <span className="extra-small text-muted">{res.city} • Available Now</span>
+                                                <h6 className="extra-small fw-bold mb-0 text-truncate" style={{ color: theme.primaryColor }}>{res.title}</h6>
+                                                <span className="extra-small text-muted">
+                                                    {res.city} • Starting {currencySymbol}{Number((res.units || []).reduce((min: number, u: any) => {
+                                                        const p = Number(u.unitPricing?.[0]?.price);
+                                                        return p && p < min ? p : min;
+                                                    }, 1000000)).toLocaleString()}
+                                                </span>
                                             </div>
                                             <i className="bi bi-chevron-right extra-small text-muted"></i>
                                         </div>

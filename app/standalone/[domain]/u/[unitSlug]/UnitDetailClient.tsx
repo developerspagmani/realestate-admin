@@ -34,7 +34,7 @@ export default function UnitDetailClient({ unitSlug }: { unitSlug: string }) {
     const getFormattedPrice = (u: any) => {
         if (!u.unitPricing?.length) return 'Price on Inquiry';
         const pricing = u.unitPricing[0];
-        return `${currencySymbol}${Number(pricing.price).toLocaleString()}`;
+        return `${currencySymbol}${Number(pricing.price).toLocaleString('en-US')}`;
     };
 
     return (

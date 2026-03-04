@@ -111,9 +111,9 @@ const ListingView: React.FC<ListingViewProps> = ({
                                     <div className="position-absolute bottom-0 end-0 m-3 px-3 py-1 bg-white rounded-pill shadow-sm small fw-bold text-primary">
                                         {property.units?.length || 0} Total Units
                                     </div>
-                                    {property.displayPrice !== false && Number(property.price) > 0 && (
+                                    {property.displayPrice !== false && widget.configuration.builder?.showPrice !== false && Number(property.price) > 0 && (
                                         <div className="position-absolute bottom-0 start-0 m-3 px-3 py-1 bg-white rounded-pill shadow-sm small fw-bold text-primary">
-                                            {getSymbol(property.country)}{Number(property.price).toLocaleString()}
+                                            {getSymbol(property.country)}{Number(property.price).toLocaleString('en-US')}
                                         </div>
                                     )}
                                 </div>
@@ -125,7 +125,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                                     </p>
                                     <div className="d-flex gap-3 mb-4 text-center">
                                         <div className="flex-fill border-end">
-                                            <span className="d-block fw-bold small">{property.area?.toLocaleString() || '--'}</span>
+                                            <span className="d-block fw-bold small">{property.area?.toLocaleString('en-US') || '--'}</span>
                                             <span className="extra-small text-muted">sqft</span>
                                         </div>
                                         <div className="flex-fill border-end">

@@ -287,33 +287,31 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
 
-    // Additional security for sensitive operations
-    if (pathname.includes('/checkout') || pathname.includes('/booking-confirmation')) {
-      // Verify user session is still valid by checking recent activity
-      const lastActivity = request.cookies.get('last-activity')?.value;
-      if (lastActivity) {
-        const activityTime = parseInt(lastActivity);
-        const now = Date.now();
-        const sessionTimeout = 30 * 60 * 1000; // 30 minutes
+    // Verify user session is still valid by checking recent activity for ALL protected routes
+    const lastActivity = request.cookies.get('last-activity')?.value;
+    const sessionTimeout = 30 * 60 * 1000; // 30 minutes
 
-        if (now - activityTime > sessionTimeout) {
-          const response = NextResponse.redirect(new URL('/login?session=expired', request.url));
-          response.cookies.delete('auth-token');
-          response.cookies.delete('user-role');
-          response.cookies.delete('user-id');
-          response.cookies.delete('last-activity');
-          return response;
-        }
+    if (lastActivity) {
+      const activityTime = parseInt(lastActivity);
+      const now = Date.now();
+
+      if (now - activityTime > sessionTimeout) {
+        const timeoutResponse = NextResponse.redirect(new URL('/login?session=expired', request.url));
+        timeoutResponse.cookies.delete('auth-token');
+        timeoutResponse.cookies.delete('user-role');
+        timeoutResponse.cookies.delete('user-id');
+        timeoutResponse.cookies.delete('last-activity');
+        return timeoutResponse;
       }
-
-      // Update last activity
-      response.cookies.set('last-activity', Date.now().toString(), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 30 * 60 // 30 minutes
-      });
     }
+
+    // Update last activity timestamp on every valid protected request to keep session alive (sliding window)
+    response.cookies.set('last-activity', Date.now().toString(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 60 // 30 minutes
+    });
   }
 
   // Prevent access to sensitive files and directories

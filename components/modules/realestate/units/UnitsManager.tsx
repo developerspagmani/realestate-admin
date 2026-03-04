@@ -10,6 +10,7 @@ import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import MediaSelector from '@/components/shared/MediaSelector';
 import Loader from '@/components/common/Loader';
+import ConfirmationModal from '@/components/common/ConfirmationModal';
 
 interface UnitsManagerProps {
     mode: 'admin' | 'owner';
@@ -64,6 +65,19 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
     const [filterProperty, setFilterProperty] = useState<string>(searchParams.get('propertyId') || 'all');
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
+    const [confirmModal, setConfirmModal] = useState<{
+        show: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type: 'danger' | 'primary' | 'warning' | 'success';
+    }>({
+        show: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        type: 'primary'
+    });
 
     // Import states
     const [showImportModal, setShowImportModal] = useState(false);
@@ -314,9 +328,18 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
     // ── DELETE ────────────────────────────────────────────────────────────────
 
-    const handleDelete = async (id: string | string[]) => {
+    const handleDelete = (id: string | string[]) => {
         const ids = Array.isArray(id) ? id : [id];
-        if (!window.confirm(`Delete ${ids.length > 1 ? ids.length + ' units' : 'this unit'}?`)) return;
+        setConfirmModal({
+            show: true,
+            title: 'Delete Unit',
+            message: `Are you sure you want to delete ${ids.length > 1 ? ids.length + ' units' : 'this unit'}? This action cannot be undone.`,
+            type: 'danger',
+            onConfirm: () => executeDelete(ids)
+        });
+    };
+
+    const executeDelete = async (ids: string[]) => {
         try {
             const token = getAuthToken();
             if (!token) return;
@@ -328,6 +351,8 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         } catch (error) {
             console.error('Delete error:', error);
             showToast('Error deleting unit(s)', 'error');
+        } finally {
+            setConfirmModal(prev => ({ ...prev, show: false }));
         }
     };
 
@@ -1174,6 +1199,15 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                 .cursor-pointer { cursor: pointer; }
                 .dropdown-item:disabled, .dropdown-item[disabled] { opacity: 0.45; pointer-events: none; }
             `}</style>
+
+            <ConfirmationModal
+                show={confirmModal.show}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                type={confirmModal.type}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+            />
 
             <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
         </MainLayout>
