@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
+import { Website } from '@/types';
 
 interface WebsiteCardProps {
-    website: any;
-    onEdit: (website: any) => void;
+    website: Website;
+    onEdit: (website: Website) => void;
     onDelete: (id: string) => void;
-    onGenerateQR: (website: any) => void;
+    onGenerateQR: (website: Website) => void;
 }
 
 export default function WebsiteCard({ website, onEdit, onDelete, onGenerateQR }: WebsiteCardProps) {

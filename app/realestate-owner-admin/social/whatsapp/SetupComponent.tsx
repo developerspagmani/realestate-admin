@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { whatsappApi, connectedAccountsApi } from '@/lib/api/social';
 import Loader from '@/components/common/Loader';
 
@@ -13,15 +13,11 @@ export default function WhatsAppSetup({ onSuccess, initialData }: SetupComponent
     const [loading, setLoading] = useState(false);
     const [sdkLoaded, setSdkLoaded] = useState(false);
 
-    useEffect(() => {
-        loadMetaSDK();
-    }, []);
-
-    const loadMetaSDK = () => {
+    const loadMetaSDK = useCallback(() => {
         // Function to perform initialization
         const initFB = () => {
-            if (window.FB) {
-                window.FB.init({
+            if ((window as any).FB) {
+                (window as any).FB.init({
                     appId: process.env.NEXT_PUBLIC_META_APP_ID,
                     cookie: true,
                     xfbml: true,
@@ -31,23 +27,28 @@ export default function WhatsAppSetup({ onSuccess, initialData }: SetupComponent
             }
         };
 
-        if (window.FB) {
+        if ((window as any).FB) {
             initFB();
             return;
         }
 
-        window.fbAsyncInit = function () {
+        (window as any).fbAsyncInit = function () {
             initFB();
         };
 
         (function (d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0] as any;
+            const fjs = d.getElementsByTagName(s)[0];
             if (d.getElementById(id)) return;
-            js = d.createElement(s) as any; js.id = id;
+            const js = d.createElement(s) as HTMLScriptElement;
+            js.id = id;
             js.src = "https://connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
+            fjs.parentNode?.insertBefore(js, fjs);
         }(document, 'script', 'facebook-jssdk'));
-    };
+    }, []);
+
+    useEffect(() => {
+        loadMetaSDK();
+    }, [loadMetaSDK]);
 
     const isHttps = typeof window !== 'undefined' &&
         (window.location.protocol === 'https:' ||

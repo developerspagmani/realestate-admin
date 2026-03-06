@@ -1,23 +1,24 @@
-'use client';
 import React from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { Property, Amenity, MediaItem } from '@/types';
+import { CustomContact, SelectedImages, BrochureToggles } from './BrochureManager';
 
 interface BrochureTemplateProps {
-    property: any;
+    property: Property | null;
     mode: 'admin' | 'owner';
-    companyInfo?: any;
+    companyInfo?: { name?: string };
     fontStyle?: string;
     design?: 'modern' | 'luxury' | 'classic' | 'elegant_landscape' | 'premium_landscape';
     accentColor?: string;
-    allAmenities?: any[];
-    allMedia?: any[];
+    allAmenities?: Amenity[];
+    allMedia?: MediaItem[];
     aiTagline?: string;
     aiDescription?: string;
     isPreview?: boolean;
     // Advanced
-    customContact?: any;
-    selectedImages?: any;
-    toggles?: any;
+    customContact?: CustomContact;
+    selectedImages?: SelectedImages;
+    toggles?: BrochureToggles;
 }
 
 export default function BrochureTemplate({
@@ -62,7 +63,7 @@ export default function BrochureTemplate({
 
     const getVal = (key: string, fallback: any = '—') => {
         // Try top level, then realEstateDetails, then metadata
-        return property[key] || property.realEstateDetails?.[key] || property.metadata?.[key] || fallback;
+        return (property as any)[key] || (property as any).realEstateDetails?.[key] || (property as any).metadata?.[key] || fallback;
     };
 
     return (
@@ -83,7 +84,9 @@ export default function BrochureTemplate({
                         <div style={{
                             position: 'absolute',
                             inset: 0,
-                            backgroundImage: `url(${selectedImages?.bg1 || getMediaUrl(typeof property.gallery[2] === 'string' ? property.gallery[2] : property.gallery[2].url)})`,
+                            backgroundImage: property !== null && property.gallery && property.gallery[2]
+                                ? `url(${selectedImages?.bg1 || getMediaUrl(typeof property.gallery[2] === 'string' ? property.gallery[2] : property.gallery[2].url)})`
+                                : 'none',
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
                             opacity: 0.2, // Higher opacity for visible texture
@@ -102,9 +105,9 @@ export default function BrochureTemplate({
                 {isLandscape ? (
                     <div style={{ display: 'flex', height: '100%', width: '100%', position: 'relative', zIndex: 2 }}>
                         <div style={{ width: '60%', height: '100%', position: 'relative' }}>
-                            {(property.mainImage?.url || getMediaUrl(property.mainImageId)) ? (
+                            {(property.mainImage?.url || getMediaUrl(property.mainImageId || '')) ? (
                                 <img
-                                    src={property.mainImage?.url || getMediaUrl(property.mainImageId)}
+                                    src={property.mainImage?.url || getMediaUrl(property.mainImageId || '') || ''}
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     crossOrigin="anonymous"
                                     alt="Main Landscape"
@@ -129,7 +132,7 @@ export default function BrochureTemplate({
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontSize: '11px', textTransform: 'uppercase', color: theme.primary, letterSpacing: '2px' }}>Vesting Price</div>
-                                        <div style={{ fontSize: '28px', fontWeight: 900 }}>{property.currency || '$'} {property.price ? property.price.toLocaleString() : 'P.O.R'}</div>
+                                        <div style={{ fontSize: '28px', fontWeight: 900 }}>$ {property.price ? property.price.toLocaleString() : 'P.O.R'}</div>
                                     </div>
                                 </div>
                             </div>
@@ -138,9 +141,9 @@ export default function BrochureTemplate({
                 ) : (
                     <div style={{ height: '100%', width: '100%', position: 'relative', zIndex: 2 }}>
                         <div style={{ height: '70%', width: '100%', position: 'relative', overflow: 'hidden' }}>
-                            {(selectedImages?.cover || property.mainImage?.url || getMediaUrl(property.mainImageId)) ? (
+                            {(selectedImages?.cover || property.mainImage?.url || getMediaUrl(property.mainImageId || '')) ? (
                                 <img
-                                    src={selectedImages?.cover || property.mainImage?.url || getMediaUrl(property.mainImageId)}
+                                    src={selectedImages?.cover || property.mainImage?.url || getMediaUrl(property.mainImageId || '') || ''}
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                     crossOrigin="anonymous"
                                     alt="Main Property"
@@ -161,7 +164,7 @@ export default function BrochureTemplate({
                                             <i className="bi bi-geo-alt-fill" style={{ color: theme.primary }}></i> {property.city}
                                         </p>
                                         <div style={{ width: '1px', height: '15px', background: isDark ? 'rgba(255,255,255,0.2)' : '#ccc' }}></div>
-                                        {toggles.showPrice && <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: theme.primary }}>{property.currency || '$'} {property.price ? property.price.toLocaleString() : 'P.O.R'}</p>}
+                                        {toggles.showPrice && <p style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: theme.primary }}>$ {property.price ? property.price.toLocaleString() : 'P.O.R'}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -180,7 +183,9 @@ export default function BrochureTemplate({
                     <div style={{
                         position: 'absolute',
                         inset: 0,
-                        backgroundImage: `url(${selectedImages?.bg2 || getMediaUrl(typeof property.gallery[0] === 'string' ? property.gallery[0] : property.gallery[0].url)})`,
+                        backgroundImage: property !== null && property.gallery && property.gallery[0]
+                            ? `url(${selectedImages?.bg2 || getMediaUrl(typeof property.gallery[0] === 'string' ? property.gallery[0] : property.gallery[0].url)})`
+                            : 'none',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                         opacity: 0.1,
@@ -226,10 +231,10 @@ export default function BrochureTemplate({
                                     <div style={{ padding: '30px', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderRadius: '30px', border: `1px solid ${theme.primary}22`, backdropFilter: 'blur(10px)' }}>
                                         <h4 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '3px', color: theme.primary, marginBottom: '25px' }}>Signature Amenities</h4>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                            {(property.propertyAmenities || property.amenities || []).slice(0, 8).map((a: any, i: number) => (
+                                            {(property.gallery || []).slice(0, 8).map((a, i: number) => (
                                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                     <i className="bi bi-check2-circle" style={{ color: theme.primary }}></i>
-                                                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{a.amenity?.name || a.name || (typeof a === 'string' ? a : 'Feature')}</span>
+                                                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{(a as any).amenity?.name || (a as any).name || (a as any).title || (typeof a === 'string' ? a : 'Feature')}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -269,10 +274,10 @@ export default function BrochureTemplate({
                                 <div style={{ padding: '35px', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.8)', border: `1px solid ${theme.primary}22`, borderRadius: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.05)', backdropFilter: 'blur(10px)' }}>
                                     <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '4px', color: theme.primary, marginBottom: '25px' }}>Exclusive Amenities</div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '15px' }}>
-                                        {(property.propertyAmenities || property.amenities || []).slice(0, 10).map((a: any, i: number) => (
+                                        {(property.gallery || []).slice(0, 10).map((a, i: number) => (
                                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 <div style={{ width: '4px', height: '4px', background: theme.primary, borderRadius: '50%' }}></div>
-                                                <span style={{ fontSize: '13px', fontWeight: 500 }}>{a.amenity?.name || a.name || (typeof a === 'string' ? a : 'Feature')}</span>
+                                                <span style={{ fontSize: '13px', fontWeight: 500 }}>{(a as any).amenity?.name || (a as any).name || (typeof a === 'string' ? a : 'Feature')}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -295,7 +300,9 @@ export default function BrochureTemplate({
                     <div style={{
                         position: 'absolute',
                         inset: 0,
-                        backgroundImage: `url(${selectedImages?.bg3 || getMediaUrl(typeof property.gallery[1] === 'string' ? property.gallery[1] : property.gallery[1].url)})`,
+                        backgroundImage: property !== null && property.gallery && property.gallery[1]
+                            ? `url(${selectedImages?.bg3 || getMediaUrl(typeof property.gallery[1] === 'string' ? property.gallery[1] : property.gallery[1].url)})`
+                            : 'none',
                         backgroundSize: 'cover',
                         opacity: 0.12,
                         filter: 'grayscale(50%) brightness(0.9)'
@@ -305,8 +312,8 @@ export default function BrochureTemplate({
                 <div style={{ position: 'relative', zIndex: 2, padding: isLandscape ? '15mm 20mm' : '20mm 25mm', height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <h2 style={{ fontSize: '32px', fontWeight: 900, color: theme.primary, marginBottom: '30px', letterSpacing: '-1.5px', textTransform: 'uppercase' }}>Visual Panorama</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: isLandscape ? 'repeat(3, 1fr)' : '1fr 1fr', gap: '20px', height: isLandscape ? '90mm' : '150mm', marginBottom: '40px' }}>
-                        {(property.gallery || []).slice(0, isLandscape ? 3 : 4).map((img: any, i: number) => {
-                            const url = getMediaUrl(typeof img === 'string' ? img : img.url);
+                        {(property.gallery || []).slice(0, isLandscape ? 3 : 4).map((img, i: number) => {
+                            const url = getMediaUrl(typeof img === 'string' ? img : (img as any).url);
                             return (
                                 <div key={i} style={{ overflow: 'hidden', borderRadius: '30px', background: theme.accent, boxShadow: '0 15px 40px rgba(0,0,0,0.1)' }}>
                                     {url ? (

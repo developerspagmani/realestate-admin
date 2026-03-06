@@ -132,7 +132,7 @@ export default function AnalyticsPage() {
     const loadAnalytics = useCallback(async () => {
         try {
             setLoading(true);
-            const params: any = {};
+            const params: Record<string, string> = {};
             if (dateRange.startDate) params.startDate = dateRange.startDate;
             if (dateRange.endDate) params.endDate = dateRange.endDate;
 

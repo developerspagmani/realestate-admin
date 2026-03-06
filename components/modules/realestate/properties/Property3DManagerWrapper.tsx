@@ -10,6 +10,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import MainLayout from '@/components/MainLayout';
 import { getAuthToken } from '@/app/services/api';
 import { propertyService } from '@/app/services/api';
+import { Property } from '@/types';
 
 interface Property3DManagerWrapperProps {
     mode?: 'admin' | 'owner';
@@ -30,7 +31,7 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
     const basePath = isOwner ? '/realestate-owner-admin' : '/realestate-admin';
     const activePage = architectMode === 'builder' ? 'property-3d-builder' : 'property-3d';
 
-    const [properties, setProperties] = useState<any[]>([]);
+    const [properties, setProperties] = useState<Property[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -53,8 +54,33 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
                     limit: '100'
                 });
                 if (response.success) {
-                    const rawProps = response.data?.properties || response.data || [];
-                    setProperties(rawProps);
+                    const rawProps: any[] = response.data?.properties || response.data || [];
+                    const mappedProps: Property[] = rawProps.map((p) => ({
+                        id: p.id,
+                        name: p.title || p.name || 'Untitled',
+                        city: p.city || '',
+                        state: p.state || '',
+                        address: p.addressLine1 || p.address || '',
+                        description: p.description || '',
+                        priceType: 'fixed',
+                        squareFootage: p.area || p.sizeSqft || 0,
+                        features: [],
+                        photos: p.gallery || [],
+                        rating: 0,
+                        totalReviews: 0,
+                        propertyType: p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use',
+                        listingType: (p.listingType?.toLowerCase() as Property['listingType']) || 'rent',
+                        status: p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance',
+                        ownerId: p.tenantId || '',
+                        createdAt: p.createdAt || new Date().toISOString(),
+                        updatedAt: p.updatedAt || new Date().toISOString(),
+                        slug: p.slug || p.id,
+                        zipCode: p.postalCode || '',
+                        price: p.price || 0,
+                        neighborhood: p.neighborhood || '',
+                        amenities: p.propertyAmenities ? p.propertyAmenities.map((pa: any) => pa.amenity?.id || pa.amenityId || '') : [],
+                    } as Property));
+                    setProperties(mappedProps);
                 }
             }
         } catch (error) {
@@ -106,7 +132,7 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
                                                                 <i className="bi bi-building text-primary h5 mb-0"></i>
                                                             </div>
                                                             <div>
-                                                                <div className="fw-bold text-dark">{property.title}</div>
+                                                                <div className="fw-bold text-dark">{property.name}</div>
                                                                 <div className="text-muted small text-truncate" style={{ maxWidth: '300px' }}>{property.description}</div>
                                                             </div>
                                                         </div>
@@ -116,7 +142,7 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
                                                     </td>
                                                     <td className="py-3 text-end px-4">
                                                         <Link
-                                                            href={`${basePath}/property-3d?propertyId=${property.id}&propertyName=${encodeURIComponent(property.slug)}`}
+                                                            href={`${basePath}/property-3d?propertyId=${property.id}&propertyName=${encodeURIComponent(property.name)}`}
                                                             className="btn btn-sm btn-primary rounded-4 px-4"
                                                         >
                                                             <i className="bi bi-box-fill me-2"></i>Launch Architect
@@ -137,7 +163,7 @@ export default function Property3DManagerWrapper({ mode = 'admin' }: Property3DM
                         </div>
                     </div>
                 </div>
-            </MainLayout>
+            </MainLayout >
         );
     }
 

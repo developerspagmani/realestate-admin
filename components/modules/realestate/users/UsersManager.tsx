@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { User } from '@/types';
@@ -78,14 +78,14 @@ export default function UsersManager({ mode }: UsersManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = mode === 'admin' ? activeTenantId : (currentUser as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : (currentUser as { tenantId: string }).tenantId;
             const industryType = mode === 'admin' ? tenantType : undefined;
 
             const roleMap: Record<string, string> = {
                 'user': '1', 'admin': '2', 'owner': '3', 'agent': '4'
             };
 
-            const params: any = {
+            const params: Record<string, string | number | boolean | undefined> = {
                 tenantId: tenantId || undefined,
                 industryType,
                 page: currentPage.toString(),
@@ -108,7 +108,28 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                 }
 
                 const mappedUsers: User[] = usersList
-                    .map((u: any) => ({
+                    .map((u: {
+                        id: string;
+                        name?: string;
+                        email: string;
+                        phone?: string;
+                        role: number;
+                        status: number;
+                        tenantId: string;
+                        createdAt: string;
+                        lastLogin?: string;
+                        addressLine1?: string;
+                        addressLine2?: string;
+                        city?: string;
+                        state?: string;
+                        country?: string;
+                        zipCode?: string;
+                        firstName?: string;
+                        lastName?: string;
+                        companyName?: string;
+                        website?: string;
+                        _count?: { bookings?: number };
+                    }) => ({
                         id: u.id,
                         name: u.name || 'Unknown User',
                         email: u.email,
@@ -131,7 +152,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                         bookingsCount: u._count?.bookings || 0
                     }))
                     // Strict client-side filter to ensure isolation
-                    .filter((u: any) => !tenantId || u.tenantId === tenantId);
+                    .filter((u: { tenantId?: string }) => !tenantId || u.tenantId === tenantId);
 
                 setUsers(mappedUsers);
             }
@@ -152,6 +173,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
         }
 
         loadUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser, isAuthenticated, mounted, authLoading, router, filterRole, activeTenantId, tenantType, currentPage, itemsPerPage, searchTerm]);
 
     const paginatedUsers = users;
@@ -169,8 +191,8 @@ export default function UsersManager({ mode }: UsersManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            const currentTenantId = mode === 'admin' ? activeTenantId : (currentUser as any)?.tenantId;
-            const targetTenantId = currentTenantId || localStorage.getItem('tenant-id');
+            const currentTenantId = mode === 'admin' ? activeTenantId : (currentUser as { tenantId: string }).tenantId;
+            const targetTenantId = currentTenantId;
 
             const roleMap: Record<string, number> = {
                 'user': 1, 'admin': 2, 'owner': 3, 'agent': 4
@@ -340,7 +362,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
         setImportTotal(csvRows.length);
         setImportProgress(0);
         const token = getAuthToken();
-        const tenantId = mode === 'admin' ? activeTenantId : (currentUser as any)?.tenantId || localStorage.getItem('tenant-id');
+        const tenantId = mode === 'admin' ? activeTenantId : (currentUser as { tenantId: string }).tenantId;
 
         if (!token || !tenantId) {
             showToast('Authentication or Tenant context missing', 'error');
@@ -589,7 +611,7 @@ export default function UsersManager({ mode }: UsersManagerProps) {
                                                 </td>
                                                 <td className="py-3 text-center">
                                                     <span className="badge rounded-4 bg-light text-dark border fw-medium px-3">
-                                                        {(u as any).bookingsCount || 0}
+                                                        {u.bookingsCount || 0}
                                                     </span>
                                                 </td>
                                                 <td className="py-3">

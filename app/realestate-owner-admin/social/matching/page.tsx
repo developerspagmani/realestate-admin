@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/MainLayout';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { automationApi } from '@/lib/api/social';
@@ -9,7 +9,7 @@ import Toast from '@/components/common/Toast';
 
 export default function MatchingEnginePage() {
     return (
-        <ModuleGuard moduleSlug="automation_engine">
+        <ModuleGuard moduleSlug="social_posts">
             <MatchingContent />
         </ModuleGuard>
     );
@@ -24,7 +24,7 @@ function MatchingContent() {
     const [matchingLeadId, setMatchingLeadId] = useState<string | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'info' });
 
-    const fetchLeads = async (showRefreshToast = false) => {
+    const fetchLeads = useCallback(async (showRefreshToast = false) => {
         if (!user?.tenantId) return;
         setLoading(true);
         try {
@@ -36,11 +36,11 @@ function MatchingContent() {
             let waitCount = 0;
             let matchCount = 0;
 
-            if (waitingRes.success) {
+            if (waitingRes.success && waitingRes.data) {
                 setWaitingLeads(waitingRes.data);
                 waitCount = waitingRes.data.length;
             }
-            if (matchedRes.success) {
+            if (matchedRes.success && matchedRes.data) {
                 setMatchedLeads(matchedRes.data);
                 matchCount = matchedRes.data.length;
             }
@@ -58,13 +58,13 @@ function MatchingContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.tenantId]);
 
     useEffect(() => {
         if (user?.tenantId) {
             fetchLeads();
         }
-    }, [user?.tenantId]);
+    }, [user?.tenantId, fetchLeads]);
 
     const handleForceMatch = async (leadId: string) => {
         setMatchingLeadId(leadId);

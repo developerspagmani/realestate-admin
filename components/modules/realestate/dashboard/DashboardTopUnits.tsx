@@ -1,7 +1,18 @@
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 
+export interface DashboardUnit {
+    id: string;
+    unitCode?: string;
+    name?: string;
+    bookingCount: number;
+    totalRevenue?: number;
+    property?: {
+        title?: string;
+    };
+}
+
 interface DashboardTopUnitsProps {
-    units: any[];
+    units: DashboardUnit[];
     loading: boolean;
     totalBookings: number;
 }

@@ -238,7 +238,7 @@ export default function CreateCampaignPage() {
                 const end = new Date(formData.endDate || '');
                 const posts = [];
 
-                let current = new Date(start);
+                const current = new Date(start);
                 while (current <= end) {
                     const dateKey = current.toISOString().split('T')[0];
 

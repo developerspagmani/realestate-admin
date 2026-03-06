@@ -9,6 +9,7 @@ import Workspace3D from '@/components/Workspace3D';
 import VisualEditor from './VisualEditor';
 import FloorPlanManager from '@/components/modules/realestate/properties/FloorPlanManager';
 import { DEMO_HOUSE_PLANS } from '@/app/constants/demoPlans';
+import { LayoutItem, VisualEditorConfig, Unit } from '@/types';
 
 interface Property3DManagerProps {
     propertyId: string;
@@ -23,8 +24,8 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [viewMode, setViewMode] = useState<'visual' | 'json' | '3d' | 'floorplans'>(initialMode);
-    const [units, setUnits] = useState<any[]>([]);
-    const [config, setConfig] = useState<any>({
+    const [units, setUnits] = useState<Unit[]>([]);
+    const [config, setConfig] = useState<VisualEditorConfig>({
         scene: {
             background: '#f0f0f0',
             ambientLight: 0.6,
@@ -35,7 +36,7 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
             lookAt: { x: 0, y: 0, z: 0 }
         }
     });
-    const [layout, setLayout] = useState<any[]>([]);
+    const [layout, setLayout] = useState<LayoutItem[]>([]);
     const [tourData, setTourData] = useState<any>(null);
 
     // Demo House Plan State
@@ -48,7 +49,7 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
         setSelectedPlot(unit);
 
         // Check if layout has a preferred plan assigned in metadata
-        const layoutObj = layout.find(l => (l.unitId || l.id) === unit.id);
+        const layoutObj = layout.find(l => l.unitId === unit.id);
         const preferredId = layoutObj?.metadata?.preferredPlanId;
 
         if (preferredId) {
@@ -108,11 +109,12 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                 if (configRes.data.tourData) setTourData(configRes.data.tourData);
             } else {
                 // Initialize default layout from units
-                const initialLayout = loadedUnits.map((unit: any, index: number) => ({
+                const initialLayout: LayoutItem[] = loadedUnits.map((unit: Unit, index: number) => ({
                     unitId: unit.id,
                     unitCode: unit.unitCode,
-                    type: unit.coworkingDetails?.seatType === 2 ? 'cabin' : 'seat',
+                    type: (unit as any).coworkingDetails?.seatType === 2 ? 'cabin' : 'seat',
                     position: { x: (index % 5) * 3 - 6, y: 0.5, z: Math.floor(index / 5) * 3 - 6 },
+                    rotation: { x: 0, y: 0, z: 0 },
                     dimensions: { w: 1, h: 1, d: 1 },
                     color: '#7cff4d'
                 }));
@@ -390,8 +392,8 @@ export default function Property3DManager({ propertyId, propertyName, initialMod
                                     </div>
                                     <div className="modal-body p-0">
                                         <Workspace3D
-                                            workspaces={activeDemoTour.layout.map((l: any) => ({
-                                                id: l.id,
+                                            workspaces={activeDemoTour.layout.map((l: LayoutItem) => ({
+                                                id: l.unitId,
                                                 name: l.unitCode,
                                                 type: l.type,
                                                 status: 'available',

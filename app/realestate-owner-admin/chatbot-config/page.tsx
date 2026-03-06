@@ -11,7 +11,7 @@ export default function ChatbotConfigPage() {
                 <div className="container-fluid p-4">
                     <div className="mb-4">
                         <h4 className="fw-bold mb-1">Global Chatbot Wizard</h4>
-                        <p className="text-muted mb-0">Configure your organization's primary AI engagement settings</p>
+                        <p className="text-muted mb-0">Configure your organization&apos;s primary AI engagement settings</p>
                     </div>
                     <ChatbotConfigManager propertyId="" onClose={() => { }} />
                 </div>

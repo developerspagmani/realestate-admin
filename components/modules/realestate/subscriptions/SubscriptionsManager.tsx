@@ -16,7 +16,8 @@ interface Plan {
     price: number;
     interval: string;
     status: number;
-    features: any;
+    features: Record<string, string | number | boolean>;
+    modules?: PlanModule[];
 }
 
 interface LicenseKey {
@@ -29,6 +30,12 @@ interface LicenseKey {
     tenant?: { name: string; domain: string };
 }
 
+interface PlanModule {
+    id: string;
+    name: string;
+    slug?: string;
+}
+
 interface SubscriptionsManagerProps {
     mode?: 'admin' | 'owner';
 }
@@ -39,7 +46,8 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
     const [activeTab, setActiveTab] = useState<'plans' | 'keys'>('plans');
     const [plans, setPlans] = useState<Plan[]>([]);
     const [keys, setKeys] = useState<LicenseKey[]>([]);
-    const [allModules, setAllModules] = useState<any[]>([]);
+    const [allModules, setAllModules] = useState<PlanModule[]>([]);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [loading, setLoading] = useState(true);
     const [showPlanModal, setShowPlanModal] = useState(false);
     const [showKeyModal, setShowKeyModal] = useState(false);
@@ -58,7 +66,7 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
         price: 0,
         interval: 'yearly',
         status: 1,
-        features: {} as any,
+        features: {} as Record<string, string | number | boolean>,
         moduleIds: [] as string[]
     });
 
@@ -92,6 +100,7 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
         if (mode === 'admin') {
             loadModules();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, isAdmin, isOwner, authLoading, activeTab, mode]);
 
     const loadModules = async () => {
@@ -144,8 +153,9 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
             } else {
                 showToast(res.message || 'Action failed', 'error');
             }
-        } catch (error: any) {
-            showToast(error.message || 'Action failed', 'error');
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Action failed';
+            showToast(msg, 'error');
         }
     };
 
@@ -176,8 +186,9 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
             } else {
                 showToast(res.message || 'Failed to delete plan', 'error');
             }
-        } catch (error: any) {
-            showToast(error.message || 'Error deleting plan', 'error');
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Error deleting plan';
+            showToast(msg, 'error');
         }
     };
 
@@ -188,7 +199,7 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
         }));
     };
 
-    const handleUpdateFeature = (oldKey: string, newKey: string, value: any) => {
+    const handleUpdateFeature = (oldKey: string, newKey: string, value: string | number | boolean) => {
         const newFeatures = { ...planForm.features };
         if (oldKey !== newKey) {
             delete newFeatures[oldKey];
@@ -213,8 +224,9 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
                 setShowKeyModal(false);
                 loadData();
             }
-        } catch (error: any) {
-            showToast(error.message || 'Action failed', 'error');
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Action failed';
+            showToast(msg, 'error');
         }
     };
 
@@ -237,8 +249,9 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
             } else {
                 showToast(res.message || 'Failed to send request', 'error');
             }
-        } catch (error: any) {
-            showToast(error.message || 'Action failed', 'error');
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Action failed';
+            showToast(msg, 'error');
         } finally {
             setSubmittingUpgrade(false);
         }
@@ -342,7 +355,7 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
                                 </div>
                             )}
                             <div className="row g-4">
-                                {plans.map((plan: any) => {
+                                {plans.map((plan: Plan) => {
                                     const isCurrentPlan = activeTenant?.planId === plan.id;
                                     return (
                                         <div className="col-md-4" key={plan.id}>
@@ -373,7 +386,7 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
                                                                 setEditingPlan(plan);
                                                                 setPlanForm({
                                                                     ...plan,
-                                                                    moduleIds: plan.modules?.map((m: any) => m.id) || []
+                                                                    moduleIds: plan.modules?.map((m: PlanModule) => m.id) || []
                                                                 });
                                                                 setShowPlanModal(true);
                                                             }}>
@@ -392,7 +405,7 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
                                                 <div className="mt-3">
                                                     <h6 className="small-caps mb-2">Modules:</h6>
                                                     <div className="d-flex flex-wrap gap-1">
-                                                        {plan.modules?.map((mod: any) => (
+                                                        {plan.modules?.map((mod: PlanModule) => (
                                                             <span key={mod.id} className="badge bg-light text-primary border border-primary-subtle extra-small">
                                                                 {mod.name}
                                                             </span>
@@ -404,7 +417,7 @@ export default function SubscriptionsManager({ mode = 'admin' }: SubscriptionsMa
                                                 <div className="mt-4 pt-4 border-top">
                                                     <h6 className="small-caps mb-3">Included Features:</h6>
                                                     <ul className="list-unstyled mb-0 extra-small">
-                                                        {Object.entries(plan.features || {}).map(([key, val]: any) => (
+                                                        {Object.entries(plan.features || {}).map(([key, val]: [string, string | number | boolean]) => (
                                                             <li key={key} className="mb-2"><i className="bi bi-check-circle-fill text-success me-2"></i> {key}: {String(val)}</li>
                                                         ))}
                                                     </ul>

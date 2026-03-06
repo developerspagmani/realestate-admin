@@ -2,7 +2,7 @@ import { makeApiCall, propertyEndpoints } from '@/app/api/config/endpoints';
 import { Property } from './types';
 
 export const propertyService = {
-    getProperties: async (token: string, params?: { page?: string; limit?: string; search?: string; tenantId?: string; ownerId?: string; industryType?: number | string }) => {
+    getProperties: async (token: string, params?: { page?: string; limit?: string; search?: string; tenantId?: string; ownerId?: string; industryType?: number | string; categoryId?: string }) => {
         return await makeApiCall(propertyEndpoints.getAll(params), {
             headers: {
                 'Authorization': `Bearer ${token}`,

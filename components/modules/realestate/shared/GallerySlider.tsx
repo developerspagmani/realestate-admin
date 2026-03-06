@@ -42,12 +42,10 @@ const GallerySlider: React.FC<GallerySliderProps> = ({ images, currentIndex = 0,
         }
     }, [currentIndex, mainSwiper]);
 
-    // Force main swiper update when thumbs swiper becomes available
+    // Swiper thumbs are handled by the 'thumbs' prop on the main Swiper
     React.useEffect(() => {
-        if (mainSwiper && thumbsSwiper && !mainSwiper.destroyed && !thumbsSwiper.destroyed) {
-            mainSwiper.thumbs.swiper = thumbsSwiper;
-            mainSwiper.thumbs.init();
-            mainSwiper.thumbs.update();
+        if (mainSwiper && !mainSwiper.destroyed) {
+            mainSwiper.update();
         }
     }, [mainSwiper, thumbsSwiper]);
 

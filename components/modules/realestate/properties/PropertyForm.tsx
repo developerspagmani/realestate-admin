@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { propertyService, getAuthToken } from '@/app/services/api';
-import { Property, MediaItem } from '@/types';
+import { Property, MediaItem, Amenity, Category } from '@/types';
 import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MapView from '@/components/common/MapView';
 import MediaSelector from '@/components/shared/MediaSelector';
 import CountrySelect from '@/components/common/CountrySelect';
 import SearchableSelect from '@/components/common/SearchableSelect';
+import Image from 'next/image';
 
 interface PropertyFormProps {
     initialData?: Property | null;
@@ -15,8 +16,8 @@ interface PropertyFormProps {
     onCancel: () => void;
     isSubmitting: boolean;
     mediaItems: MediaItem[];
-    amenities: any[];
-    categories: any[];
+    amenities: Amenity[];
+    categories: Category[];
     /** When true, renders inline (full-page card). When false, renders as a modal overlay. */
     inline?: boolean;
 }
@@ -72,16 +73,16 @@ export default function PropertyForm({
         if (initialData) {
             setFormData({
                 name: initialData.name,
-                slug: (initialData as any).slug || '',
+                slug: initialData.slug || '',
                 description: initialData.description,
                 address: initialData.address,
-                addressLine2: (initialData as any).addressLine2 || '',
+                addressLine2: initialData.addressLine2 || '',
                 city: initialData.city,
                 state: initialData.state,
-                country: (initialData as any).country || 'United States',
+                country: initialData.country || 'United States',
                 zipCode: initialData.zipCode,
-                latitude: (initialData as any).latitude || 0,
-                longitude: (initialData as any).longitude || 0,
+                latitude: initialData.latitude || 0,
+                longitude: initialData.longitude || 0,
                 price: initialData.price || 0,
                 area: initialData.area || 0,
                 propertyType: initialData.propertyType,
@@ -98,9 +99,9 @@ export default function PropertyForm({
                 bathrooms: initialData.bathrooms || 0,
                 lotSize: initialData.lotSize || 0,
                 listingType: initialData.listingType || 'rent',
-                categoryId: (initialData as any).categoryId || '',
-                videoUrl: (initialData as any).videoUrl || '',
-                displayPrice: (initialData as any).displayPrice !== undefined ? (initialData as any).displayPrice : true,
+                categoryId: initialData.categoryId || '',
+                videoUrl: initialData.videoUrl || '',
+                displayPrice: initialData.displayPrice !== undefined ? initialData.displayPrice : true,
             });
         }
     }, [initialData]);
@@ -142,7 +143,7 @@ export default function PropertyForm({
         });
     };
 
-    const handleMediaSelect = (selection: any) => {
+    const handleMediaSelect = (selection: MediaItem | MediaItem[]) => {
         if (mediaModalType === 'main') {
             setFormData({ ...formData, mainImageId: (selection as MediaItem).id });
         } else if (mediaModalType === 'floorPlan') {
@@ -214,8 +215,8 @@ export default function PropertyForm({
                             <input
                                 type="text"
                                 className="form-control bg-light border-0"
-                                value={(formData as any).slug || ''}
-                                onChange={e => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/ /g, '-') } as any)}
+                                value={formData.slug || ''}
+                                onChange={e => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/ /g, '-') })}
                                 placeholder="e.g. sunset-heights"
                             />
                         </div>
@@ -245,8 +246,8 @@ export default function PropertyForm({
                             <label className="form-label fw-semibold small text-uppercase text-muted">Category</label>
                             <SearchableSelect
                                 options={categories.filter(c => c.status === 1).map(c => ({ id: c.id, name: c.name }))}
-                                value={(formData as any).categoryId || ''}
-                                onChange={val => setFormData({ ...formData, categoryId: val } as any)}
+                                value={formData.categoryId || ''}
+                                onChange={val => setFormData({ ...formData, categoryId: val })}
                                 placeholder="Select Category..."
                             />
                         </div>
@@ -273,8 +274,8 @@ export default function PropertyForm({
                             <input
                                 type="url"
                                 className="form-control bg-light border-0"
-                                value={(formData as any).videoUrl || ''}
-                                onChange={e => setFormData({ ...formData, videoUrl: e.target.value } as any)}
+                                value={formData.videoUrl || ''}
+                                onChange={e => setFormData({ ...formData, videoUrl: e.target.value })}
                                 placeholder="https://www.youtube.com/watch?v=..."
                             />
                             <div className="form-text">Optional: Add a YouTube video tour or walkthrough</div>
@@ -369,14 +370,14 @@ export default function PropertyForm({
                                 onClick={() => { setMediaModalType('main'); setShowMediaModal(true); }}
                             >
                                 {formData.mainImageId ? (
-                                    <div>
-                                        <img
-                                            src={getMediaUrl(formData.mainImageId) || (initialData as any)?.mainImage?.url}
-                                            className="rounded-3 shadow-sm mb-2"
-                                            style={{ maxHeight: 100, maxWidth: '100%' }}
+                                    <div className="position-relative" style={{ height: 100, width: '100%' }}>
+                                        <Image
+                                            src={getMediaUrl(formData.mainImageId) || initialData?.mainImage?.url || '/images/placeholder.jpg'}
+                                            fill
+                                            className="rounded-3 shadow-sm mb-2 object-fit-contain"
                                             alt="Main"
                                         />
-                                        <div className="small text-primary fw-semibold">Click to change</div>
+                                        <div className="position-absolute bottom-0 start-50 translate-middle-x small text-primary fw-semibold bg-white px-2 rounded-pill shadow-sm">Click to change</div>
                                     </div>
                                 ) : (
                                     <div className="py-2">
@@ -442,7 +443,12 @@ export default function PropertyForm({
                                 {(formData.gallery || []).map((imgId: string, idx: number) => (
                                     <div key={idx} className="col-4 col-sm-3 col-md-2">
                                         <div className="position-relative rounded-3 overflow-hidden bg-light" style={{ aspectRatio: '1/1' }}>
-                                            <img src={getMediaUrl(imgId)} className="w-100 h-100 object-fit-cover" alt={`Gallery ${idx + 1}`} />
+                                            <Image
+                                                src={getMediaUrl(imgId) || '/images/placeholder.jpg'}
+                                                fill
+                                                className="w-100 h-100 object-fit-cover"
+                                                alt={`Gallery ${idx + 1}`}
+                                            />
                                             <button
                                                 type="button"
                                                 className="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle p-0 d-flex align-items-center justify-content-center"
@@ -502,7 +508,7 @@ export default function PropertyForm({
                                         <span className="fw-semibold small text-uppercase text-muted">{cat.name}</span>
                                     </div>
                                     <div className="row g-2">
-                                        {catAmenities.map((amenity: any) => {
+                                        {catAmenities.map((amenity: Amenity) => {
                                             const selected = (formData.amenities || []).includes(amenity.id);
                                             return (
                                                 <div key={amenity.id} className="col-6 col-md-4 col-lg-3">
@@ -544,7 +550,7 @@ export default function PropertyForm({
                         </div>
                         <div className="col-md-6">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Address Line 2</label>
-                            <input type="text" className="form-control bg-light border-0" value={(formData as any).addressLine2 || ''} onChange={e => setFormData({ ...formData, addressLine2: e.target.value } as any)} placeholder="Suite, Floor, Unit, etc." />
+                            <input type="text" className="form-control bg-light border-0" value={formData.addressLine2 || ''} onChange={e => setFormData({ ...formData, addressLine2: e.target.value })} placeholder="Suite, Floor, Unit, etc." />
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">
@@ -567,8 +573,8 @@ export default function PropertyForm({
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Country</label>
                             <CountrySelect
-                                value={(formData as any).country || ''}
-                                onChange={val => setFormData({ ...formData, country: val } as any)}
+                                value={formData.country || ''}
+                                onChange={val => setFormData({ ...formData, country: val })}
                             />
                         </div>
 

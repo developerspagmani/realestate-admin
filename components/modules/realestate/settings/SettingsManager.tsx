@@ -16,7 +16,7 @@ interface SettingsManagerProps {
 }
 
 export default function SettingsManager({ mode }: SettingsManagerProps) {
-    const { user, isAuthenticated, loading: authLoading, isAdmin, isOwner } = useAuthContext();
+    const { user, isAuthenticated, loading: authLoading } = useAuthContext();
     const { activeTenantId, refreshTenant } = useManagementContext();
     const [mounted, setMounted] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -24,6 +24,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
     const [profileSaving, setProfileSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('general');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [settings, setSettings] = useState<any>({
         general: {
             siteName: '',
@@ -67,6 +68,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
         emailTemplates: {}
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [profile, setProfile] = useState<any>({
         firstName: '',
         lastName: '',
@@ -216,6 +218,7 @@ export default function SettingsManager({ mode }: SettingsManagerProps) {
             return;
         }
         loadSettings();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, isAuthenticated, mounted, authLoading, router]);
 
     const handleSaveSettings = async (e?: React.FormEvent) => {

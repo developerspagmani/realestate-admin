@@ -4,18 +4,21 @@ import { useState, useRef, useEffect, MouseEvent, useCallback } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { DEMO_HOUSE_PLANS } from '@/app/constants/demoPlans';
 import Loader from '@/components/common/Loader';
+import { LayoutItem, VisualEditorConfig } from '@/types';
 
 interface Marker {
     unitId: string;
     unitCode: string;
-    type: 'seat' | 'cabin' | 'flat' | 'villa' | 'road' | 'tree' | 'drainage' | 'hills' | 'river' | 'lake' | 'garden' | 'park' | 'pond' | 'court' | 'clubhouse' | 'arch';
+    type: string;
     x: number; // pixel x
     y: number; // pixel y
     width?: number; // for rect
     height?: number; // for rect
-    points?: { x: number; y: number }[]; // for polygon
+    points?: { x: number; z: number }[]; // for polygon
     color?: string;
 }
+
+
 
 const SCENARIO_TYPES = [
     { id: 'road', name: 'Road/Path', color: '#555555', icon: 'bi-signpost-split' },
@@ -31,15 +34,15 @@ const SCENARIO_TYPES = [
 
 interface VisualEditorProps {
     units: any[];
-    layout: any[];
-    config: any;
-    onLayoutChange: (newLayout: any[]) => void;
-    onConfigChange: (newConfig: any) => void;
+    layout: LayoutItem[];
+    config: VisualEditorConfig | null;
+    onLayoutChange: (newLayout: LayoutItem[]) => void;
+    onConfigChange: (newConfig: VisualEditorConfig) => void;
 }
 
 export default function VisualEditor({ units, layout, config, onLayoutChange, onConfigChange }: VisualEditorProps) {
     const [scale, setScale] = useState<number>(50); // px per unit (meter)
-    const [localLayout, setLocalLayout] = useState<any[]>(layout || []);
+    const [localLayout, setLocalLayout] = useState<LayoutItem[]>(layout || []);
     const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
     const [drawMode, setDrawMode] = useState<'pointer' | 'hand' | 'point' | 'rect' | 'poly' | 'text' | 'frame'>('pointer');
     const [tempPolyPoints, setTempPolyPoints] = useState<{ x: number, y: number }[]>([]);
@@ -73,20 +76,47 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
 
     // Helpers
     const isPointInPoly = (point: { x: number, z: number }, vs: { x: number, z: number }[]) => {
-        let x = point.x, y = point.z;
+        const x = point.x, y = point.z;
         let inside = false;
         for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-            let xi = vs[i].x, yi = vs[i].z;
-            let xj = vs[j].x, yj = vs[j].z;
-            let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            const xi = vs[i].x, yi = vs[i].z;
+            const xj = vs[j].x, yj = vs[j].z;
+            const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
             if (intersect) inside = !inside;
         }
         return inside;
     };
 
     // History management
-    const [history, setHistory] = useState<any[][]>([]);
+    const [history, setHistory] = useState<LayoutItem[][]>([]);
     const [historyStep, setHistoryStep] = useState(-1);
+
+    const handleUndo = useCallback(() => {
+        if (historyStep > 0) {
+            const prevStep = historyStep - 1;
+            setHistoryStep(prevStep);
+            setLocalLayout(history[prevStep]);
+            onLayoutChange(history[prevStep]);
+        }
+    }, [history, historyStep, onLayoutChange]);
+
+    const handleRedo = useCallback(() => {
+        if (historyStep < history.length - 1) {
+            const nextStep = historyStep + 1;
+            setHistoryStep(nextStep);
+            setLocalLayout(history[nextStep]);
+            onLayoutChange(history[nextStep]);
+        }
+    }, [history, historyStep, onLayoutChange]);
+
+    const addToHistory = useCallback((newLayout: LayoutItem[]) => {
+        const newHistory = history.slice(0, historyStep + 1);
+        newHistory.push(newLayout);
+        setHistory(newHistory);
+        setHistoryStep(newHistory.length - 1);
+        setLocalLayout(newLayout);
+        onLayoutChange(newLayout);
+    }, [history, historyStep, onLayoutChange]);
 
     // History and Keyboard Shortcuts
     useEffect(() => {
@@ -139,14 +169,14 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [selectedUnitId, localLayout, historyStep, drawMode]);
+    }, [selectedUnitId, localLayout, drawMode, addToHistory, handleUndo, handleRedo]);
 
     // Update local layout when prop changes (e.g. on load)
     useEffect(() => {
         if (layout && layout.length > 0 && localLayout.length === 0) {
             setLocalLayout(layout);
         }
-    }, [layout]);
+    }, [layout, localLayout.length]);
 
     // ... (keep useEffect for history Init) 
     useEffect(() => {
@@ -155,35 +185,9 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
             setHistory([initial]);
             setHistoryStep(0);
         }
-    }, [layout, history.length]);
+    }, [layout, history.length, localLayout]);
 
-    // ... (keep addToHistory, handleUndo, handleRedo)
-    const addToHistory = (newLayout: any[]) => {
-        const newHistory = history.slice(0, historyStep + 1);
-        newHistory.push(newLayout);
-        setHistory(newHistory);
-        setHistoryStep(newHistory.length - 1);
-        setLocalLayout(newLayout);
-        onLayoutChange(newLayout);
-    };
 
-    const handleUndo = () => {
-        if (historyStep > 0) {
-            const prevStep = historyStep - 1;
-            setHistoryStep(prevStep);
-            setLocalLayout(history[prevStep]);
-            onLayoutChange(history[prevStep]);
-        }
-    };
-
-    const handleRedo = () => {
-        if (historyStep < history.length - 1) {
-            const nextStep = historyStep + 1;
-            setHistoryStep(nextStep);
-            setLocalLayout(history[nextStep]);
-            onLayoutChange(history[nextStep]);
-        }
-    };
 
     // Config state
     // Designer Canvas state
@@ -204,9 +208,11 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
             reader.onload = (event) => {
                 const result = event.target?.result as string;
                 setImageUrl(result);
+
+                const baseConfig = config || { scene: {} };
                 onConfigChange({
-                    ...config,
-                    scene: { ...config.scene, floorPlan: result }
+                    ...baseConfig,
+                    scene: { ...baseConfig.scene, floorPlan: result }
                 });
             };
             reader.readAsDataURL(file);
@@ -740,7 +746,7 @@ export default function VisualEditor({ units, layout, config, onLayoutChange, on
         };
 
         const existingIndex = localLayout.findIndex(l => l.unitId === marker.unitId);
-        let newLayout = [...localLayout];
+        const newLayout = [...localLayout];
         if (existingIndex >= 0) {
             newLayout[existingIndex] = newItem;
         } else {

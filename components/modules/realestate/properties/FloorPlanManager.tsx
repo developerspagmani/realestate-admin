@@ -3,15 +3,15 @@
 import { useState, useRef } from 'react';
 import { propertyService, getAuthToken } from '@/app/services/api';
 import Loader from '@/components/common/Loader';
+import { Seats, LayoutItem, VisualEditorConfig, Unit } from '@/types';
 import Workspace3D from '@/components/Workspace3D';
-import { Seats } from '@/types';
 
 interface FloorPlan {
     id: string;
     name: string;
     description: string;
-    layout: any[];
-    config: any;
+    layout: LayoutItem[];
+    config: VisualEditorConfig;
     thumbnail?: string;
     type: '2bhk' | '3bhk' | 'studio' | 'villas' | 'commercial';
     customization?: {
@@ -23,7 +23,7 @@ interface FloorPlan {
 
 interface FloorPlanManagerProps {
     propertyId: string;
-    units: any[];
+    units: Unit[];
     layouts: FloorPlan[];
     onSave: (plans: FloorPlan[]) => void;
 }
@@ -36,13 +36,13 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
             description: 'Minimalist 3-bedroom concept with open floor plan',
             type: 'commercial',
             layout: [
-                { id: 'f1', unitCode: 'Grand Floor', type: 'flat', position: { x: 0, y: 0.1, z: 0 }, dimensions: { w: 15, h: 0.1, d: 15 }, color: '#f1f5f9' },
-                { id: 'w1', unitCode: 'North Wall', type: 'villa', position: { x: 0, y: 1.5, z: -7.5 }, dimensions: { w: 15, h: 3, d: 0.2 }, color: '#ffffff' },
-                { id: 'w2', unitCode: 'South Wall', type: 'villa', position: { x: 0, y: 1.5, z: 7.5 }, dimensions: { w: 15, h: 3, d: 0.2 }, color: '#ffffff' },
-                { id: 'w3', unitCode: 'East Wall', type: 'villa', position: { x: 7.5, y: 1.5, z: 0 }, dimensions: { w: 0.2, h: 3, d: 15 }, color: '#ffffff' },
-                { id: 'w4', unitCode: 'West Wall', type: 'villa', position: { x: -7.5, y: 1.5, z: 0 }, dimensions: { w: 0.2, h: 3, d: 15 }, color: '#ffffff' },
+                { unitId: 'f1', unitCode: 'Grand Floor', type: 'flat', position: { x: 0, y: 0.1, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, dimensions: { w: 15, h: 0.1, d: 15 }, color: '#f1f5f9' },
+                { unitId: 'w1', unitCode: 'North Wall', type: 'villa', position: { x: 0, y: 1.5, z: -7.5 }, rotation: { x: 0, y: 0, z: 0 }, dimensions: { w: 15, h: 3, d: 0.2 }, color: '#ffffff' },
+                { unitId: 'w2', unitCode: 'South Wall', type: 'villa', position: { x: 0, y: 1.5, z: 7.5 }, rotation: { x: 0, y: 0, z: 0 }, dimensions: { w: 15, h: 3, d: 0.2 }, color: '#ffffff' },
+                { unitId: 'w3', unitCode: 'East Wall', type: 'villa', position: { x: 7.5, y: 1.5, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, dimensions: { w: 0.2, h: 3, d: 15 }, color: '#ffffff' },
+                { unitId: 'w4', unitCode: 'West Wall', type: 'villa', position: { x: -7.5, y: 1.5, z: 0 }, rotation: { x: 0, y: 0, z: 0 }, dimensions: { w: 0.2, h: 3, d: 15 }, color: '#ffffff' },
             ],
-            config: { scene: { background: '#ffffff' }, camera: { position: { x: 0, y: 25, z: 0.1 } } },
+            config: { scene: { background: '#ffffff' }, camera: { position: { x: 0, y: 25, z: 0.1 }, lookAt: { x: 0, y: 0, z: 0 } } },
             customization: { wallColor: '#ffffff', floorColor: '#f1f5f9', aerialView: true }
         }
     ]);
@@ -66,7 +66,7 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
 
         reader.onload = async (e) => {
             const content = e.target?.result as string;
-            let parsedLayout: any[] = [];
+            let parsedLayout: LayoutItem[] = [];
 
             if (file.name.toLowerCase().endsWith('.svg')) {
                 parsedLayout = await extract3DFromSVG(content);
@@ -85,7 +85,7 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
                     description: `Automatic 3D build from ${file.name.split('.').pop()?.toUpperCase()} CAD file`,
                     type: '2bhk',
                     layout: parsedLayout,
-                    config: { scene: { background: '#ffffff' }, camera: { position: { x: 10, y: 15, z: 10 } } },
+                    config: { scene: { background: '#ffffff' }, camera: { position: { x: 10, y: 15, z: 10 }, lookAt: { x: 0, y: 0, z: 0 } } },
                     customization: {
                         wallColor: '#ffffff',
                         floorColor: '#e2e8f0',
@@ -103,14 +103,14 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
         reader.readAsText(file);
     };
 
-    const extract3DFromDXF = async (dxfContent: string): Promise<any[]> => {
+    const extract3DFromDXF = async (dxfContent: string): Promise<LayoutItem[]> => {
         // Simple DXF Parser (ASCII)
         // Entities to look for: LINE (10, 20, 11, 21), LWPOLYLINE (10, 20)
         const lines = dxfContent.split(/\r?\n/);
         const elements: any[] = [];
         let currentEntity: any = null;
         const MAX_ENTITIES = 500;
-        let scale = 0.01; // DXF units (mm) to Meters
+        const scale = 0.01; // DXF units (mm) to Meters
 
         for (let i = 0; i < lines.length && elements.length < MAX_ENTITIES; i++) {
             const line = lines[i].trim();
@@ -142,7 +142,7 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
         if (currentEntity && currentEntity.pts.length >= 2) elements.push(currentEntity);
 
         // Convert raw points to ThreeD items
-        const threeDElements: any[] = [];
+        const threeDElements: LayoutItem[] = [];
         elements.forEach((el, idx) => {
             if (el.pts.length === 2 && el.pts[0].x !== undefined && el.pts[0].z !== undefined && el.pts[1].x !== undefined && el.pts[1].z !== undefined) {
                 // Handle LINE entities
@@ -154,12 +154,12 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
 
                 if (dist > 0.01) { // Only add if it has a meaningful length
                     threeDElements.push({
-                        id: `dxf-${idx}`,
+                        unitId: `dxf-${idx}`,
                         unitCode: `CAD-${idx}`,
                         type: el.type,
                         position: { x: midX, y: 1.5, z: midZ },
                         dimensions: { w: dist, h: 3, d: 0.2 },
-                        rotation: { y: Math.atan2(p2.z - p1.z, p2.x - p1.x) }, // Radians for Three.js
+                        rotation: { x: 0, y: Math.atan2(p2.z - p1.z, p2.x - p1.x), z: 0 }, // Radians for Three.js
                         color: '#ffffff'
                     });
                 }
@@ -175,12 +175,12 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
 
                         if (dist > 0.01) {
                             threeDElements.push({
-                                id: `dxf-${idx}-${i}`,
+                                unitId: `dxf-${idx}-${i}`,
                                 unitCode: `CAD-${idx}-${i}`,
                                 type: el.type,
                                 position: { x: midX, y: 1.5, z: midZ },
                                 dimensions: { w: dist, h: 3, d: 0.2 },
-                                rotation: { y: Math.atan2(p2.z - p1.z, p2.x - p1.x) },
+                                rotation: { x: 0, y: Math.atan2(p2.z - p1.z, p2.x - p1.x), z: 0 },
                                 color: '#ffffff'
                             });
                         }
@@ -192,7 +192,7 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
         return threeDElements;
     };
 
-    const extract3DFromSVG = async (svgContent: string): Promise<any[]> => {
+    const extract3DFromSVG = async (svgContent: string): Promise<LayoutItem[]> => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(svgContent, 'image/svg+xml');
         const svg = doc.querySelector('svg');
@@ -209,9 +209,9 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
         const paths = Array.from(doc.querySelectorAll('path, rect, polygon')).slice(0, MAX_SVG_NODES);
         paths.forEach((node, idx) => {
             try {
-                let type = 'villa';
-                let color = '#ffffff';
-                let h = 3.0;
+                const type = 'villa';
+                const color = '#ffffff';
+                const h = 3.0;
 
                 const bbox = (node as any).getBBox?.() || { x: 0, y: 0, width: 0, height: 0 };
 
@@ -219,7 +219,7 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
                 if (bbox.width < 1 || bbox.height < 1) return;
 
                 elements.push({
-                    id: `node-${idx}`,
+                    unitId: `node-${idx}`,
                     unitCode: `Wall ${idx}`,
                     type: (bbox.width > 50 && bbox.height > 50) ? 'flat' : 'villa', // Heuristic for floors vs walls
                     position: {
@@ -227,6 +227,7 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
                         y: (bbox.width > 50 && bbox.height > 50) ? 0.05 : 1.5,
                         z: (bbox.y + bbox.height / 2 - height / 2) * scale
                     },
+                    rotation: { x: 0, y: 0, z: 0 },
                     dimensions: {
                         w: Math.max(bbox.width * scale, 0.2),
                         h: (bbox.width > 50 && bbox.height > 50) ? 0.1 : 3.0,
@@ -367,10 +368,10 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
                         {/* 3D Preview Section */}
                         <div className="flex-grow-1 position-relative bg-white">
                             <Workspace3D
-                                workspaces={selectedPlan.layout.map((l: any) => ({
-                                    id: l.id,
+                                workspaces={selectedPlan.layout.map((l: LayoutItem) => ({
+                                    id: l.unitId,
                                     name: l.unitCode || 'Wall',
-                                    slug: l.id,
+                                    slug: l.unitId,
                                     type: (l.type === 'flat' ? 'studio' : 'villa') as any,
                                     status: 'available',
                                     features: [],
@@ -381,12 +382,12 @@ export default function FloorPlanManager({ propertyId, units, layouts, onSave }:
                                 layout={selectedPlan.layout}
                                 config={{
                                     ...selectedPlan.config,
-                                    camera: {
+                                    camera: selectedPlan.config.camera ? {
                                         ...selectedPlan.config.camera,
                                         position: selectedPlan.customization?.aerialView
                                             ? { x: 0, y: 25, z: 0.1 } // Force Top-Down
                                             : selectedPlan.config.camera.position
-                                    }
+                                    } : undefined
                                 }}
                             />
                         </div>

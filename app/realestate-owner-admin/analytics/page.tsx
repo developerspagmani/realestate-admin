@@ -65,7 +65,7 @@ export default function AdvancedAnalyticsPage() {
 
             // Compute dates based on filter
             let start = filters.startDate;
-            let end = filters.endDate;
+            const end = filters.endDate;
 
             if (filters.dateRange === '7d') {
                 const d = new Date();

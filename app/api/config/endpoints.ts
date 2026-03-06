@@ -535,6 +535,16 @@ export const taskEndpoints = {
 
 
 
+// PropIntel AI endpoints
+export const propIntelEndpoints = {
+  getDiagnostics: (params?: Record<string, any>) =>
+    params ? `/admin/prop-intel/diagnostics?${buildQueryString(params)}` : '/admin/prop-intel/diagnostics',
+  getPMFAnalysis: (params?: Record<string, any>) =>
+    params ? `/admin/prop-intel/pmf-analysis?${buildQueryString(params)}` : '/admin/prop-intel/pmf-analysis',
+  getSuggestions: (params?: Record<string, any>) =>
+    params ? `/admin/prop-intel/suggestions?${buildQueryString(params)}` : '/admin/prop-intel/suggestions',
+};
+
 // Helper function to build query strings
 export const buildQueryString = (params: Record<string, any>): string => {
   const searchParams = new URLSearchParams();

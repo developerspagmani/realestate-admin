@@ -1,14 +1,7 @@
 'use client';
 
-interface Page {
-    id: string;
-    title: string;
-    slug: string;
-    status: number;
-    createdAt: string;
-    updatedAt: string;
-    featureImage?: any;
-}
+import { Page } from '@/app/services/cms';
+import Image from 'next/image';
 
 interface CMSListProps {
     pages: Page[];
@@ -41,11 +34,14 @@ export default function CMSList({ pages, onEdit, onDelete }: CMSListProps) {
                                                 style={{ width: '48px', height: '48px' }}
                                             >
                                                 {page.featureImage ? (
-                                                    <img
-                                                        src={page.featureImage.url}
-                                                        className="w-100 h-100 object-fit-cover"
-                                                        alt={page.title}
-                                                    />
+                                                    <div className="position-relative w-100 h-100">
+                                                        <Image
+                                                            src={page.featureImage.url}
+                                                            className="object-fit-cover"
+                                                            fill
+                                                            alt={page.title}
+                                                        />
+                                                    </div>
                                                 ) : (
                                                     <i className="bi bi-file-earmark-text text-muted"></i>
                                                 )}

@@ -5,6 +5,7 @@ import MainLayout from '@/components/MainLayout';
 import BrochureManager from './BrochureManager';
 import { propertyService, amenityService, mediaService } from '@/app/services/api';
 import { useAuthContext } from '@/app/contexts/AuthContext';
+import { Property, Amenity, MediaItem } from '@/types';
 
 interface BrochureIntelligentProps {
     mode: 'admin' | 'owner';
@@ -12,11 +13,11 @@ interface BrochureIntelligentProps {
 
 export default function BrochureIntelligent({ mode }: BrochureIntelligentProps) {
     const { token } = useAuthContext();
-    const [properties, setProperties] = useState<any[]>([]);
-    const [amenities, setAmenities] = useState<any[]>([]);
-    const [mediaItems, setMediaItems] = useState<any[]>([]);
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [amenities, setAmenities] = useState<Amenity[]>([]);
+    const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedProperty, setSelectedProperty] = useState<any>(null);
+    const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
     useEffect(() => {
         if (token) {
@@ -35,10 +36,22 @@ export default function BrochureIntelligent({ mode }: BrochureIntelligentProps) 
             ]);
 
             if (pRes.success) {
-                const propsList = pRes.data.properties || [];
+                const propsList: Property[] = (pRes.data.properties || []).map((p: any) => ({
+                    ...p,
+                    name: p.title || p.name || 'Untitled',
+                    priceType: 'fixed',
+                    squareFootage: p.area || p.sizeSqft || 0,
+                    features: [],
+                    photos: p.gallery || [],
+                    rating: 0,
+                    totalReviews: 0,
+                    propertyType: p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use',
+                    listingType: (p.listingType?.toLowerCase() as Property['listingType']) || 'rent',
+                    status: p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance',
+                }));
                 setProperties(propsList);
                 if (propsList.length > 0) {
-                    await fetchFullProperty(propsList[0].id);
+                    await fetchFullProperty(propsList[0].id, propsList);
                 }
             }
             if (aRes.success) setAmenities(aRes.data.amenities || []);
@@ -50,14 +63,29 @@ export default function BrochureIntelligent({ mode }: BrochureIntelligentProps) 
         }
     };
 
-    const fetchFullProperty = async (id: string) => {
+    const fetchFullProperty = async (id: string, currentProperties?: Property[]) => {
         try {
             const res = await propertyService.getPropertyById(token!, id);
             if (res.success) {
-                setSelectedProperty(res.data.property);
+                const p = res.data.property;
+                const fullProperty: Property = {
+                    ...p,
+                    name: p.title || p.name || 'Untitled',
+                    priceType: 'fixed',
+                    squareFootage: p.area || p.sizeSqft || 0,
+                    features: [],
+                    photos: p.gallery || [],
+                    rating: 0,
+                    totalReviews: 0,
+                    propertyType: p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use',
+                    listingType: (p.listingType?.toLowerCase() as Property['listingType']) || 'rent',
+                    status: p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance',
+                };
+                setSelectedProperty(fullProperty);
             } else {
                 // Fallback to basic data if full fetch fails
-                const basic = properties.find(p => p.id === id);
+                const list = currentProperties || properties;
+                const basic = list.find(p => p.id === id);
                 if (basic) setSelectedProperty(basic);
             }
         } catch (error) {

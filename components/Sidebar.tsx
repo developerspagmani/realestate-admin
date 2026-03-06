@@ -63,7 +63,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
   useEffect(() => {
     // Notify parent of sidebar width changes
     if (onSidebarCollapse) {
-      onSidebarCollapse(collapsed ? '70px' : '250px');
+      onSidebarCollapse(collapsed ? '70px' : '280px');
     }
   }, [collapsed, onSidebarCollapse]);
 
@@ -209,14 +209,15 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               { href: '/realestate-owner-admin/marketing', label: 'Email Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
               { href: '/realestate-owner-admin/marketing/intelligent', label: 'Intelligent Email', icon: 'bi-robot', active: activePage === 'intelligent-email' },
             ] : []),
-            ...(hasModule('analytics_pro') || hasModule('deal_intelligence') ? [
+            ...(hasModule('analytics_pro') || hasModule('deal_intelligence') || hasModule('propintel_ai') ? [
               {
                 href: '/realestate-owner-admin/analytics',
                 label: 'Advanced Analytics',
                 icon: 'bi-bar-chart-line-fill',
-                active: activePage === 'analytics' || activePage === 'forecasting' || activePage === 'deal-intelligence' || activePage === 'deal-prevention',
+                active: activePage === 'analytics' || activePage === 'forecasting' || activePage === 'deal-intelligence' || activePage === 'deal-prevention' || activePage === 'propintel',
                 children: [
                   { href: '/realestate-owner-admin/analytics', label: 'Performance Reports', icon: 'bi-grid-fill', active: activePage === 'analytics' },
+                  { href: '/realestate-owner-admin/analytics/prop-intel', label: 'PropIntel AI Dashboard', icon: 'bi-robot', active: activePage === 'propintel' },
                   { href: '/realestate-owner-admin/analytics/forecasting', label: 'AI Demand Forecasting', icon: 'bi-robot', active: activePage === 'forecasting' },
                   ...(hasModule('deal_intelligence') ? [
                     { href: '/realestate-owner-admin/analytics/deal-intelligence', label: 'Deal Closer (Lost)', icon: 'bi-shield-x', active: activePage === 'deal-intelligence' },
@@ -348,7 +349,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
 
   if (!user) {
     return (
-      <div className="sidebar bg-white border-end shadow-sm" style={{ width: collapsed ? '70px' : '250px', minHeight: '100vh', position: 'fixed' }}>
+      <div className="sidebar bg-white border-end shadow-sm" style={{ width: collapsed ? '70px' : '280px', minHeight: '100vh', position: 'fixed' }}>
         <div className="p-4 border-bottom">
           <div className="bg-primary rounded-3" style={{ width: '32px', height: '32px' }}></div>
         </div>
@@ -362,7 +363,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
       <div
         className={`sidebar bg-white border-end shadow-sm ${collapsed ? 'collapsed' : ''} ${showMobile ? 'show-mobile' : ''}`}
         style={{
-          width: collapsed ? '70px' : '250px',
+          width: collapsed ? '70px' : '280px',
           height: '100vh',
           transition: isMounting || !mounted ? 'none' : 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'fixed',
@@ -456,7 +457,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                           )}
                         </div>
                         {isOpen && (!collapsed || showMobile) && (
-                          <div className="ms-4 mt-1 border-start ps-2">
+                          <div className="ms-3 mt-1 border-start ps-1">
                             {item.children.map((child: any) => (
                               <Link
                                 key={child.href}

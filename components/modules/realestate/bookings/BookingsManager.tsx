@@ -6,9 +6,10 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { bookingService, userService, unitService, propertyService, agentService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
-import { Booking, User, Unit, Property } from '@/app/services/api';
+import { Booking, User, Unit, Property, Agent } from '@/types';
 import Toast from '@/components/common/Toast';
 import Loader from '@/components/common/Loader';
+import React from 'react';
 
 interface BookingsManagerProps {
     mode: 'admin' | 'owner';
@@ -16,13 +17,13 @@ interface BookingsManagerProps {
 
 export default function BookingsManager({ mode }: BookingsManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
-    const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
+    const { tenantType, activeTenantId, activeOwnerId } = useManagementContext();
     const [mounted, setMounted] = useState(false);
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [units, setUnits] = useState<Unit[]>([]);
     const [properties, setProperties] = useState<Property[]>([]);
-    const [agents, setAgents] = useState<any[]>([]);
+    const [agents, setAgents] = useState<Agent[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
     const [loading, setLoading] = useState(true);
@@ -46,13 +47,13 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         guestPhone: ''
     });
 
-    const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed' | 'past'>('all');
-    const [availabilityStatus, setAvailabilityStatus] = useState<{ loading: boolean; available?: boolean; conflicts?: any[]; price?: number }>({ loading: false });
+    const [availabilityStatus, setAvailabilityStatus] = useState<{ loading: boolean; available?: boolean; conflicts?: Booking[]; price?: number }>({ loading: false });
     const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
     const [availabilityForm, setAvailabilityForm] = useState({ propertyId: '', unitId: '', startAt: '', endAt: '' });
     const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
@@ -78,7 +79,6 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
 
     const router = useRouter();
     const searchParams = useSearchParams();
-    const urlPropertyId = searchParams.get('propertyId');
     const urlUnitId = searchParams.get('unitId');
 
     useEffect(() => {
@@ -87,26 +87,26 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
 
     const [currentDate, setCurrentDate] = useState(new Date());
 
-    const loadData = async () => {
+    const loadData = React.useCallback(async () => {
         try {
             setLoading(true);
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
             const industryType = mode === 'admin' ? tenantType : undefined;
 
-            const params: any = {
-                tenantId,
+            const searchParamsObj: { tenantId?: string; ownerId?: string; unitId?: string } = {
+                tenantId: tenantId || undefined,
                 ...(mode === 'admin' && activeOwnerId ? { ownerId: activeOwnerId } : {})
             };
-            if (urlUnitId) params.unitId = urlUnitId;
+            if (urlUnitId) searchParamsObj.unitId = urlUnitId;
 
             const [bookingsRes, usersRes, propertiesRes, unitsRes, agentsRes] = await Promise.all([
                 bookingService.getBookings(token, {
-                    ...params,
+                    ...searchParamsObj,
                     industryType,
-                    limit: '10'
+                    limit: '100' // Increased limit for management
                 }),
                 userService.getUsers(token, { tenantId: tenantId || undefined }),
                 propertyService.getProperties(token, {
@@ -122,11 +122,64 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                 agentService.getAgents(token, { tenantId: tenantId || undefined })
             ]);
 
-            if (bookingsRes.success) setBookings(bookingsRes.data.bookings || bookingsRes.data || []);
-            if (usersRes.success) setUsers(usersRes.data.users || usersRes.data || []);
-            if (propertiesRes.success) setProperties(propertiesRes.data.properties || propertiesRes.data || []);
-            if (unitsRes.success) setUnits(unitsRes.data.units || unitsRes.data || []);
-            if (agentsRes && (agentsRes as any).success) setAgents((agentsRes as any).data.agents || (agentsRes as any).data || []);
+            if (bookingsRes.success) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const rawBookings: any[] = bookingsRes.data.bookings || bookingsRes.data || [];
+                setBookings(rawBookings.map((b) => ({
+                    ...b,
+                    id: String(b.id),
+                    status: Number(b.status),
+                    startAt: b.startAt,
+                    endAt: b.endAt,
+                    unit: b.unit ? {
+                        ...b.unit,
+                        id: String(b.unit.id || b.unitId),
+                        unitCode: b.unit.unitCode || b.unit.unitCode_alias || 'N/A',
+                        property: b.unit.property ? {
+                            ...b.unit.property,
+                            id: String(b.unit.property.id || b.unit.propertyId),
+                            name: b.unit.property.title || b.unit.property.name || 'Untitled',
+                        } : undefined
+                    } : undefined,
+                    property: b.property ? {
+                        ...b.property,
+                        id: String(b.property.id || b.propertyId),
+                        name: b.property.title || b.property.name || 'Untitled',
+                    } : undefined
+                } as Booking)));
+            }
+
+            if (usersRes.success) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const rawUsers: any[] = usersRes.data.users || usersRes.data || [];
+                setUsers(rawUsers.map(u => ({ ...u, id: String(u.id) } as User)));
+            }
+
+            if (propertiesRes.success) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const rawProps: any[] = propertiesRes.data.properties || propertiesRes.data || [];
+                setProperties(rawProps.map(p => ({
+                    ...p,
+                    id: String(p.id),
+                    name: p.title || p.name || 'Untitled'
+                } as Property)));
+            }
+
+            if (unitsRes.success) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const rawUnits: any[] = unitsRes.data.units || unitsRes.data || [];
+                setUnits(rawUnits.map(u => ({
+                    ...u,
+                    id: String(u.id),
+                    unitCode: u.unitCode || u.unitCode_alias || 'N/A'
+                } as Unit)));
+            }
+
+            if (agentsRes && agentsRes.success) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const rawAgents: any[] = agentsRes.data.agents || agentsRes.data || [];
+                setAgents(rawAgents.map(a => ({ ...a, id: String(a.id) } as Agent)));
+            }
 
         } catch (error) {
             console.error('Failed to load bookings data:', error);
@@ -134,7 +187,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeOwnerId, activeTenantId, mode, tenantType, urlUnitId, user?.tenantId]);
 
     useEffect(() => {
         if (!mounted) return;
@@ -143,7 +196,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             return;
         }
         loadData();
-    }, [mounted, isAuthenticated, user, router, urlUnitId, activeTenantId, activeOwnerId, tenantType]);
+    }, [mounted, isAuthenticated, user, router, activeTenantId, activeOwnerId, tenantType, loadData]);
 
     const formatForInput = (dateStr: string) => {
         if (!dateStr) return '';
@@ -200,7 +253,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         setCurrentPage(1);
     }, [searchTerm, filterStatus, activeTab, itemsPerPage]);
 
-    const checkAvailability = async (isManual: boolean = false) => {
+    const checkAvailability = React.useCallback(async (isManual: boolean = false) => {
         const targetForm = isManual ? availabilityForm : formData;
         if (!targetForm.unitId || !targetForm.startAt) return;
 
@@ -219,20 +272,20 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                 endDate.setHours(endDate.getHours() + 1);
             }
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
 
-            const params: any = {
+            const searchParamsObj: { unitId: string; startAt: string; endAt: string; tenantId: string; bookingId?: string } = {
                 unitId: targetForm.unitId,
                 startAt: startDate.toISOString(),
                 endAt: endDate.toISOString(),
-                tenantId: tenantId || localStorage.getItem('tenant-id') || '',
+                tenantId: tenantId || '',
             };
 
             if (!isManual && editingBooking) {
-                params.bookingId = editingBooking.id;
+                searchParamsObj.bookingId = editingBooking.id;
             }
 
-            const res = await bookingService.checkAvailability(token, params);
+            const res = await bookingService.checkAvailability(token, searchParamsObj);
             setAvailabilityStatus({
                 loading: false,
                 available: res.available,
@@ -243,7 +296,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             console.error('Check availability error:', error);
             setAvailabilityStatus({ loading: false });
         }
-    };
+    }, [activeTenantId, availabilityForm, editingBooking, formData, mode, user?.tenantId]);
 
     useEffect(() => {
         if (formData.unitId && formData.startAt && formData.endAt) {
@@ -252,7 +305,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         } else {
             setAvailabilityStatus({ loading: false });
         }
-    }, [formData.unitId, formData.startAt, formData.endAt]);
+    }, [formData.unitId, formData.startAt, formData.endAt, checkAvailability]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -275,11 +328,11 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                 endDate.setHours(endDate.getHours() + 1);
             }
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
 
             const payload = {
                 ...formData,
-                tenantId: tenantId || localStorage.getItem('tenant-id'),
+                tenantId: tenantId || undefined,
                 startAt: startDate.toISOString(),
                 endAt: endDate.toISOString(),
             };
@@ -309,7 +362,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
             const response = await bookingService.updateBookingStatus(token, id, status, undefined, tenantId || '');
             if (response.success) {
                 loadData();
@@ -327,8 +380,8 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            const response = await bookingService.sendVisitInfo(token, id, (tenantId || localStorage.getItem('tenant-id')) as string);
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
+            const response = await bookingService.sendVisitInfo(token, id, (tenantId) as string);
             if (response.success) {
                 showToast('Visit information email sent to prospect');
             } else {
@@ -346,7 +399,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
 
             await Promise.all(ids.map(bookingId => bookingService.deleteBooking(token, bookingId, tenantId || '')));
             showToast(`${ids.length > 1 ? ids.length + ' visits' : 'Visit'} deleted successfully`);
@@ -425,7 +478,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         setImportTotal(csvRows.length);
         setImportProgress(0);
         const token = getAuthToken();
-        const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId || localStorage.getItem('tenant-id');
+        const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
         if (!token || !tenantId) return;
 
         for (let i = 0; i < csvRows.length; i++) {
@@ -450,15 +503,12 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                     console.warn('Skipping import row due to missing unit:', row);
                     continue;
                 }
-
                 // 2. Resolve User by Email if possible
                 let resolvedUserId = '';
-                let systemUserName = '';
                 if (guestEmail) {
                     const match = users.find(u => u.email?.toLowerCase() === guestEmail.toLowerCase());
                     if (match) {
                         resolvedUserId = match.id;
-                        systemUserName = match.name || '';
                     }
                 }
 
@@ -490,7 +540,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     };
 
     const getStatusLabel = (status: number) => {
-        const config: any = {
+        const config: Record<number, { label: string; class: string; icon: string }> = {
             1: { label: 'Pending', class: 'bg-warning-soft text-warning', icon: 'bi-clock' },
             2: { label: 'Confirmed', class: 'bg-success-soft text-success', icon: 'bi-check-circle' },
             3: { label: 'Cancelled', class: 'bg-danger-soft text-danger', icon: 'bi-x-circle' },
@@ -520,16 +570,6 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
         setShowModal(false);
     };
 
-    const getCalendarEvents = () => {
-        return bookings.map(booking => ({
-            id: booking.id,
-            title: `${booking.guestName || booking.user?.name || 'Guest'} - ${booking.unit?.unitCode || booking.unit?.property?.title || booking.property?.title || 'Visit'}`,
-            start: new Date(booking.startAt),
-            end: new Date(booking.endAt),
-            status: booking.status,
-            data: booking
-        }));
-    };
 
     if (!mounted || !isAuthenticated) return null;
 
@@ -863,7 +903,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                         currentDate={currentDate}
                         setCurrentDate={setCurrentDate}
                         bookings={filteredBookings}
-                        onEventClick={(booking: any) => {
+                        onEventClick={(booking: Booking) => {
                             if (!booking) return;
                             setSelectedBooking(booking);
                             setShowDetailModal(true);
@@ -1377,8 +1417,16 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     );
 }
 
+interface CalendarViewProps {
+    currentDate: Date;
+    setCurrentDate: (date: Date) => void;
+    bookings: Booking[];
+    onEventClick: (booking: Booking) => void;
+    getStatusLabel: (status: number) => { label: string; class: string; icon: string };
+}
+
 // Calendar View Component
-function CalendarView({ currentDate, setCurrentDate, bookings, onEventClick, getStatusLabel }: any) {
+function CalendarView({ currentDate, setCurrentDate, bookings, onEventClick, getStatusLabel }: CalendarViewProps) {
     const daysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     const firstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
 
@@ -1407,7 +1455,7 @@ function CalendarView({ currentDate, setCurrentDate, bookings, onEventClick, get
 
     const getEventsForDay = (day: number) => {
         if (!bookings) return [];
-        return bookings.filter((b: any) => {
+        return bookings.filter((b: Booking) => {
             if (!b.startAt) return false;
             const date = new Date(b.startAt);
             return date.getDate() === day && date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear();
@@ -1480,7 +1528,7 @@ function CalendarView({ currentDate, setCurrentDate, bookings, onEventClick, get
                                         <span className={`fw-bold small px-2 py-1 rounded-circle ${isToday(day) ? 'bg-primary text-white' : ''}`} style={{ width: '38px', height: '38px', textAlign: 'center', lineHeight: '30px' }}>{day}</span>
                                     </div>
                                     <div className="calendar-events d-flex flex-column gap-1">
-                                        {getEventsForDay(day).map((event: any) => {
+                                        {getEventsForDay(day).map((event: Booking) => {
                                             const status = getStatusLabel(event.status);
                                             return (
                                                 <div

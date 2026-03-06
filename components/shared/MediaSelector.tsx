@@ -49,7 +49,7 @@ export default function MediaSelector({
                 setLoading(false);
                 return;
             }
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || undefined;
+            const tenantId = (user as any)?.tenantId || undefined;
             const response = await mediaService.getMedia(token, tenantId ? { tenantId } : undefined);
             if (response.success) {
                 const mappedMedia = response.data.media.map((item: any) => ({
@@ -76,7 +76,7 @@ export default function MediaSelector({
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || undefined;
+            const tenantId = (user as any)?.tenantId || undefined;
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 const form = new FormData();

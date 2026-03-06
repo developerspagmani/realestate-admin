@@ -102,6 +102,15 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [leadToMarkLost, setLeadToMarkLost] = useState<Lead | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+
+    // Import states
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importStep, setImportStep] = useState<'file' | 'mapping' | 'progress'>('file');
+    const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+    const [csvRows, setCsvRows] = useState<string[][]>([]);
+    const [mapping, setMapping] = useState<Record<string, string>>({});
+    const [importProgress, setImportProgress] = useState(0);
+    const [importTotal, setImportTotal] = useState(0);
     const [confirmModal, setConfirmModal] = useState<{
         show: boolean;
         title: string;
@@ -252,7 +261,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            const tenantId = (user as any)?.tenantId || '';
 
             // Create the Audience Group
             const res = await marketingService.createAudienceGroup(token, {
@@ -280,7 +289,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+            const tenantId = (user as any)?.tenantId;
             if (!tenantId) return;
 
             const sourceMap: Record<string, number> = {
@@ -348,7 +357,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+            const tenantId = (user as any)?.tenantId;
             const statusMap: Record<string, number> = {
                 'new': 1, 'contacted': 2, 'qualified': 3, 'converted': 4, 'lost': 5
             };
@@ -367,7 +376,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            const tenantId = (user as any)?.tenantId || '';
             const res = await leadService.markAsLost(token, leadToMarkLost.id, lossData, tenantId);
             if (res.success) {
                 showToast('Lead marked as lost. Intelligence captured!');
@@ -399,7 +408,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            const tenantId = (user as any)?.tenantId || '';
             await leadService.deleteLead(token, id, tenantId);
             showToast('Lead deleted successfully');
             loadLeads();
@@ -440,7 +449,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            const tenantId = (user as any)?.tenantId || '';
 
             for (const id of selectedLeads) {
                 await leadService.deleteLead(token, id, tenantId);
@@ -493,6 +502,146 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         document.body.removeChild(link);
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target?.result as string;
+            if (!text) return;
+
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+            if (lines.length < 2) {
+                showToast('CSV must have a header row and data rows', 'error');
+                return;
+            }
+
+            const headerLine = lines[0];
+            const parsedHeaders = [];
+            let inQuotesForHeader = false;
+            let currentHeader = '';
+            for (let i = 0; i < headerLine.length; i++) {
+                const char = headerLine[i];
+                if (char === '"' && headerLine[i + 1] === '"') {
+                    currentHeader += '"';
+                    i++;
+                } else if (char === '"') {
+                    inQuotesForHeader = !inQuotesForHeader;
+                } else if (char === ',' && !inQuotesForHeader) {
+                    parsedHeaders.push(currentHeader.trim().replace(/^"|"$/g, ''));
+                    currentHeader = '';
+                } else {
+                    currentHeader += char;
+                }
+            }
+            parsedHeaders.push(currentHeader.trim().replace(/^"|"$/g, ''));
+
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                const row = [];
+                let inQuotes = false;
+                let currentVal = '';
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"' && line[j + 1] === '"') {
+                        currentVal += '"';
+                        j++;
+                    } else if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        row.push(currentVal.trim().replace(/^"|"$/g, ''));
+                        currentVal = '';
+                    } else {
+                        currentVal += char;
+                    }
+                }
+                row.push(currentVal.trim().replace(/^"|"$/g, ''));
+                if (row.length === parsedHeaders.length || row.filter(v => v).length > 0) {
+                    rows.push(row);
+                }
+            }
+
+            setCsvHeaders(parsedHeaders);
+            setCsvRows(rows);
+            setImportTotal(rows.length);
+
+            const initialMapping: Record<string, string> = {};
+            const standardFields = ['name', 'email', 'phone', 'company', 'budget', 'source'];
+            parsedHeaders.forEach(h => {
+                const lowerHead = h.toLowerCase();
+                if (standardFields.includes(lowerHead) || standardFields.some(sf => lowerHead.includes(sf))) {
+                    initialMapping[h] = standardFields.find(sf => lowerHead.includes(sf)) || '';
+                }
+            });
+            setMapping(initialMapping);
+            setImportStep('mapping');
+        };
+        reader.readAsText(file);
+    };
+
+    const executeImport = async () => {
+        setImportStep('progress');
+        setImportProgress(0);
+        const token = getAuthToken();
+        if (!token) return;
+
+        const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+
+        let successCount = 0;
+        for (let i = 0; i < csvRows.length; i++) {
+            const row = csvRows[i];
+            const getField = (field: string) => {
+                const headerIndex = csvHeaders.findIndex(h => mapping[h] === field);
+                return headerIndex !== -1 ? row[headerIndex] : undefined;
+            };
+
+            const name = getField('name');
+            const email = getField('email');
+
+            if (!name && !email) {
+                console.warn('Skipping import row due to missing name or email:', row);
+                continue;
+            }
+
+            const phone = getField('phone');
+            const company = getField('company');
+            const budget = getField('budget');
+            const sourceStr = getField('source')?.toLowerCase() || 'website';
+
+            const sourceMap: Record<string, number> = {
+                'website': 1, 'email': 2, 'phone': 3, 'social': 4, 'referral': 5, 'other': 6, 'chatbot': 7
+            };
+
+            try {
+                await leadService.createLead(token, {
+                    tenantId: tenantId || undefined,
+                    name: name || '',
+                    email: email || '',
+                    phone: phone || '',
+                    company: company || '',
+                    budget: budget ? Number(budget) : 0,
+                    source: sourceMap[sourceStr] || 1,
+                    status: 1 // new
+                });
+                successCount++;
+            } catch (err) {
+                console.error('Import failed for row', i, err);
+            }
+            setImportProgress(i + 1);
+        }
+
+        showToast(`Import completed: ${successCount} leads processed out of ${csvRows.length}`);
+        loadLeads(true);
+        setShowImportModal(false);
+        setImportStep('file');
+
+        // Clear value of the import input
+        const fileInput = document.getElementById('leads-csv-upload') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+    };
+
     const handleConvertToUser = async (lead: Lead) => {
         setConvertingLead(lead);
         // Show a confirmation modal or just do it? Usually needs a password or role
@@ -510,7 +659,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
             // Use leadService or authService to convert
             // Since I haven't added the backend yet, I'll assume I'll call a hypothetical endpoint
             // or I can add it now.
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+            const tenantId = (user as any)?.tenantId;
             const { id: _, requirements, assignedAgent, leadScore, createdAt, updatedAt, lastContacted, tags, assignedTo, ...leadParams } = convertingLead;
             const res = await leadService.updateLead(token, convertingLead.id, {
                 ...leadParams,
@@ -597,6 +746,10 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                             </button>
                         </div>
                         <div className="d-flex flex-wrap gap-2 flex-grow-1 flex-md-grow-0 justify-content-start justify-content-md-end">
+                            <button className="btn btn-outline-secondary btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-sm-grow-0" onClick={() => setShowImportModal(true)}>
+                                <i className="bi bi-upload"></i>
+                                <span className="d-none d-sm-inline">Import</span>
+                            </button>
                             <button className="btn btn-outline-secondary btn-sm rounded-4 px-3 shadow-sm d-flex align-items-center justify-content-center gap-2 flex-grow-1 flex-sm-grow-0" onClick={handleExportLeads}>
                                 <i className="bi bi-download"></i>
                                 <span className="d-none d-sm-inline">Export {selectedLeads.length > 0 ? `(${selectedLeads.length})` : ''}</span>
@@ -1205,6 +1358,112 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     100% { opacity: 0.6; }
                 }
             `}</style>
+            {/* Import Leads Modal */}
+            {showImportModal && (
+                <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content border-0 shadow-lg rounded-4">
+                            <div className="modal-header border-bottom-0 pb-0">
+                                <h5 className="modal-title fw-bold">Import Leads</h5>
+                                <button type="button" className="btn-close shadow-none" onClick={() => {
+                                    setShowImportModal(false);
+                                    setImportStep('file');
+                                }}></button>
+                            </div>
+                            <div className="modal-body p-4">
+                                {importStep === 'file' && (
+                                    <div className="text-center py-4">
+                                        <div className="mb-4">
+                                            <i className="bi bi-file-earmark-spreadsheet text-success border border-success border-opacity-25 rounded-circle p-3 shadow-sm bg-success bg-opacity-10" style={{ fontSize: '2rem' }}></i>
+                                        </div>
+                                        <h6 className="fw-bold mb-2">Upload CSV File</h6>
+                                        <p className="text-muted small mb-4">
+                                            Upload your leads in a comma-separated values (.csv) format. Required columns: Name, Email. Optional: Phone, Company, Budget, Source.
+                                        </p>
+                                        <div>
+                                            <input
+                                                type="file"
+                                                id="leads-csv-upload"
+                                                accept=".csv"
+                                                className="d-none"
+                                                onChange={handleFileChange}
+                                            />
+                                            <label htmlFor="leads-csv-upload" className="btn btn-outline-primary px-4 rounded-3 shadow-sm">
+                                                <i className="bi bi-upload me-2"></i> Select File
+                                            </label>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {importStep === 'mapping' && (
+                                    <div>
+                                        <div className="alert alert-info border-0 rounded-4 px-3 py-2 small d-flex align-items-center mb-4">
+                                            <i className="bi bi-info-circle-fill me-2 fs-5"></i>
+                                            <div>Map your CSV columns to the appropriate fields below. We found {importTotal} records.</div>
+                                        </div>
+                                        <div className="bg-light rounded-4 px-3 py-1 mb-3">
+                                            {['name', 'email', 'phone', 'company', 'budget', 'source'].map(field => (
+                                                <div key={field} className="d-flex align-items-center py-2 mb-1">
+                                                    <div className="fw-semibold text-capitalize" style={{ width: '30%' }}>
+                                                        {field} {['name', 'email'].includes(field) && <span className="text-danger">*</span>}
+                                                    </div>
+                                                    <div style={{ width: '70%' }}>
+                                                        <select
+                                                            className="form-select form-select-sm border-0 rounded-3 shadow-sm"
+                                                            value={mapping[field] ? Object.keys(mapping).find(k => mapping[k] === field) || '' : ''}
+                                                            onChange={(e) => {
+                                                                const newMapping = { ...mapping };
+                                                                Object.keys(newMapping).forEach(k => { if (newMapping[k] === field) delete newMapping[k]; });
+                                                                if (e.target.value) newMapping[e.target.value] = field;
+                                                                setMapping(newMapping);
+                                                            }}
+                                                        >
+                                                            <option value="">-- Ignore --</option>
+                                                            {csvHeaders.map(h => (
+                                                                <option key={h} value={h}>{h}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="d-flex justify-content-end gap-2 mt-4">
+                                            <button className="btn btn-light rounded-3 shadow-sm px-4" onClick={() => setImportStep('file')}>Back</button>
+                                            <button
+                                                className="btn btn-primary rounded-3 shadow-sm px-4 d-flex align-items-center"
+                                                onClick={executeImport}
+                                                disabled={!Object.values(mapping).includes('name') && !Object.values(mapping).includes('email')}
+                                            >
+                                                <i className="bi bi-play-fill me-1"></i> Start Import
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {importStep === 'progress' && (
+                                    <div className="text-center py-4">
+                                        <div className="spinner-border text-primary speed-slow border-3 mb-4" style={{ width: '3rem', height: '3rem' }} role="status">
+                                            <span className="visually-hidden">Loading...</span>
+                                        </div>
+                                        <h6 className="fw-bold mb-3">Importing Leads...</h6>
+                                        <div className="progress bg-light mb-2 rounded-4" style={{ height: '12px' }}>
+                                            <div
+                                                className="progress-bar progress-bar-striped progress-bar-animated bg-success rounded-4"
+                                                role="progressbar"
+                                                style={{ width: `${(importProgress / importTotal) * 100}%` }}
+                                            ></div>
+                                        </div>
+                                        <div className="small text-muted fw-semibold">
+                                            {importProgress} of {importTotal} Processed
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </MainLayout>
+
     );
 }

@@ -91,6 +91,7 @@ export interface Property {
     units?: any[];
     agentId?: string;
     metadata?: any;
+    categoryId?: string | null;
 }
 
 export interface Unit {
@@ -125,6 +126,39 @@ export interface Tenant {
     country?: string;
     postalCode?: string;
     domain?: string;
+    createdAt: string;
+    updatedAt: string;
+    _count?: {
+        users: number;
+        properties: number;
+        units: number;
+        bookings: number;
+    };
+    settings?: any;
+}
+
+export interface Category {
+    id: string;
+    name: string;
+    slug?: string;
+    description?: string;
+    icon?: string;
+    parentId?: string | null;
+    sortOrder: number;
+    status: number;
+    tenantId?: string | null;
+    parent?: { id: string; name: string } | null;
+    _count?: { properties: number; children: number };
+}
+
+export interface Agent {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    role: number; // 1: user, 2: admin, 3: super admin
+    status: string;
+    tenantId?: string;
     createdAt: string;
     updatedAt: string;
     _count?: {

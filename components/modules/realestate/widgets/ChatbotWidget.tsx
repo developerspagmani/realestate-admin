@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Property, MediaItem, Unit } from '@/types';
 
 interface ChatbotProps {
     theme: any;
     properties: any[];
-    onFilterResults: (results: any[]) => void;
+    onFilterResults: (results: Property[]) => void;
     onClose: () => void;
-    onSelectProperty: (property: any) => void;
+    onSelectProperty: (property: Property) => void;
     onCreateLead: (contact: string, name?: string) => Promise<void>;
     onExpandToggle?: (expanded: boolean) => void;
     customWelcomeTitle?: string;
@@ -18,7 +19,7 @@ interface ChatbotProps {
     crossSellEnabled?: boolean;
     recommendationLogic?: 'price-match' | 'newest' | 'featured';
     previewMode?: boolean;
-    trackAction?: (type: string, metadata?: any) => void;
+    trackAction?: (type: string, metadata?: Record<string, unknown>) => void;
     currencySymbol?: string;
 }
 
@@ -238,7 +239,7 @@ export default function ChatbotWidget({
         });
 
         // Apply Recommendation Logic
-        let sorted = [...filtered];
+        const sorted = [...filtered];
         if (recommendationLogic === 'price-match') {
             sorted.sort((a, b) => {
                 const getP = (p: any) => (p.units || []).reduce((m: number, u: any) => Math.min(m, Number(u.unitPricing?.[0]?.price) || 1000000), 1000000);
@@ -409,7 +410,7 @@ export default function ChatbotWidget({
                             <div className="bg-light rounded-4 shadow-sm d-inline-flex p-3 mb-3">
                                 <i className="bi bi-robot fs-3" style={{ color: theme.primaryColor }}></i>
                             </div>
-                            <h6 className="fw-bold" style={{ color: theme.primaryColor }}>Let's Get Started!</h6>
+                            <h6 className="fw-bold" style={{ color: theme.primaryColor }}>Let&apos;s Get Started!</h6>
                             <p className="extra-small text-muted mb-0">Please share your WhatsApp or Email to continue.</p>
                         </div>
 
@@ -523,12 +524,12 @@ export default function ChatbotWidget({
                                     >
                                         <div className="d-flex gap-2 align-items-center">
                                             <div className="bg-light rounded-2 overflow-hidden" style={{ width: '40px', height: '40px' }}>
-                                                {res.mainImage ? <img src={res.mainImage.url} className="w-100 h-100 object-fit-cover" /> : <i className="bi bi-building p-2 opacity-50"></i>}
+                                                {res.mainImage ? <img src={(res.mainImage as MediaItem).url} className="w-100 h-100 object-fit-cover" alt={res.title || ''} /> : <i className="bi bi-building p-2 opacity-50"></i>}
                                             </div>
                                             <div className="flex-grow-1 overflow-hidden">
                                                 <h6 className="extra-small fw-bold mb-0 text-truncate" style={{ color: theme.primaryColor }}>{res.title}</h6>
                                                 <span className="extra-small text-muted">
-                                                    {res.city} • Starting {currencySymbol}{Number((res.units || []).reduce((min: number, u: any) => {
+                                                    {res.city} • Starting {currencySymbol}{Number((res.units || []).reduce((min: number, u: Unit) => {
                                                         const p = Number(u.unitPricing?.[0]?.price);
                                                         return p && p < min ? p : min;
                                                     }, 1000000)).toLocaleString()}

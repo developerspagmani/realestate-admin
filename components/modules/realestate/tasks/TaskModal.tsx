@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { taskService } from '@/app/services/api';
+import { Agent, Lead, Task } from '@/types';
 
 interface TaskModalProps {
     isOpen: boolean;
@@ -10,9 +11,9 @@ interface TaskModalProps {
     leadName?: string;
     agentId?: string;
     agentName?: string;
-    agents?: any[];
-    leads?: any[];
-    task?: any; // Add task prop for editing
+    agents?: Agent[];
+    leads?: Lead[];
+    task?: Task; // Add task prop for editing
     onSuccess: () => void;
 }
 
@@ -87,9 +88,10 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
                 onSuccess();
                 onClose();
             }
-        } catch (error: any) {
-            console.error(isEditing ? 'Failed to update task:' : 'Failed to create task:', error);
-            alert(error.message || `Failed to ${isEditing ? 'update' : 'create'} task. Please try again.`);
+        } catch (error: unknown) {
+            const err = error as Error;
+            console.error(isEditing ? 'Failed to update task:' : 'Failed to create task:', err);
+            alert(err.message || `Failed to ${isEditing ? 'update' : 'create'} task. Please try again.`);
         } finally {
             setLoading(false);
         }
@@ -165,7 +167,7 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
                                 >
                                     <option value="">Select an Agent...</option>
                                     {Array.isArray(agents) && agents.map(a => (
-                                        <option key={a.id} value={a.id}>{a.user?.name || a.name}</option>
+                                        <option key={a.id} value={a.id}>{a.user?.name || (a as any).name}</option>
                                     ))}
                                 </select>
                             </div>

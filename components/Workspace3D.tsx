@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Seats } from '@/types';
+import { Seats, LayoutItem, VisualEditorConfig } from '@/types';
 
 interface Workspace3DProps {
   workspaces: Seats[];
   onWorkspaceClick?: (seats: Seats) => void;
   onBookingSelect?: (seats: Seats) => void;
   onShowDemoPlans?: (seats: Seats) => void;
-  layout?: any[];
-  config?: any;
+  layout?: LayoutItem[];
+  config?: VisualEditorConfig;
   currencySymbol?: string;
 }
 
@@ -22,9 +22,9 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onBookingSel
   const [zoomValue, setZoomValue] = useState(25);
 
   const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<any>(null);
-  const rendererRef = useRef<any>(null);
-  const cameraRef = useRef<any>(null);
+  const sceneRef = useRef<import('three').Scene | null>(null);
+  const rendererRef = useRef<import('three').WebGLRenderer | null>(null);
+  const cameraRef = useRef<import('three').PerspectiveCamera | null>(null);
   const frameRef = useRef<number | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -43,10 +43,10 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onBookingSel
     }
   }, [onWorkspaceClick]);
 
-  const handleWorkspacePopup = useCallback((seats: Seats, event: MouseEvent) => {
+  const handleWorkspacePopup = useCallback((seats: Seats, event: React.MouseEvent | MouseEvent) => {
     setSelectedWorkspace(seats);
     setShowPopup(true);
-    setPopupPosition({ x: event.clientX, y: event.clientY });
+    setPopupPosition({ x: (event as any).clientX, y: (event as any).clientY });
   }, []);
 
   const closePopup = useCallback(() => {
@@ -85,7 +85,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onBookingSel
     };
   }, [workspaces]);
 
-  const initializeScene = (THREE: any): (() => void) | undefined => {
+  const initializeScene = (THREE: typeof import('three')): (() => void) | undefined => {
     console.log('Initializing 3D scene...');
 
     // Retry logic for mount ref availability
@@ -188,7 +188,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onBookingSel
     const workspaceObjects: { [key: string]: any } = {};
 
     if (layout && layout.length > 0) {
-      layout.forEach((obj: any) => {
+      layout.forEach((obj: LayoutItem) => {
         let mesh: any;
 
         const points = obj.metadata?.polyPoints;
@@ -207,7 +207,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onBookingSel
           }
           shape.lineTo(points[0].x, -points[0].z);
 
-          let h = obj.dimensions?.h || (isBuilding ? 3.0 : (isWater ? 0.05 : (isPath ? 0.02 : 0.5)));
+          const h = obj.dimensions?.h || (isBuilding ? 3.0 : (isWater ? 0.05 : (isPath ? 0.02 : 0.5)));
 
           const extrudeSettings = { depth: h, bevelEnabled: false };
           const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
@@ -334,9 +334,9 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onBookingSel
         if (mesh) {
           mesh.castShadow = true;
           mesh.receiveShadow = true;
-          mesh.userData = { type: obj.type, id: obj.unitId || obj.id };
+          mesh.userData = { type: obj.type, id: obj.unitId };
           scene.add(mesh);
-          workspaceObjects[obj.unitId || obj.id] = mesh;
+          workspaceObjects[obj.unitId] = mesh;
         }
       });
     } else {
@@ -352,7 +352,7 @@ export default function Workspace3D({ workspaces, onWorkspaceClick, onBookingSel
         const mesh = workspaceObjects[seats.id];
         if (mesh) {
           // If the object has a custom design color, don't override it with green
-          const layoutObj = layout?.find(l => (l.unitId || l.id) === seats.id);
+          const layoutObj = layout?.find(l => l.unitId === seats.id);
           if (layoutObj && layoutObj.color) {
             // Only override if status is critical (sold/maintenance) or if no design color
             if (seats.status === 'available') return;

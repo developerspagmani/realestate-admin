@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import StatCard from '@/components/StatCard';
 import { analyticsApi, connectedAccountsApi, publishedPostsApi, scheduledPostsApi } from '@/lib/api/social';
@@ -48,19 +48,20 @@ function DashboardContent() {
         ? '/realestate-owner-admin'
         : '/realestate-admin';
 
-    useEffect(() => {
-        loadDashboardData();
-    }, []);
-
-    const loadDashboardData = async () => {
+    const loadDashboardData = useCallback(async () => {
         try {
             setLoading(true);
             const [overviewRes] = await Promise.all([
                 analyticsApi.getOverview()
             ]);
 
-            if (overviewRes.success) {
-                setStats(overviewRes.data.summary);
+            if (overviewRes.success && overviewRes.data) {
+                setStats(overviewRes.data.summary || {
+                    connectedAccounts: 0,
+                    scheduledPosts: 0,
+                    publishedPosts: 0,
+                    drafts: 0
+                });
                 setRecentActivity(overviewRes.data.recentActivity || []);
             }
         } catch (error) {
@@ -68,7 +69,11 @@ function DashboardContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadDashboardData();
+    }, [loadDashboardData]);
 
     const navigateTo = (path: string) => {
         router.push(`${basePath}${path}`);

@@ -106,12 +106,16 @@ export interface Unit {
   property?: Property;
   unitPricing?: any[];
   coworkingDetails?: any;
+  realEstateDetails?: any;
   name?: string;
   unitType?: number;
+  unitCode_alias?: string;
+  price?: number;
   pricePerHour?: number;
   mainImageId?: string;
   gallery?: any[];
   mainImage?: MediaItem;
+  slug?: string;
 }
 
 export interface Seats {
@@ -163,6 +167,7 @@ export interface User {
   companyName?: string;
   website?: string;
   password?: string;
+  bookingsCount?: number;
 }
 
 export interface Booking {
@@ -179,6 +184,13 @@ export interface Booking {
   status: number; // 1: pending, 2: confirmed, 3: cancelled, 4: completed
   paymentStatus: number; // 1: pending, 2: paid, 3: refunded
   notes?: string;
+  specialRequests?: string;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  unit?: Unit;
+  property?: Property;
+  lead?: Lead;
   createdAt: string;
   updatedAt: string;
 }
@@ -537,3 +549,109 @@ export interface Commission {
   updatedAt: string;
   booking?: any;
 }
+
+export interface Category {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  icon?: string;
+  parentId?: string | null;
+  sortOrder: number;
+  status: number;
+  tenantId?: string | null;
+  parent?: { id: string; name: string } | null;
+  _count?: { properties: number; children: number };
+}
+
+export interface LayoutItem {
+  unitId: string;
+  unitCode: string;
+  type: string;
+  position: { x: number; y: number; z: number };
+  rotation: { x: number; y: number; z: number };
+  dimensions: { w: number; h: number; d: number };
+  color?: string;
+  metadata?: {
+    polyPoints?: { x: number; z: number }[];
+    preferredPlanId?: string;
+    [key: string]: any;
+  };
+}
+
+export interface VisualEditorConfig {
+  scene: {
+    background?: string | number;
+    ambientLight?: number;
+    directionalLight?: number;
+    floorPlan?: string;
+    [key: string]: any;
+  };
+  camera?: {
+    position: { x: number; y: number; z: number };
+    lookAt: { x: number; y: number; z: number };
+  };
+  [key: string]: any;
+}
+
+export interface CMSPage {
+  id: string;
+  title: string;
+  slug: string;
+  content?: string;
+  status?: number;
+  authorId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface MarketingForm {
+  id: string;
+  name: string;
+  fields?: any[];
+  tenantId?: string;
+  createdAt?: string;
+}
+
+export interface Website {
+  id: string;
+  name: string;
+  slug: string;
+  status: number;
+  customDomain?: string;
+  propertyId?: string;
+  propertyIds?: string[];
+  configuration: any;
+  tenantId?: string;
+  ownerId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Widget {
+  id: string;
+  name: string;
+  type: string;
+  uniqueId: string;
+  propertyId?: string;
+  configuration: any;
+  tenantId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  priority: number;
+  dueDate?: string | null;
+  status: number;
+  assignedTo?: string | null;
+  leadId?: string | null;
+  agent?: Agent;
+  lead?: Lead;
+  createdAt: string;
+  updatedAt: string;
+}
+

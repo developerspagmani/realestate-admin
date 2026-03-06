@@ -3,17 +3,39 @@ import React, { useState } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import BrochureTemplate from './BrochureTemplate';
+import { Property, Amenity, MediaItem } from '@/types';
+
+export interface CustomContact {
+    name: string;
+    phone: string;
+    email: string;
+    website: string;
+}
+
+export interface SelectedImages {
+    cover: string;
+    bg1: string;
+    bg2: string;
+    bg3: string;
+}
+
+export interface BrochureToggles {
+    showPrice: boolean;
+    showAmenities: boolean;
+    showQRCode: boolean;
+    showStats: boolean;
+}
 
 interface BrochureManagerProps {
-    property: any;
-    properties?: any[]; // Optional: List of properties to allow selection
+    property: Property | null;
+    properties?: Property[]; // Optional: List of properties to allow selection
     mode: 'admin' | 'owner';
-    companyInfo?: any;
+    companyInfo?: { name?: string };
     show?: boolean;
     onClose?: () => void;
     onPropertyChange?: (propertyId: string) => void;
-    allAmenities?: any[];
-    allMedia?: any[];
+    allAmenities?: Amenity[];
+    allMedia?: MediaItem[];
     isEmbedded?: boolean;
 }
 
@@ -28,21 +50,21 @@ export default function BrochureManager({ property, properties = [], mode, compa
     const [isAiLoading, setIsAiLoading] = useState(false);
 
     // Advanced Features State
-    const [customContact, setCustomContact] = useState({
+    const [customContact, setCustomContact] = useState<CustomContact>({
         name: mode === 'owner' ? companyInfo?.name || 'RealEstate Agent' : 'Premium Estates',
         phone: '+1 (555) 000-0000',
         email: 'info@realestate.com',
         website: typeof window !== 'undefined' ? window.location.host : 'www.realestate.com'
     });
 
-    const [selectedImages, setSelectedImages] = useState({
+    const [selectedImages, setSelectedImages] = useState<SelectedImages>({
         cover: '',
         bg1: '',
         bg2: '',
         bg3: ''
     });
 
-    const [toggles, setToggles] = useState({
+    const [toggles, setToggles] = useState<BrochureToggles>({
         showPrice: true,
         showAmenities: true,
         showQRCode: true,
@@ -62,8 +84,8 @@ export default function BrochureManager({ property, properties = [], mode, compa
         if (!property) return;
         setIsAiLoading(true);
         try {
-            const taglinePrompt = `Generate a one-sentence luxury tagline for a real estate brochure for "${property.title}" in ${property.city}.`;
-            const descPrompt = `Write a short, professional description (2-3 sentences) for a real estate brochure about this property: ${property.title}, a ${property.propertyType} in ${property.city}. Focus on premium lifestyle and location.`;
+            const taglinePrompt = `Generate a one-sentence luxury tagline for a real estate brochure for "${property.name}" in ${property.city}.`;
+            const descPrompt = `Write a short, professional description (2-3 sentences) for a real estate brochure about this property: ${property.name}, a ${property.propertyType} in ${property.city}. Focus on premium lifestyle and location.`;
 
             // 1. Try Chrome Built-in AI (Gemini Nano) - Latest API
             if (typeof window !== 'undefined' && (window as any).ai?.languageModel) {
@@ -96,11 +118,11 @@ export default function BrochureManager({ property, properties = [], mode, compa
 
             // Fallback: If no browser AI is available, use localized templates
             await new Promise(resolve => setTimeout(resolve, 800));
-            setAiTagline(`Experience unparalleled elegance at ${property.title}, where luxury meets location.`);
-            setAiDescription(`${property.title} offers a rare combination of modern luxury and strategic location. This ${property.propertyType} has been meticulously designed to provide the ultimate comfort and sophisticated living experience in ${property.city}.`);
+            setAiTagline(`Experience unparalleled elegance at ${property.name}, where luxury meets location.`);
+            setAiDescription(`${property.name} offers a rare combination of modern luxury and strategic location. This ${property.propertyType} has been meticulously designed to provide the ultimate comfort and sophisticated living experience in ${property.city}.`);
         } catch (err) {
             console.error("Gemini Nano AI Generation failed:", err);
-            setAiTagline(`${property.title}: Premium Living in ${property.city}`);
+            setAiTagline(`${property.name}: Premium Living in ${property.city}`);
             setAiDescription(property.description || "Sophisticated property featuring high-end finishes and prime location.");
         } finally {
             setIsAiLoading(false);
@@ -141,7 +163,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
             }
 
             setProgress(90);
-            pdf.save(`${(property.title || 'Property').replace(/\s+/g, '_')}_Brochure.pdf`);
+            pdf.save(`${(property.name || 'Property').replace(/\s+/g, '_')}_Brochure.pdf`);
             setProgress(100);
 
             if (onClose) setTimeout(onClose, 500);
@@ -172,11 +194,11 @@ export default function BrochureManager({ property, properties = [], mode, compa
                     >
                         <option value="" disabled>Select a property...</option>
                         {properties.map(p => (
-                            <option key={p.id} value={p.id}>{p.title}</option>
+                            <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
                     </select>
                 ) : (
-                    <div className="form-control bg-white text-muted border-0 shadow-sm">{property?.title || 'No Property Selected'}</div>
+                    <div className="form-control bg-white text-muted border-0 shadow-sm">{property?.name || 'No Property Selected'}</div>
                 )}
             </div>
 
@@ -291,8 +313,8 @@ export default function BrochureManager({ property, properties = [], mode, compa
                         <div className="mb-4">
                             <label className="form-label fw-bold small">Cover Feature</label>
                             <div className="row g-2 overflow-auto scroll-hide flex-nowrap pb-2">
-                                {(property.gallery || []).map((img: any, i: number) => {
-                                    const url = getMediaUrl(typeof img === 'string' ? img : img.url);
+                                {property !== null && (property.gallery || []).map((img, i: number) => {
+                                    const url = getMediaUrl(typeof img === 'string' ? img : (img as any).url);
                                     return (
                                         <div key={i} className="col-4" style={{ minWidth: '100px' }}>
                                             <div
@@ -313,8 +335,8 @@ export default function BrochureManager({ property, properties = [], mode, compa
                                     <div key={key} className="bg-light p-2 rounded-4">
                                         <div className="extra-small fw-bold text-muted text-uppercase mb-2 ms-1">Page {idx + 1} Background</div>
                                         <div className="row g-2 overflow-auto scroll-hide flex-nowrap pb-1">
-                                            {(property.gallery || []).map((img: any, i: number) => {
-                                                const url = getMediaUrl(typeof img === 'string' ? img : img.url);
+                                            {property !== null && (property.gallery || []).map((img, i: number) => {
+                                                const url = getMediaUrl(typeof img === 'string' ? img : (img as any).url);
                                                 return (
                                                     <div key={i} className="col-4" style={{ minWidth: '80px' }}>
                                                         <div

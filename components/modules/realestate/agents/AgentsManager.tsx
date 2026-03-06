@@ -2,12 +2,38 @@
 
 import React, { useState, useEffect } from 'react';
 import { agentService, getAuthToken, leadService, propertyService } from '@/app/services/api';
-import { Agent, Commission } from '@/types';
+import { Agent, Commission, Lead } from '@/types';
+import { Property } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import Loader from '@/components/common/Loader';
+import Image from 'next/image';
+
+interface ExtendedLead extends Lead {
+    property?: {
+        title: string;
+    };
+}
+
+interface PropertyAssignment {
+    id: string;
+    agentId: string;
+    propertyId: string;
+    commissionRate: number;
+    isPrimary: boolean;
+    property?: Property;
+}
+
+interface LeadAssignment {
+    id: string;
+    agentId: string;
+    leadId: string;
+    status: number;
+    isPrimary: boolean;
+    lead?: Lead;
+}
 
 interface AgentsManagerProps {
     mode: 'owner' | 'admin';
@@ -22,19 +48,19 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
     const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
     const [viewingCommissions, setViewingCommissions] = useState<Agent | null>(null);
     const [viewingAgent, setViewingAgent] = useState<Agent | null>(null);
-    const [viewingAgentProperties, setViewingAgentProperties] = useState<any[]>([]);
-    const [viewingAgentLeads, setViewingAgentLeads] = useState<any[]>([]);
+    const [viewingAgentProperties, setViewingAgentProperties] = useState<PropertyAssignment[]>([]);
+    const [viewingAgentLeads, setViewingAgentLeads] = useState<LeadAssignment[]>([]);
     const [commissions, setCommissions] = useState<Commission[]>([]);
     const [showAssignModal, setShowAssignModal] = useState<'leads' | 'properties' | null>(null);
     const [targetAgent, setTargetAgent] = useState<Agent | null>(null);
-    const [unassignedLeads, setUnassignedLeads] = useState<any[]>([]);
-    const [allProperties, setAllProperties] = useState<any[]>([]);
+    const [unassignedLeads, setUnassignedLeads] = useState<ExtendedLead[]>([]);
+    const [allProperties, setAllProperties] = useState<Property[]>([]);
     const [assignedItems, setAssignedItems] = useState<string[]>([]);
-    const [agentAssignments, setAgentAssignments] = useState<any[]>([]);
-    const [newlyCreatedAgent, setNewlyCreatedAgent] = useState<any | null>(null);
+    const [agentAssignments, setAgentAssignments] = useState<(PropertyAssignment | LeadAssignment)[]>([]);
+    const [newlyCreatedAgent, setNewlyCreatedAgent] = useState<{ firstName: string; lastName: string; email: string; phone: string; password: string; id: string } | null>(null);
     const [recentPasswords, setRecentPasswords] = useState<Record<string, string>>({});
     const [showPassModal, setShowPassModal] = useState(false);
-    const [passModalData, setPassModalData] = useState<{ agent: Agent | null; password: '' }>({ agent: null, password: '' });
+    const [passModalData, setPassModalData] = useState<{ agent: Agent | null; password: string }>({ agent: null, password: '' });
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -58,17 +84,13 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
         setToast({ show: true, message, type });
     };
 
-    useEffect(() => {
-        loadAgents();
-    }, []);
-
-    const loadAgents = async () => {
+    const loadAgents = React.useCallback(async () => {
         const token = getAuthToken();
         if (!token) return;
 
         setLoading(true);
         try {
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
             const res = await agentService.getAgents(token, { tenantId });
             if (res.success && res.data) {
                 setAgents(res.data.agents);
@@ -79,7 +101,11 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTenantId, mode, user?.tenantId]);
+
+    useEffect(() => {
+        loadAgents();
+    }, [loadAgents]);
 
     const loadCommissions = async (agentId: string) => {
         const token = getAuthToken();
@@ -149,7 +175,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                 }
             } else {
                 // Create
-                const tenantId = (mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || localStorage.getItem('tenant-id');
+                const tenantId = (mode === 'admin' ? activeTenantId : user?.tenantId);
                 const res = await agentService.createAgent(token, { ...formData, tenantId });
                 if (res.success) {
                     const agentId = res.data.agent.id;
@@ -186,7 +212,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
         if (!token) return;
 
         try {
-            const tenantId = (mode === 'admin' ? activeTenantId : authTenantId) || user?.tenantId || localStorage.getItem('tenant-id');
+            const tenantId = (mode === 'admin' ? activeTenantId : authTenantId) || user?.tenantId;
 
             if (!tenantId) {
                 showToast('No Tenant ID found. Please refresh or select a tenant.', 'error');
@@ -206,7 +232,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                 if (assignRes.success) {
                     const current = assignRes.data || [];
                     setAgentAssignments(current);
-                    setAssignedItems(current.map((a: any) => a.leadId));
+                    setAssignedItems(current.map((a: LeadAssignment) => a.leadId));
                 }
             } else {
                 // Fetch ALL properties and CURRENT assignments in parallel
@@ -223,10 +249,10 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                     const current = assignRes.data || [];
                     setAgentAssignments(current);
                     // Pre-select already assigned properties
-                    setAssignedItems(current.map((a: any) => a.propertyId));
+                    setAssignedItems(current.map((a: PropertyAssignment) => a.propertyId));
                 }
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to load assignment data', err);
         }
     };
@@ -238,13 +264,12 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
 
         try {
             const agentId = targetAgent.id;
-            const tenantId = (mode === 'admin' ? activeTenantId : authTenantId) || localStorage.getItem('tenant-id');
 
             // Many-to-Many Assignment Logic for both Properties and Leads
             if (showAssignModal === 'leads') {
-                const currentLeadIds = agentAssignments.map(a => a.leadId);
+                const currentLeadIds = (agentAssignments as LeadAssignment[]).map(a => a.leadId);
                 const toAdd = assignedItems.filter(id => !currentLeadIds.includes(id));
-                const toRemove = agentAssignments.filter(a => !assignedItems.includes(a.leadId));
+                const toRemove = (agentAssignments as LeadAssignment[]).filter(a => !assignedItems.includes(a.leadId));
 
                 await Promise.all([
                     ...toAdd.map(leadId =>
@@ -255,13 +280,13 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                     )
                 ]);
             } else {
-                const currentPropIds = agentAssignments.map(a => a.propertyId);
+                const currentPropIds = (agentAssignments as PropertyAssignment[]).map(a => a.propertyId);
 
                 // 1. Identify what to ADD
                 const toAdd = assignedItems.filter(id => !currentPropIds.includes(id));
 
                 // 2. Identify what to REMOVE
-                const toRemove = agentAssignments.filter(a => !assignedItems.includes(a.propertyId));
+                const toRemove = (agentAssignments as PropertyAssignment[]).filter(a => !assignedItems.includes(a.propertyId));
 
                 await Promise.all([
                     ...toAdd.map(propertyId =>
@@ -275,9 +300,11 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
             showToast('Assignments updated successfully');
             setShowAssignModal(null);
             loadAgents();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Assignment failed', err);
-            showToast('Failed to update assignments: ' + (err.response?.data?.message || err.message), 'error');
+            const apiError = err as { response?: { data?: { message?: string } } };
+            const message = apiError.response?.data?.message || (err as Error).message;
+            showToast('Failed to update assignments: ' + message, 'error');
         }
     };
 
@@ -298,8 +325,8 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                 } else {
                     showToast('Failed to send email', 'error');
                 }
-            } catch (error: any) {
-                showToast(error.message || 'Error sending email', 'error');
+            } catch (error: unknown) {
+                showToast((error as Error).message || 'Error sending email', 'error');
             }
         } else {
             // Otherwise show modal to enter/confirm password
@@ -323,8 +350,8 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
             } else {
                 showToast('Failed to send email', 'error');
             }
-        } catch (error: any) {
-            showToast(error.message || 'Error sending email', 'error');
+        } catch (error: unknown) {
+            showToast((error as Error).message || 'Error sending email', 'error');
         }
     };
 
@@ -833,7 +860,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                 placeholder="Enter password..."
                                                 autoFocus
                                                 value={passModalData.password}
-                                                onChange={(e) => setPassModalData({ ...passModalData, password: e.target.value as any })}
+                                                onChange={(e) => setPassModalData({ ...passModalData, password: e.target.value })}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') confirmSendEmail();
                                                 }}
@@ -845,7 +872,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
                                                     let pass = "";
                                                     for (let i = 0; i < 10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
-                                                    setPassModalData({ ...passModalData, password: pass as any });
+                                                    setPassModalData({ ...passModalData, password: pass });
                                                 }}
                                             >
                                                 <i className="bi bi-key-fill me-1"></i> Generate
@@ -853,7 +880,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                         </div>
                                         <div className="form-text small mt-2">
                                             <i className="bi bi-info-circle me-1"></i>
-                                            This password will be sent in plain text to the agent's email.
+                                            This password will be sent in plain text to the agent&apos;s email.
                                         </div>
                                     </div>
                                 </div>
@@ -914,7 +941,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                     </div>
                                 </div>
                                 <div className="d-flex gap-2">
-                                    <button className="btn btn-outline-primary flex-grow-1 py-2 rounded-3" onClick={() => handleSendEmail({ id: newlyCreatedAgent.id } as any, newlyCreatedAgent.password)}>
+                                    <button className="btn btn-outline-primary flex-grow-1 py-2 rounded-3" onClick={() => handleSendEmail(newlyCreatedAgent as unknown as Agent, newlyCreatedAgent.password)}>
                                         <i className="bi bi-envelope-at me-2"></i> Email Him
                                     </button>
                                     <button className="btn btn-primary flex-grow-1 py-2 rounded-3" onClick={() => setNewlyCreatedAgent(null)}>
@@ -1003,9 +1030,9 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                                                             {viewingAgentProperties.map(assign => (
                                                                 <div key={assign.id} className="list-group-item p-3">
                                                                     <div className="d-flex align-items-center">
-                                                                        <div className="rounded-3 bg-light me-3 d-flex align-items-center justify-content-center overflow-hidden" style={{ width: '48px', height: '48px' }}>
+                                                                        <div className="rounded-3 bg-light me-3 d-flex align-items-center justify-content-center overflow-hidden" style={{ width: '48px', height: '48px', position: 'relative' }}>
                                                                             {assign.property?.mainImage?.url ? (
-                                                                                <img src={assign.property.mainImage.url} alt="" className="w-100 h-100 object-fit-cover" />
+                                                                                <Image src={assign.property.mainImage.url} alt={assign.property?.title || "Property"} fill className="object-fit-cover" />
                                                                             ) : (
                                                                                 <i className="bi bi-geo-alt text-muted"></i>
                                                                             )}

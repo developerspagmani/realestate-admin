@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import StatCard from '@/components/StatCard';
 import { scheduledPostsApi } from '@/lib/api/social';
@@ -32,22 +32,18 @@ export default function ScheduledPostsPage() {
     const pathname = usePathname();
     const [posts, setPosts] = useState<ScheduledPost[]>([]);
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState<PostStats>({});
+    const [stats, setStats] = useState<PostStats | null>(null);
 
     // Determine the base path (either /realestate-admin or /realestate-owner-admin)
     const basePath = pathname.includes('/realestate-owner-admin')
         ? '/realestate-owner-admin'
         : '/realestate-admin';
 
-    useEffect(() => {
-        loadPosts();
-    }, []);
-
     const navigateTo = (path: string) => {
         router.push(`${basePath}${path}`);
     };
 
-    const loadPosts = async () => {
+    const loadPosts = useCallback(async () => {
         try {
             setLoading(true);
             const [postsRes, statsRes] = await Promise.all([
@@ -55,19 +51,23 @@ export default function ScheduledPostsPage() {
                 scheduledPostsApi.getStats()
             ]);
 
-            if (postsRes.success) {
+            if (postsRes.success && postsRes.data) {
                 setPosts(postsRes.data.posts || []);
             }
 
-            if (statsRes.success) {
+            if (statsRes.success && statsRes.data) {
                 setStats(statsRes.data);
             }
         } catch (error) {
-            console.error('Error loading posts:', error);
+            console.error('Error loading scheduled posts:', error);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadPosts();
+    }, [loadPosts]);
 
     const handlePublishNow = async (id: string) => {
         if (!confirm('Publish this post now?')) return;
@@ -137,20 +137,22 @@ export default function ScheduledPostsPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="row g-4 mb-4">
-                    <div className="col-md-3">
-                        <StatCard label="Total Content" value={stats.total || 0} icon="bi-collection" color="primary" />
+                {stats && (
+                    <div className="row g-4 mb-4">
+                        <div className="col-md-3">
+                            <StatCard label="Total Posts" value={stats.total || 0} icon="bi-grid" color="primary" />
+                        </div>
+                        <div className="col-md-3">
+                            <StatCard label="Scheduled" value={stats.scheduled || 0} icon="bi-calendar-event" color="info" />
+                        </div>
+                        <div className="col-md-3">
+                            <StatCard label="Published" value={stats.posted || 0} icon="bi-send-check" color="success" />
+                        </div>
+                        <div className="col-md-3">
+                            <StatCard label="Drafts" value={stats.drafts || 0} icon="bi-file-earmark-text" color="warning" />
+                        </div>
                     </div>
-                    <div className="col-md-3">
-                        <StatCard label="Scheduled" value={stats.scheduled || 0} icon="bi-calendar-date" color="info" />
-                    </div>
-                    <div className="col-md-3">
-                        <StatCard label="Published" value={stats.posted || 0} icon="bi-send-check" color="success" />
-                    </div>
-                    <div className="col-md-3">
-                        <StatCard label="Drafts" value={stats.drafts || 0} icon="bi-clipboard" color="warning" />
-                    </div>
-                </div>
+                )}
 
                 {/* Content Table */}
                 <div className="card border-0 shadow-sm rounded-4 overflow-hidden">

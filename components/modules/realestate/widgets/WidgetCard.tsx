@@ -1,15 +1,16 @@
 'use client';
 
 import React from 'react';
+import { Widget } from '@/types';
 
 interface WidgetCardProps {
-    widget: any;
+    widget: Widget & { property?: { title: string } };
     tenantType: number;
-    onEdit: (widget: any) => void;
+    onEdit: (widget: Widget) => void;
     onDelete: (id: string) => void;
     onCopyEmbed: (uniqueId: string) => void;
     onCopyShortLink: (uniqueId: string) => void;
-    onShowQR?: (widget: any) => void;
+    onShowQR?: (widget: Widget) => void;
 }
 
 export default function WidgetCard({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { whatsappApi, connectedAccountsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
@@ -63,9 +63,30 @@ function WhatsAppContent() {
         ? '/realestate-owner-admin'
         : '/realestate-admin';
 
+    const loadData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const [templatesRes, campaignsRes, messagesRes, accountsRes] = await Promise.all([
+                whatsappApi.getTemplates(),
+                whatsappApi.getCampaigns(),
+                whatsappApi.getMessages(),
+                connectedAccountsApi.getAll({ platform: 'WHATSAPP' })
+            ]);
+
+            if (templatesRes.success && templatesRes.data) setTemplates(templatesRes.data.templates || []);
+            if (campaignsRes.success && campaignsRes.data) setCampaigns(campaignsRes.data.campaigns || []);
+            if (messagesRes.success && messagesRes.data) setMessages(messagesRes.data.messages || []);
+            if (accountsRes.success && accountsRes.data) setAccounts(accountsRes.data.accounts || []);
+        } catch (error) {
+            console.error('Error loading data:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         loadData();
-    }, []);
+    }, [loadData]);
 
     const navigateTo = (path: string) => {
         router.push(`${basePath}${path}`);
@@ -156,33 +177,12 @@ function WhatsAppContent() {
             setSyncing(true);
             const res = await whatsappApi.deleteCampaign(id);
             if (res.success) {
-                setCampaigns(campaigns.filter((c: any) => c.id !== id));
+                setCampaigns(campaigns.filter((c: WhatsAppCampaign) => c.id !== id)); // Fixed type
             }
         } catch (error) {
             console.error('Delete campaign error:', error);
         } finally {
             setSyncing(false);
-        }
-    };
-
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const [templatesRes, campaignsRes, messagesRes, accountsRes] = await Promise.all([
-                whatsappApi.getTemplates(),
-                whatsappApi.getCampaigns(),
-                whatsappApi.getMessages(),
-                connectedAccountsApi.getAll({ platform: 'WHATSAPP' })
-            ]);
-
-            if (templatesRes.success) setTemplates(templatesRes.data.templates || []);
-            if (campaignsRes.success) setCampaigns(campaignsRes.data.campaigns || []);
-            if (messagesRes.success) setMessages(messagesRes.data.messages || []);
-            if (accountsRes.success) setAccounts(accountsRes.data.accounts || []);
-        } catch (error) {
-            console.error('Error loading data:', error);
-        } finally {
-            setLoading(false);
         }
     };
 

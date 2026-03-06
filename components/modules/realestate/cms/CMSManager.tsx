@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Page } from '@/app/services/cms';
+import { MediaItem } from '@/types';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { cmsService } from '@/app/services/cms';
 import { mediaService } from '@/app/services/media';
@@ -15,26 +17,16 @@ interface CMSManagerProps {
     mode?: 'admin' | 'owner';
 }
 
-const INITIAL_FORM_DATA = {
-    title: '',
-    slug: '',
-    content: '',
-    featureImageId: '',
-    seoTitle: '',
-    seoDescription: '',
-    seoKeywords: '',
-    status: 1
-};
+
 
 export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
     const { activeTenantId } = useManagementContext();
-    const [pages, setPages] = useState<any[]>([]);
+    const [pages, setPages] = useState<Page[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [editingPage, setEditingPage] = useState<any>(null);
-    const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-    const [mediaItems, setMediaItems] = useState<any[]>([]);
+    const [editingPage, setEditingPage] = useState<Page | null>(null);
+    const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -45,19 +37,12 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
         setToast({ show: true, message, type });
     };
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            loadPages();
-            loadMedia();
-        }
-    }, [isAuthenticated, activeTenantId]);
-
-    const loadPages = async () => {
+    const loadPages = useCallback(async () => {
         try {
             setLoading(true);
             const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            const response = await cmsService.getPages(token, tenantId);
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
+            const response = await cmsService.getPages(token, tenantId || undefined);
             if (response.success) {
                 setPages(response.data);
             }
@@ -67,13 +52,13 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTenantId, mode, user?.tenantId]);
 
-    const loadMedia = async () => {
+    const loadMedia = useCallback(async () => {
         try {
             const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            const response = await mediaService.getMedia(token, { tenantId });
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
+            const response = await mediaService.getMedia(token, { tenantId: tenantId || undefined });
             if (response.success) {
                 // Handle both paginated and non-paginated responses
                 const items = Array.isArray(response.data) ? response.data : (response.data?.media || []);
@@ -82,21 +67,28 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
         } catch (error) {
             console.error('Failed to load media:', error);
         }
-    };
+    }, [activeTenantId, mode, user?.tenantId]);
 
-    const handleSubmit = async (data: any) => {
+    useEffect(() => {
+        if (isAuthenticated) {
+            loadPages();
+            loadMedia();
+        }
+    }, [isAuthenticated, activeTenantId, loadPages, loadMedia]);
+
+    const handleSubmit = async (data: Partial<Page>) => {
         try {
             let response;
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
 
             const finalData = {
                 ...data,
-                tenantId
+                tenantId: tenantId || undefined
             };
 
             const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
             if (editingPage) {
-                response = await cmsService.updatePage(token, editingPage.id, finalData, tenantId);
+                response = await cmsService.updatePage(token, editingPage.id, finalData, tenantId || undefined);
             } else {
                 response = await cmsService.createPage(token, finalData);
             }
@@ -104,15 +96,15 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
             if (response.success) {
                 setShowForm(false);
                 setEditingPage(null);
-                setFormData(INITIAL_FORM_DATA);
                 loadPages();
                 showToast(editingPage ? 'Page updated successfully' : 'Page created successfully');
             } else {
                 showToast(response.message || 'Failed to save page', 'error');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to save page:', error);
-            showToast(error.response?.data?.message || 'Error saving page. Make sure Slug is unique.', 'error');
+            const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error saving page. Make sure Slug is unique.';
+            showToast(errorMessage, 'error');
         }
     };
 
@@ -120,8 +112,8 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
         if (!confirm('Are you sure you want to delete this page?')) return;
         try {
             const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            const response = await cmsService.deletePage(token, id, tenantId);
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
+            const response = await cmsService.deletePage(token, id, tenantId || undefined);
             if (response.success) {
                 loadPages();
                 showToast('Page deleted successfully');
@@ -134,7 +126,7 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
         }
     };
 
-    const handleEdit = (page: any) => {
+    const handleEdit = (page: Page) => {
         setEditingPage(page);
         setShowForm(true);
     };
@@ -161,6 +153,7 @@ export default function CMSManager({ mode = 'owner' }: CMSManagerProps) {
 
                 {showForm && (
                     <CMSForm
+                        key={editingPage?.id || 'new'}
                         initialData={editingPage}
                         onSubmit={handleSubmit}
                         onCancel={() => setShowForm(false)}

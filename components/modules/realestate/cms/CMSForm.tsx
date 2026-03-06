@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import MediaSelector from '@/components/shared/MediaSelector';
+import { Page } from '@/app/services/cms';
+import { MediaItem } from '@/types';
+import Image from 'next/image';
 
 interface CMSFormProps {
-    initialData?: any;
-    onSubmit: (data: any) => Promise<void>;
+    initialData?: Page | null;
+    onSubmit: (data: Partial<Page>) => Promise<void>;
     onCancel: () => void;
     isSubmitting: boolean;
-    mediaItems: any[];
+    mediaItems: MediaItem[];
 }
 
 export default function CMSForm({
@@ -19,32 +22,21 @@ export default function CMSForm({
     mediaItems
 }: CMSFormProps) {
     const [formData, setFormData] = useState({
-        title: '',
-        slug: '',
-        content: '',
-        featureImageId: '',
-        seoTitle: '',
-        seoDescription: '',
-        seoKeywords: '',
-        status: 1
+        title: initialData?.title || '',
+        slug: initialData?.slug || '',
+        content: initialData?.content || '',
+        featureImageId: initialData?.featureImageId || '',
+        seoTitle: initialData?.seoTitle || '',
+        seoDescription: initialData?.seoDescription || '',
+        seoKeywords: initialData?.seoKeywords || '',
+        status: initialData?.status || 1
     });
 
     const [showMediaModal, setShowMediaModal] = useState(false);
 
-    useEffect(() => {
-        if (initialData) {
-            setFormData({
-                title: initialData.title || '',
-                slug: initialData.slug || '',
-                content: initialData.content || '',
-                featureImageId: initialData.featureImageId || '',
-                seoTitle: initialData.seoTitle || '',
-                seoDescription: initialData.seoDescription || '',
-                seoKeywords: initialData.seoKeywords || '',
-                status: initialData.status || 1
-            });
-        }
-    }, [initialData]);
+    // No need for useEffect to sync props to state if we use a key to re-mount the component
+    // or if we strictly initialize once. In this project, we'll follow the re-mount pattern
+    // typically or just initialize here since the modal is likely unmounted when closed.
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -142,11 +134,11 @@ export default function CMSForm({
                                                 style={{ minHeight: '200px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}
                                             >
                                                 {formData.featureImageId ? (
-                                                    <div className="position-relative w-100">
-                                                        <img
+                                                    <div className="position-relative w-100 overflow-hidden" style={{ height: '250px' }}>
+                                                        <Image
                                                             src={getMediaUrl(formData.featureImageId) || '/placeholder-image.jpg'}
-                                                            className="rounded-3 shadow-sm w-100 h-100 object-fit-cover"
-                                                            style={{ maxHeight: '250px' }}
+                                                            className="rounded-3 shadow-sm object-fit-cover"
+                                                            fill
                                                             alt="Feature"
                                                         />
                                                         <div className="mt-2 small text-primary">Click to change</div>
@@ -246,8 +238,9 @@ export default function CMSForm({
                 show={showMediaModal}
                 onClose={() => setShowMediaModal(false)}
                 multiple={false}
-                onSelect={(selection: any) => {
-                    setFormData({ ...formData, featureImageId: selection.id });
+                onSelect={(selection: MediaItem | MediaItem[]) => {
+                    const item = Array.isArray(selection) ? selection[0] : selection;
+                    if (item) setFormData({ ...formData, featureImageId: item.id });
                 }}
                 selectedIds={formData.featureImageId ? [formData.featureImageId] : []}
                 title="Select Feature Image"

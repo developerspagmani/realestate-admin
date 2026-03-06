@@ -20,7 +20,7 @@ interface MainLayoutProps {
 export default function MainLayout({ children, activePage, hideSidebar = false, hideHeader = false }: MainLayoutProps) {
   const { user, isOwner } = useAuthContext();
   const { activeTenant } = useManagementContext();
-  const [sidebarWidth, setSidebarWidth] = useState('250px');
+  const [sidebarWidth, setSidebarWidth] = useState('280px');
   const [isMobile, setIsMobile] = useState(false);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showTrialBar, setShowTrialBar] = useState(true);
@@ -100,7 +100,7 @@ export default function MainLayout({ children, activePage, hideSidebar = false, 
           ></div>
         )}
 
-        <main className="main-content flex-grow-1 d-flex flex-column" style={{
+        <main className="main-content flex-grow-1 d-flex flex-column main-wrapper" style={{
           marginLeft: isMobile || hideSidebar ? '0' : sidebarWidth,
           minHeight: isTrial ? 'calc(100vh - 60px)' : '100vh',
           minWidth: 0,

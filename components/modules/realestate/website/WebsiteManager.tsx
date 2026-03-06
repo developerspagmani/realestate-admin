@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { cmsService, getAuthToken, websiteService } from '@/app/services/api';
 import Loader from '@/components/common/Loader';
+import { Website, CMSPage, MarketingForm, Property } from '@/types';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import WebsiteForm from '@/components/modules/realestate/website/WebsiteForm';
@@ -105,15 +106,15 @@ const INITIAL_FORM_DATA = {
 export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
     const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
-    const [websites, setWebsites] = useState<any[]>([]);
+    const [websites, setWebsites] = useState<Website[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [editingWebsite, setEditingWebsite] = useState<any>(null);
-    const [qrWebsite, setQrWebsite] = useState<any>(null);
-    const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-    const [properties, setProperties] = useState<any[]>([]);
-    const [marketingForms, setMarketingForms] = useState<any[]>([]);
-    const [cmsPages, setCmsPages] = useState<any[]>([]);
+    const [editingWebsite, setEditingWebsite] = useState<Website | null>(null);
+    const [qrWebsite, setQrWebsite] = useState<Website | null>(null);
+    const [formData, setFormData] = useState<Partial<Website>>(INITIAL_FORM_DATA);
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [marketingForms, setMarketingForms] = useState<MarketingForm[]>([]);
+    const [cmsPages, setCmsPages] = useState<CMSPage[]>([]);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -131,13 +132,14 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
             loadMarketingForms();
             loadCMSPages();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, activeTenantId, activeOwnerId]);
 
     const loadCMSPages = async () => {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await cmsService.getPages(token, tenantId);
             if (response.success) {
                 // Ensure array even if backend response format differs
@@ -154,7 +156,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
             const token = getAuthToken();
             if (!token) return;
             const { marketingService } = await import('@/app/services/api');
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await marketingService.getForms(token, { tenantId });
             if (response.success) {
                 setMarketingForms(response.data);
@@ -169,7 +171,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
             const token = getAuthToken();
             if (!token) return;
             const { propertyService } = await import('@/app/services/api');
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await propertyService.getProperties(token, {
                 ...(tenantId && { tenantId }),
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
@@ -188,7 +190,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
             setLoading(true);
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await websiteService.getWebsites(token, {
                 ...(tenantId && { tenantId }),
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
@@ -211,7 +213,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
             if (!token) return;
 
             let response;
-            const currentTenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const currentTenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
 
             const finalData = {
                 ...formData,
@@ -265,7 +267,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
         try {
             const token = getAuthToken();
             if (!token) return;
-            const currentTenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const currentTenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await websiteService.deleteWebsite(token, id, currentTenantId);
             if (response.success) {
                 loadWebsites();
@@ -281,7 +283,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
         }
     };
 
-    const handleEdit = (website: any) => {
+    const handleEdit = (website: Website) => {
         setEditingWebsite(website);
         setFormData({
             name: website.name,
@@ -297,7 +299,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
         setShowForm(true);
     };
 
-    const handleGenerateQR = (website: any) => {
+    const handleGenerateQR = (website: Website) => {
         setQrWebsite(website);
     };
 

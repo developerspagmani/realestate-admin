@@ -63,7 +63,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     const [statusCounts, setStatusCounts] = useState({ available: 0, occupied: 0, maintenance: 0, sold: 0 });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
-    const [filterProperty, setFilterProperty] = useState<string>(searchParams.get('propertyId') || 'all');
+    const [filterProperty] = useState<string>(searchParams.get('propertyId') || 'all');
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [confirmModal, setConfirmModal] = useState<{
         show: boolean;
@@ -103,7 +103,11 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
     useEffect(() => {
         if (!mounted) return;
         if (!isAuthenticated || !user) { router.push('/login'); return; }
-        loadData();
+        const load = async () => {
+            await loadData();
+        };
+        load();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, isAuthenticated, mounted, router, urlPropertyId, activeTenantId, activeOwnerId, tenantType, currentPage, itemsPerPage, filterType, filterStatus, filterProperty, searchTerm]);
 
     // ── DATA LOADING ──────────────────────────────────────────────────────────
@@ -114,7 +118,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : (user as { tenantId: string }).tenantId;
             const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
             const propsRes = await propertyService.getProperties(token, {
@@ -126,14 +130,14 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             let loadedProperties: Property[] = [];
             if (propsRes.success && propsRes.data) {
                 const rawProps = propsRes.data.properties || propsRes.data || [];
-                loadedProperties = rawProps.map((p: any) => ({
+                loadedProperties = rawProps.map((p: { id: string; title?: string; name?: string }) => ({
                     id: p.id,
                     name: p.title || p.name,
                 } as unknown as Property));
                 setProperties(loadedProperties);
             }
 
-            const unitsParams: any = {
+            const unitsParams: Record<string, string | number | undefined> = {
                 tenantId: tenantId || undefined,
                 industryType,
                 page: currentPage.toString(),
@@ -156,10 +160,33 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             if (unitsRes.success && unitsRes.data?.units) {
                 setTotalUnits(unitsRes.data.pagination?.total || unitsRes.data.units.length);
                 if (unitsRes.data.counts) setStatusCounts(unitsRes.data.counts);
-                setUnits(unitsRes.data.units.map((u: any) => {
+                setUnits(unitsRes.data.units.map((u: {
+                    id: string;
+                    unitCode?: string;
+                    slug?: string;
+                    unitCategory: number;
+                    floorNo?: number;
+                    sizeSqft?: number;
+                    propertyId: string;
+                    status: number;
+                    createdAt?: string;
+                    updatedAt?: string;
+                    mainImageId?: string;
+                    gallery?: string[];
+                    unitPricing?: { pricingModel: number; price: number }[];
+                    realEstateDetails?: {
+                        bedrooms?: number;
+                        bathrooms?: number;
+                        furnishing?: number;
+                        parkingSlots?: number;
+                        facing?: number;
+                        displayPrice?: boolean;
+                    };
+                    unitAmenities?: { amenity?: { name: string } }[];
+                }) => {
                     const prop = loadedProperties.find(p => p.id === u.propertyId);
-                    const fixed = u.unitPricing?.find((p: any) => p.pricingModel === 1)?.price || 0;
-                    const monthly = u.unitPricing?.find((p: any) => p.pricingModel === 4)?.price || 0;
+                    const fixed = u.unitPricing?.find((p) => p.pricingModel === 1)?.price || 0;
+                    const monthly = u.unitPricing?.find((p) => p.pricingModel === 4)?.price || 0;
                     const re = u.realEstateDetails || {};
                     return {
                         id: u.id,
@@ -173,11 +200,11 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                         furnishing: re.furnishing,
                         parkingSlots: re.parkingSlots,
                         facing: re.facing,
-                        price: parseFloat(fixed),
-                        monthlyRate: parseFloat(monthly),
+                        price: fixed,
+                        monthlyRate: monthly,
                         spaceId: u.propertyId,
                         space: prop as any,
-                        features: u.unitAmenities?.map((a: any) => a.amenity?.name) || [],
+                        features: u.unitAmenities?.map((a) => a.amenity?.name) || [],
                         status: u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : u.status === 3 ? 'maintenance' : u.status === 4 ? 'sold' : 'available',
                         createdAt: u.createdAt,
                         updatedAt: u.updatedAt,
@@ -204,7 +231,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
 
     // ── FILTERS ───────────────────────────────────────────────────────────────
 
-    const totalPages = Math.ceil(totalUnits / itemsPerPage);
+    // const totalPages = Math.ceil(totalUnits / itemsPerPage); // Commented out as it was unused in favor of inline calculation
 
     useEffect(() => {
         setCurrentPage(1);
@@ -274,7 +301,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             setIsSubmitting(true);
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+            const tenantId = (user as { tenantId: string }).tenantId;
 
             const unitCategoryMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
             const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
@@ -343,7 +370,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            const tenantId = (user as { tenantId: string }).tenantId || '';
             await Promise.all(ids.map(unitId => unitService.deleteUnit(token, unitId, tenantId)));
             showToast(`${ids.length > 1 ? ids.length + ' units' : 'Unit'} deleted successfully`);
             setSelectedUnits(prev => prev.filter(uid => !ids.includes(uid)));
@@ -363,7 +390,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
             setIsSubmitting(true);
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            const tenantId = (user as { tenantId: string }).tenantId || '';
             const unitCategoryMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
             const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
             await unitService.createUnit(token, {
@@ -401,7 +428,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id') || '';
+            const tenantId = (user as { tenantId: string }).tenantId || '';
             const statusMap = { available: 1, occupied: 2, maintenance: 3, sold: 4 };
             const statusLabels = { available: 'Available', occupied: 'Reserved', maintenance: 'Maintenance', sold: 'Sold Out' };
             await unitService.updateUnit(token, id, { status: statusMap[newStatus] }, tenantId);
@@ -471,7 +498,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
         if (!formData.spaceId) { showToast('Please select a target property for import', 'error'); return; }
         setImportStep('progress'); setImportTotal(csvRows.length); setImportProgress(0);
         const token = getAuthToken();
-        const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+        const tenantId = (user as { tenantId: string }).tenantId;
         if (!token || !tenantId) return;
         const catMap = { apartment: 1, house: 2, studio: 1, villa: 2, office: 3, shop: 4, warehouse: 3 };
         for (let i = 0; i < csvRows.length; i++) {
@@ -619,7 +646,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                     </div>
                                     <div className="col-md-4">
                                         <label className="form-label fw-semibold small text-uppercase text-muted">Unit Type</label>
-                                        <select className="form-select bg-light border-0" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as any })}>
+                                        <select className="form-select bg-light border-0" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value as Seats['type'] })}>
                                             <option value="apartment">Apartment</option>
                                             <option value="house">House</option>
                                             <option value="studio">Studio</option>
@@ -631,7 +658,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                     </div>
                                     <div className="col-md-4">
                                         <label className="form-label fw-semibold small text-uppercase text-muted">Current Status</label>
-                                        <select className="form-select bg-light border-0" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
+                                        <select className="form-select bg-light border-0" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as Seats['status'] })}>
                                             <option value="available">Available</option>
                                             <option value="occupied">Reserved</option>
                                             <option value="maintenance">Maintenance</option>
@@ -754,7 +781,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                         >
                                             {formData.mainImageId && getMediaUrl(formData.mainImageId) ? (
                                                 <div>
-                                                    <img src={getMediaUrl(formData.mainImageId)} style={{ maxHeight: 100, maxWidth: '100%' }} className="rounded-3 shadow-sm mb-2" alt="Main" />
+                                                    <img src={getMediaUrl(formData.mainImageId)} style={{ maxHeight: 100, maxWidth: '100%' }} className="rounded-3 shadow-sm mb-2" alt="Main Unit" />
                                                     <div className="small text-primary fw-semibold">Click to change</div>
                                                 </div>
                                             ) : (
@@ -1051,7 +1078,7 @@ export default function UnitsManager({ mode }: UnitsManagerProps) {
                                                 <td className="py-3">{getStatusBadge(unit.status)}</td>
                                                 <td className="px-4 py-3 text-end">
                                                     <div className="dropdown">
-                                                        <button className="btn btn-sm btn-light border-0 rounded-circle d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} data-bs-toggle="dropdown">
+                                                        <button className="btn btn-sm btn-light border-0 rounded-circle d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} data-bs-toggle="dropdown" aria-label="Unit Actions">
                                                             <i className="bi bi-three-dots-vertical"></i>
                                                         </button>
                                                         <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">

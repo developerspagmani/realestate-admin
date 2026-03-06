@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Website } from '@/types';
 
 interface WebsiteQRCodeGeneratorProps {
-    website: any;
+    website: Website;
     onClose: () => void;
 }
 

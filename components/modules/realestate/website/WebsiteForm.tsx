@@ -8,17 +8,18 @@ import WidgetPreview from '../widgets/WidgetPreview';
 import MediaSelector from '@/components/shared/MediaSelector';
 import MenuBuilder from './MenuBuilder';
 import Loader from '@/components/common/Loader';
+import { MediaItem, Website, CMSPage, MarketingForm } from '@/types';
 
 interface WebsiteFormProps {
-    formData: any;
-    setFormData: (data: any) => void;
+    formData: Partial<Website>;
+    setFormData: (data: Partial<Website>) => void;
     handleSubmit: (e: React.FormEvent) => void;
     setShowForm: (show: boolean) => void;
-    editingWebsite: any;
+    editingWebsite: Website | null;
     tenantType: number;
-    properties: any[];
-    marketingForms: any[];
-    cmsPages: any[];
+    properties: { id: string; title?: string }[];
+    marketingForms: MarketingForm[];
+    cmsPages: CMSPage[];
 }
 
 export default function WebsiteForm({
@@ -47,7 +48,7 @@ export default function WebsiteForm({
     const addModule = (type: string) => {
         const currentModules = formData.configuration.builder?.modules || [];
         const newModule = {
-            id: `mod-${Date.now()}`,
+            id: `mod-${new Date().getTime()}`,
             type,
             data: {
                 title: type === 'typography' || type === 'search' ? '' : '',
@@ -90,7 +91,7 @@ export default function WebsiteForm({
             const response = await fetch(`https://dns.google/resolve?name=${formData.customDomain}&type=CNAME`);
             const data = await response.json();
 
-            const isValid = data.Answer?.some((record: any) => {
+            const isValid = data.Answer?.some((record: { data: string }) => {
                 const target = record.data.toLowerCase();
                 // Allow our custom CNAME alias OR direct Vercel pointing
                 return target.includes('virpanix.com') ||
@@ -113,20 +114,21 @@ export default function WebsiteForm({
     };
 
 
-    const handleMediaSelect = (media: any) => {
-        if (media) {
+    const handleMediaSelect = (media: MediaItem | MediaItem[]) => {
+        const selectedMedia = Array.isArray(media) ? media[0] : media;
+        if (selectedMedia) {
             if (mediaTarget) {
-                toggleNestedConfig('builder', mediaTarget, media.url);
+                toggleNestedConfig('builder', mediaTarget, selectedMedia.url);
             } else if (modularMediaIndex !== null) {
                 const modules = [...(formData.configuration.builder?.modules || [])];
                 if (modularSlideIndex !== null) {
                     const slides = [...(modules[modularMediaIndex].data.slides || [])];
                     if (slides[modularSlideIndex]) {
-                        slides[modularSlideIndex].imageUrl = media.url;
+                        slides[modularSlideIndex].imageUrl = selectedMedia.url;
                         modules[modularMediaIndex].data.slides = slides;
                     }
                 } else {
-                    modules[modularMediaIndex].data.imageUrl = media.url;
+                    modules[modularMediaIndex].data.imageUrl = selectedMedia.url;
                 }
                 toggleNestedConfig('builder', 'modules', modules);
             }
@@ -182,7 +184,7 @@ export default function WebsiteForm({
                                     key={tab.id}
                                     type="button"
                                     className={`btn btn-sm px-3 rounded-4 d-flex align-items-center gap-2 transition-all flex-shrink-0 ${activeTab === tab.id ? 'btn-primary shadow-sm shadow-primary' : 'btn-link text-muted text-decoration-none'}`}
-                                    onClick={() => setActiveTab(tab.id as any)}
+                                    onClick={() => setActiveTab(tab.id as 'basics' | 'domain' | 'style' | 'builder' | 'footer' | 'modules' | 'navigation')}
                                 >
                                     <i className={`bi ${tab.icon}`}></i>
                                     <span className="fw-bold">{tab.label}</span>

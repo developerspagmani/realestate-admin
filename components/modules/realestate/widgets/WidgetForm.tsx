@@ -7,16 +7,17 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import FormBuilder from './FormBuilder';
 import WidgetPreview from './WidgetPreview';
 import MediaSelector from '@/components/shared/MediaSelector';
+import { Widget, Property, MarketingForm, MediaItem } from '@/types';
 
 interface WidgetFormProps {
     formData: any;
     setFormData: (data: any) => void;
     handleSubmit: (e: React.FormEvent) => void;
     setShowForm: (show: boolean) => void;
-    editingWidget: any;
+    editingWidget: Widget | null;
     tenantType: number;
-    properties: any[];
-    marketingForms: any[];
+    properties: Property[];
+    marketingForms: MarketingForm[];
 }
 
 export default function WidgetForm({
@@ -41,9 +42,10 @@ export default function WidgetForm({
         return features[featureName] === true || features[featureName] === 'true' || !!features[featureName];
     };
 
-    const handleMediaSelect = (media: any) => {
-        if (media && mediaTarget) {
-            toggleNestedConfig('builder', mediaTarget, media.url);
+    const handleMediaSelect = (media: MediaItem | MediaItem[]) => {
+        const selectedMedia = Array.isArray(media) ? media[0] : media;
+        if (selectedMedia && mediaTarget) {
+            toggleNestedConfig('builder', mediaTarget, selectedMedia.url);
         }
         setShowMediaSelector(false);
         setMediaTarget(null);
@@ -90,7 +92,7 @@ export default function WidgetForm({
                                     key={tab.id}
                                     type="button"
                                     className={`btn btn-sm px-3 rounded-4 d-flex align-items-center gap-2 transition-all ${activeTab === tab.id ? 'btn-primary shadow-sm shadow-primary' : 'btn-link text-muted text-decoration-none'}`}
-                                    onClick={() => setActiveTab(tab.id as any)}
+                                    onClick={() => setActiveTab(tab.id as 'basics' | 'style' | 'builder' | 'modules')}
                                 >
                                     <i className={`bi ${tab.icon}`}></i>
                                     <span className="fw-bold">{tab.label}</span>
@@ -376,7 +378,7 @@ export default function WidgetForm({
                                                         checked={formData.configuration.bookingForm?.enabled || false}
                                                         onChange={(e) => toggleNestedConfig('bookingForm', 'enabled', e.target.checked)}
                                                     />
-                                                    <label className="form-check-label fw-bold small" htmlFor="bookingEnabled">Enable "Book Now" Button</label>
+                                                    <label className="form-check-label fw-bold small" htmlFor="bookingEnabled">Enable &quot;Book Now&quot; Button</label>
                                                 </div>
 
                                                 {formData.configuration.bookingForm?.enabled && (

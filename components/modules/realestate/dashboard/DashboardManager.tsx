@@ -1,15 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { dashboardService, getAuthToken } from '@/app/services/api';
+import { Booking } from '@/app/services/types';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import DashboardStats from '@/components/modules/realestate/dashboard/DashboardStats';
 import DashboardRecentBookings from '@/components/modules/realestate/dashboard/DashboardRecentBookings';
-import DashboardTopUnits from '@/components/modules/realestate/dashboard/DashboardTopUnits';
-import DashboardCharts from '@/components/modules/realestate/dashboard/DashboardCharts';
+import DashboardTopUnits, { DashboardUnit } from '@/components/modules/realestate/dashboard/DashboardTopUnits';
+import DashboardCharts, { ChartData } from '@/components/modules/realestate/dashboard/DashboardCharts';
 import Toast from '@/components/common/Toast';
 
 interface DashboardManagerProps {
@@ -40,11 +41,11 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
         confirmedBookings: 0,
     });
 
-    const [recentBookings, setRecentBookings] = useState<any[]>([]);
-    const [topUnits, setTopUnits] = useState<any[]>([]);
-    const [historicalData, setHistoricalData] = useState<any[]>([]);
+    const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
+    const [topUnits, setTopUnits] = useState<DashboardUnit[]>([]);
+    const [historicalData, setHistoricalData] = useState<ChartData[]>([]);
     const [periodLabel, setPeriodLabel] = useState('Last 6 Months');
-    const [chartParams, setChartParams] = useState<any>({ period: 'last6months' });
+    const [chartParams, setChartParams] = useState<Record<string, string | number | undefined>>({ period: 'last6months' });
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -61,28 +62,19 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
         setMounted(true);
     }, []);
 
-    useEffect(() => {
-        if (!mounted) return;
-        if (!isAuthenticated || !user) {
-            router.push('/login');
-            return;
-        }
-        loadDashboardData(chartParams);
-    }, [mounted, isAuthenticated, user, router, activeTenantId, activeOwnerId, tenantType]);
-
-    const loadDashboardData = async (params: any = chartParams) => {
+    const loadDashboardData = useCallback(async (paramsToLoad: Record<string, string | number | undefined>) => {
         try {
             setLoading(true);
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
             const industryType = mode === 'admin' ? tenantType : undefined;
 
             const response = await dashboardService.getStats(token, {
                 tenantId: tenantId || undefined,
                 industryType,
-                ...params,
+                ...paramsToLoad,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
             });
 
@@ -113,7 +105,24 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [mode, activeTenantId, user?.tenantId, tenantType, activeOwnerId]); // Removed chartParams to break stability loop
+
+    const handleRangeChange = useCallback((params: { period: string; startDate?: string; endDate?: string }) => {
+        setChartParams(params);
+        loadDashboardData(params);
+    }, [loadDashboardData]);
+
+    useEffect(() => {
+        if (!mounted) return;
+        if (!isAuthenticated || !user) {
+            router.push('/login');
+            return;
+        }
+
+        // Initial load
+        loadDashboardData(chartParams);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mounted, isAuthenticated, user, router, loadDashboardData]);
 
     if (!mounted || !isAuthenticated) return null;
 
@@ -126,12 +135,12 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                             {mode === 'admin' ? 'Dashboard' : 'Owner Dashboard'}
                         </h1>
                         <p className="text-muted small">
-                            Welcome back, {user?.name}. Here's your system overview.
+                            Welcome back, {user?.name}. Here&apos;s your system overview.
                         </p>
                     </div>
                     <button
                         className="btn btn-white shadow-sm border-0 px-3"
-                        onClick={loadDashboardData}
+                        onClick={() => loadDashboardData(chartParams)}
                         disabled={loading}
                     >
                         <i className={`bi bi-arrow-clockwise me-2 ${loading ? 'spin' : ''}`}></i>
@@ -147,10 +156,7 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                     data={historicalData}
                     loading={loading}
                     periodLabel={periodLabel}
-                    onRangeChange={(params) => {
-                        setChartParams(params);
-                        loadDashboardData(params);
-                    }}
+                    onRangeChange={handleRangeChange}
                 />
 
                 <div className="row g-4 mt-2">

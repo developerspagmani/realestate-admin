@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import StatCard from '@/components/StatCard';
 import { publishedPostsApi } from '@/lib/api/social';
@@ -40,21 +40,18 @@ export default function PublishedPostsPage() {
     const pathname = usePathname();
     const [posts, setPosts] = useState<PublishedPost[]>([]);
     const [loading, setLoading] = useState(true);
-    const [stats, setStats] = useState<PostStats>({});
+    const [stats, setStats] = useState<PostStats | null>(null);
 
+    // Determine the base path (either /realestate-admin or /realestate-owner-admin)
     const basePath = pathname.includes('/realestate-owner-admin')
         ? '/realestate-owner-admin'
         : '/realestate-admin';
-
-    useEffect(() => {
-        loadPosts();
-    }, []);
 
     const navigateTo = (path: string) => {
         router.push(`${basePath}${path}`);
     };
 
-    const loadPosts = async () => {
+    const loadPosts = useCallback(async () => {
         try {
             setLoading(true);
             const [postsRes, statsRes] = await Promise.all([
@@ -62,11 +59,11 @@ export default function PublishedPostsPage() {
                 publishedPostsApi.getStats()
             ]);
 
-            if (postsRes.success) {
+            if (postsRes.success && postsRes.data) {
                 setPosts(postsRes.data.posts || []);
             }
 
-            if (statsRes.success) {
+            if (statsRes.success && statsRes.data) {
                 setStats(statsRes.data);
             }
         } catch (error) {
@@ -74,7 +71,11 @@ export default function PublishedPostsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadPosts();
+    }, [loadPosts]);
 
     const handleRefresh = async (id: string) => {
         try {
@@ -119,20 +120,22 @@ export default function PublishedPostsPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="row g-4 mb-4">
-                    <div className="col-md-3">
-                        <StatCard label="Total Published" value={posts.length} icon="bi-send-check" color="success" />
+                {stats && (
+                    <div className="row g-4 mb-4">
+                        <div className="col-md-3">
+                            <StatCard label="Total Published" value={stats.total || 0} icon="bi-send-check" color="primary" />
+                        </div>
+                        <div className="col-md-3">
+                            <StatCard label="Last 7 Days" value={stats.last7Days || 0} icon="bi-calendar-range" color="info" />
+                        </div>
+                        <div className="col-md-3">
+                            <StatCard label="Total Likes" value={stats.totalLikes || 0} icon="bi-heart" color="danger" />
+                        </div>
+                        <div className="col-md-3">
+                            <StatCard label="Total Reach" value={stats.totalReach || 0} icon="bi-eye" color="success" />
+                        </div>
                     </div>
-                    <div className="col-md-3">
-                        <StatCard label="Total Likes" value={stats.totalLikes || 0} icon="bi-heart" color="danger" />
-                    </div>
-                    <div className="col-md-3">
-                        <StatCard label="Total Reach" value={stats.totalReach || 0} icon="bi-eye" color="info" />
-                    </div>
-                    <div className="col-md-3">
-                        <StatCard label="Avg Engagement" value="3.8%" icon="bi-graph-up" color="primary" />
-                    </div>
-                </div>
+                )}
 
                 {/* Posts List */}
                 <div className="card border-0 shadow-sm rounded-4 overflow-hidden">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
     BarChart,
     Bar,
@@ -8,14 +8,20 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
     ResponsiveContainer,
     AreaChart,
     Area
 } from 'recharts';
 
+export interface ChartData {
+    name: string;
+    bookings: number;
+    leads: number;
+    [key: string]: string | number | undefined;
+}
+
 interface DashboardChartsProps {
-    data: any[];
+    data: ChartData[];
     loading?: boolean;
     periodLabel?: string;
     onRangeChange: (params: { period: string; startDate?: string; endDate?: string }) => void;
@@ -26,11 +32,17 @@ export default function DashboardCharts({ data, loading, periodLabel, onRangeCha
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
+    // Only call onRangeChange when period changes after initial mount
+    const isMounted = useRef(false);
     useEffect(() => {
+        if (!isMounted.current) {
+            isMounted.current = true;
+            return;
+        }
         if (period !== 'custom') {
             onRangeChange({ period });
         }
-    }, [period]);
+    }, [period, onRangeChange]);
 
     const handleCustomSubmit = () => {
         if (startDate && endDate) {

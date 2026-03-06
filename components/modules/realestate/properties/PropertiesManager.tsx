@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { propertyService, mediaService, amenityService, categoryService, getAuthToken } from '@/app/services/api';
@@ -10,10 +10,51 @@ import PropertiesList from './PropertiesList';
 import PropertyForm from './PropertyForm';
 import BrochureManager from './BrochureManager';
 import Toast from '@/components/common/Toast';
-import { Property, MediaItem } from '@/types';
+import { Property, MediaItem, Amenity, Category } from '@/types';
 
 interface PropertiesManagerProps {
     mode: 'admin' | 'owner';
+}
+
+interface RawProperty {
+    id: string;
+    title?: string;
+    name?: string;
+    slug?: string;
+    description?: string;
+    addressLine1?: string;
+    address?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+    zipCode?: string;
+    latitude?: number;
+    longitude?: number;
+    tenantId?: string;
+    propertyType?: number | string;
+    status?: number | string;
+    mainImageId?: string;
+    gallery?: string[];
+    price?: number;
+    area?: number;
+    sizeSqft?: number;
+    floorPlanId?: string;
+    brochureId?: string;
+    propertyAmenities?: { amenity?: { id: string }; amenityId?: string }[];
+    yearBuilt?: number;
+    neighborhood?: string;
+    parkingSpaces?: number;
+    bedrooms?: number;
+    bathrooms?: number;
+    lotSize?: number;
+    listingType?: string;
+    categoryId?: string;
+    videoUrl?: string;
+    displayPrice?: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export default function PropertiesManager({ mode }: PropertiesManagerProps) {
@@ -25,8 +66,8 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
     const [view, setView] = useState<'list' | 'form'>('list');   // ← replaces modal state
     const [properties, setProperties] = useState<Property[]>([]);
     const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-    const [amenities, setAmenities] = useState<any[]>([]);
-    const [categories, setCategories] = useState<any[]>([]);
+    const [amenities, setAmenities] = useState<Amenity[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingProperty, setEditingProperty] = useState<Property | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -53,21 +94,13 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
 
     useEffect(() => { setMounted(true); }, []);
 
-    useEffect(() => {
-        if (!mounted) return;
-        if (!isAuthenticated || !user) { router.push('/login'); return; }
-        loadData();
-    }, [mounted, isAuthenticated, user, router, activeTenantId, activeOwnerId, tenantType]);
-
-    // ── DATA LOADING ──────────────────────────────────────────────────────────
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
             const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
             console.log('PropertiesManager: Loading data with:', { tenantId, industryType, activeOwnerId, mode });
@@ -80,8 +113,8 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             });
 
             if (propsRes.success) {
-                const rawProps = propsRes.data?.properties || propsRes.data || [];
-                setProperties(rawProps.map((p: any) => ({
+                const rawProps: RawProperty[] = propsRes.data?.properties || propsRes.data || [];
+                setProperties(rawProps.map((p) => ({
                     id: p.id,
                     name: p.title || p.name || 'Untitled Property',
                     slug: p.slug || '',
@@ -97,35 +130,45 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     ownerId: p.tenantId || '',
                     propertyType: typeof p.propertyType === 'number'
                         ? (p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use')
-                        : (p.propertyType || 'residential'),
+                        : ((p.propertyType as Property['propertyType']) || 'residential'),
                     status: typeof p.status === 'number'
                         ? (p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance')
-                        : (p.status || 'active'),
+                        : ((p.status as Property['status']) || 'active'),
                     mainImageId: p.mainImageId || '',
                     gallery: p.gallery || [],
                     price: p.price || 0,
                     area: p.area || p.sizeSqft || 0,
                     floorPlanId: p.floorPlanId || '',
                     brochureId: p.brochureId || '',
-                    amenities: p.propertyAmenities ? p.propertyAmenities.map((pa: any) => pa.amenity?.id || pa.amenityId) : [],
+                    amenities: p.propertyAmenities ? p.propertyAmenities.map((pa) => pa.amenity?.id || pa.amenityId || '') : [],
                     yearBuilt: p.yearBuilt,
                     neighborhood: p.neighborhood || '',
                     parkingSpaces: p.parkingSpaces || 0,
                     bedrooms: p.bedrooms || 0,
                     bathrooms: p.bathrooms || 0,
                     lotSize: p.lotSize || 0,
-                    listingType: (p.listingType?.toLowerCase() as any) || 'rent',
+                    listingType: (p.listingType?.toLowerCase() as Property['listingType']) || 'rent',
                     categoryId: p.categoryId || '',
                     videoUrl: p.videoUrl || '',
                     displayPrice: p.displayPrice !== undefined ? p.displayPrice : true,
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt,
+                    // Missing fields from Property interface
+                    priceType: 'fixed',
+                    squareFootage: p.area || p.sizeSqft || 0,
+                    features: [],
+                    photos: p.gallery || [],
+                    rating: 0,
+                    totalReviews: 0,
                 })));
             }
 
             // Load Media
             const mediaRes = await mediaService.getMedia(token, tenantId ? { tenantId } : undefined);
-            if (mediaRes.success) setMediaItems(mediaRes.data.media || []);
+            if (mediaRes.success) {
+                const items = Array.isArray(mediaRes.data) ? mediaRes.data : (mediaRes.data?.media || []);
+                setMediaItems(items);
+            }
 
             // Load Amenities
             const amenRes = await amenityService.getAmenities(token);
@@ -141,7 +184,15 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeOwnerId, activeTenantId, mode, tenantType, user?.tenantId]);
+
+    useEffect(() => {
+        if (!mounted) return;
+        if (!isAuthenticated || !user) { router.push('/login'); return; }
+        loadData();
+    }, [mounted, isAuthenticated, user, router, loadData]);
+
+    // ── DATA LOADING ──────────────────────────────────────────────────────────
 
     // ── VIEW TRANSITIONS ──────────────────────────────────────────────────────
 
@@ -181,7 +232,7 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             if (!token) return;
             const tenantId = (mode === 'admin' && activeTenantId)
                 ? activeTenantId
-                : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
+                : (user?.tenantId || undefined);
 
             await Promise.all(ids.map(i => propertyService.deleteProperty(token, i, tenantId)));
 
@@ -200,23 +251,23 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
 
         const tenantId = (mode === 'admin' && activeTenantId)
             ? activeTenantId
-            : ((user as any)?.tenantId || localStorage.getItem('tenant-id'));
+            : (user?.tenantId || undefined);
 
         if (!tenantId) throw new Error('Tenant ID is required');
 
         const payload = {
             tenantId,
             title: data.name,
-            slug: (data as any).slug || undefined,
+            slug: data.slug || undefined,
             description: data.description,
             addressLine1: data.address,
-            addressLine2: (data as any).addressLine2 || null,
+            addressLine2: data.addressLine2 || undefined,
             city: data.city,
             state: data.state,
-            country: (data as any).country || 'USA',
+            country: data.country || 'USA',
             postalCode: data.zipCode,
-            latitude: (data as any).latitude || 0,
-            longitude: (data as any).longitude || 0,
+            latitude: data.latitude || 0,
+            longitude: data.longitude || 0,
             propertyType: data.propertyType === 'residential' ? 1
                 : data.propertyType === 'commercial' ? 2
                     : data.propertyType === 'industrial' ? 3 : 4,
@@ -234,9 +285,9 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             bathrooms: data.bathrooms,
             lotSize: data.lotSize,
             listingType: data.listingType,
-            categoryId: (data as any).categoryId || null,
-            videoUrl: (data as any).videoUrl || null,
-            displayPrice: (data as any).displayPrice,
+            categoryId: data.categoryId || undefined,
+            videoUrl: data.videoUrl || undefined,
+            displayPrice: data.displayPrice,
             price: data.price,
         };
 
@@ -255,9 +306,10 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             await loadData();
             setIsSubmitting(false);
             handleBackToList();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to save property:', error);
-            showToast(error.message || 'Error saving property.', 'error');
+            const errorMessage = (error as { message?: string })?.message || 'Error saving property.';
+            showToast(errorMessage, 'error');
             setIsSubmitting(false);
         }
     };
@@ -340,7 +392,7 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
         setImportStep('progress');
         setImportTotal(csvRows.length);
         const token = getAuthToken();
-        const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId || localStorage.getItem('tenant-id');
+        const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
         if (!token || !tenantId) return;
 
         for (let i = 0; i < csvRows.length; i++) {
@@ -362,7 +414,7 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     bathrooms: Number(get('bathrooms')) || 0,
                     status: 'active'
                 };
-                await handleSaveProperty(payload as any);
+                await handleSaveProperty(payload as Partial<Property>);
             } catch (err) {
                 console.error('Import row failed', i, err);
             }

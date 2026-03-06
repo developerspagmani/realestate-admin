@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { connectedAccountsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
@@ -51,15 +51,10 @@ function AccountsContent() {
         ? '/realestate-owner-admin'
         : '/realestate-admin';
 
-    useEffect(() => {
-        loadAccounts();
-        loadMetaSDK();
-    }, []);
-
-    const loadMetaSDK = () => {
+    const loadMetaSDK = useCallback(() => {
         const initFB = () => {
-            if (window.FB) {
-                window.FB.init({
+            if ((window as any).FB) {
+                (window as any).FB.init({
                     appId: process.env.NEXT_PUBLIC_META_APP_ID,
                     cookie: true,
                     xfbml: true,
@@ -68,7 +63,7 @@ function AccountsContent() {
             }
         };
 
-        if (window.FB) {
+        if ((window as any).FB) {
             initFB();
             return;
         }
@@ -78,15 +73,16 @@ function AccountsContent() {
         };
 
         (function (d, s, id) {
-            var js, fjs = d.getElementsByTagName(s)[0] as any;
+            const fjs = d.getElementsByTagName(s)[0];
             if (d.getElementById(id)) return;
-            js = d.createElement(s) as any; js.id = id;
+            const js = d.createElement(s) as HTMLScriptElement;
+            js.id = id;
             js.src = "https://connect.facebook.net/en_US/sdk.js";
-            fjs.parentNode.insertBefore(js, fjs);
+            fjs.parentNode?.insertBefore(js, fjs);
         }(document, 'script', 'facebook-jssdk'));
-    };
+    }, []);
 
-    const loadAccounts = async () => {
+    const loadAccounts = useCallback(async () => {
         try {
             setLoading(true);
             const [accountsRes, statsRes] = await Promise.all([
@@ -94,11 +90,11 @@ function AccountsContent() {
                 connectedAccountsApi.getStats()
             ]);
 
-            if (accountsRes.success) {
+            if (accountsRes.success && accountsRes.data) {
                 setAccounts(accountsRes.data.accounts || []);
             }
 
-            if (statsRes.success) {
+            if (statsRes.success && statsRes.data) {
                 setStats(statsRes.data);
             }
         } catch (error) {
@@ -106,7 +102,12 @@ function AccountsContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadAccounts();
+        loadMetaSDK();
+    }, [loadAccounts, loadMetaSDK]);
 
     const handleConnect = async (platform: string) => {
         const redirectUri = `${window.location.origin}${basePath}/auth/${platform.toLowerCase()}/callback`;

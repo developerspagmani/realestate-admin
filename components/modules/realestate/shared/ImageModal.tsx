@@ -16,7 +16,8 @@ const ImageModal: React.FC<ImageModalProps> = ({ show, imageUrl, images, startIn
     useEffect(() => {
         if (show) {
             document.body.style.overflow = 'hidden';
-            setCurrentIndex(startIndex);
+            // Use functional update to avoid unnecessary re-renders if index is already correct
+            setCurrentIndex(prev => prev !== startIndex ? startIndex : prev);
         } else {
             document.body.style.overflow = 'unset';
         }

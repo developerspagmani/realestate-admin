@@ -62,7 +62,7 @@ export default function PlotMapManager({ mode, propertyId: propId, propertyName:
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = (mode === 'admin' ? activeTenantId : (user as any)?.tenantId) || undefined;
+            const tenantId = (mode === 'admin' ? activeTenantId : user?.tenantId) || undefined;
             const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
             if (propertyId) {
@@ -99,12 +99,15 @@ export default function PlotMapManager({ mode, propertyId: propId, propertyName:
                             id: u.id,
                             name: u.unitCode || u.name || 'Unit ' + u.id.substring(0, 4),
                             slug: u.slug || u.id,
-                            type: u.unitCategory === 1 ? 'apartment' : u.unitCategory === 2 ? 'house' : u.unitCategory === 3 ? 'office' : 'shop',
+                            type: (u.unitCategory === 1 ? 'apartment' : u.unitCategory === 2 ? 'house' : u.unitCategory === 3 ? 'office' : 'shop') as any,
                             floorNo: u.floorNo || 0,
                             sizeSqft: u.sizeSqft || 0,
                             price: typeof priceVal === 'string' ? parseFloat(priceVal) : priceVal,
-                            status: statusStr,
-                        };
+                            status: statusStr as any,
+                            spaceId: propertyId || '',
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        } as Seats;
                     });
                     setUnits(mappedUnits);
                 }
@@ -118,21 +121,39 @@ export default function PlotMapManager({ mode, propertyId: propId, propertyName:
                 });
 
                 if (propsRes.success) {
-                    const rawProps = propsRes.data?.properties || propsRes.data || [];
-                    setProperties(rawProps.map((p: any) => ({
+                    const rawProps: any[] = propsRes.data?.properties || propsRes.data || [];
+                    setProperties(rawProps.map((p) => ({
                         id: p.id,
                         name: p.title || p.name || 'Untitled',
                         city: p.city || '',
                         state: p.state || '',
                         address: p.addressLine1 || p.address || '',
-                        description: p.description || ''
-                    })));
+                        description: p.description || '',
+                        priceType: 'fixed',
+                        squareFootage: p.area || p.sizeSqft || 0,
+                        features: [],
+                        photos: p.gallery || [],
+                        rating: 0,
+                        totalReviews: 0,
+                        propertyType: p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use',
+                        listingType: (p.listingType?.toLowerCase() as Property['listingType']) || 'rent',
+                        status: p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance',
+                        ownerId: p.tenantId || '',
+                        createdAt: p.createdAt || new Date().toISOString(),
+                        updatedAt: p.updatedAt || new Date().toISOString(),
+                        slug: p.slug || p.id,
+                        zipCode: p.postalCode || '',
+                        price: p.price || 0,
+                        neighborhood: p.neighborhood || '',
+                        amenities: p.propertyAmenities ? p.propertyAmenities.map((pa: any) => pa.amenity?.id || pa.amenityId || '') : [],
+                    } as Property)));
                 }
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to load data for Plot Map Manager:', error);
-            showToast(error.message || 'Error loading data', 'error');
+            const message = (error as Error).message || 'Error loading data';
+            showToast(message, 'error');
         } finally {
             setLoading(false);
         }
@@ -143,12 +164,12 @@ export default function PlotMapManager({ mode, propertyId: propId, propertyName:
             const token = getAuthToken();
             if (!token || !propertyId) return;
 
-            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
             const targetTenantId = property?.ownerId || tenantId || '';
 
             const payload = {
                 metadata: {
-                    ...(property as any)?.metadata,
+                    ...property?.metadata,
                     svgMapping: mapping,
                     interactiveSvg: svgContent
                 }

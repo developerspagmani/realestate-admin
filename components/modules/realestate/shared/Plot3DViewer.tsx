@@ -119,7 +119,7 @@ export default function Plot3DViewer({ svgContent, mapping, units, theme, curren
                     if (isPlot && unit) color = getStatusColor(unit.status);
                     else if (lowerId.includes('road') || lowerId.includes('street')) color = 0x1e293b;
 
-                    let h = isPlot ? 15 :
+                    const h = isPlot ? 15 :
                         (lowerId.includes('road') || lowerId.includes('street')) ? 0.5 :
                             (lowerId.includes('bg') || lowerId.includes('land') || lowerId.includes('grass')) ? 0.1 : 5;
 

@@ -7,9 +7,20 @@ import { upgradeRequestService } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 
+interface UpgradeRequest {
+    id: string;
+    status: number;
+    email: string;
+    message?: string;
+    createdAt: string;
+    owner?: { name: string };
+    tenant?: { name: string };
+    requestedPlan?: { name: string; price: number; interval: string };
+}
+
 export default function UpgradeRequestsList() {
     const { isAdmin } = useAuthContext();
-    const [requests, setRequests] = useState<any[]>([]);
+    const [requests, setRequests] = useState<UpgradeRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
@@ -25,6 +36,7 @@ export default function UpgradeRequestsList() {
         if (isAdmin) {
             loadRequests();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAdmin]);
 
     const loadRequests = async () => {
@@ -49,8 +61,9 @@ export default function UpgradeRequestsList() {
                 showToast(`Request ${status === 2 ? 'approved' : 'rejected'} successfully`);
                 loadRequests();
             }
-        } catch (error: any) {
-            showToast(error.message || 'Action failed', 'error');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Action failed';
+            showToast(message, 'error');
         }
     };
 

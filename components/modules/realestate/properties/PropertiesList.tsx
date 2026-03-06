@@ -91,8 +91,8 @@ export default function PropertiesList({
                                             <div className="text-muted extra-small">{property.address}</div>
                                         </td>
                                         <td className="py-3">
-                                            <span className={`badge rounded-4 ${property.status === 'active' || (property.status as any) === 1 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'} px-3 py-2`}>
-                                                {property.status === 'active' || (property.status as any) === 1 ? 'Active' : 'Inactive'}
+                                            <span className={`badge rounded-4 ${property.status === 'active' || property.status === 1 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'} px-3 py-2`}>
+                                                {property.status === 'active' || property.status === 1 ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
                                         <td className="py-3 text-end px-4">

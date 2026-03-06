@@ -82,7 +82,7 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = activeTenantId || (user as any)?.tenantId || localStorage.getItem('tenant-id');
+            const tenantId = activeTenantId || (user as any)?.tenantId;
             const [ownerRes, keyRes] = await Promise.all([
                 userService.getOwners(token, { tenantId }),
                 import('@/app/services/api').then(m => m.licenseKeyService.getAll(token, { status: 2 }))
@@ -140,7 +140,7 @@ export default function OwnersManager({ mode }: OwnersManagerProps) {
             const token = getAuthToken();
             if (!token) return;
 
-            const tenantId = (user as any)?.tenantId || localStorage.getItem('tenant-id');
+            const tenantId = (user as any)?.tenantId;
 
             if (editingOwner) {
                 const response = await userService.updateUser(token, editingOwner.id, {

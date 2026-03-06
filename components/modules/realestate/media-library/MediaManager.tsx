@@ -120,8 +120,8 @@ export default function MediaManager({ mode }: MediaManagerProps) {
             return matchesSearch && matchesType && matchesFolder;
         })
         .sort((a, b) => {
-            let aValue: any = a[sortBy as keyof MediaItem] || '';
-            let bValue: any = b[sortBy as keyof MediaItem] || '';
+            const aValue: any = a[sortBy as keyof MediaItem] || '';
+            const bValue: any = b[sortBy as keyof MediaItem] || '';
             if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
             if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
             return 0;

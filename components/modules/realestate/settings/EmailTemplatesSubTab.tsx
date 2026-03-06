@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
 
+interface EmailTemplate {
+    subject?: string;
+    content?: string;
+    primaryColor?: string;
+}
+
+interface EmailSettings {
+    general?: { siteName?: string };
+    appearance?: { logoUrl?: string };
+    emailTemplates?: Record<string, EmailTemplate>;
+    [key: string]: unknown;
+}
+
 interface EmailTemplatesSubTabProps {
-    settings: any;
-    setSettings: (settings: any) => void;
+    settings: EmailSettings;
+    setSettings: (settings: EmailSettings) => void;
     onSave: () => void;
     saving: boolean;
 }
@@ -23,7 +36,7 @@ export default function EmailTemplatesSubTab({ settings, setSettings, onSave, sa
         });
     };
 
-    const defaultTemplates: any = {
+    const defaultTemplates: Record<string, EmailTemplate> = {
         registration: {
             subject: 'Welcome to the platform, {name}!',
             content: '<p style="font-size: 16px; color: #374151;">Hello {name},</p><p style="font-size: 16px; color: #374151;">Thank you for registering with us. We are thrilled to have you on board!</p><p style="font-size: 16px; color: #374151;">To get started, please log in to your dashboard and complete your profile setup so we can tailor our recommendations for you.</p><p style="font-size: 16px; color: #374151;">Best regards,<br/>The Administration Team</p>',
@@ -146,6 +159,7 @@ export default function EmailTemplatesSubTab({ settings, setSettings, onSave, sa
                         <div style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", width: '100%', maxWidth: '600px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e5e7eb', padding: '40px' }} className="shadow-sm">
                             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                                 {logoUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
                                     <img src={logoUrl} alt="Logo" style={{ maxHeight: '50px', maxWidth: '180px' }} />
                                 ) : (
                                     <h2 style={{ margin: 0, color: '#111827' }}>{siteName}</h2>

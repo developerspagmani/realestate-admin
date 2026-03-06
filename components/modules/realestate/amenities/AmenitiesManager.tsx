@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { amenityService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import Loader from '@/components/common/Loader';
-import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { Amenity } from '@/types';
 
 interface AmenitiesManagerProps {
@@ -16,7 +15,6 @@ interface AmenitiesManagerProps {
 
 export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
-    const { activeTenantId } = useManagementContext();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
     const [amenities, setAmenities] = useState<Amenity[]>([]);
@@ -47,15 +45,7 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
         setMounted(true);
     }, []);
 
-    useEffect(() => {
-        if (mounted && isAuthenticated) {
-            loadAmenities();
-        } else if (mounted && !isAuthenticated) {
-            router.push('/login');
-        }
-    }, [mounted, isAuthenticated]);
-
-    const loadAmenities = async () => {
+    const loadAmenities = useCallback(async () => {
         try {
             setLoading(true);
             const token = getAuthToken();
@@ -71,7 +61,15 @@ export default function AmenitiesManager({ mode }: AmenitiesManagerProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (mounted && isAuthenticated) {
+            loadAmenities();
+        } else if (mounted && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [mounted, isAuthenticated, loadAmenities, router]);
 
     const handleEdit = (amenity: Amenity) => {
         // Can only edit own amenities

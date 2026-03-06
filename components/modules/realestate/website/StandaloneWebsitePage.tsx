@@ -11,6 +11,7 @@ import ThreeDView from '@/components/modules/realestate/shared/ThreeDView';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
 import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
+import { Property, Unit } from '@/types';
 import '@/components/modules/realestate/shared/shared.css';
 
 type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'THREE_D' | 'TOUR';
@@ -20,14 +21,14 @@ interface StandaloneWebsitePageProps {
 }
 
 export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsitePageProps) {
-    const [website, setWebsite] = useState<any>(null);
-    const [data, setData] = useState<any[]>([]);
+    const [website, setWebsite] = useState<any>(null); // Keeping any for now as Website type is complex/missing
+    const [data, setData] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentView, setCurrentView] = useState<ViewType>('LISTING');
-    const [selectedProperty, setSelectedProperty] = useState<any>(null);
-    const [selectedUnit, setSelectedUnit] = useState<any>(null);
-    const [filteredData, setFilteredData] = useState<any[]>([]);
+    const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+    const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+    const [filteredData, setFilteredData] = useState<Property[]>([]);
     const [isFiltered, setIsFiltered] = useState(false);
     const [showChat, setShowChat] = useState(false);
     const [chatExpanded, setChatExpanded] = useState(false);
@@ -60,7 +61,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
             } else {
                 setError(response.message || 'The requested portal could not be found.');
             }
-        } catch (err) {
+        } catch {
             setError('System connection interrupted. Please refresh.');
         } finally {
             setLoading(false);
@@ -78,7 +79,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         if (website) localStorage.setItem(`website_lead_${website.id}`, JSON.stringify(identity));
     };
 
-    const trackAction = async (type: string, metadata: any = {}) => {
+    const trackAction = async (type: string, metadata: Record<string, unknown> = {}) => {
         if (!leadIdentity || !website) return;
         try {
             await marketingService.trackInteraction({
@@ -92,7 +93,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         }
     };
 
-    const getFormattedPrice = (unit: any) => {
+    const getFormattedPrice = (unit: Unit) => {
         if (!unit.unitPricing?.length) return 'Price on Inquiry';
         const pricing = unit.unitPricing[0];
         const label = pricing.pricingModel === 2 ? 'hr' :
@@ -110,19 +111,19 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     };
 
     // Helper to map units for the 3D Viewer
-    const mapUnitsToSeats = (units: any[]) => {
+    const mapUnitsToSeats = (units: Unit[]) => {
         return units.map(u => ({
             id: u.id,
             name: u.name || `Unit ${u.unitCode}`,
             slug: u.unitCode || u.id,
-            type: (u.unitCategory === 1 ? 'desk' : u.unitCategory === 2 ? 'office' : u.unitCategory === 3 ? 'apartment' : 'villa') as any,
+            type: (u.unitCategory === 1 ? 'desk' : u.unitCategory === 2 ? 'office' : u.unitCategory === 3 ? 'apartment' : 'villa') as "apartment" | "house" | "studio" | "villa" | "office" | "shop" | "warehouse",
             capacity: u.capacity || (u.realEstateDetails?.bedrooms || 1),
             hourlyRate: Number(u.unitPricing?.[0]?.price || 0),
             status: u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : 'maintenance',
         }));
     };
 
-    const handleFilterResults = useCallback((results: any[]) => {
+    const handleFilterResults = useCallback((results: Property[]) => {
         setData(results);
     }, []);
 
@@ -139,17 +140,17 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         </div>
     );
 
-    const theme = website.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif' };
-    const builder = website.configuration?.builder || {};
+    const theme = website?.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif' };
+    const builder = website?.configuration?.builder || {};
     const chatbotConfig = {
-        ...(website.tenant?.settings?.chatbotConfig || {}),
+        ...(website?.tenant?.settings?.chatbotConfig || {}),
         ...(data?.[0]?.metadata?.chatbotConfig || {}),
-        ...(website.configuration?.chatbot || {}),
+        ...(website?.configuration?.chatbot || {}),
         // Handle specific renames/fallbacks
-        welcomeMessage: website.configuration?.chatbot?.welcomeMessage ||
-            website.configuration?.chatbot?.welcomeTitle ||
+        welcomeMessage: website?.configuration?.chatbot?.welcomeMessage ||
+            website?.configuration?.chatbot?.welcomeTitle ||
             data?.[0]?.metadata?.chatbotConfig?.welcomeMessage ||
-            website.tenant?.settings?.chatbotConfig?.welcomeMessage
+            website?.tenant?.settings?.chatbotConfig?.welcomeMessage
     };
 
     const renderView = () => {
@@ -180,7 +181,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         isFiltered={isFiltered}
                         theme={theme}
                         widget={website}
-                        widgetId={website.id}
+                        widgetId={website?.id}
                         onReset={() => { setFilteredData(data); setIsFiltered(false); }}
                         onSelectProperty={(property) => {
                             setSelectedProperty(property);
@@ -199,7 +200,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         setPropertyImageIndex={setPropertyImageIndex}
                         theme={theme}
                         widget={website}
-                        widgetId={website.id}
+                        widgetId={website?.id}
                         colClass="col-lg-4"
                         setCurrentView={setCurrentView}
                         selectedUnit={selectedUnit}
@@ -221,7 +222,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         setUnitImageIndex={setUnitImageIndex}
                         theme={theme}
                         widget={website}
-                        widgetId={website.id}
+                        widgetId={website?.id}
                         setCurrentView={setCurrentView}
                         getFormattedPrice={getFormattedPrice}
                         trackAction={trackAction}
@@ -256,7 +257,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                 </button>
                             </div>
                             <div style={{ height: '70vh' }}>
-                                <PropertyTour propertyId={selectedProperty.id} />
+                                <PropertyTour propertyId={selectedProperty?.id || (data?.[0]?.id || '')} />
                             </div>
                         </div>
                     </div>
@@ -272,9 +273,9 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                     <div className="container d-flex justify-content-between align-items-center">
                         <div className="website-logo cursor-pointer" onClick={() => setCurrentView('LISTING')}>
                             {builder.logoUrl ? (
-                                <img src={builder.logoUrl} alt="Brand Logo" style={{ height: '42px', objectFit: 'contain' }} />
+                                <img src={builder.logoUrl} alt={website?.name || "Brand Logo"} style={{ height: '42px', objectFit: 'contain' }} />
                             ) : (
-                                <div className="fw-black h4 mb-0 text-primary tracking-tighter" style={{ color: theme.primaryColor }}>{website.name.toUpperCase()}</div>
+                                <div className="fw-black h4 mb-0 text-primary tracking-tighter" style={{ color: theme.primaryColor }}>{website?.name?.toUpperCase()}</div>
                             )}
                         </div>
                         <nav className="d-none d-md-flex align-items-center gap-4">
@@ -504,7 +505,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                             if (p) leadPayload.phone = p;
                                         }
 
-                                        const res = await websiteService.createPublicLead(website.id, leadPayload);
+                                        const res = await websiteService.createPublicLead(website?.id || '', leadPayload);
                                         const leadId = res.success ? (res.data?.id || res.id) : null;
                                         if (leadId) identifyLead(leadId, leadPayload.email);
                                     } catch (error) {

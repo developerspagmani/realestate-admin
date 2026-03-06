@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
@@ -42,11 +42,7 @@ export default function CampaignsListPage() {
         ? '/realestate-owner-admin'
         : '/realestate-admin';
 
-    useEffect(() => {
-        loadCampaigns();
-    }, []);
-
-    const loadCampaigns = async () => {
+    const loadCampaigns = useCallback(async () => {
         try {
             setLoading(true);
             const [postsRes, statsRes] = await Promise.all([
@@ -54,11 +50,11 @@ export default function CampaignsListPage() {
                 scheduledPostsApi.getStats()
             ]);
 
-            if (postsRes.success) {
+            if (postsRes.success && postsRes.data) {
                 setCampaigns(postsRes.data.posts || []);
             }
 
-            if (statsRes.success) {
+            if (statsRes.success && statsRes.data) {
                 setStats({
                     total: statsRes.data.total || 0,
                     scheduled: statsRes.data.scheduled || 0,
@@ -71,7 +67,11 @@ export default function CampaignsListPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadCampaigns();
+    }, [loadCampaigns]);
 
     const navigateTo = (path: string) => {
         router.push(`${basePath}${path}`);

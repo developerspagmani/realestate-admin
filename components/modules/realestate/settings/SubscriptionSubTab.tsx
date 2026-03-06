@@ -8,17 +8,37 @@ interface SubscriptionSubTabProps {
     showToast: (message: string, type?: 'success' | 'error') => void;
 }
 
+interface SubscriptionInfo {
+    plan?: { name?: string; description?: string };
+    subscriptionExpiresAt?: string;
+    subscriptionStatus?: number;
+    licenseKey?: { key?: string };
+}
+
+interface TenantModule {
+    id: string;
+    name: string;
+    slug: string;
+    isActive: boolean;
+}
+
+interface ModuleAssignment {
+    module: Omit<TenantModule, 'isActive'>;
+    isActive: boolean;
+}
+
 export default function SubscriptionSubTab({ showToast }: SubscriptionSubTabProps) {
     const { user } = useAuthContext();
     const [loading, setLoading] = useState(true);
     const [activating, setActivating] = useState(false);
     const [showKey, setShowKey] = useState(false);
     const [licenseKey, setLicenseKey] = useState('');
-    const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
-    const [activeModules, setActiveModules] = useState<any[]>([]);
+    const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
+    const [activeModules, setActiveModules] = useState<TenantModule[]>([]);
 
     useEffect(() => {
         loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadData = async () => {
@@ -37,10 +57,10 @@ export default function SubscriptionSubTab({ showToast }: SubscriptionSubTabProp
             const modulesRes = await moduleService.getTenantModules(token, user.tenantId);
             if (modulesRes.success) {
                 // The API returns an array of TenantModule assignments with nested module info
-                const modules = (modulesRes.data || []).map((assignment: any) => ({
+                const modules = (modulesRes.data || []).map((assignment: ModuleAssignment) => ({
                     ...assignment.module,
                     isActive: assignment.isActive
-                })).filter((m: any) => m.isActive);
+                })).filter((m: TenantModule) => m.isActive);
                 setActiveModules(modules);
             }
         } catch (error) {
@@ -67,8 +87,9 @@ export default function SubscriptionSubTab({ showToast }: SubscriptionSubTabProp
             } else {
                 showToast(res.message || 'Activation failed', 'error');
             }
-        } catch (error: any) {
-            showToast(error.message || 'Failed to activate key', 'error');
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Failed to activate key';
+            showToast(message, 'error');
         } finally {
             setActivating(false);
         }
@@ -170,7 +191,7 @@ export default function SubscriptionSubTab({ showToast }: SubscriptionSubTabProp
                 <h5 className="fw-bold mb-4">Enabled Modules</h5>
                 {activeModules.length > 0 ? (
                     <div className="row g-3">
-                        {activeModules.map((mod: any) => (
+                        {activeModules.map((mod: TenantModule) => (
                             <div className="col-md-4" key={mod.id}>
                                 <div className="d-flex align-items-center p-3 bg-light rounded-3">
                                     <div className="p-2 bg-white rounded-circle shadow-sm me-3 text-primary">

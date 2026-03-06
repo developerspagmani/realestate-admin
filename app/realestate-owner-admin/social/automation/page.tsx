@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
 import { useAuthContext } from '@/app/contexts/AuthContext';
@@ -8,9 +8,18 @@ import { automationApi } from '@/lib/api/social';
 import ModuleGuard from '@/components/common/ModuleGuard';
 import Loader from '@/components/common/Loader';
 
+interface Workflow {
+    id: string;
+    name: string;
+    trigger: string;
+    type: string;
+    status: string;
+    sent?: number;
+}
+
 export default function SocialAutomationPage() {
     return (
-        <ModuleGuard moduleSlug="automation_engine">
+        <ModuleGuard moduleSlug="social_manual">
             <AutomationContent />
         </ModuleGuard>
     );
@@ -26,9 +35,9 @@ function AutomationContent() {
         successRate: '0%'
     });
 
-    const [workflows, setWorkflows] = useState<any[]>([]);
+    const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [showModal, setShowModal] = useState(false);
-    const [editingWorkflow, setEditingWorkflow] = useState<any>(null);
+    const [editingWorkflow, setEditingWorkflow] = useState<Workflow | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         trigger: 'LEAD_CREATED',
@@ -36,7 +45,7 @@ function AutomationContent() {
         status: 'Active'
     });
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (!user?.tenantId) return;
         setLoading(true);
         try {
@@ -45,20 +54,18 @@ function AutomationContent() {
                 automationApi.getWorkflows({ tenantId: user.tenantId })
             ]);
 
-            if (statsRes.success) setStats(statsRes.data);
-            if (workflowsRes.success) setWorkflows(workflowsRes.data);
+            if (statsRes.success && statsRes.data) setStats(statsRes.data);
+            if (workflowsRes.success && workflowsRes.data) setWorkflows(workflowsRes.data);
         } catch (error) {
             console.error('Failed to fetch automation data:', error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.tenantId]);
 
     useEffect(() => {
-        if (user?.tenantId) {
-            fetchData();
-        }
-    }, [user?.tenantId]);
+        fetchData();
+    }, [fetchData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

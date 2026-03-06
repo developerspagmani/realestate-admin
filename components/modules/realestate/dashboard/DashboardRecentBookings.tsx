@@ -1,7 +1,8 @@
 import { useManagementContext } from '@/app/contexts/ManagementContext';
+import { Booking } from '@/app/services/types';
 
 interface DashboardRecentBookingsProps {
-    bookings: any[];
+    bookings: Booking[];
     loading: boolean;
 }
 

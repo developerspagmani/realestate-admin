@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react';
 import { adminService, getAuthToken } from '@/app/services/api';
 
+interface SystemSetting {
+    key: string;
+    value: string;
+    type?: string;
+}
+
 interface SystemConfigSubTabProps {
     showToast: (message: string, type?: 'success' | 'error') => void;
 }
@@ -10,11 +16,11 @@ interface SystemConfigSubTabProps {
 export default function SystemConfigSubTab({ showToast }: SystemConfigSubTabProps) {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [settings, setSettings] = useState<any[]>([]);
     const [trialDays, setTrialDays] = useState('15');
 
     useEffect(() => {
         loadSettings();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadSettings = async () => {
@@ -23,8 +29,7 @@ export default function SystemConfigSubTab({ showToast }: SystemConfigSubTabProp
             const token = getAuthToken() || '';
             const res = await adminService.getSystemSettings(token);
             if (res.success) {
-                setSettings(res.data);
-                const trialSetting = res.data.find((s: any) => s.key === 'default_trial_days');
+                const trialSetting = (res.data as SystemSetting[]).find((s) => s.key === 'default_trial_days');
                 if (trialSetting) {
                     setTrialDays(trialSetting.value);
                 }
@@ -47,7 +52,7 @@ export default function SystemConfigSubTab({ showToast }: SystemConfigSubTabProp
                 showToast('Trial period updated successfully!');
                 loadSettings();
             }
-        } catch (error) {
+        } catch (_error) {
             showToast('Failed to update trial period', 'error');
         } finally {
             setSaving(false);

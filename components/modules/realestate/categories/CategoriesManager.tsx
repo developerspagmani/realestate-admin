@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { categoryService, propertyService, getAuthToken } from '@/app/services/api';
@@ -8,20 +7,8 @@ import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
 import Loader from '@/components/common/Loader';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
-
-interface Category {
-    id: string;
-    name: string;
-    slug?: string;
-    description?: string;
-    icon?: string;
-    parentId?: string | null;
-    sortOrder: number;
-    status: number;
-    tenantId?: string | null;
-    parent?: { id: string; name: string } | null;
-    _count?: { properties: number; children: number };
-}
+import React, { useState, useEffect, useCallback } from 'react';
+import { Property, Category } from '@/types';
 
 interface CategoriesManagerProps {
     mode: 'admin' | 'owner';
@@ -44,8 +31,8 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         type: 'success'
     });
     const [modalTab, setModalTab] = useState<'details' | 'properties'>('details');
-    const [assignedProperties, setAssignedProperties] = useState<any[]>([]);
-    const [availableProperties, setAvailableProperties] = useState<any[]>([]);
+    const [assignedProperties, setAssignedProperties] = useState<Property[]>([]);
+    const [availableProperties, setAvailableProperties] = useState<Property[]>([]);
     const [propSearchTerm, setPropSearchTerm] = useState('');
     const [isLoadingProps, setIsLoadingProps] = useState(false);
 
@@ -79,15 +66,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         setMounted(true);
     }, []);
 
-    useEffect(() => {
-        if (mounted && isAuthenticated) {
-            loadCategories();
-        } else if (mounted && !isAuthenticated) {
-            router.push('/login');
-        }
-    }, [mounted, isAuthenticated]);
-
-    const loadCategories = async (syncEditingId?: string) => {
+    const loadCategories = useCallback(async (syncEditingId?: string) => {
         try {
             setLoading(true);
             const token = getAuthToken();
@@ -95,12 +74,12 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
 
             const response = await categoryService.getCategories(token);
             if (response.success) {
-                const fetchedCategories = response.data.categories || [];
+                const fetchedCategories: Category[] = response.data.categories || [];
                 setCategories(fetchedCategories);
 
                 // Keep editingCategory in sync with the list
                 if (syncEditingId) {
-                    const updated = fetchedCategories.find((c: any) => c.id === syncEditingId);
+                    const updated = fetchedCategories.find((c: Category) => c.id === syncEditingId);
                     if (updated) setEditingCategory(updated);
                 }
             }
@@ -110,17 +89,25 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         } finally {
             setLoading(false);
         }
-    };
-    const loadCategoryProperties = async (categoryId: string) => {
+    }, []);
+
+    useEffect(() => {
+        if (mounted && isAuthenticated) {
+            loadCategories();
+        } else if (mounted && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [mounted, isAuthenticated, loadCategories, router]);
+    const loadCategoryProperties = useCallback(async (categoryId: string) => {
         try {
             setIsLoadingProps(true);
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (activeTenantId || (user as any)?.tenantId) as string;
+            const tenantId = (activeTenantId || user?.tenantId) as string;
             const res = await propertyService.getProperties(token, {
                 tenantId: tenantId ?? undefined,
                 categoryId: categoryId
-            } as any);
+            });
             if (res.success) {
                 setAssignedProperties(res.data.properties || []);
             }
@@ -129,9 +116,9 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         } finally {
             setIsLoadingProps(false);
         }
-    };
+    }, [activeTenantId, user?.tenantId]);
 
-    const searchAvailableProperties = async (search: string) => {
+    const searchAvailableProperties = useCallback(async (search: string) => {
         if (!search.trim()) {
             setAvailableProperties([]);
             return;
@@ -140,7 +127,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
             setIsLoadingProps(true);
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = (activeTenantId || (user as any)?.tenantId) as string;
+            const tenantId = (activeTenantId || user?.tenantId) as string;
             const res = await propertyService.getProperties(token, {
                 tenantId: tenantId ?? undefined,
                 search: search
@@ -148,7 +135,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
             if (res.success) {
                 // Filter out properties already assigned to this category
                 const props = (res.data.properties || []).filter(
-                    (p: any) => p.categoryId !== editingCategory?.id
+                    (p: Property) => p.categoryId !== editingCategory?.id
                 );
                 setAvailableProperties(props);
             }
@@ -157,21 +144,21 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         } finally {
             setIsLoadingProps(false);
         }
-    };
+    }, [activeTenantId, editingCategory?.id, user?.tenantId]);
 
     useEffect(() => {
         if (showModal && editingCategory && modalTab === 'properties') {
             loadCategoryProperties(editingCategory.id);
         }
-    }, [showModal, editingCategory, modalTab]);
+    }, [showModal, editingCategory, modalTab, loadCategoryProperties]);
 
     const handleAssignProperty = async (propertyId: string) => {
         if (!editingCategory) return;
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = activeTenantId || (user as any)?.tenantId;
-            await propertyService.updateProperty(token, propertyId, { categoryId: editingCategory.id } as any, tenantId as string);
+            const tenantId = activeTenantId || user?.tenantId;
+            await propertyService.updateProperty(token, propertyId, { categoryId: editingCategory.id }, tenantId as string);
             showToast('Property assigned to category');
             loadCategoryProperties(editingCategory.id);
             if (propSearchTerm) searchAvailableProperties(propSearchTerm);
@@ -186,8 +173,8 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = activeTenantId || (user as any)?.tenantId;
-            await propertyService.updateProperty(token, propertyId, { categoryId: null } as any, tenantId as string);
+            const tenantId = activeTenantId || user?.tenantId;
+            await propertyService.updateProperty(token, propertyId, { categoryId: null }, tenantId as string);
             showToast('Property removed from category');
             if (editingCategory) {
                 loadCategoryProperties(editingCategory.id);
@@ -236,9 +223,10 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
             await categoryService.deleteCategory(token, id);
             setCategories(categories.filter(c => c.id !== id));
             showToast('Category deleted successfully');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete category:', error);
-            showToast(error.message || 'Error deleting category.', 'error');
+            const errorMessage = error instanceof Error ? error.message : 'Error deleting category.';
+            showToast(errorMessage, 'error');
         }
     };
 
@@ -670,7 +658,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                                             ) : isLoadingProps ? (
                                                 <div className="text-center py-4 text-muted small">Searching...</div>
                                             ) : availableProperties.length === 0 ? (
-                                                <div className="text-center py-4 text-muted small">No available properties found matching "{propSearchTerm}"</div>
+                                                <div className="text-center py-4 text-muted small">No available properties found matching &quot;{propSearchTerm}&quot;</div>
                                             ) : (
                                                 <div className="d-flex flex-column gap-2">
                                                     {availableProperties.map(prop => (
@@ -679,7 +667,7 @@ export default function CategoriesManager({ mode }: CategoriesManagerProps) {
                                                                 <div className="fw-bold small">{prop.title || prop.name}</div>
                                                                 <div className="extra-small text-muted">
                                                                     {prop.city}, {prop.state}
-                                                                    {prop.category && <span className="ms-2 badge bg-light text-dark border">Currently: {prop.category.name}</span>}
+                                                                    {prop.categoryId && <span className="ms-2 badge bg-light text-dark border">Currently: {categories.find(c => c.id === prop.categoryId)?.name || 'Assigned'}</span>}
                                                                 </div>
                                                             </div>
                                                             <button

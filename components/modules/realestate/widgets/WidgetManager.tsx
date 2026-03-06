@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { cmsService, getAuthToken, widgetService } from '@/app/services/api';
 import Loader from '@/components/common/Loader';
+import { Widget, Property, MarketingForm } from '@/types';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import WidgetForm from './WidgetForm';
@@ -88,15 +89,15 @@ const INITIAL_FORM_DATA = {
 export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
     const { user, isAuthenticated, hasModule, activeModules } = useAuthContext();
     const { activeTenantId, activeOwnerId, tenantType } = useManagementContext();
-    const [widgets, setWidgets] = useState<any[]>([]);
+    const [widgets, setWidgets] = useState<Widget[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [editingWidget, setEditingWidget] = useState<any>(null);
+    const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
-    const [properties, setProperties] = useState<any[]>([]);
-    const [marketingForms, setMarketingForms] = useState<any[]>([]);
+    const [properties, setProperties] = useState<Property[]>([]);
+    const [marketingForms, setMarketingForms] = useState<MarketingForm[]>([]);
     const [showQRModal, setShowQRModal] = useState(false);
-    const [qrWidget, setQRWidget] = useState<any>(null);
+    const [qrWidget, setQRWidget] = useState<Widget | null>(null);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
         show: false,
         message: '',
@@ -115,6 +116,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
                 loadMarketingForms();
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isAuthenticated, activeTenantId, activeOwnerId, activeModules]);
 
     const loadMarketingForms = async () => {
@@ -122,7 +124,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
             const token = getAuthToken();
             if (!token) return;
             const { marketingService } = await import('@/app/services/api');
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await marketingService.getForms(token, { tenantId });
             if (response.success) {
                 setMarketingForms(response.data);
@@ -137,7 +139,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
             const token = getAuthToken();
             if (!token) return;
             const { propertyService } = await import('@/app/services/api');
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await propertyService.getProperties(token, {
                 ...(tenantId && { tenantId }),
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
@@ -156,7 +158,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
             setLoading(true);
             const token = getAuthToken();
             if (!token) return;
-            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await widgetService.getWidgets(token, {
                 ...(tenantId && { tenantId }),
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
@@ -179,7 +181,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
             if (!token) return;
 
             let response;
-            const currentTenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const currentTenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
 
             const finalData = {
                 ...formData,
@@ -221,7 +223,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const currentTenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const currentTenantId = mode === 'admin' ? (activeTenantId || (user as { tenantId: string })?.tenantId) : (user as { tenantId: string })?.tenantId;
             const response = await widgetService.deleteWidget(token, id, currentTenantId);
             if (response.success) {
                 loadWidgets();
@@ -251,7 +253,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         showToast('Short Link copied to clipboard!');
     };
 
-    const handleEdit = (widget: any) => {
+    const handleEdit = (widget: Widget) => {
         setEditingWidget(widget);
         setFormData({
             name: widget.name,

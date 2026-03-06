@@ -173,6 +173,9 @@ export default function ModuleManager() {
                                                 } else if (module.slug === '3d_viewer') {
                                                     icon = 'box';
                                                     color = 'warning';
+                                                } else if (module.slug === 'propintel_ai') {
+                                                    icon = 'robot';
+                                                    color = 'primary';
                                                 }
 
                                                 return (

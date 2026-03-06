@@ -95,7 +95,7 @@ export default function PlotMapViewer({ units, svgContent, mapping, themeColor =
 
             if (unit && svgElement) {
                 try {
-                    const bbox = (p as any).getBBox();
+                    const bbox = (p as unknown as SVGGraphicsElement).getBBox();
                     if (bbox.width > 5 && bbox.height > 5) {
                         const centerX = bbox.x + bbox.width / 2;
                         const centerY = bbox.y + bbox.height / 2;
