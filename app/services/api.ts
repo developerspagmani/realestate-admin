@@ -16,7 +16,6 @@ export * from './widget';
 export * from './website';
 export * from './module';
 export * from './discovery';
-export * from './property3d';
 export * from './amenity';
 export * from './category';
 export * from './agent';

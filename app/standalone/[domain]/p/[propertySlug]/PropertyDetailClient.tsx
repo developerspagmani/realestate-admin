@@ -4,11 +4,10 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStandalone } from '../../StandaloneProvider';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
-import ThreeDView from '@/components/modules/realestate/shared/ThreeDView';
 import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 
-type ViewType = 'PROPERTY_DETAIL' | 'THREE_D' | 'TOUR';
+type ViewType = 'PROPERTY_DETAIL' | 'TOUR';
 
 export default function PropertyDetailClient({ propertySlug }: { propertySlug: string }) {
     const { website, properties, theme, trackAction, identifyLead, slugOrDomain } = useStandalone();
@@ -34,31 +33,11 @@ export default function PropertyDetailClient({ propertySlug }: { propertySlug: s
         return `${currencySymbol}${Number(pricing.price).toLocaleString('en-US')}`;
     };
 
-    const mapUnitsToSeats = (units: any[]) => {
-        return units.map(u => ({
-            id: u.id,
-            name: u.name || `Unit ${u.unitCode}`,
-            slug: u.unitCode || u.id,
-            type: (u.unitCategory === 1 ? 'desk' : u.unitCategory === 2 ? 'office' : u.unitCategory === 3 ? 'apartment' : 'villa') as any,
-            capacity: u.capacity || (u.realEstateDetails?.bedrooms || 1),
-            hourlyRate: Number(u.unitPricing?.[0]?.price || 0),
-            status: u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : 'maintenance',
-        }));
-    };
+
 
     const renderContent = () => {
         switch (currentView) {
-            case 'THREE_D':
-                return (
-                    <ThreeDView
-                        selectedProperty={property}
-                        theme={theme}
-                        setCurrentView={setCurrentView as any}
-                        setSelectedUnit={setSelectedUnit}
-                        mapUnitsToSeats={mapUnitsToSeats as any}
-                        currencySymbol={currencySymbol}
-                    />
-                );
+
             case 'TOUR':
                 return (
                     <div className="container py-5">

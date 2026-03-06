@@ -112,7 +112,6 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             { href: '/realestate-admin/media-library', label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' },
             { href: '/realestate-admin/plot-map', label: 'Plot Map Manager', icon: 'bi-map-fill', active: activePage === 'plot-map' },
-            { href: '/realestate-admin/property-3d', label: '3D Architect Pro', icon: 'bi-vector-pen', active: activePage === 'property-3d' },
             { href: '/realestate-admin/brochures', label: 'Brochure Intelligent', icon: 'bi-file-earmark-pdf-fill', active: activePage === 'brochures' },
             { href: '/realestate-admin/amenities', label: 'Amenities', icon: 'bi-ui-checks-grid', active: activePage === 'amenities' },
             { href: '/realestate-admin/categories', label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },

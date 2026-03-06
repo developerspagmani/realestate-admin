@@ -7,14 +7,13 @@ import PageBuilder from '@/components/modules/realestate/shared/PageBuilder';
 import ListingView from '@/components/modules/realestate/shared/ListingView';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
 import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailView';
-import ThreeDView from '@/components/modules/realestate/shared/ThreeDView';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
 import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 import { Property, Unit } from '@/types';
 import '@/components/modules/realestate/shared/shared.css';
 
-type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'THREE_D' | 'TOUR';
+type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'TOUR';
 
 interface StandaloneWebsitePageProps {
     slugOrDomain: string;
@@ -110,18 +109,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         return `${symbol}${Number(pricing.price).toLocaleString('en-US')}${label ? `/${label}` : ''}`;
     };
 
-    // Helper to map units for the 3D Viewer
-    const mapUnitsToSeats = (units: Unit[]) => {
-        return units.map(u => ({
-            id: u.id,
-            name: u.name || `Unit ${u.unitCode}`,
-            slug: u.unitCode || u.id,
-            type: (u.unitCategory === 1 ? 'desk' : u.unitCategory === 2 ? 'office' : u.unitCategory === 3 ? 'apartment' : 'villa') as "apartment" | "house" | "studio" | "villa" | "office" | "shop" | "warehouse",
-            capacity: u.capacity || (u.realEstateDetails?.bedrooms || 1),
-            hourlyRate: Number(u.unitPricing?.[0]?.price || 0),
-            status: u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : 'maintenance',
-        }));
-    };
+
 
     const handleFilterResults = useCallback((results: Property[]) => {
         setData(results);
@@ -231,17 +219,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                     />
                 );
 
-            case 'THREE_D':
-                return (
-                    <ThreeDView
-                        selectedProperty={selectedProperty}
-                        theme={theme}
-                        setCurrentView={setCurrentView}
-                        setSelectedUnit={setSelectedUnit}
-                        mapUnitsToSeats={mapUnitsToSeats as any}
-                        currencySymbol={currencySymbol}
-                    />
-                );
+
 
             case 'TOUR':
                 return (

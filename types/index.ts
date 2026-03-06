@@ -564,35 +564,6 @@ export interface Category {
   _count?: { properties: number; children: number };
 }
 
-export interface LayoutItem {
-  unitId: string;
-  unitCode: string;
-  type: string;
-  position: { x: number; y: number; z: number };
-  rotation: { x: number; y: number; z: number };
-  dimensions: { w: number; h: number; d: number };
-  color?: string;
-  metadata?: {
-    polyPoints?: { x: number; z: number }[];
-    preferredPlanId?: string;
-    [key: string]: any;
-  };
-}
-
-export interface VisualEditorConfig {
-  scene: {
-    background?: string | number;
-    ambientLight?: number;
-    directionalLight?: number;
-    floorPlan?: string;
-    [key: string]: any;
-  };
-  camera?: {
-    position: { x: number; y: number; z: number };
-    lookAt: { x: number; y: number; z: number };
-  };
-  [key: string]: any;
-}
 
 export interface CMSPage {
   id: string;

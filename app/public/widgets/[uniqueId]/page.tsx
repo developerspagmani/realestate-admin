@@ -11,13 +11,12 @@ import '@/components/modules/realestate/shared/shared.css';
 import ListingView from '@/components/modules/realestate/shared/ListingView';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
 import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailView';
-import ThreeDView from '@/components/modules/realestate/shared/ThreeDView';
 import PageBuilder from '@/components/modules/realestate/shared/PageBuilder';
 import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 import Loader from '@/components/common/Loader';
 
-type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'THREE_D' | 'TOUR';
+type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'TOUR';
 
 export default function PublicWidgetPage() {
     const params = useParams();
@@ -181,25 +180,7 @@ export default function PublicWidgetPage() {
     const colClass = gridCols === 1 ? 'col-12' : gridCols === 2 ? 'col-md-6' : 'col-md-6 col-lg-4';
 
 
-    const mapUnitsToSeats = (units: any[]): Seats[] => {
-        return units.map(u => ({
-            id: u.id,
-            name: u.name || `Unit ${u.unitCode}`,
-            slug: u.unitCode || u.id,
-            type: (u.unitCategory === 1 ? 'desk' :
-                u.unitCategory === 2 ? 'office' :
-                    u.unitCategory === 3 ? 'apartment' : 'villa') as any,
-            capacity: u.capacity || (u.realEstateDetails?.bedrooms || 1),
-            hourlyRate: Number(u.unitPricing?.[0]?.price || 0),
-            dailyRate: 0,
-            monthlyRate: 0,
-            spaceId: u.propertyId,
-            features: [],
-            status: u.status === 1 ? 'available' : u.status === 2 ? 'occupied' : 'maintenance',
-            createdAt: u.createdAt?.toString() || new Date().toISOString(),
-            updatedAt: u.updatedAt?.toString() || new Date().toISOString()
-        }));
-    };
+
 
     const getFormattedPrice = (unit: any) => {
         if (!unit.unitPricing?.length) return 'Contact for Price';
@@ -302,17 +283,7 @@ export default function PublicWidgetPage() {
                         currencySymbol={currencySymbol}
                     />
                 );
-            case 'THREE_D':
-                return (
-                    <ThreeDView
-                        selectedProperty={selectedProperty}
-                        theme={theme}
-                        setCurrentView={setCurrentView}
-                        setSelectedUnit={setSelectedUnit}
-                        mapUnitsToSeats={mapUnitsToSeats}
-                        currencySymbol={currencySymbol}
-                    />
-                );
+
             case 'TOUR':
                 return (
                     <div className="container">
