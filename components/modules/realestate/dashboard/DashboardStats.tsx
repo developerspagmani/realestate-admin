@@ -14,6 +14,7 @@ interface DashboardStatsProps {
         occupiedUnits: number;
         pendingBookings: number;
         confirmedBookings: number;
+        totalLeads: number;
     };
 }
 
@@ -91,20 +92,40 @@ export default function DashboardStats({ mode, stats, loading }: DashboardStatsP
                 </div>
 
                 {/* Admin Operational Row */}
-                <div className="row g-4">
-                    <div className="col-md-3">
+                <div className="row g-4 mb-4">
+                    <div className="col-md-2-4 col-sm-6">
                         <StatCard label="Total Bookings" value={stats.totalBookings} icon="bi-calendar-check" color="secondary" loading={loading} />
                     </div>
-                    <div className="col-md-3">
+                    <div className="col-md-2-4 col-sm-6">
+                        <StatCard label="Total Leads" value={stats.totalLeads} icon="bi-graph-up-arrow" color="primary" loading={loading} />
+                    </div>
+                    <div className="col-md-2-4 col-sm-6">
                         <StatCard label="Available" value={stats.availableUnits} icon="bi-check-circle" color="success" loading={loading} />
                     </div>
-                    <div className="col-md-3">
+                    <div className="col-md-2-4 col-sm-6">
                         <StatCard label="Occupied" value={stats.occupiedUnits} icon="bi-dash-circle" color="danger" loading={loading} />
                     </div>
-                    <div className="col-md-3">
+                    <div className="col-md-2-4 col-sm-6">
                         <StatCard label="Total Revenue" value={`${currencySymbol}${stats.totalRevenue.toLocaleString()}`} icon="bi-cash-coin" color="dark" bgClass="bg-dark text-white" loading={loading} />
                     </div>
                 </div>
+
+                <style jsx>{`
+                    .col-md-2-4 {
+                        flex: 0 0 auto;
+                        width: 20%;
+                    }
+                    @media (max-width: 992px) {
+                        .col-md-2-4 {
+                            width: 33.333%;
+                        }
+                    }
+                    @media (max-width: 768px) {
+                        .col-md-2-4 {
+                            width: 50%;
+                        }
+                    }
+                `}</style>
 
                 {/* Admin Booking Status Row */}
                 <div className="row g-4 mt-1">

@@ -14,14 +14,14 @@ export interface DashboardStats {
     totalUsers: number;
     totalBookings: number;
     totalProperties: number;
+    totalUnits: number;
     totalRevenue: number;
     pendingBookings: number;
     confirmedBookings: number;
-    availableWorkspaces: number;
-    occupiedWorkspaces: number;
+    availableUnits: number;
+    occupiedUnits: number;
     totalOwners: number;
-    totalSpaces: number;
-    totalWorkspaces: number;
+    totalLeads: number;
 }
 
 export interface User {
@@ -168,4 +168,31 @@ export interface Agent {
         bookings: number;
     };
     settings?: any;
+}
+export interface Lead {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    message?: string;
+    status: number;
+    source?: number;
+    priority?: number;
+    createdAt: string;
+    propertyId?: string;
+    property?: { title: string };
+}
+
+export interface Task {
+    id: string;
+    title: string;
+    description?: string;
+    status: number;
+    priority: number;
+    dueDate?: string;
+    assignedTo?: string;
+    leadId?: string;
+    lead?: { name: string };
+    agent?: { user: { name: string } };
+    createdAt: string;
 }

@@ -27,8 +27,44 @@ export default function PropertiesList({
     selectedProperties,
     onToggleSelect,
     onToggleSelectAll,
-    onGenerateBrochure
+    onGenerateBrochure,
 }: PropertiesListProps) {
+    const calculateSEOScore = (property: Property) => {
+        let score = 0;
+        if (property.name) {
+            score += 5;
+            if (property.name.length >= 20 && property.name.length <= 60) score += 10;
+            else if (property.name.length > 5) score += 5;
+        }
+        if (property.description) {
+            score += 5;
+            if (property.description.length > 300) score += 15;
+            else if (property.description.length > 160) score += 10;
+            else if (property.description.length > 50) score += 5;
+        }
+        if (property.slug) {
+            score += 5;
+            if (/^[a-z0-9-]+$/.test(property.slug)) score += 5;
+        }
+        if (property.mainImageId || property.mainImage) score += 10;
+        if ((property.gallery || []).length >= 3) score += 5;
+        if (property.floorPlanId || property.floorPlan) score += 5;
+        if (property.address && property.city && property.state && property.zipCode) score += 5;
+        if (property.latitude && property.latitude !== 0 && property.longitude !== 0) score += 5;
+        if ((property.amenities || []).length >= 3) score += 5;
+        if (property.price && property.price > 0) score += 5;
+        if ((property.area || property.squareFootage) && property.bedrooms && property.bathrooms) score += 5;
+        if (property.yearBuilt || property.neighborhood) score += 5;
+        if (property.videoUrl) score += 5;
+        return score;
+    };
+
+    const getScoreColor = (score: number) => {
+        if (score < 40) return 'danger';
+        if (score < 75) return 'warning';
+        return 'success';
+    };
+
     return (
         <div className="card border-0 shadow-sm overflow-hidden">
             <div className="card-body p-0">
@@ -48,6 +84,7 @@ export default function PropertiesList({
                                 <th className="py-3 border-0">Property</th>
                                 <th className="py-3 border-0">Type</th>
                                 <th className="py-3 border-0">Location</th>
+                                <th className="py-3 border-0">SEO Score</th>
                                 <th className="py-3 border-0">Status</th>
                                 <th className="py-3 border-0 text-end px-4">Actions</th>
                             </tr>
@@ -55,7 +92,7 @@ export default function PropertiesList({
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-5">
+                                    <td colSpan={7} className="text-center py-5">
                                         <Loader message="Loading properties..." size="md" />
                                     </td>
                                 </tr>
@@ -89,6 +126,23 @@ export default function PropertiesList({
                                         <td className="py-3">
                                             <div className="small fw-medium text-dark">{property.city}, {property.state}</div>
                                             <div className="text-muted extra-small">{property.address}</div>
+                                        </td>
+                                        <td className="py-3">
+                                            {(() => {
+                                                const score = calculateSEOScore(property);
+                                                const color = getScoreColor(score);
+                                                return (
+                                                    <div style={{ width: '100px' }}>
+                                                        <div className="d-flex justify-content-between align-items-center mb-1">
+                                                            <span className={`fw-bold text-${color}`} style={{ fontSize: '12px' }}>{score}%</span>
+                                                            <i className={`bi bi-shield-${score > 70 ? 'check' : 'exclamation'} text-${color}`} style={{ fontSize: '11px' }}></i>
+                                                        </div>
+                                                        <div className="progress" style={{ height: '5px', backgroundColor: '#eee' }}>
+                                                            <div className={`progress-bar bg-${color}`} role="progressbar" style={{ width: `${score}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
                                         </td>
                                         <td className="py-3">
                                             <span className={`badge rounded-4 ${property.status === 'active' || property.status === 1 ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'} px-3 py-2`}>
@@ -173,7 +227,7 @@ export default function PropertiesList({
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-5">
+                                    <td colSpan={7} className="text-center py-5">
                                         <div className="mb-3">
                                             <i className="bi bi-building-x text-muted display-4 opacity-25"></i>
                                         </div>

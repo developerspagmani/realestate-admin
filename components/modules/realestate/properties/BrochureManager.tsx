@@ -4,27 +4,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import BrochureTemplate from './BrochureTemplate';
 import { Property, Amenity, MediaItem } from '@/types';
-
-export interface CustomContact {
-    name: string;
-    phone: string;
-    email: string;
-    website: string;
-}
-
-export interface SelectedImages {
-    cover: string;
-    bg1: string;
-    bg2: string;
-    bg3: string;
-}
-
-export interface BrochureToggles {
-    showPrice: boolean;
-    showAmenities: boolean;
-    showQRCode: boolean;
-    showStats: boolean;
-}
+import { CustomContact, SelectedImages, BrochureToggles } from './templates/types';
 
 interface BrochureManagerProps {
     property: Property | null;
@@ -43,8 +23,9 @@ export default function BrochureManager({ property, properties = [], mode, compa
     const [generating, setGenerating] = useState(false);
     const [progress, setProgress] = useState(0);
     const [fontStyle, setFontStyle] = useState("'Outfit', sans-serif");
-    const [design, setDesign] = useState<'modern' | 'luxury' | 'classic' | 'elegant_landscape' | 'premium_landscape'>('modern');
+    const [design, setDesign] = useState<'modern' | 'luxury' | 'classic' | 'elegant_landscape' | 'premium_landscape' | 'artistic'>('modern');
     const [accentColor, setAccentColor] = useState('#6366f1');
+    const [textColor, setTextColor] = useState('#333333');
     const [aiTagline, setAiTagline] = useState<string>('');
     const [aiDescription, setAiDescription] = useState<string>('');
     const [isAiLoading, setIsAiLoading] = useState(false);
@@ -228,9 +209,9 @@ export default function BrochureManager({ property, properties = [], mode, compa
                                 {[
                                     { id: 'modern', name: 'Modern Flow', desc: 'Clean, light, vertical' },
                                     { id: 'luxury', name: 'Luxury Prestige', desc: 'Dark mode, high contrast' },
+                                    { id: 'artistic', name: 'Artistic Zen', desc: 'Minimalist, center-focused' },
                                     { id: 'elegant_landscape', name: 'Elegant Landscape', desc: 'Wide format, artistic' },
                                     { id: 'premium_landscape', name: 'Premium Royale', desc: 'Dark landscape, immersive' },
-                                    { id: 'classic', name: 'Classic Estate', desc: 'Traditional, warm' }
                                 ].map(item => (
                                     <label key={item.id} className={`btn text-start border-0 shadow-sm rounded-4 bg-white d-flex align-items-center gap-3 p-3 transition-all ${design === item.id ? 'ring-2 ring-primary' : ''}`} style={{ outline: design === item.id ? '2px solid var(--bs-primary)' : 'none' }}>
                                         <input type="radio" name="design" className="form-check-input mt-0" checked={design === item.id} onChange={() => setDesign(item.id as any)} />
@@ -243,19 +224,34 @@ export default function BrochureManager({ property, properties = [], mode, compa
                             </div>
                         </div>
 
-                        <div className="mb-4">
-                            <label className="form-label fw-bold small">Signature Color</label>
-                            <div className="d-flex flex-wrap gap-2 mb-3">
-                                {[
-                                    { name: 'Indigo', color: '#6366f1' },
-                                    { name: 'Gold', color: '#d4af37' },
-                                    { name: 'Rose', color: '#e11d48' },
-                                    { name: 'Emerald', color: '#10b981' },
-                                    { name: 'Slate', color: '#334155' }
-                                ].map(p => (
-                                    <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${accentColor === p.color ? 'border-primary' : 'border-transparent'}`} onClick={() => setAccentColor(p.color)} title={p.name} style={{ width: '28px', height: '28px', background: p.color }} />
-                                ))}
-                                <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: '28px', height: '28px' }} />
+                        <div className="mb-4 d-flex gap-4">
+                            <div className="flex-fill">
+                                <label className="form-label fw-bold small">Signature Color</label>
+                                <div className="d-flex flex-wrap gap-2 mb-3">
+                                    {[
+                                        { name: 'Indigo', color: '#6366f1' },
+                                        { name: 'Gold', color: '#d4af37' },
+                                        { name: 'Rose', color: '#e11d48' },
+                                        { name: 'Emerald', color: '#10b981' },
+                                        { name: 'Slate', color: '#334155' }
+                                    ].map(p => (
+                                        <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${accentColor === p.color ? 'border-primary' : 'border-transparent'}`} onClick={() => setAccentColor(p.color)} title={p.name} style={{ width: '28px', height: '28px', background: p.color }} />
+                                    ))}
+                                    <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: '28px', height: '28px' }} />
+                                </div>
+                            </div>
+                            <div className="flex-fill">
+                                <label className="form-label fw-bold small">Text Color</label>
+                                <div className="d-flex flex-wrap gap-2 mb-3">
+                                    {[
+                                        { name: 'Dark', color: '#333333' },
+                                        { name: 'White', color: '#ffffff' },
+                                        { name: 'Muted', color: '#666666' }
+                                    ].map(p => (
+                                        <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${textColor === p.color ? 'border-primary' : 'border-transparent'}`} onClick={() => setTextColor(p.color)} title={p.name} style={{ width: '28px', height: '28px', background: p.color, border: p.color === '#ffffff' ? '1px solid #ddd !important' : '' }} />
+                                    ))}
+                                    <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={textColor} onChange={(e) => setTextColor(e.target.value)} style={{ width: '28px', height: '28px' }} />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -411,6 +407,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
                                 fontStyle={fontStyle}
                                 design={design}
                                 accentColor={accentColor}
+                                textColor={textColor}
                                 allAmenities={allAmenities}
                                 allMedia={allMedia}
                                 aiTagline={aiTagline}
@@ -435,6 +432,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
                     fontStyle={fontStyle}
                     design={design}
                     accentColor={accentColor}
+                    textColor={textColor}
                     allAmenities={allAmenities}
                     allMedia={allMedia}
                     aiTagline={aiTagline}

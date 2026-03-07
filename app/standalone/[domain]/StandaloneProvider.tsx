@@ -155,7 +155,53 @@ export default function StandaloneProvider({
         if (website.configuration?.seo?.title) {
             document.title = website.configuration.seo.title;
         }
+
+        // D. Custom Header Snippet Injection
+        const headerSnippet = website.configuration?.seo?.headerSnippet;
+        if (headerSnippet) {
+            try {
+                // Remove existing if any
+                const oldContainer = document.getElementById('website-custom-header');
+                if (oldContainer) oldContainer.remove();
+
+                const container = document.createElement('div');
+                container.id = 'website-custom-header';
+                container.style.display = 'none';
+
+                // We use contextual fragments to ensure script tags execute
+                const range = document.createRange();
+                range.selectNode(document.head);
+                const fragment = range.createContextualFragment(headerSnippet);
+                container.appendChild(fragment);
+                document.head.appendChild(container);
+            } catch (err) {
+                console.error('Failed to inject header snippet:', err);
+            }
+        }
     }, [website]);
+
+    // Footer Snippet Injection (Client-side effect for scripts)
+    useEffect(() => {
+        const footerSnippet = website.configuration?.seo?.footerSnippet;
+        if (footerSnippet) {
+            try {
+                const oldContainer = document.getElementById('website-custom-footer');
+                if (oldContainer) oldContainer.remove();
+
+                const container = document.createElement('div');
+                container.id = 'website-custom-footer';
+                container.style.display = 'none';
+
+                const range = document.createRange();
+                range.selectNode(document.body);
+                const fragment = range.createContextualFragment(footerSnippet);
+                container.appendChild(fragment);
+                document.body.appendChild(container);
+            } catch (err) {
+                console.error('Failed to inject footer snippet:', err);
+            }
+        }
+    }, [website.configuration?.seo?.footerSnippet]);
 
     const identifyLead = (id: string, email?: string) => {
         const identity = { id, email };

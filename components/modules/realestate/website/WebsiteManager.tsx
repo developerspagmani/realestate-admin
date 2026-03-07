@@ -33,7 +33,9 @@ const INITIAL_FORM_DATA = {
             title: '',
             description: '',
             keywords: '',
-            ogImage: ''
+            ogImage: '',
+            headerSnippet: '',
+            footerSnippet: ''
         },
         settings: {
             propertyId: '',

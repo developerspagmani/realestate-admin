@@ -15,6 +15,31 @@ export default function WebsiteCard({ website, onEdit, onDelete, onGenerateQR }:
     const publicUrl = `${baseUrl}/go/${website.slug}`;
     const customDomain = website.customDomain;
 
+    const calculateSEOScore = () => {
+        let score = 0;
+        const config = website.configuration || {};
+        const seo = config.seo || {};
+        const builder = config.builder || {};
+
+        if (seo.title) score += 10;
+        if (seo.title?.length >= 30 && seo.title?.length <= 60) score += 10;
+        if (seo.description) score += 10;
+        if (seo.description?.length >= 120 && seo.description?.length <= 160) score += 15;
+        if (seo.keywords) score += 5;
+        if (builder.logoUrl) score += 5;
+        if (builder.faviconUrl) score += 5;
+        if (builder.heroBgUrl) score += 5;
+        if (builder.heroTitle) score += 10;
+        if (builder.heroSubtitle) score += 5;
+        if ((builder.modules || []).length >= 3) score += 10;
+        if (website.customDomain) score += 10;
+
+        return Math.min(score, 100);
+    };
+
+    const seoScore = calculateSEOScore();
+    const scoreColor = seoScore < 40 ? 'danger' : seoScore < 75 ? 'warning' : 'success';
+
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         alert('Copied to clipboard!');
@@ -76,8 +101,8 @@ export default function WebsiteCard({ website, onEdit, onDelete, onGenerateQR }:
                             <div className="extra-small text-muted">Scope</div>
                         </div>
                         <div className="flex-grow-1 p-2 bg-light rounded-3 text-center">
-                            <div className="fw-bold small">{website.configuration?.theme?.fontFamily?.split(',')[0]}</div>
-                            <div className="extra-small text-muted">Theme</div>
+                            <div className={`fw-bold small text-${scoreColor}`}>{seoScore}%</div>
+                            <div className="extra-small text-muted text-uppercase fw-bold" style={{ fontSize: '8px' }}>SEO Score</div>
                         </div>
                     </div>
                 </div>

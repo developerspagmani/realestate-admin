@@ -8,6 +8,7 @@ import MapView from '@/components/common/MapView';
 import MediaSelector from '@/components/shared/MediaSelector';
 import CountrySelect from '@/components/common/CountrySelect';
 import SearchableSelect from '@/components/common/SearchableSelect';
+import RichTextEditor from '@/components/common/RichTextEditor';
 import Image from 'next/image';
 
 interface PropertyFormProps {
@@ -66,6 +67,7 @@ export default function PropertyForm({
     });
 
     const [showMediaModal, setShowMediaModal] = useState(false);
+    const [showAllSEOImprovements, setShowAllSEOImprovements] = useState(false);
     const [mediaModalType, setMediaModalType] = useState<'main' | 'gallery' | 'floorPlan' | 'brochure'>('main');
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -105,6 +107,80 @@ export default function PropertyForm({
             });
         }
     }, [initialData]);
+
+    const calculateSEOScore = () => {
+        let score = 0;
+        const plainDescription = (formData.description || '').replace(/<[^>]*>/g, '');
+
+        // Title (15 pts)
+        if (formData.name) {
+            score += 5;
+            if (formData.name.length >= 20 && formData.name.length <= 60) score += 10;
+            else if (formData.name.length > 5) score += 5;
+        }
+
+        // Description (20 pts)
+        if (plainDescription) {
+            score += 5;
+            if (plainDescription.length > 300) score += 15;
+            else if (plainDescription.length > 160) score += 10;
+            else if (plainDescription.length > 50) score += 5;
+        }
+
+        // Slug (10 pts)
+        if (formData.slug) {
+            score += 5;
+            if (/^[a-z0-9-]+$/.test(formData.slug)) score += 5;
+        }
+
+        // Media (20 pts)
+        if (formData.mainImageId) score += 10;
+        if ((formData.gallery || []).length >= 3) score += 5;
+        if (formData.floorPlanId) score += 5;
+
+        // Location & Map (15 pts)
+        if (formData.address && formData.city && formData.state && formData.zipCode) score += 5;
+        if (formData.latitude !== 0 && formData.longitude !== 0) score += 5;
+        if ((formData.amenities || []).length >= 3) score += 5;
+
+        // Rich Data (20 pts)
+        if (formData.price && formData.price > 0) score += 5;
+        if (formData.area && formData.bedrooms && formData.bathrooms) score += 5;
+        if (formData.yearBuilt || formData.neighborhood) score += 5;
+        if (formData.videoUrl) score += 5;
+
+        return score;
+    };
+
+    const seoScore = calculateSEOScore();
+    const getScoreColor = (score: number) => {
+        if (score < 40) return 'danger';
+        if (score < 75) return 'warning';
+        return 'success';
+    };
+
+    const getScoreLabel = (score: number) => {
+        if (score < 40) return 'Poor SEO';
+        if (score < 75) return 'Fair SEO';
+        return 'Optimized SEO';
+    };
+
+    const getSEOImprovements = () => {
+        const tips = [];
+        const plainDescription = (formData.description || '').replace(/<[^>]*>/g, '');
+        if (!formData.name || (formData.name || '').length < 20) tips.push({ label: 'Short Title', tip: 'Target 20-60 characters for optimal Google indexing.', icon: 'bi-type-h1', color: 'danger' });
+        if (!plainDescription || plainDescription.length < 300) tips.push({ label: 'Thin Content', tip: 'Detailed descriptions (300+ chars) vastly improve organic ranking.', icon: 'bi-text-paragraph', color: 'warning' });
+        if (!formData.mainImageId) tips.push({ label: 'No Main Image', tip: 'Properties with high-quality main images get 80% more engagement.', icon: 'bi-image', color: 'danger' });
+        if ((formData.gallery || []).length < 5) tips.push({ label: 'Small Gallery', tip: 'Add at least 5 images to keep users on page longer.', icon: 'bi-images', color: 'info' });
+        if (!formData.floorPlanId) tips.push({ label: 'Missing Floor Plan', tip: 'Floor plans are the #2 most requested visual asset by serious buyers.', icon: 'bi-layers', color: 'primary' });
+        if (!formData.videoUrl) tips.push({ label: 'No Video Tour', tip: 'Video walkthroughs increase dwell time, a massive SEO ranking signal.', icon: 'bi-play-circle', color: 'info' });
+        if (!formData.latitude || formData.latitude === 0) tips.push({ label: 'GPS Unset', tip: 'Pin the location precisely to appear in "near me" map searches.', icon: 'bi-geo-alt', color: 'warning' });
+        if ((formData.amenities || []).length < 5) tips.push({ label: 'Low Amenities', tip: 'Tagging 5+ amenities helps in filtered discovery searches.', icon: 'bi-stars', color: 'secondary' });
+        return tips;
+    };
+
+    const seoImprovements = getSEOImprovements();
+
 
     const validateForm = () => {
         const errors: string[] = [];
@@ -171,6 +247,41 @@ export default function PropertyForm({
     // ── SHARED FORM BODY ───────────────────────────────────────────────────────
     const formBody = (
         <form onSubmit={handleSubmit}>
+            {/* SEO Scoring Widget */}
+            <div className={`card border-0 shadow-sm rounded-4 mb-4 border-start border-4 border-${getScoreColor(seoScore)}`}>
+                <div className="card-body p-3">
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                        <div className="d-flex align-items-center gap-2">
+                            <div className={`bg-${getScoreColor(seoScore)} bg-opacity-10 p-2 rounded-3`}>
+                                <i className={`bi bi-graph-up-arrow text-${getScoreColor(seoScore)}`}></i>
+                            </div>
+                            <div>
+                                <h6 className="mb-0 fw-bold">SEO Optimization Score</h6>
+                                <span className={`extra-small fw-bold text-${getScoreColor(seoScore)} text-uppercase`}>{getScoreLabel(seoScore)}</span>
+                            </div>
+                        </div>
+                        <div className="text-end">
+                            <h4 className={`mb-0 fw-bold text-${getScoreColor(seoScore)}`}>{seoScore}<small className="text-muted fs-6">/100</small></h4>
+                        </div>
+                    </div>
+                    <div className="progress" style={{ height: 8, backgroundColor: '#f0f0f0' }}>
+                        <div
+                            className={`progress-bar bg-${getScoreColor(seoScore)} progress-bar-striped progress-bar-animated`}
+                            role="progressbar"
+                            style={{ width: `${seoScore}%` }}
+                            aria-valuenow={seoScore}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                        ></div>
+                    </div>
+                    <div className="d-flex justify-content-between mt-2">
+                        <span className="extra-small text-muted">Optimize title, description and media for better reach.</span>
+                        <span className="extra-small fw-bold text-muted">{seoScore}% Complete</span>
+                    </div>
+                </div>
+            </div>
+
+
 
             {/* Validation Banner */}
             {validationErrors.length > 0 && (
@@ -205,7 +316,16 @@ export default function PropertyForm({
                                 type="text"
                                 className="form-control bg-light border-0"
                                 value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                onChange={e => {
+                                    const newName = e.target.value;
+                                    const newSlug = newName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
+                                    const currentSlugFromName = (formData.name || '').toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
+                                    setFormData({
+                                        ...formData,
+                                        name: newName,
+                                        slug: (!formData.slug || formData.slug === currentSlugFromName) ? newSlug : formData.slug
+                                    });
+                                }}
                                 placeholder="e.g. Sunset Heights Business Center"
                                 required
                             />
@@ -224,13 +344,11 @@ export default function PropertyForm({
                             <label className="form-label fw-semibold small text-uppercase text-muted">
                                 Description <span className="text-danger">*</span>
                             </label>
-                            <textarea
-                                className="form-control bg-light border-0"
-                                value={formData.description}
-                                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                rows={4}
-                                placeholder="Provide a detailed description of the property..."
-                                required
+                            <RichTextEditor
+                                value={formData.description || ''}
+                                onChange={val => setFormData({ ...formData, description: val })}
+                                placeholder="Describe the property's unique features, location highlights, and value proposition..."
+                                className="border-0 shadow-sm"
                             />
                         </div>
                         <div className="col-md-4">
@@ -618,6 +736,99 @@ export default function PropertyForm({
                 </div>
             </div>
 
+            {/* SEO Improvements Section */}
+            <div className="card border-0 shadow-sm rounded-4 mb-4">
+                <div className="card-header bg-transparent border-bottom px-4 py-3">
+                    <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                        <i className="bi bi-lightning-charge-fill text-warning"></i>
+                        Actionable SEO Improvements
+                        {seoImprovements.length > 0 && <span className="badge bg-warning-subtle text-dark border border-warning-subtle fw-normal ms-2">{seoImprovements.length} items</span>}
+                    </h6>
+                </div>
+                <div className="card-body p-4">
+                    {seoImprovements.length === 0 ? (
+                        <div className="text-center py-4 bg-success-subtle rounded-4 border border-success-subtle">
+                            <i className="bi bi-check-circle-fill text-success fs-2 mb-2"></i>
+                            <h6 className="mb-1 fw-bold">Maximum SEO Strength Reached!</h6>
+                            <p className="small text-muted mb-0">Your property is perfectly optimized for search engines and portals.</p>
+                        </div>
+                    ) : (
+                        <div className="row g-3">
+                            {(showAllSEOImprovements ? seoImprovements : seoImprovements.slice(0, 4)).map((item, idx) => (
+                                <div key={idx} className="col-md-6">
+                                    <div className={`d-flex align-items-center gap-3 p-3 rounded-4 border border-${item.color}-subtle bg-${item.color}-subtle bg-opacity-10 h-100 transition-all hover-shadow-sm`}>
+                                        <div className={`bg-${item.color} text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0`} style={{ width: 40, height: 40 }}>
+                                            <i className={`bi ${item.icon}`}></i>
+                                        </div>
+                                        <div>
+                                            <div className="fw-bold small">{item.label}</div>
+                                            <div className="text-muted" style={{ fontSize: '11px', lineHeight: '1.2' }}>{item.tip}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {seoImprovements.length > 4 && (
+                                <div className="col-12 text-center mt-3">
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-link text-muted fw-semibold text-decoration-none bg-light rounded-pill px-4 py-2 border-0 transition-all"
+                                        onClick={() => setShowAllSEOImprovements(!showAllSEOImprovements)}
+                                    >
+                                        {showAllSEOImprovements ? (
+                                            <>Show Fewer Improvements <i className="bi bi-chevron-up ms-1 small"></i></>
+                                        ) : (
+                                            <>+ {seoImprovements.length - 4} more suggestions pending <i className="bi bi-chevron-down ms-1 small"></i></>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Google Search Preview Card */}
+            <div className="card shadow-sm rounded-4 mb-4 overflow-hidden" style={{ border: '1px solid #dfe1e5', borderLeft: '4px solid #4285f4' }}>
+                <div className="card-header bg-white border-0 py-2 px-3 d-flex align-items-center gap-2">
+                    <i className="bi bi-google text-primary small"></i>
+                    <span className="small fw-bold text-muted text-uppercase" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>Google Search Preview</span>
+                </div>
+                <div className="card-body p-4 bg-white pt-0">
+                    <div className="d-flex align-items-center gap-2 mb-1">
+                        <div className="bg-light rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }}>
+                            <i className="bi bi-globe" style={{ fontSize: '14px', color: '#202124' }}></i>
+                        </div>
+                        <div className="d-flex flex-column" style={{ overflow: 'hidden' }}>
+                            <span style={{ fontSize: '14px', color: '#202124', lineHeight: '1.2' }}>yourportal.com</span>
+                            <span className="text-muted text-truncate" style={{ fontSize: '12px', lineHeight: '1.2' }}>https://yourportal.com › p › {formData.slug || 'property-slug'}</span>
+                        </div>
+                    </div>
+
+                    <h5 className="mb-1" style={{ color: '#1a0dab', cursor: 'pointer', fontFamily: 'arial,sans-serif', fontSize: '20px', fontWeight: '400', lineHeight: '1.3' }}>
+                        {formData.name || 'Your Property Title'} | Real Estate Listing
+                    </h5>
+
+                    <div style={{ color: '#4d5156', fontFamily: 'arial,sans-serif', fontSize: '14px', lineHeight: '1.58' }}>
+                        {formData.description ? (
+                            (() => {
+                                const plain = formData.description.replace(/<[^>]*>/g, '');
+                                return plain.length > 160 ? plain.substring(0, 157) + '...' : plain;
+                            })()
+                        ) : (
+                            'Provide a high-quality description for this property. This will be shown on search results pages to entice potential visitors.'
+                        )}
+                    </div>
+
+                    {(formData.price || formData.city || formData.bedrooms) && (
+                        <div className="mt-2 d-flex gap-3 small text-muted border-top border-light pt-2" style={{ fontSize: '13px' }}>
+                            {formData.price !== undefined && formData.price > 0 && <span><strong>Price:</strong> {currencySymbol}{formData.price.toLocaleString()}</span>}
+                            {formData.city && <span><strong>Location:</strong> {formData.city}</span>}
+                            {formData.bedrooms !== undefined && formData.bedrooms > 0 && <span><strong>Beds:</strong> {formData.bedrooms}</span>}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* ── FOOTER ACTIONS ───────────────────────────────────────── */}
             <div className="d-flex justify-content-between align-items-center pt-2 pb-4">
                 <button
@@ -698,6 +909,7 @@ export default function PropertyForm({
                                 </p>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -721,6 +933,15 @@ export default function PropertyForm({
                             <h5 className="modal-title fw-bold text-white">
                                 {initialData ? 'Edit Property Details' : 'Register New Property'}
                             </h5>
+                            <div className="ms-auto me-3 d-flex align-items-center gap-3">
+                                <div className="text-end d-none d-sm-block">
+                                    <div className="extra-small text-white opacity-75 fw-bold text-uppercase">SEO Strength</div>
+                                    <div className="fw-bold text-white small">{seoScore}/100</div>
+                                </div>
+                                <div className="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm" style={{ width: 40, height: 40, fontSize: 13, border: '2px solid rgba(255,255,255,0.4)' }}>
+                                    {seoScore}
+                                </div>
+                            </div>
                             <button type="button" className="btn-close btn-close-white" onClick={onCancel}></button>
                         </div>
                         <div className="modal-body p-4">
@@ -730,6 +951,25 @@ export default function PropertyForm({
                 </div>
             </div>
             {mediaSelector}
+            <style jsx>{`
+                .extra-small { font-size: 10px; }
+                .backdrop-blur { backdrop-filter: blur(10px); }
+                .pointer-on-hover:hover { background-color: #eee !important; cursor: pointer; }
+                .bg-primary-soft { background-color: rgba(13, 110, 253, 0.08); }
+                .bg-danger-soft { background-color: rgba(220, 53, 69, 0.08); }
+                .bg-warning-soft { background-color: rgba(255, 193, 7, 0.08); }
+                .bg-success-soft { background-color: rgba(25, 135, 84, 0.08); }
+                
+                @keyframes shine {
+                    from { background-position: 200% center; }
+                    to { background-position: -200% center; }
+                }
+                .progress-bar-animated {
+                    background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+                    background-size: 1rem 1rem;
+                    animation: progress-bar-stripes 1s linear infinite;
+                }
+            `}</style>
         </>
     );
 }

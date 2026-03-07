@@ -4,11 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { dashboardService, getAuthToken } from '@/app/services/api';
-import { Booking } from '@/app/services/types';
+import { Booking, Lead, Property, Task } from '@/app/services/types';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import DashboardStats from '@/components/modules/realestate/dashboard/DashboardStats';
 import DashboardRecentBookings from '@/components/modules/realestate/dashboard/DashboardRecentBookings';
+import DashboardRecentLeads from '@/components/modules/realestate/dashboard/DashboardRecentLeads';
+import DashboardRecentProperties from '@/components/modules/realestate/dashboard/DashboardRecentProperties';
+import DashboardUpcomingTasks from '@/components/modules/realestate/dashboard/DashboardUpcomingTasks';
 import DashboardTopUnits, { DashboardUnit } from '@/components/modules/realestate/dashboard/DashboardTopUnits';
 import DashboardCharts, { ChartData } from '@/components/modules/realestate/dashboard/DashboardCharts';
 import Toast from '@/components/common/Toast';
@@ -39,9 +42,13 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
         occupiedUnits: 0,
         pendingBookings: 0,
         confirmedBookings: 0,
+        totalLeads: 0,
     });
 
     const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
+    const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
+    const [recentProperties, setRecentProperties] = useState<Property[]>([]);
+    const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
     const [topUnits, setTopUnits] = useState<DashboardUnit[]>([]);
     const [historicalData, setHistoricalData] = useState<ChartData[]>([]);
     const [periodLabel, setPeriodLabel] = useState('Last 6 Months');
@@ -92,9 +99,13 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                     occupiedUnits: overview.occupiedUnits || 0,
                     pendingBookings: overview.pendingBookings || 0,
                     confirmedBookings: overview.activeBookings || 0,
+                    totalLeads: overview.totalLeads || 0,
                 });
 
                 setRecentBookings(response.data.recentBookings || []);
+                setRecentLeads(response.data.recentLeads || []);
+                setRecentProperties(response.data.recentProperties || []);
+                setUpcomingTasks(response.data.upcomingTasks || []);
                 setTopUnits(response.data.topWorkspaces || []);
                 setHistoricalData(response.data.historicalData || []);
                 setPeriodLabel(response.data.periodLabel || 'Report');
@@ -168,6 +179,25 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                     {/* Top Units */}
                     <div className="col-lg-4">
                         <DashboardTopUnits units={topUnits} loading={loading} totalBookings={stats.totalBookings} />
+                    </div>
+                </div>
+
+                <div className="row g-4 mt-2">
+                    {/* Recent Leads */}
+                    <div className="col-lg-8">
+                        <DashboardRecentLeads leads={recentLeads} loading={loading} />
+                    </div>
+
+                    {/* Upcoming Tasks */}
+                    <div className="col-lg-4">
+                        <DashboardUpcomingTasks tasks={upcomingTasks} loading={loading} />
+                    </div>
+                </div>
+
+                <div className="row g-4 mt-2 mb-5">
+                    {/* Recent Properties */}
+                    <div className="col-12">
+                        <DashboardRecentProperties properties={recentProperties} loading={loading} />
                     </div>
                 </div>
             </div>
