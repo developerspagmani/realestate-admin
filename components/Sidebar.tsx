@@ -178,6 +178,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Operations',
           items: [
             { href: '/realestate-owner-admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', active: activePage === 'dashboard' },
+            { href: '/realestate-owner-admin/intelligent-voice', label: 'Intelligent Voice', icon: 'bi-mic-fill', active: activePage === 'intelligent-voice' },
             { href: '/realestate-owner-admin/bookings', label: 'Bookings', icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
             { href: '/realestate-owner-admin/leads', label: 'Leads', icon: 'bi-funnel-fill', active: activePage === 'leads' },
             { href: '/realestate-owner-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' },

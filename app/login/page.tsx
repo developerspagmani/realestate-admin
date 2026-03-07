@@ -53,7 +53,8 @@ function LoginContent() {
     setLocalLoading(true);
 
     try {
-      const loginPayload = formData.username.includes('@')
+      const isEmail = formData.username.includes('@');
+      const loginPayload = isEmail
         ? { email: formData.username, password: formData.password }
         : { phone: formData.username, password: formData.password };
 
@@ -85,6 +86,18 @@ function LoginContent() {
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (!SpeechRecognition) {
       setError('Voice recognition not supported. Use Chrome or Edge.');
+      return;
+    }
+
+    try {
+      // PRE-FLIGHT CHECK: Request microphone permission synchronously on user click.
+      // Doing this here ensures the browser prompt appears directly from the click event,
+      // which bypasses strict browser policies that block async mic requests.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+    } catch (e) {
+      console.error('Microphone access denied:', e);
+      setError('Microphone permission blocked. Please check your browser URL bar and allow microphone access.');
       return;
     }
 

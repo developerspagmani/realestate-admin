@@ -20,7 +20,7 @@ export default function Home() {
   const [commandFeedback, setCommandFeedback] = useState('How can I help you?');
   const [speechIntensity, setSpeechIntensity] = useState([1, 1, 1, 1, 1]);
 
-  const runVoiceCommand = () => {
+  const runVoiceCommand = async () => {
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
 
     if (!SpeechRecognition) {
@@ -40,6 +40,31 @@ export default function Home() {
     setCommandFeedback('Initializing Neural Hub...');
 
     try {
+      // PROBE: Force microphone permission prompt via standard mediaDevices API
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Release it immediately
+      stream.getTracks().forEach(track => track.stop());
+    } catch (e) {
+      console.error('Microphone probe failed:', e);
+      setCommandFeedback('PERMISSION BLOCKED');
+      return;
+    }
+
+    try {
+      const speak = (text: string) => {
+        return new Promise((resolve) => {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.rate = 1.0;
+          utterance.pitch = 0.8;
+          utterance.onend = () => resolve(true);
+          window.speechSynthesis.speak(utterance);
+        });
+      };
+
+      setCommandFeedback('Initializing Neural Hub...');
+      await speak("Welcome to Virpanix. How can I help you?");
+
       const recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
       recognition.continuous = false;
@@ -104,7 +129,11 @@ export default function Home() {
         clearInterval(interval);
       };
 
-      recognition.start();
+      // Slight buffer to let hardware transition from output back to input
+      setTimeout(() => {
+        recognition.start();
+      }, 400);
+
     } catch (e) {
       console.error('Failed to start recognition:', e);
       setIsListening(false);
