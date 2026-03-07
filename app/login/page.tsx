@@ -18,6 +18,10 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // --- Voice Logic Hooks (Moved up to avoid conditional hook call) ---
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState('');
+
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'session_expired') {
@@ -77,9 +81,6 @@ function LoginContent() {
   };
 
   // --- Voice Logic ---
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState('');
-
   const runVoiceAuth = async () => {
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (!SpeechRecognition) {
@@ -89,16 +90,13 @@ function LoginContent() {
 
     setIsVoiceActive(true);
     setError('');
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
 
     const speak = (text: string) => {
       return new Promise((resolve) => {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1.0;
-        utterance.pitch = 0.8; // Deep premium tech voice
+        utterance.pitch = 0.8;
         utterance.onend = () => resolve(true);
         window.speechSynthesis.speak(utterance);
       });
@@ -106,25 +104,60 @@ function LoginContent() {
 
     const listen = (statusText: string) => {
       return new Promise<string>((resolve, reject) => {
+        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+        if (!SpeechRecognition) {
+          reject({ error: 'not-supported' });
+          return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
         setVoiceStatus(statusText);
-        recognition.onresult = (event: any) => resolve(event.results[0][0].transcript);
-        recognition.onerror = (e: any) => reject(e);
-        recognition.start();
+
+        recognition.onresult = (event: any) => {
+          const result = event.results[0][0].transcript;
+          console.log("Captured speech:", result);
+          resolve(result);
+        };
+
+        recognition.onerror = (e: any) => {
+          console.error("Speech Recognition Individual Error:", e.error);
+          reject(e);
+        };
+
+        recognition.onend = () => {
+          console.log("Speech recognition session ended.");
+        };
+
+        try {
+          // Extra buffer to let hardware transition from output (synthesis) to input (recognition)
+          setTimeout(() => {
+            recognition.start();
+          }, 400);
+        } catch (e) {
+          reject(e);
+        }
       });
     };
 
     try {
-      await speak("Welcome to Virpanix. State your username or email.");
+      await speak("Welcome to Virpanix. State your username.");
       const rawUser = await listen("Listening for Username...");
       const username = rawUser.toLowerCase().replace(/\s/g, '');
       setFormData(prev => ({ ...prev, username }));
 
-      await speak(`Processing ${username}. Now state your password.`);
+      // Short delay before next step
+      await new Promise(r => setTimeout(r, 600));
+
+      await speak(`Username set to ${username}. Now state your password.`);
       const rawPass = await listen("Listening for Password...");
       const password = rawPass.replace(/\s/g, '');
       setFormData(prev => ({ ...prev, password }));
 
-      await speak("Credentials captured. Initializing secure neural login.");
+      await speak("Authenticating credentials.");
       setLocalLoading(true);
 
       const loginPayload = username.includes('@')
@@ -138,9 +171,17 @@ function LoginContent() {
         setIsVoiceActive(false);
         setLocalLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-      setError('Voice input failed. Using manual mode.');
+    } catch (err: any) {
+      const errorCode = err?.error || 'unknown_failure';
+      console.error("Voice Flow Failure Code:", errorCode);
+      console.error("Voice Flow Full Error:", err);
+
+      let friendlyError = 'Voice authentication interrupted. Please log in manually.';
+      if (errorCode === 'no-speech') friendlyError = 'System did not hear any voice. Please try again.';
+      if (errorCode === 'not-allowed') friendlyError = 'Microphone permission blocked. Please enable it in browser settings.';
+      if (errorCode === 'network') friendlyError = 'Voice network error. Check your internet.';
+
+      setError(friendlyError);
       setIsVoiceActive(false);
       setLocalLoading(false);
     }

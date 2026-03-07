@@ -30,6 +30,13 @@ export default function Home() {
 
     // Set state first to show modal immediately
     setIsListening(true);
+
+    // Safety check for Secure Context (Required for Mic)
+    if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+      setCommandFeedback('INSECURE ORIGIN (HTTPS REQUIRED)');
+      return;
+    }
+
     setCommandFeedback('Initializing Neural Hub...');
 
     try {
@@ -354,14 +361,19 @@ export default function Home() {
             </div>
             <h3 className="fw-900 text-white mb-3 uppercase tracking-tighter fs-2">{commandFeedback}</h3>
             {commandFeedback === 'PERMISSION BLOCKED' ? (
-              <div className="bg-red/10 p-4 rounded-4 mb-4 border border-red/20">
+              <div className="bg-red/10 p-4 rounded-4 mb-4 border border-red/20 shadow-sm animate-fade-in">
                 <p className="text-red fw-700 small mb-2">CRITICAL: Browser blocked microphone access.</p>
                 <ul className="text-start extra-small opacity-80 list-unstyled d-flex flex-column gap-2 mb-0">
                   <li>1. Click the <b>Lock Icon</b> or <b>Settings</b> in the URL bar.</li>
                   <li>2. Switch <b>Microphone</b> toggle to <b>&quot;Allow&quot;</b>.</li>
                   <li>3. <b>Refresh</b> the page (F5) and try again.</li>
-                  <li>4. Check <b>Windows Settings &gt; Privacy &gt; Mic</b>.</li>
+                  <li>4. Ensure your microphone isn't being used by another app (Meet / Zoom).</li>
                 </ul>
+              </div>
+            ) : commandFeedback === 'INSECURE ORIGIN (HTTPS REQUIRED)' ? (
+              <div className="bg-red/10 p-4 rounded-4 mb-4 border border-red/20">
+                <p className="text-red fw-700 small mb-2">SECURITY PROTOCOL VIOLATION</p>
+                <p className="extra-small opacity-80 text-start m-0">The Speech API requires a <b>Secure Context</b>. You must either use <b>http://localhost:3000</b> (literal) or access via an <b>https://</b> URL for the neural layer to engage.</p>
               </div>
             ) : (
               <p className="opacity-40 small mb-4">Neural Voice Layer Active. Try saying &quot;Open login page&quot;.</p>
