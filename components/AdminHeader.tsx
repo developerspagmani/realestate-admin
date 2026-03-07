@@ -524,9 +524,9 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                                     </div>
 
                                     <div className="d-flex flex-column gap-1">
-                                        <Link href="/docs" className="dropdown-item d-flex align-items-center gap-3 py-2 px-3 border-0">
+                                        <Link href={isAdmin ? '/realestate-admin/help' : '/realestate-owner-admin/help'} className="dropdown-item d-flex align-items-center gap-3 py-2 px-3 border-0">
                                             <div className="rounded-circle bg-primary bg-opacity-10 p-2 d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
-                                                <i className="bi bi-book text-white small"></i>
+                                                <i className="bi bi-book text-muted small"></i>
                                             </div>
                                             <div>
                                                 <div className="fw-bold fs-14">Documentation</div>

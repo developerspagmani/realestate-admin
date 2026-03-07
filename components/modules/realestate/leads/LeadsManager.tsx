@@ -102,6 +102,19 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [leadToMarkLost, setLeadToMarkLost] = useState<Lead | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [showHowItWorks, setShowHowItWorks] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('leads_hideGuide');
+        if (saved === 'true') {
+            setShowHowItWorks(false);
+        }
+    }, []);
+
+    const toggleGuide = (show: boolean) => {
+        setShowHowItWorks(show);
+        localStorage.setItem('leads_hideGuide', (!show).toString());
+    };
 
     // Import states
     const [showImportModal, setShowImportModal] = useState(false);
@@ -726,9 +739,16 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         <MainLayout activePage="leads">
             <div className="container-fluid py-4">
                 <div className="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center gap-3 mb-4">
-                    <div>
-                        <h1 className="h3 fw-bold mb-1">CRM & Leads</h1>
-                        <p className="text-muted small mb-0">Track and manage your potential customers</p>
+                    <div className="d-flex align-items-center gap-3">
+                        <div>
+                            <h1 className="h3 fw-bold mb-1">CRM & Leads</h1>
+                            <p className="text-muted small mb-0">Track and manage your potential customers</p>
+                        </div>
+                        {!showHowItWorks && (
+                            <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
+                                <i className="bi bi-info-circle me-1"></i> How it Works
+                            </button>
+                        )}
                     </div>
                     <div className="d-flex flex-column flex-md-row gap-3 w-100 mt-3 mt-xl-0 justify-content-xl-end">
                         <div className="btn-group p-1 bg-light rounded-3 shadow-sm flex-shrink-0" style={{ border: '1px solid #eee' }}>
@@ -775,6 +795,76 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                         </div>
                     </div>
                 </div>
+
+                {showHowItWorks && (
+                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden position-relative animate-fade-in">
+                        <button
+                            className="btn position-absolute top-0 end-0 m-3 text-white opacity-50 hover-opacity-100 p-2"
+                            style={{ zIndex: 1 }}
+                            onClick={() => toggleGuide(false)}
+                            title="Hide this section"
+                        >
+                            <i className="bi bi-x-lg"></i>
+                        </button>
+                        <div className="card-body p-4 p-lg-5">
+                            <div className="row align-items-center">
+                                <div className="col-lg-8">
+                                    <h3 className="fw-bold mb-3 text-white">Mastering Lead Management</h3>
+                                    <p className="opacity-75 mb-4">Your CRM is the heart of your sales engine. Here is how to maximize your conversion rate:</p>
+                                    <div className="row g-4">
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-magnet text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">1. Multi-Channel Capture</div>
+                                                    <div className="small opacity-75">Leads from your website, social ads, and chatbots land here instantly.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-graph-up text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">2. Smart Scoring</div>
+                                                    <div className="small opacity-75">AI analyzes lead behavior and assigns a score so you can focus on hot buyers.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-kanban text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">3. Pipeline Tracking</div>
+                                                    <div className="small opacity-75">Use the Kanban view to drag leads through your sales stages visually.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-person-check text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">4. Lifecycle Insights</div>
+                                                    <div className="small opacity-75">Track every touchpoint from initial inquiry to final handshake.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-lg-4 d-none d-lg-block text-center">
+                                    <i className="bi bi-people display-1 opacity-25"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="card border-0 shadow-sm mb-4 rounded-4">
                     <div className="card-body p-3">

@@ -31,6 +31,19 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
         message: '',
         type: 'success'
     });
+    const [showHowItWorks, setShowHowItWorks] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('marketing_hideGuide');
+        if (saved === 'true') {
+            setShowHowItWorks(false);
+        }
+    }, []);
+
+    const toggleGuide = (show: boolean) => {
+        setShowHowItWorks(show);
+        localStorage.setItem('marketing_hideGuide', (!show).toString());
+    };
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -174,13 +187,90 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
         <MainLayout activePage="marketing">
             <div className="container-fluid py-4">
                 <div className="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <h1 className="fw-bold h2 mb-1">
-                            {mode === 'admin' ? 'Marketing Hub' : 'My Marketing Hub'}
-                        </h1>
-                        <p className="text-muted small mb-0">Manage your email campaigns, audience growth and automations</p>
+                    <div className="d-flex align-items-center gap-3">
+                        <div>
+                            <h1 className="fw-bold h2 mb-1">
+                                {mode === 'admin' ? 'Marketing Hub' : 'My Marketing Hub'}
+                            </h1>
+                            <p className="text-muted small mb-0">Manage your email campaigns, audience growth and automations</p>
+                        </div>
+                        {!showHowItWorks && (
+                            <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
+                                <i className="bi bi-info-circle me-1"></i> How it Works
+                            </button>
+                        )}
                     </div>
                 </div>
+
+                {showHowItWorks && (
+                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden position-relative animate-fade-in">
+                        <button
+                            className="btn position-absolute top-0 end-0 m-3 text-white opacity-50 hover-opacity-100 p-2"
+                            style={{ zIndex: 1 }}
+                            onClick={() => toggleGuide(false)}
+                            title="Hide this section"
+                        >
+                            <i className="bi bi-x-lg"></i>
+                        </button>
+                        <div className="card-body p-4 p-lg-5">
+                            <div className="row align-items-center">
+                                <div className="col-lg-8">
+                                    <h3 className="fw-bold mb-3 text-white">Your Command Center for Growth</h3>
+                                    <p className="opacity-75 mb-4">The Marketing Hub is where you turn leads into lifelong clients. Here is how to use it effectively:</p>
+                                    <div className="row g-4">
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-megaphone text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">1. Email Blasts</div>
+                                                    <div className="small opacity-75">Send professional updates, newsletters, and new listing alerts.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-funnel text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">2. Smart Segmentation</div>
+                                                    <div className="small opacity-75">Organize leads into groups based on budget, property type, or status.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-magic text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">3. Reusable Content</div>
+                                                    <div className="small opacity-75">Create high-conversion templates and forms once and use them forever.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-cpu text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">4. Automation Flows</div>
+                                                    <div className="small opacity-75">Build "set and forget" workflows to nurture leads through their journey.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-lg-4 d-none d-lg-block text-center">
+                                    <i className="bi bi-graph-up-arrow display-1 opacity-25"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Performance Overview */}
                 <div className="row g-4 mb-5">

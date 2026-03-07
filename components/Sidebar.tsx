@@ -94,7 +94,8 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             { href: '/realestate-admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill', active: activePage === 'dashboard' },
             { href: '/realestate-admin/bookings', label: labels.bookings, icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
-            { href: '/realestate-admin/leads', label: labels.leads, icon: 'bi-person-badge-fill', active: activePage === 'leads' }
+            { href: '/realestate-admin/leads', label: labels.leads, icon: 'bi-person-badge-fill', active: activePage === 'leads' },
+            { href: '/realestate-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' }
           ]
         },
         {
@@ -142,7 +143,6 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                   ] : []),
                   ...(hasModule('automation_engine') ? [
                     { href: '/realestate-admin/social/automation', label: 'Automation Hub', icon: 'bi-robot', active: activePage === 'social-automation' },
-                    { href: '/realestate-admin/social/matching', label: 'Matching Engine', icon: 'bi-lightning-charge', active: activePage === 'social-matching' },
                   ] : []),
                 ]
               },
@@ -165,6 +165,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-admin/subscriptions', label: 'Subscriptions', icon: 'bi-credit-card-2-front-fill', active: activePage === 'subscriptions' },
             { href: '/realestate-admin/upgrade-requests', label: 'Upgrade Requests', icon: 'bi-rocket-takeoff-fill', active: activePage === 'upgrade-requests' },
             { href: '/realestate-admin/modules', label: 'Feature Modules', icon: 'bi-plugin', active: activePage === 'modules' },
+            { href: '/realestate-admin/help', label: 'Knowledge Base', icon: 'bi-question-circle-fill', active: activePage === 'help' },
             { href: '/realestate-admin/settings', label: 'Global Settings', icon: 'bi-gear-fill', active: activePage === 'settings' }
           ]
         }
@@ -179,6 +180,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-owner-admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', active: activePage === 'dashboard' },
             { href: '/realestate-owner-admin/bookings', label: 'Bookings', icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
             { href: '/realestate-owner-admin/leads', label: 'Leads', icon: 'bi-funnel-fill', active: activePage === 'leads' },
+            { href: '/realestate-owner-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' },
             { href: '/realestate-owner-admin/tasks', label: 'Task Management', icon: 'bi-check2-square', active: activePage === 'tasks' },
             { href: '/realestate-owner-admin/agents', label: 'My Agents', icon: 'bi-person-badge-fill', active: activePage === 'agents' },
 
@@ -243,7 +245,6 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                   ] : []),
                   ...(hasModule('automation_engine') ? [
                     { href: '/realestate-owner-admin/social/automation', label: 'Automation Hub', icon: 'bi-robot', active: activePage === 'social-automation' },
-                    { href: '/realestate-owner-admin/social/matching', label: 'Matching Engine', icon: 'bi-lightning-charge', active: activePage === 'social-matching' },
                   ] : []),
                 ]
               },
@@ -271,6 +272,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             { href: '/realestate-owner-admin/subscriptions', label: 'Subscription Plan', icon: 'bi-credit-card-fill', active: activePage === 'subscriptions' },
             { href: '/realestate-owner-admin/integrations', label: 'Connected Sites', icon: 'bi-link-45deg', active: activePage === 'integrations' },
+            { href: '/realestate-owner-admin/help', label: 'Knowledge Base', icon: 'bi-question-circle-fill', active: activePage === 'help' },
             { href: '/realestate-owner-admin/settings', label: 'Business Settings', icon: 'bi-gear-fill', active: activePage === 'settings' }
           ]
         }

@@ -120,6 +120,19 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
         message: '',
         type: 'success'
     });
+    const [showHowItWorks, setShowHowItWorks] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('website_mgmt_hideGuide');
+        if (saved === 'true') {
+            setShowHowItWorks(false);
+        }
+    }, []);
+
+    const toggleGuide = (show: boolean) => {
+        setShowHowItWorks(show);
+        localStorage.setItem('website_mgmt_hideGuide', (!show).toString());
+    };
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -307,9 +320,16 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
         <MainLayout activePage="websites">
             <div className="container-fluid py-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h1 className="fw-bold h2 mb-1">Website Management</h1>
-                        <p className="text-muted small">Create and manage standalone landing pages with custom domain support.</p>
+                    <div className="d-flex align-items-center gap-3">
+                        <div>
+                            <h1 className="fw-bold h2 mb-1 text-dark">Website Management</h1>
+                            <p className="text-muted small mb-0">Create and manage standalone landing pages with custom domain support.</p>
+                        </div>
+                        {!showHowItWorks && (
+                            <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
+                                <i className="bi bi-info-circle me-1"></i> How it Works
+                            </button>
+                        )}
                     </div>
                     <button
                         className="btn btn-primary shadow-sm px-4 rounded-4"
@@ -323,6 +343,76 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
                         New Website
                     </button>
                 </div>
+
+                {showHowItWorks && (
+                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden position-relative animate-fade-in">
+                        <button
+                            className="btn position-absolute top-0 end-0 m-3 text-white opacity-50 hover-opacity-100 p-2"
+                            style={{ zIndex: 1 }}
+                            onClick={() => toggleGuide(false)}
+                            title="Hide this section"
+                        >
+                            <i className="bi bi-x-lg"></i>
+                        </button>
+                        <div className="card-body p-4 p-lg-5">
+                            <div className="row align-items-center">
+                                <div className="col-lg-8">
+                                    <h3 className="fw-bold mb-3 text-white">Your Property, Brand-Named</h3>
+                                    <p className="opacity-75 mb-4">The Website Hub allows you to launch high-converting landing pages in seconds. Here is your builder toolkit:</p>
+                                    <div className="row g-4">
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-lightning text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">1. Instant Builder</div>
+                                                    <div className="small opacity-75">Switch between "Listing Layout" for property details or "Builder" for a custom branded experience.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-link-45deg text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">2. Custom Domains</div>
+                                                    <div className="small opacity-75">Connect your own .com or .in domain to any landing page to build authority and trust.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-phone text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">3. Mobile-First Edge</div>
+                                                    <div className="small opacity-75">Every site is automatically optimized for mobile buyers browsing on the move.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-graph-up text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">4. SEO & Pixels</div>
+                                                    <div className="small opacity-75">Add custom headers/footers for Meta Pixels, Google Analytics, and SEO title tags.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-lg-4 d-none d-lg-block text-center">
+                                    <i className="bi bi-globe-central-south-asia display-1 opacity-25"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {showForm && (
                     <WebsiteForm

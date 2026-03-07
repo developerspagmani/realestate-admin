@@ -1,128 +1,241 @@
 'use client';
 
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import AOS from 'aos';
 
 /**
  * Virpanix - Intelligent Real Estate OS
- * Redesign: Black 90% / Red 10%
- * Style: Creative, Smooth, Interactive
+ * Integrated: Social, WhatsApp, Voice Hub (Siri Style)
  */
 export default function Home() {
   const { user, isAuthenticated, getRedirectPath } = useAuthContext();
   const [scrolled, setScrolled] = useState(false);
-  const verticalSectionRef = useRef<HTMLElement>(null);
-  const vItemsRef = useRef<NodeListOf<HTMLElement> | null>(null);
-  const vVisualsRef = useRef<NodeListOf<HTMLElement> | null>(null);
-  const scrollRequestRef = useRef<number | null>(null);
+  const router = useRouter();
+
+  // --- Voice Protocol Hub ---
+  const [isListening, setIsListening] = useState(false);
+  const [commandFeedback, setCommandFeedback] = useState('How can I help you?');
+  const [speechIntensity, setSpeechIntensity] = useState([1, 1, 1, 1, 1]);
+
+  const runVoiceCommand = () => {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech recognition not supported. Please use Chrome or Edge.");
+      return;
+    }
+
+    // Set state first to show modal immediately
+    setIsListening(true);
+    setCommandFeedback('Initializing Neural Hub...');
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      // Start simulated bars
+      const interval = setInterval(() => {
+        setSpeechIntensity(Array.from({ length: 5 }, () => Math.floor(Math.random() * 40) + 10));
+      }, 100);
+
+      recognition.onstart = () => {
+        setCommandFeedback('Listening...');
+      };
+
+      recognition.onresult = (event: any) => {
+        clearInterval(interval);
+        setSpeechIntensity([5, 5, 5, 5, 5]);
+        const command = event.results[0][0].transcript.toLowerCase();
+        setCommandFeedback(`Command: ${command}`);
+
+        // Command Matching Protocol
+        if (command.includes('login') || command.includes('sign in')) {
+          router.push('/login');
+        } else if (command.includes('register') || command.includes('join')) {
+          router.push('/register');
+        } else if (command.includes('contact') || command.includes('support')) {
+          router.push('/contact');
+        } else if (command.includes('about')) {
+          router.push('/about');
+        } else if (command.includes('plan')) {
+          router.push('/plans');
+        } else {
+          setCommandFeedback('Protocol unrecognized.');
+          setTimeout(() => {
+            setIsListening(false);
+            setCommandFeedback('How can I help you?');
+          }, 2000);
+          return;
+        }
+        setTimeout(() => {
+          setIsListening(false);
+          setCommandFeedback('How can I help you?');
+        }, 1500);
+      };
+
+      recognition.onerror = (event: any) => {
+        clearInterval(interval);
+        setSpeechIntensity([1, 1, 1, 1, 1]);
+        console.error('Speech recognition error:', event.error);
+
+        if (event.error === 'not-allowed') {
+          setCommandFeedback('PERMISSION BLOCKED');
+          // Keep modal open so user can see instructions
+          return;
+        } else {
+          setCommandFeedback('Connection interrupted.');
+          setTimeout(() => setIsListening(false), 2000);
+        }
+      };
+
+      recognition.onend = () => {
+        clearInterval(interval);
+      };
+
+      recognition.start();
+    } catch (e) {
+      console.error('Failed to start recognition:', e);
+      setIsListening(false);
+      alert("Could not start voice protocol.");
+    }
+  };
 
   useEffect(() => {
     AOS.init({
-      duration: 1000,
+      duration: 1200,
       once: false,
       mirror: true,
       anchorPlacement: 'top-bottom',
     });
 
-    // Cache elements for performance
-    if (verticalSectionRef.current) {
-      vItemsRef.current = verticalSectionRef.current.querySelectorAll('.v-item');
-      vVisualsRef.current = verticalSectionRef.current.querySelectorAll('.v-visual');
-    }
-
-    const updateScrollEffects = () => {
-      const vSection = verticalSectionRef.current;
-      if (!vSection || !vItemsRef.current || !vVisualsRef.current) return;
-
-      const rect = vSection.getBoundingClientRect();
-      const items = vItemsRef.current;
-      const visuals = vVisualsRef.current;
-
-      if (rect.top <= 0 && rect.bottom >= window.innerHeight) {
-        const totalScroll = vSection.offsetHeight - window.innerHeight;
-        const progress = Math.min(1, Math.max(0, Math.abs(rect.top) / totalScroll));
-        const index = Math.min(items.length - 1, Math.floor(progress * items.length));
-
-        visuals.forEach((el, i) => {
-          const isSelected = i === index;
-          el.style.opacity = isSelected ? '1' : '0';
-          el.style.transform = isSelected ? 'scale(1)' : 'scale(0.95)';
-          el.style.zIndex = isSelected ? '1' : '0';
-          el.style.visibility = isSelected ? 'visible' : 'hidden';
-        });
-
-        items.forEach((item, i) => {
-          if (i === index) {
-            item.style.opacity = '1';
-            item.style.transform = 'translateY(0) scale(1)';
-            item.style.visibility = 'visible';
-            item.style.zIndex = '10';
-          } else if (i === index + 1 && i < items.length) {
-            item.style.opacity = '0.15';
-            item.style.transform = 'translateY(320px) scale(0.9)';
-            item.style.visibility = 'visible';
-            item.style.zIndex = '5';
-          } else if (i === index + 2 && i < items.length) {
-            item.style.opacity = '0.05';
-            item.style.transform = 'translateY(550px) scale(0.85)';
-            item.style.visibility = 'visible';
-            item.style.zIndex = '2';
-          } else {
-            item.style.opacity = '0';
-            item.style.transform = i < index ? 'translateY(-200px)' : 'translateY(800px)';
-            item.style.visibility = 'hidden';
-          }
-        });
-      }
-    };
-
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
-
-      if (scrollRequestRef.current) {
-        cancelAnimationFrame(scrollRequestRef.current);
-      }
-      scrollRequestRef.current = requestAnimationFrame(updateScrollEffects);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (scrollRequestRef.current) cancelAnimationFrame(scrollRequestRef.current);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const MODULES = [
+    {
+      id: 'analytics',
+      title: 'Analytics & Intelligence',
+      impact: '35% REDUCTION IN CAC',
+      description: 'Advanced data-driven insights to monitor and grow your real estate business. Identify high-value lead sources and eliminate deal leakage with AI-driven risk mitigation. Turn raw data into a predictive revenue engine.',
+      features: ['Deal Intelligence', 'Prevention & Forecasting', 'Property PropIntel'],
+      img: '/images/feature_analytics.png',
+      color: 'primary'
+    },
+    {
+      id: 'crm',
+      title: 'Leads & CRM Hub',
+      impact: '45% SURGE IN AGENT PRODUCTIVITY',
+      description: 'Centralized management for your entire sales pipeline. Capture leads from websites and widgets, track status via Kanban, and ensure 100% lead follow-up compliance with automated scoring.',
+      features: ['Lead Scoring', 'Audience Grouping', 'Kanban Management'],
+      img: '/images/feature_crm.png',
+      color: 'success'
+    },
+    {
+      id: 'social-whatsapp',
+      title: 'Social Hub & WhatsApp Business',
+      impact: '300% HIGHER CONVERSION VELOCITY',
+      description: 'The ultimate omnichannel communication layer. Automate property distribution across Facebook & Instagram while managing direct customer engagement via integrated WhatsApp Business API.',
+      features: ['WhatsApp Automation', 'Omnichannel Ads Sync', 'Conversational AI Chatbots'],
+      img: '/images/feature_social_whatsapp.png',
+      color: 'primary'
+    },
+    {
+      id: 'marketing',
+      title: 'Marketing & Automation',
+      impact: '3X CUSTOMER LIFETIME VALUE',
+      description: 'Powerful tools for email campaigns, automation, and audience growth. Deliver the right property at the perfect moment through behavioral-triggered nurture sequences.',
+      features: ['Campaign Designer', 'Automation Workflows', 'Smart Lead Forms'],
+      img: '/images/feature_marketing.png',
+      color: 'danger'
+    },
+    {
+      id: 'inventory',
+      title: 'Property Portfolio',
+      impact: 'OPTIMIZED PORTFOLIO VELOCITY',
+      description: 'Comprehensive management of buildings, units, and digital assets. Prevent double-bookings and manage dynamic pricing rules with ironclad buyer trust through transparency.',
+      features: ['Consolidated Management', 'Media Gallery Hub', 'Batch Operations'],
+      img: '/images/feature_inventory.png',
+      color: 'info'
+    },
+    {
+      id: 'plot-maps',
+      title: 'Interactive Plot Maps',
+      impact: '70% BUYER ENGAGEMENT SURGE',
+      description: 'Immersive SVG-based site plans with real-time status sync. Provide instant clarity on availability and premium locations directly from your portal.',
+      features: ['SVG Interactivity', 'Live Status Sync', 'Instant Unit Detail'],
+      img: '/images/feature_plot.png',
+      color: 'success'
+    },
+    {
+      id: 'matching',
+      title: 'Matching Engine',
+      impact: '60% FASTER SALES CYCLE',
+      description: 'Convert "just looking" into "ready to buy" by instantly aligning inventory with deep buyer intent. Automated matching based on location, budget, and amenities.',
+      features: ['Intent Matching', 'Aesthetic Alignment', 'Note System'],
+      img: '/images/feature_matching.png',
+      color: 'danger'
+    },
+    {
+      id: 'brochure-ai',
+      title: 'Brochure Intelligent AI',
+      impact: '95% PRODUCTION OVERHEAD REDUCTION',
+      description: 'Generate elite, print-ready property brochures in seconds using Gemini Nano AI. Convert technical specs into persuasive sales copy automatically.',
+      features: ['AI Copywriting', 'Smart Media Sync', 'Interactive PDF Export'],
+      img: '/images/feature_brochure.png',
+      color: 'dark'
+    },
+    {
+      id: 'seo',
+      title: 'Search SEO Engine',
+      impact: '60% AD SPEND REDUCTION',
+      description: 'Dominate organic search results with automated indexing and XML sitemap management. Your inventory appears in Google results within minutes.',
+      features: ['Indexing Pings', 'Schema.org Markup', 'Core Web Vitals'],
+      img: '/images/feature_seo.png',
+      color: 'warning'
+    },
+    {
+      id: 'websites',
+      title: 'Websites & Ecosystem',
+      impact: '50% INBOUND QUALITY BOOST',
+      description: 'Launch branded real estate portals and property microsites instantly. lower reliance on third-party portals and own your audience directly.',
+      features: ['Instant Layouts', 'Domain Mapping', 'Universal Script Widgets'],
+      img: '/images/feature_website.png',
+      color: 'info'
+    }
+  ];
 
   return (
     <div className="landing-page bg-black text-white min-vh-100">
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800&display=swap" />
 
       {/* Navigation */}
-      <nav className={`fixed-top w-100 transition-all ${scrolled ? 'bg-black/80 backdrop-blur-lg border-bottom border-red opacity-100' : 'bg-transparent'}`} style={{ zIndex: 1000, height: '80px' }}>
+      <nav className={`fixed-top w-100 transition-all ${scrolled ? 'bg-black/80 backdrop-blur-lg border-bottom border-red opacity-100 shadow-lg' : 'bg-transparent'}`} style={{ zIndex: 1000, height: '80px' }}>
         <div className="container h-100 d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center gap-3" data-aos="fade-right">
-            <div className="logo-box bg-red text-white fw-800 px-2 py-1 rounded-1" style={{ fontSize: '1.2rem' }}>V</div>
-            <span className="fw-800 text-uppercase tracking-widest" style={{ fontSize: '1.4rem' }}>Virpanix</span>
+            <Link href="/" className="logo-box bg-red text-white fw-800 px-2 py-1 rounded-1 text-decoration-none" style={{ fontSize: '1.2rem' }}>V</Link>
+            <span className="fw-800 text-uppercase tracking-widest d-none d-sm-inline" style={{ fontSize: '1.4rem' }}>Virpanix</span>
           </div>
 
-          <div className="d-none d-lg-flex align-items-center gap-5 small tracking-tight fw-600" data-aos="fade-left">
-            {['Modules', 'Analytics', 'Ecosystem'].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="text-white opacity-50 text-decoration-none hvr-red">
-                {item}
-              </a>
-            ))}
+          <div className="d-flex align-items-center gap-4 small tracking-tight fw-600" data-aos="fade-left">
+            <Link href="/about" className="text-white opacity-50 text-decoration-none hvr-red d-none d-lg-inline">About Us</Link>
+            <Link href="/plans" className="text-white opacity-50 text-decoration-none hvr-red d-none d-lg-inline">Plans</Link>
+            <Link href="/contact" className="text-white opacity-50 text-decoration-none hvr-red d-none d-lg-inline">Contact</Link>
             {isAuthenticated ? (
-              <Link
-                href={getRedirectPath()}
-                className="btn-red py-2 px-4 shadow-sm"
-              >
-                {user?.name || 'Dashboard'}
-              </Link>
+              <Link href={getRedirectPath()} className="btn-red py-2 px-4 shadow-sm">Dashboard</Link>
             ) : (
-              <div className="d-flex align-items-center gap-4">
-                <Link href="/login" className="text-white opacity-50 text-decoration-none hvr-red">Sign In</Link>
-                <Link href="/register" className="btn-red py-2 px-4">Get Started</Link>
+              <div className="d-flex align-items-center gap-3">
+                <Link href="/login" className="text-white opacity-50 text-decoration-none hvr-red small fw-700">Login</Link>
+                <Link href="/register" className="btn-red py-2 px-4 fw-800">START FREE</Link>
               </div>
             )}
           </div>
@@ -130,366 +243,191 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="hero vh-100 d-flex align-items-center position-relative overflow-hidden bg-grid">
-        <div className="red-glow top-0 end-0"></div>
-        <div className="red-glow bottom-0 start-0" style={{ transform: 'scale(1.5)' }}></div>
-
-        {/* Scanline Effect */}
+      <section className="hero vh-100 d-flex align-items-center justify-content-center text-center position-relative overflow-hidden bg-grid-hero">
+        <div className="hero-bg-image position-absolute top-0 start-0 w-100 h-100 opacity-30" style={{ backgroundImage: 'url("/images/hero_bg.png")', backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
         <div className="scanline"></div>
+        <div className="hero-glow-center"></div>
 
-        <div className="container position-relative z-1">
-          <div className="row align-items-center">
-            <div className="col-lg-10">
-              <div data-aos="zoom-out-up">
-                <div className="d-flex align-items-center gap-3 mb-4" data-aos="fade-right" data-aos-delay="200">
-                  <span className="bg-red text-white py-1 px-3 fw-800 small uppercase tracking-widest">Live</span>
-                  <span className="text-white opacity-40 small uppercase tracking-widest">Protocol V2.5.4 Integrated</span>
-                </div>
-                <h1 className="fs-huge fw-800 tracking-tighter text-white mb-4">
-                  COMMAND THE <br />
-                  <span className="text-red">UNBUILT.</span>
-                </h1>
-                <p className="lead opacity-50 mb-5 max-w-700 fs-4" data-aos="fade-up" data-aos-delay="400">
-                  The most advanced AI operating system for institutional portfolios.
-                  Bridge physical architecture with digital speed and predictive automation.
-                </p>
-                <div className="d-flex flex-column flex-md-row gap-4 align-items-center" data-aos="fade-up" data-aos-delay="600">
-                  <Link href="/register" className="btn-red btn-lg">
-                    <span>Initialize System</span>
-                    <i className="bi bi-arrow-right-short fs-4"></i>
-                  </Link>
-                  <button className="btn-outline-red btn-lg">
-                    Watch Interface
-                  </button>
-                </div>
+        <div className="container position-relative z-5">
+          <div className="row justify-content-center">
+            <div className="col-lg-10" data-aos="zoom-out-up">
+              <div className="d-inline-flex align-items-center gap-3 mb-4 px-4 py-2 glass-card rounded-pill border border-red/20 shadow-red-pulse">
+                <span className="bg-red text-white py-1 px-3 fw-800 extra-small rounded-pill uppercase tracking-widest">v3.2.0</span>
+                <span className="text-white opacity-60 extra-small uppercase tracking-widest fw-700">Real Estate Intelligence Protocol</span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Animated Background Elements */}
-        <div className="position-absolute bottom-0 end-0 p-5 opacity-10 d-none d-lg-block" data-aos="fade-left">
-          <span className="display-1 fw-900 text-stroke">VIRPANIX</span>
-        </div>
-      </section>
-
-      {/* Vertical Slide Features (10 Modules) */}
-      <section ref={verticalSectionRef} className="vertical-feature-section bg-black position-relative" style={{ height: '1000vh' }}>
-        <div className="vh-100 w-100 d-flex align-items-center overflow-hidden" style={{ position: 'sticky', top: 0 }}>
-          <div className="container">
-            <div className="row align-items-center g-5">
-              <div className="col-lg-5">
-                <div className="v-content-wrapper position-relative" style={{ height: '700px' }}>
-                  {[
-                    { title: 'Unified Listing Management', desc: 'Aggregated property inventory from multiple sources into a single high-performance HUD.' },
-                    { title: 'Autonomous AI Agents', desc: 'Qualify every lead 24/7. Our proprietary LLM handles initial inquiries and schedules tours.' },
-                    { title: 'Global Settlement Engine', desc: 'Execute institutional transactions across borders with integrated multi-currency escrow.' },
-                    { title: 'Predictive Yield Matrix', desc: 'Forecast market performance and vacancy trends with 94% accuracy via neural modeling.' },
-                    { title: 'Social Campaign Sync', desc: 'Automate Meta and Google ad distribution directly from your inventory database.' },
-                    { title: 'Spatial 3D Twins', desc: 'High-fidelity Matterport and custom Three.js integrations for immersive property tours.' },
-                    { title: 'DNA Security Shield', desc: 'Institutional-grade RBAC and tenant data segregation with SOC2 compliance readiness.' },
-                    { title: 'Multi-Tenant Architecture', desc: 'Manage unlimited sub-brands and agent teams with isolated data and custom domains.' },
-                    { title: 'Dynamic CMS Builder', desc: 'Deploy white-labeled property portals and landing pages in seconds without code.' },
-                    { title: 'Headless API Core', desc: 'Full-featured GraphQL and REST APIs to bridge the system with legacy enterprise ERPs.' }
-                  ].map((feat, i) => (
-                    <div key={i} className="v-item position-absolute transition-all w-100" style={{ opacity: i === 0 ? 1 : 0.2, top: 0 }}>
-                      <span className="text-red fw-700 uppercase tracking-widest small mb-2 d-block">Module {String(i + 1).padStart(2, '0')}</span>
-                      <h2 className="display-4 fw-800 text-white mb-4 line-clamp-2">{feat.title}</h2>
-                      <p className="opacity-50 fs-5 line-clamp-3">{feat.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="col-lg-7">
-                <div className="v-visual-container position-relative" style={{ height: '500px' }}>
-                  {[
-                    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab",
-                    "https://images.unsplash.com/photo-1497366216548-37526070297c",
-                    "https://images.unsplash.com/photo-1460925895917-afdab827c52f",
-                    "https://images.unsplash.com/photo-1551288049-bbbda536639a",
-                    "https://images.unsplash.com/photo-1552664730-d307ca884978",
-                    "https://images.unsplash.com/photo-1542744173-8e7e53415bb0",
-                    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b",
-                    "https://images.unsplash.com/photo-1497215728101-856f4ea42174",
-                    "https://images.unsplash.com/photo-1586717791821-3f44a563eb4c",
-                    "https://images.unsplash.com/photo-1558494949-ef010cbdcc51"
-                  ].map((url, i) => (
-                    <div key={i} className="v-visual position-absolute w-100 h-100 rounded-5 overflow-hidden transition-all shadow-red-lg" style={{ opacity: i === 0 ? 1 : 0, zIndex: i === 0 ? 1 : 0 }}>
-                      <img src={`${url}?auto=format&fit=crop&q=80&w=1200`} className="w-100 h-100 object-fit-cover grayscale" alt={`Module ${i + 1}`} />
-                      <div className="position-absolute top-0 start-0 w-100 h-100 bg-gradient-to-t from-black/80 to-transparent"></div>
-                      <div className="position-absolute bottom-0 start-0 w-100 p-4 d-flex justify-content-between align-items-end">
-                        <div className="extra-small tracking-widest text-red opacity-50 fw-700">ENCODE_SESSION_{i * 124}</div>
-                        <div className="text-white extra-small opacity-30">NOMINAL_FLOW</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Application Process */}
-      <section className="section-padding bg-black border-top border-white/5">
-        <div className="container">
-          <div className="text-center mb-10" data-aos="fade-up">
-            <h2 className="display-3 fw-800 text-white">Application <span className="text-red">Process</span></h2>
-            <p className="opacity-40 mt-3 fs-5">Your journey to autonomous asset management in four simple steps.</p>
-          </div>
-          <div className="row g-0 mt-5 workflow-line position-relative">
-            {[
-              { title: 'Inquiry', icon: 'bi-chat-left-text', text: 'Submit your portfolio details for internal evaluation.' },
-              { title: 'Calibration', icon: 'bi-cpu', text: 'Our team trains your custom AI model on property specifics.' },
-              { title: 'Staging', icon: 'bi-layers', text: 'Deploy your white-labeled dashboards in a secure environment.' },
-              { title: 'Execution', icon: 'bi-lightning', text: 'Go live and start capturing institutional-grade leads.' }
-            ].map((item, i) => (
-              <div key={i} className="col-md-3 text-center px-4 mb-5 mb-md-0" data-aos="zoom-in" data-aos-delay={i * 200}>
-                <div className="process-node mx-auto mb-4 bg-red/10 border-red text-red rounded-circle d-flex align-items-center justify-content-center" style={{ width: '100px', height: '100px', borderWidth: '1px', borderStyle: 'solid' }}>
-                  <i className={`bi ${item.icon} fs-2`}></i>
-                </div>
-                <h4 className="fw-800 text-white mb-3">{i + 1}. {item.title}</h4>
-                <p className="opacity-40 small">{item.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Quote Section */}
-      <section className="section-padding bg-red/5 text-center">
-        <div className="container py-5" data-aos="fade-up">
-          <div className="mb-5 row justify-content-center">
-            <div className="col-lg-8">
-              <i className="bi bi-quote text-red display-1 opacity-20 mb-4 d-block"></i>
-              <h2 className="display-5 fw-300 italic text-white lh-base">
-                &quot;Virpanix didn&apos;t just digitize our inventory; they revolutionized our entire conversion cycle. We&apos;ve seen a 400% increase in lead response speed within 60 days.&quot;
-              </h2>
-              <div className="mt-5">
-                <div className="bg-red mx-auto mb-3" style={{ width: '40px', height: '2px' }}></div>
-                <h5 className="fw-800 text-white tracking-widest uppercase small m-0">Marcus Thorne</h5>
-                <p className="text-red fw-600 extra-small uppercase m-0 mt-1">Chief Digital Officer, PrimeAssets Global</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* AI Prediction Section */}
-      <section className="section-padding bg-black border-top border-white/5 overflow-hidden">
-        <div className="container">
-          <div className="row align-items-center g-5">
-            <div className="col-lg-6" data-aos="fade-right">
-              <span className="text-red fw-700 uppercase tracking-widest small mb-3 d-block">Neural Engine Core</span>
-              <h2 className="display-4 fw-800 text-white mb-4">AI Prediction <br /> <span className="text-red">Matrix</span></h2>
-              <p className="opacity-50 fs-5 mb-4">Our proprietary neural engine processes over 10,000 global market signals per second to forecast asset performance with 94% accuracy.</p>
-
-              <div className="prediction-details mt-5">
-                {[
-                  { label: 'Market Sentiment Analysis', value: 92 },
-                  { label: 'Predictive Vacancy Score', value: 88 },
-                  { label: 'Dynamic Yield Optimization', value: 95 }
-                ].map((p, i) => (
-                  <div key={i} className="mb-4">
-                    <div className="d-flex justify-content-between mb-2">
-                      <span className="small text-white opacity-80">{p.label}</span>
-                      <span className="text-red small fw-700">{p.value}%</span>
-                    </div>
-                    <div className="progress bg-white/5" style={{ height: '4px' }}>
-                      <div className="progress-bar bg-red" style={{ width: `${p.value}%` }} data-aos="slide-right" data-aos-delay={i * 200}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="col-lg-6" data-aos="fade-left">
-              <div className="prediction-viz p-5 glass-card position-relative overflow-hidden">
-                <div className="scanning-grid"></div>
-                <div className="d-flex flex-column gap-3">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="d-flex gap-2 align-items-center opacity-30">
-                      <div className="bg-red rounded-1" style={{ width: ((i * 13) % 100) + 50 + 'px', height: '4px' }}></div>
-                      <div className="text-red small pulse" style={{ opacity: 0.2 + (i * 0.1) }}>• SCANNING...</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-5 text-center">
-                  <div className="display-1 fw-900 text-red opacity-10">0.94X</div>
-                  <p className="text-red tracking-widest small fw-700 uppercase">Confidence Interval Reached</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Workflow */}
-      <section className="section-padding bg-red/5">
-        <div className="container">
-          <div className="row align-items-center g-5">
-            <div className="col-lg-6" data-aos="fade-right">
-              <h2 className="display-4 fw-800 text-white mb-4">
-                The <span className="text-red">Automation</span> <br />
-                Lifecycle.
-              </h2>
-              <div className="workflow-steps mt-5">
-                {[
-                  { step: '01', title: 'Data Injection', desc: 'Sync multi-location inventory via global APIs.' },
-                  { step: '02', title: 'Neural Analysis', desc: 'Qualify every inquiry with sentiment-aware AI.' },
-                  { step: '03', title: 'Asset Activation', desc: 'Deploy targeted campaigns and booking engines.' }
-                ].map((s, i) => (
-                  <div key={i} className="d-flex gap-4 mb-5" data-aos="fade-left" data-aos-delay={i * 200}>
-                    <div className="fs-1 fw-800 text-red opacity-30">{s.step}</div>
-                    <div>
-                      <h4 className="fw-700 text-white mb-2">{s.title}</h4>
-                      <p className="opacity-50">{s.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="col-lg-6" data-aos="flip-right">
-              <div className="p-2 border-red border-dashed rounded-5 position-relative">
-                <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1000" className="img-fluid rounded-5 grayscale brightness-50" alt="Workflow" />
-                <div className="position-absolute top-50 start-50 translate-middle">
-                  <div className="btn-red p-4 rounded-circle pulse">
-                    <i className="bi bi-play-fill fs-3"></i>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Impact Section */}
-      <section id="analytics" className="section-padding bg-black border-top border-white/5">
-        <div className="container">
-          <div className="row g-5">
-            <div className="col-lg-4" data-aos="fade-up">
-              <span className="text-red fw-700 uppercase tracking-widest small d-block mb-3">Institutional results</span>
-              <h2 className="display-4 fw-800 text-white mb-4">Numbers Speak.</h2>
-              <p className="opacity-50 fs-5 mb-5">
-                Our partners experience immediate velocity gains within 30 days of standard deployment.
+              <h1 className="display-1 fw-900 tracking-tighter text-white mb-4 lh-1">
+                TRANSFORM YOUR <br />
+                <span className="text-red">REAL ESTATE</span> <br />
+                BUSINESS.
+              </h1>
+              <p className="lead opacity-60 mb-5 mx-auto max-w-800 fs-4 fw-400" data-aos="fade-up" data-aos-delay="400">
+                Institutional-grade AI for global property portfolios. <br />
+                Synchronize social reach, WhatsApp direct sales, and predictive analytics in one OS.
               </p>
-              <Link href="/register" className="btn-red">Get Case Studies</Link>
-            </div>
-            <div className="col-lg-8">
-              <div className="row g-4">
-                {[
-                  { label: 'Booking Speed', val: '+410%', icon: 'bi-lightning-charge' },
-                  { label: 'Yield Increase', val: '+28%', icon: 'bi-graph-up' },
-                  { label: 'Agent Response', val: 'Instant', icon: 'bi-whatsapp' },
-                  { label: 'System Uptime', val: '99.9%', icon: 'bi-shield-check' }
-                ].map((stat, i) => (
-                  <div key={i} className="col-sm-6" data-aos="zoom-in" data-aos-delay={i * 100}>
-                    <div className="glass-card p-5 border-start border-4 border-red">
-                      <div className="text-red fs-1 mb-3">
-                        <i className={`bi ${stat.icon}`}></i>
-                      </div>
-                      <h3 className="display-5 fw-800 text-white mb-1">{stat.val}</h3>
-                      <p className="opacity-40 fw-700 text-uppercase tracking-widest small">{stat.label}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="d-flex justify-content-center gap-4 flex-wrap" data-aos="fade-up" data-aos-delay="600">
+                <Link href="/register" className="btn-red btn-lg px-5 py-3">Initialize System</Link>
+                <Link href="/plans" className="btn-outline-red btn-lg px-5 py-3">View Global Plans</Link>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Trust Protocol (Institutional Logos) */}
-      <section className="py-10 bg-black border-top border-white/5 opacity-40">
+      {/* Module Sections Showcase */}
+      <section id="modules" className="bg-black pt-10">
+        <div className="container text-center mb-10" data-aos="fade-up">
+          <h2 className="display-3 fw-800 text-white">THE <span className="text-red">OPERATING</span> SUITE</h2>
+          <p className="opacity-40 fs-5">Advanced technical modules designed for the modern property enterprise.</p>
+        </div>
+
+        {MODULES.map((m, i) => (
+          <div key={m.id} className={`section-padding border-top border-white/5 ${i % 2 === 0 ? 'bg-black' : 'bg-red/5'}`}>
+            <div className="container">
+              <div className={`row align-items-center g-5 ${i % 2 === 0 ? '' : 'flex-row-reverse'}`}>
+                <div className="col-lg-6" data-aos={i % 2 === 0 ? 'fade-right' : 'fade-left'}>
+                  <div className="module-content">
+                    <span className="text-red fw-800 uppercase tracking-widest small mb-3 d-block">{m.impact}</span>
+                    <h2 className="display-4 fw-800 text-white mb-4">{m.title}</h2>
+                    <p className="opacity-60 fs-5 mb-5 lh-base">{m.description}</p>
+
+                    <div className="features-list d-flex flex-column gap-3 mb-5">
+                      {m.features.map((f, idx) => (
+                        <div key={idx} className="d-flex align-items-center gap-3">
+                          <div className={`bg-${m.color} text-white rounded-circle p-1 d-flex align-items-center justify-content-center`} style={{ width: '24px', height: '24px' }}>
+                            <i className="bi bi-check2 fw-bold" style={{ fontSize: '12px' }}></i>
+                          </div>
+                          <span className="fw-700 text-white opacity-80">{f}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <Link href="/register" className={`btn btn-link text-${m.color} p-0 fw-800 text-decoration-none hvr-translate-right`}>
+                      Integrate {m.title} <i className="bi bi-arrow-right ms-2"></i>
+                    </Link>
+                  </div>
+                </div>
+                <div className="col-lg-6" data-aos={i % 2 === 0 ? 'fade-left' : 'fade-right'}>
+                  <div className={`p-2 glass-card rounded-5 overflow-hidden shadow-${m.color}-lg`}>
+                    <img src={m.img} className="w-100 rounded-4 grayscale hover-color" alt={m.title} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* ROI Impact Summary */}
+      <section id="roi-metrics" className="section-padding bg-black border-top border-white/5">
+        <div className="container text-center mb-10" data-aos="fade-up">
+          <h2 className="display-3 fw-800 text-white">THE <span className="text-red">ROI</span> ADVANTAGE</h2>
+          <p className="opacity-40 fs-5">Tangible growth metrics from real-world enterprise deployments.</p>
+        </div>
         <div className="container">
-          <div className="d-flex flex-wrap justify-content-center align-items-center gap-5 grayscale">
-            {['BLACKROCK', 'CBRE', 'JLL', 'CUSHMAN', 'KNIGHT FRANK'].map((logo) => (
-              <span key={logo} className="fw-900 tracking-widest small">{logo}</span>
+          <div className="row g-4">
+            {[
+              { val: '300%', label: 'WhatsApp Velocity', note: 'Direct Buyer Engagement' },
+              { val: '95%', label: 'Marketing Savings', note: 'AI Brochure Generation' },
+              { val: '70%', label: 'Engagement Increase', note: 'Interactive Mapping' },
+              { val: '60%', label: 'Ad Spend Efficiency', note: 'Automated SEO & Social' }
+            ].map((stat, i) => (
+              <div key={i} className="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay={i * 100}>
+                <div className="glass-card p-5 text-center h-100 border-bottom border-3 border-red hover-bg-red-light transition-all">
+                  <h3 className="display-4 fw-900 text-red mb-1">{stat.val}</h3>
+                  <p className="fw-800 text-uppercase tracking-widest small mb-2">{stat.label}</p>
+                  <p className="extra-small opacity-40 uppercase m-0">{stat.note}</p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Global Connectivity Section */}
-      <section className="section-padding bg-black border-top border-white/5 overflow-hidden position-relative">
-        <div className="red-glow top-50 start-50 translate-middle" style={{ opacity: 0.05 }}></div>
-        <div className="container">
-          <div className="row align-items-center g-5">
-            <div className="col-lg-5" data-aos="fade-right">
-              <span className="text-red fw-700 uppercase tracking-widest small mb-3 d-block">Global Distribution</span>
-              <h2 className="display-4 fw-800 text-white mb-4">Command the <br /> <span className="text-red">Globe.</span></h2>
-              <p className="opacity-50 fs-5 mb-5">Deploy portals and sync multi-currency inventory across 140+ regional markets instantly. One architecture for a borderless portfolio.</p>
-
-              <div className="market-stats d-flex gap-5 mt-5">
-                <div>
-                  <h3 className="fw-800 text-white m-0">142</h3>
-                  <span className="extra-small uppercase tracking-widest text-red">Active Nodes</span>
-                </div>
-                <div>
-                  <h3 className="fw-800 text-white m-0">2.4ms</h3>
-                  <span className="extra-small uppercase tracking-widest text-red">Latent Sync</span>
-                </div>
-              </div>
+      {/* Voice Protocol Modal (Siri Style) */}
+      {isListening && (
+        <div className="voice-modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}>
+          <div className="voice-modal-content glass-card p-5 text-center border border-red/20 shadow-red-lg animate-zoom-in" style={{ width: '500px' }}>
+            <div className="siri-container mb-5 d-flex justify-content-center align-items-center gap-1">
+              {speechIntensity.map((h, i) => (
+                <div key={i} className="siri-bar" style={{ height: `${h}px` }}></div>
+              ))}
             </div>
-            <div className="col-lg-7" data-aos="zoom-in-left">
-              <div className="map-container glass-card p-5 position-relative bg-grid">
-                <svg viewBox="0 0 1000 500" className="w-100 opacity-20">
-                  <path fill="none" d="M150,200 Q400,100 800,250" className="text-red" stroke="currentColor" strokeWidth="0.5" strokeDasharray="5,5" />
-                  {[
-                    { x: 200, y: 150, n: 'NYC' }, { x: 480, y: 120, n: 'LON' }, { x: 520, y: 180, n: 'DUB' }, { x: 820, y: 350, n: 'SYD' }
-                  ].map((p, i) => (
-                    <g key={i}>
-                      <circle cx={p.x} cy={p.y} r="3" fill="var(--primary-red)" className="pulse" />
-                      <text x={p.x + 10} y={p.y + 5} fill="white" fontSize="12" className="fw-700 opacity-50">{p.n}</text>
-                    </g>
-                  ))}
-                </svg>
-                <div className="position-absolute bottom-0 end-0 p-4">
-                  <div className="text-red extra-small fw-800 tracking-widest">REAL-TIME PACKET FLOW: NOMINAL</div>
-                </div>
+            <h3 className="fw-900 text-white mb-3 uppercase tracking-tighter fs-2">{commandFeedback}</h3>
+            {commandFeedback === 'PERMISSION BLOCKED' ? (
+              <div className="bg-red/10 p-4 rounded-4 mb-4 border border-red/20">
+                <p className="text-red fw-700 small mb-2">CRITICAL: Browser blocked microphone access.</p>
+                <ul className="text-start extra-small opacity-80 list-unstyled d-flex flex-column gap-2 mb-0">
+                  <li>1. Click the <b>Lock Icon</b> or <b>Settings</b> in the URL bar.</li>
+                  <li>2. Switch <b>Microphone</b> toggle to <b>&quot;Allow&quot;</b>.</li>
+                  <li>3. <b>Refresh</b> the page (F5) and try again.</li>
+                  <li>4. Check <b>Windows Settings &gt; Privacy &gt; Mic</b>.</li>
+                </ul>
               </div>
-            </div>
+            ) : (
+              <p className="opacity-40 small mb-4">Neural Voice Layer Active. Try saying &quot;Open login page&quot;.</p>
+            )}
+            <button onClick={() => setIsListening(false)} className="btn btn-outline-danger btn-sm rounded-pill px-4 tracking-widest fw-800">DISCONNECT HUB</button>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* Final High-Impact CTA */}
-      <section className="section-padding position-relative overflow-hidden bg-grid">
-        <div className="red-glow top-50 start-50 translate-middle" style={{ transform: 'scale(2)', opacity: 0.2 }}></div>
-        <div className="container text-center position-relative z-1 py-5">
-          <div data-aos="zoom-in" className="card-cta glass-card p-5 p-md-10 py-10">
-            <h2 className="display-2 fw-800 text-white mb-4">Command the <span className="text-red">Unbuilt.</span></h2>
-            <p className="opacity-50 fs-4 mb-5 mx-auto" style={{ maxWidth: '800px' }}>
-              Join the elite institutional owners managing billions in scale-locked assets on the Virpanix Intelligence Layer.
-            </p>
-            <div className="d-flex gap-4 justify-content-center flex-wrap mt-2">
-              <Link href="/register" className="btn-red btn-lg px-5 py-3">
-                <span>Launch Autonomous Instance</span>
-                <i className="bi bi-box-arrow-in-right fs-4"></i>
-              </Link>
-              <button className="btn-outline-red btn-lg px-5 py-3">Book Tactical Briefing</button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Voice Orb Button */}
+      <div className="fixed-bottom p-4 d-flex flex-column align-items-end" style={{ zIndex: 1100 }}>
+        <button
+          onClick={runVoiceCommand}
+          className={`btn ${isListening ? 'btn-red shadow-red-pulse' : 'btn-dark'} rounded-circle p-0 d-flex align-items-center justify-content-center shadow-red-lg hvr-red-pulse`}
+          style={{ width: '64px', height: '64px' }}
+        >
+          <i className={`bi ${isListening ? 'bi-soundwave' : 'bi-mic-fill'} fs-3 text-white`}></i>
+        </button>
+      </div>
 
       {/* Footer */}
       <footer className="py-5 bg-black border-top border-white/5">
         <div className="container">
-          <div className="row g-4 align-items-center">
-            <div className="col-md-6" data-aos="fade-right">
-              <div className="d-flex align-items-center gap-3 mb-4">
-                <div className="bg-red text-white fw-800 px-2 py-1 rounded-1">V</div>
-                <span className="fw-800 text-uppercase tracking-widest">Virpanix</span>
+          <div className="row g-5 align-items-center">
+            <div className="col-md-4" data-aos="fade-right">
+              <div className="d-flex align-items-center gap-3">
+                <div className="logo-box bg-red text-white fw-800 px-2 py-1 rounded-1">V</div>
+                <span className="fw-900 text-uppercase tracking-widest">Virpanix</span>
               </div>
-              <p className="opacity-30 small">The Intelligence Layer for Global Real Estate. Built for Institutional Velocity.</p>
+              <p className="opacity-30 small mt-3">Advanced Intelligence Layer for Global Real Estate Portfolios. Built for institutional precision.</p>
             </div>
-            <div className="col-md-6 text-md-end" data-aos="fade-left">
-              <div className="d-flex gap-4 justify-content-md-end mb-4">
-                <a href="#" className="text-white opacity-40 text-decoration-none hvr-red">Privacy</a>
-                <a href="#" className="text-white opacity-40 text-decoration-none hvr-red">Terms</a>
-                <a href="#" className="text-white opacity-40 text-decoration-none hvr-red">Security</a>
+            <div className="col-md-8">
+              <div className="row g-4">
+                <div className="col-6 col-lg-3">
+                  <h6 className="fw-800 text-white small uppercase tracking-widest mb-3">Platform</h6>
+                  <ul className="list-unstyled extra-small opacity-40 d-flex flex-column gap-2">
+                    <li><Link href="/about" className="text-white text-decoration-none hvr-red">About Protocol</Link></li>
+                    <li><Link href="/plans" className="text-white text-decoration-none hvr-red">Enterprise Plans</Link></li>
+                    <li><Link href="/contact" className="text-white text-decoration-none hvr-red">Contact Support</Link></li>
+                  </ul>
+                </div>
+                <div className="col-6 col-lg-3">
+                  <h6 className="fw-800 text-white small uppercase tracking-widest mb-3">Legal Layer</h6>
+                  <ul className="list-unstyled extra-small opacity-40 d-flex flex-column gap-2">
+                    <li><Link href="/privacy" className="text-white text-decoration-none hvr-red">Privacy Protocol</Link></li>
+                    <li><Link href="/terms" className="text-white text-decoration-none hvr-red">Terms of Service</Link></li>
+                    <li><a href="#" className="text-white text-decoration-none hvr-red">Compliance</a></li>
+                  </ul>
+                </div>
+                <div className="col-6 col-lg-3">
+                  <h6 className="fw-800 text-white small uppercase tracking-widest mb-3">Resources</h6>
+                  <ul className="list-unstyled extra-small opacity-40 d-flex flex-column gap-2">
+                    <li><a href="#" className="text-white text-decoration-none hvr-red">Documentation Hub</a></li>
+                    <li><a href="#" className="text-white text-decoration-none hvr-red">API Spec v3.2</a></li>
+                    <li><a href="#" className="text-white text-decoration-none hvr-red">Network Status</a></li>
+                  </ul>
+                </div>
               </div>
-              <p className="opacity-20 x-small">&copy; 2026 Virpanix Platform. All Rights Reserved.</p>
+            </div>
+          </div>
+          <div className="mt-5 pt-5 border-top border-white/5 d-flex justify-content-between align-items-center">
+            <p className="opacity-20 x-small m-0">&copy; 2026 Virpanix Platform. All Rights Reserved.</p>
+            <div className="d-flex gap-3">
+              <i className="bi bi-twitter text-white opacity-20"></i>
+              <i className="bi bi-linkedin text-white opacity-20"></i>
+              <i className="bi bi-github text-white opacity-20"></i>
             </div>
           </div>
         </div>
@@ -497,90 +435,110 @@ export default function Home() {
 
       <style jsx>{`
         .hvr-red { transition: all 0.3s ease; }
-        .hvr-red:hover { color: var(--primary-red) !important; opacity: 1 !important; }
-        
-        .transition-all { transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+        .hvr-red:hover { color: var(--primary-red) !important; opacity: 1 !important; transform: translateY(-1px); }
+        .hvr-translate-right { transition: all 0.3s ease; display: inline-block; }
+        .hvr-translate-right:hover { transform: translateX(8px); }
 
-        .text-stroke { 
-          -webkit-text-stroke: 1px rgba(255,255,255,0.1);
-          color: transparent;
+        .fw-900 { font-weight: 900; }
+        .max-w-800 { max-width: 800px; }
+        .pt-10 { padding-top: 10rem; }
+        .mb-10 { margin-bottom: 10rem; }
+        
+        .bg-grid-hero {
+          background-image: 
+            linear-gradient(rgba(230,0,38,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(230,0,38,0.03) 1px, transparent 1px);
+          background-size: 60px 60px;
+        }
+
+        .glass-card {
+          background: rgba(255, 255, 255, 0.02);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 2.5rem;
+        }
+
+        .hero-glow-center {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 800px;
+          height: 800px;
+          background: radial-gradient(circle, rgba(230,0,38,0.08) 0%, transparent 70%);
+          filter: blur(100px);
+          pointer-events: none;
+        }
+
+        .shadow-red-pulse {
+          box-shadow: 0 0 30px rgba(230,0,38,0.5);
+          animation: pulse-red-border 2s infinite;
+        }
+
+        @keyframes pulse-red-border {
+          0% { transform: scale(1); border-color: rgba(230,0,38,0.2); }
+          50% { transform: scale(1.05); border-color: rgba(230,0,38,0.8); }
+          100% { transform: scale(1); border-color: rgba(230,0,38,0.2); }
+        }
+
+        .grayscale { filter: grayscale(100%) brightness(0.7); transition: all 0.8s ease; }
+        .hover-color:hover { filter: grayscale(0%) brightness(1); }
+
+        .shadow-primary-lg { box-shadow: 0 30px 60px -15px rgba(13,110,253,0.3); }
+        .shadow-success-lg { box-shadow: 0 30px 60px -15px rgba(25,135,84,0.3); }
+        .shadow-danger-lg { box-shadow: 0 30px 60px -15px rgba(220,53,69,0.3); }
+        .shadow-info-lg { box-shadow: 0 30px 60px -15px rgba(13,202,240,0.3); }
+        .shadow-warning-lg { box-shadow: 0 30px 60px -15px rgba(255,193,7,0.3); }
+        .shadow-dark-lg { box-shadow: 0 30px 60px -15px rgba(230,0,38,0.5); }
+
+        .hover-bg-red-light:hover { background: rgba(230,0,38,0.05); }
+
+        .siri-bar {
+            width: 4px;
+            background: #e60026;
+            border-radius: 10px;
+            transition: height 0.1s ease;
+            box-shadow: 0 0 10px rgba(230,0,38,0.5);
+        }
+
+        .animate-zoom-in {
+            animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .hvr-red-pulse:hover {
+          animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 38, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(230, 0, 38, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 38, 0); }
         }
 
         .scanline {
           width: 100%;
           height: 100px;
           z-index: 2;
-          background: linear-gradient(0deg, rgba(230,0,38,0) 0%, rgba(230,0,38,0.05) 50%, rgba(230,0,38,0) 100%);
-          opacity: 0.1;
+          background: linear-gradient(0deg, rgba(230,0,38,0) 0%, rgba(230,0,38,0.04) 50%, rgba(230,0,38,0) 100%);
           position: absolute;
           bottom: 100%;
-          animation: scanline 8s linear infinite;
+          animation: scanline 10s linear infinite;
+          pointer-events: none;
         }
 
         @keyframes scanline {
           0% { bottom: 100%; }
           100% { bottom: -100px; }
         }
-        
-        .pulse {
-          animation: pulse-red 2s infinite;
-        }
-        
-        @keyframes pulse-red {
-          0% { box-shadow: 0 0 0 0 rgba(230, 0, 38, 0.7); }
-          70% { box-shadow: 0 0 0 20px rgba(230, 0, 38, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(230, 0, 38, 0); }
-        }
 
-        .max-w-700 { max-width: 700px; }
-
-        .grayscale { filter: grayscale(100%); transition: all 0.5s ease; }
-        .grayscale:hover { filter: grayscale(0%); brightness: 100% !important; }
-
-        .shadow-red-lg { box-shadow: 0 20px 80px -20px rgba(230,0,38,0.3); }
-
-        .workflow-line::before {
-          content: '';
-          position: absolute;
-          top: 50px;
-          left: 10%;
-          right: 10%;
-          height: 1px;
-          background: rgba(230,0,38,0.2);
-          z-index: 0;
-          display: none;
-        }
-
-        @media (min-width: 768px) {
-          .workflow-line::before { display: block; }
-        }
-
-        .scanning-grid {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: 
-            linear-gradient(rgba(230,0,38,0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(230,0,38,0.05) 1px, transparent 1px);
-          background-size: 20px 20px;
-          animation: scan-grid 20s linear infinite;
-        }
-
-        @keyframes scan-grid {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(20px); }
-        }
-        
         @media (max-width: 991px) {
-          .fs-huge { font-size: 3.5rem; }
+          .display-1 { font-size: 3rem; }
+          .display-4 { font-size: 2rem; }
           .section-padding { padding: 60px 0; }
-          .vertical-feature-section { height: auto !important; }
-          .vertical-feature-section .sticky-top { position: relative !important; height: auto !important; padding: 60px 0; }
-          .v-visual-container { height: 300px !important; margin-top: 50px; }
-          .v-item { opacity: 1 !important; margin-bottom: 3rem !important; }
-          .v-visual { position: relative !important; opacity: 1 !important; transform: none !important; margin-bottom: 2rem; }
         }
       `}</style>
     </div>

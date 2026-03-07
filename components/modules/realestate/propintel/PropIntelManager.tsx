@@ -47,6 +47,19 @@ export default function PropIntelManager() {
         message: '',
         type: 'success'
     });
+    const [showHowItWorks, setShowHowItWorks] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('propintel_hideGuide');
+        if (saved === 'true') {
+            setShowHowItWorks(false);
+        }
+    }, []);
+
+    const toggleGuide = (show: boolean) => {
+        setShowHowItWorks(show);
+        localStorage.setItem('propintel_hideGuide', (!show).toString());
+    };
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -94,9 +107,16 @@ export default function PropIntelManager() {
                         <div className="bg-danger bg-opacity-10 p-3 rounded-4">
                             <i className="bi bi-robot text-danger fs-3"></i>
                         </div>
-                        <div>
-                            <h2 className="fw-bold mb-0">PropIntel AI Dashboard</h2>
-                            <p className="text-muted small mb-0">Deep property performance intelligence & actionable growth suggestions</p>
+                        <div className="d-flex align-items-center gap-3">
+                            <div>
+                                <h2 className="fw-bold mb-0">PropIntel AI Dashboard</h2>
+                                <p className="text-muted small mb-0">Deep property performance intelligence & actionable growth suggestions</p>
+                            </div>
+                            {!showHowItWorks && (
+                                <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
+                                    <i className="bi bi-info-circle me-1"></i> How it Works
+                                </button>
+                            )}
                         </div>
                     </div>
                     <div className="d-flex flex-wrap gap-2 mt-3 justify-content-between align-items-center w-100">
@@ -114,6 +134,75 @@ export default function PropIntelManager() {
                             {loading ? 'Analyzing Data...' : 'Refresh AI Intelligence'}
                         </button>
                     </div>
+                    {showHowItWorks && (
+                        <div className="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden position-relative animate-fade-in">
+                            <button
+                                className="btn position-absolute top-0 end-0 m-3 text-white opacity-50 hover-opacity-100 p-2"
+                                style={{ zIndex: 1 }}
+                                onClick={() => toggleGuide(false)}
+                                title="Hide this section"
+                            >
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                            <div className="card-body p-4 p-lg-5">
+                                <div className="row align-items-center">
+                                    <div className="col-lg-8">
+                                        <h3 className="fw-bold mb-3 text-white">Unlock Your Asset Potential</h3>
+                                        <p className="opacity-75 mb-4">Are your properties performing at their peak? PropIntel uses deep learning to diagnostic and optimize every listing:</p>
+                                        <div className="row g-4">
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-heart-pulse text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">1. Diagnostic Engine</div>
+                                                        <div className="small opacity-75">Categorize properties as "Invisible" (Low Views) or "Dead-end" (High Views, No Leads) to find the fix.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-bullseye text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">2. Product-Market Fit</div>
+                                                        <div className="small opacity-75">AI scores how well your property matches current buyer demand in the local area.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-magic text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">3. Optimization Engine</div>
+                                                        <div className="small opacity-75">Get generative AI advice on exactly which descriptions, prices, or specs to change for impact.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-stars text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">4. Trend Alignment</div>
+                                                        <div className="small opacity-75">Align your listings with weekly trending amenities (e.g., "Home Office Ready") to boost reach.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="col-lg-4 d-none d-lg-block text-center">
+                                        <i className="bi bi-cpu display-1 opacity-25"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </header>
 
                 {loading ? (

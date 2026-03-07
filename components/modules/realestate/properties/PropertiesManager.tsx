@@ -87,6 +87,19 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
         message: '',
         type: 'success',
     });
+    const [showHowItWorks, setShowHowItWorks] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('properties_hideGuide');
+        if (saved === 'true') {
+            setShowHowItWorks(false);
+        }
+    }, []);
+
+    const toggleGuide = (show: boolean) => {
+        setShowHowItWorks(show);
+        localStorage.setItem('properties_hideGuide', (!show).toString());
+    };
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -461,13 +474,20 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             <div className="container-fluid py-4">
                 {/* Header */}
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h1 className="fw-bold text-dark h3 mb-0">
-                            {mode === 'admin' ? 'All Properties' : 'My Properties'}
-                        </h1>
-                        <p className="text-muted small mb-0">
-                            {filteredProperties.length} propert{filteredProperties.length !== 1 ? 'ies' : 'y'} found
-                        </p>
+                    <div className="d-flex align-items-center gap-3">
+                        <div>
+                            <h1 className="fw-bold text-dark h3 mb-0">
+                                {mode === 'admin' ? 'All Properties' : 'My Properties'}
+                            </h1>
+                            <p className="text-muted small mb-0">
+                                {filteredProperties.length} propert{filteredProperties.length !== 1 ? 'ies' : 'y'} found
+                            </p>
+                        </div>
+                        {!showHowItWorks && (
+                            <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
+                                <i className="bi bi-info-circle me-1"></i> How it Works
+                            </button>
+                        )}
                     </div>
                     <div className="d-flex gap-2">
                         {selectedProperties.length > 0 && (
@@ -503,6 +523,76 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                         </button>
                     </div>
                 </div>
+
+                {showHowItWorks && (
+                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden position-relative animate-fade-in">
+                        <button
+                            className="btn position-absolute top-0 end-0 m-3 text-white opacity-50 hover-opacity-100 p-2"
+                            style={{ zIndex: 1 }}
+                            onClick={() => toggleGuide(false)}
+                            title="Hide this section"
+                        >
+                            <i className="bi bi-x-lg"></i>
+                        </button>
+                        <div className="card-body p-4 p-lg-5">
+                            <div className="row align-items-center">
+                                <div className="col-lg-8">
+                                    <h3 className="fw-bold mb-3 text-white">Managing your Inventory</h3>
+                                    <p className="opacity-75 mb-4">Your property portfolio is your greatest asset. Here is how to manage it like a pro:</p>
+                                    <div className="row g-4">
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-house-door text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">1. Inventory Control</div>
+                                                    <div className="small opacity-75">Centralized management of residential, commercial, and land listings.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-camera text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">2. Rich Media</div>
+                                                    <div className="small opacity-75">Upload galleries and virtual tours to attract premium buyers.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-lightning-charge text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">3. Auto-Matching</div>
+                                                    <div className="small opacity-75">Every new listing is instantly scanned against your waiting leads.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-file-earmark-pdf text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">4. Brochure Engine</div>
+                                                    <div className="small opacity-75">Generate professional PDF flyers for your clients in one click.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-lg-4 d-none d-lg-block text-center">
+                                    <i className="bi bi-buildings display-1 opacity-25"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Search Bar */}
                 <div className="card border-0 shadow-sm mb-4">

@@ -113,11 +113,15 @@ function AccountsContent() {
         const redirectUri = `${window.location.origin}${basePath}/auth/${platform.toLowerCase()}/callback`;
 
         if (platform === 'FACEBOOK') {
+            const isLocal = typeof window !== 'undefined' &&
+                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
+            const fbSDK = (window as any).FB;
 
-            // If we have the SDK and are on a secure context (or localhost), try the SDK first
-            if (window.FB && isSecure) {
-                window.FB.login((response: any) => {
+            // If we have the SDK and are on a secure context (or localhost), try the SDK first (Popup flow)
+            if (fbSDK && (isSecure || isLocal)) {
+                console.log('Using Facebook SDK Popup Login Flow');
+                fbSDK.login((response: any) => {
                     if (response.authResponse) {
                         const accessToken = response.authResponse.accessToken;
                         const userId = response.authResponse.userID;
@@ -130,7 +134,7 @@ function AccountsContent() {
                                     accessToken: accessToken,
                                     accountId: userId,
                                     accountName: 'Facebook User',
-                                    metadata: { sdk_login: true }
+                                    metadata: { sdk_login: true, auth_type: 'popup' }
                                 });
 
                                 if (res.success) {
@@ -149,13 +153,16 @@ function AccountsContent() {
 
                         connectAccount();
                     }
-                }, { scope: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish' });
+                }, {
+                    scope: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish',
+                    return_scopes: true
+                });
             } else {
                 // FALLBACK: OAuth Redirect Flow (Works over HTTP)
                 const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID || '1163988435719406';
                 const scope = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
-                console.log('Using Fallback Redirect Flow due to HTTP protocol');
-                window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+                console.log('Using Fallback Redirect Flow due to Secure context or SDK missing');
+                window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
             }
 
         } else if (platform === 'GOOGLE') {

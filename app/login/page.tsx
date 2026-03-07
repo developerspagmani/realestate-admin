@@ -76,6 +76,76 @@ function LoginContent() {
     }
   };
 
+  // --- Voice Logic ---
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState('');
+
+  const runVoiceAuth = async () => {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SpeechRecognition) {
+      setError('Voice recognition not supported. Use Chrome or Edge.');
+      return;
+    }
+
+    setIsVoiceActive(true);
+    setError('');
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+
+    const speak = (text: string) => {
+      return new Promise((resolve) => {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 0.8; // Deep premium tech voice
+        utterance.onend = () => resolve(true);
+        window.speechSynthesis.speak(utterance);
+      });
+    };
+
+    const listen = (statusText: string) => {
+      return new Promise<string>((resolve, reject) => {
+        setVoiceStatus(statusText);
+        recognition.onresult = (event: any) => resolve(event.results[0][0].transcript);
+        recognition.onerror = (e: any) => reject(e);
+        recognition.start();
+      });
+    };
+
+    try {
+      await speak("Welcome to Virpanix. State your username or email.");
+      const rawUser = await listen("Listening for Username...");
+      const username = rawUser.toLowerCase().replace(/\s/g, '');
+      setFormData(prev => ({ ...prev, username }));
+
+      await speak(`Processing ${username}. Now state your password.`);
+      const rawPass = await listen("Listening for Password...");
+      const password = rawPass.replace(/\s/g, '');
+      setFormData(prev => ({ ...prev, password }));
+
+      await speak("Credentials captured. Initializing secure neural login.");
+      setLocalLoading(true);
+
+      const loginPayload = username.includes('@')
+        ? { email: username, password }
+        : { phone: username, password };
+
+      const success = await login(loginPayload);
+      if (success) {
+        router.push(getRedirectPath());
+      } else {
+        setIsVoiceActive(false);
+        setLocalLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Voice input failed. Using manual mode.');
+      setIsVoiceActive(false);
+      setLocalLoading(false);
+    }
+  };
+
   return (
     <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light p-4">
       <div className="container" style={{ maxWidth: '900px' }}>
@@ -106,10 +176,30 @@ function LoginContent() {
             </div>
 
             {/* Login Form Side */}
-            <div className="col-lg-7 bg-white p-4 p-md-5">
-              <div className="mb-4">
-                <h2 className="fw-extrabold text-dark mb-1">Sign In</h2>
-                <p className="text-muted small">Enter your credentials to manage your portfolio</p>
+            <div className="col-lg-7 bg-white p-4 p-md-5 position-relative">
+              {isVoiceActive && (
+                <div className="voice-overlay position-absolute top-0 start-0 w-100 h-100 bg-black text-white z-3 d-flex flex-column align-items-center justify-content-center p-5 text-center">
+                  <div className="orb-pulse mb-4"></div>
+                  <h3 className="fw-900 text-red mb-2 uppercase tracking-widest">{voiceStatus}</h3>
+                  <p className="opacity-50 small">Protocol active. Please speak clearly into the microphone.</p>
+                  <button onClick={() => { setIsVoiceActive(false); window.speechSynthesis.cancel(); }} className="btn btn-outline-danger btn-sm mt-4 rounded-pill px-4">CANCEL VOICE PROTOCOL</button>
+                </div>
+              )}
+
+              <div className="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                  <h2 className="fw-extrabold text-dark mb-1">Sign In</h2>
+                  <p className="text-muted small">Enter your credentials to manage your portfolio</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={runVoiceAuth}
+                  className="btn btn-dark rounded-circle p-2 d-flex align-items-center justify-content-center shadow-lg hvr-red-pulse"
+                  style={{ width: '50px', height: '50px' }}
+                  title="Voice Login"
+                >
+                  <i className="bi bi-mic-fill fs-4 text-red"></i>
+                </button>
               </div>
 
               {(error || authError) && (
@@ -198,6 +288,30 @@ function LoginContent() {
         .input-group-text { border: 1px solid #e2e8f0; }
         .btn-primary { background-color: #000; border: none; }
         .btn-primary:hover { background-color: #222; transform: translateY(-1px); }
+
+        .orb-pulse {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background: #e60026;
+          box-shadow: 0 0 0 0 rgba(230, 0, 38, 0.7);
+          animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 38, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(230, 0, 38, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 38, 0); }
+        }
+
+        .hvr-red-pulse:hover {
+          animation: pulse 1.5s infinite;
+        }
+
+        .voice-overlay {
+          border-radius: 1rem;
+          animation: fadeIn 0.3s ease-out;
+        }
       `}</style>
     </div>
   );

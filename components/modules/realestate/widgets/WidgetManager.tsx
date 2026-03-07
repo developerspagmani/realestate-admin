@@ -103,6 +103,19 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         message: '',
         type: 'success'
     });
+    const [showHowItWorks, setShowHowItWorks] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('widget_mgmt_hideGuide');
+        if (saved === 'true') {
+            setShowHowItWorks(false);
+        }
+    }, []);
+
+    const toggleGuide = (show: boolean) => {
+        setShowHowItWorks(show);
+        localStorage.setItem('widget_mgmt_hideGuide', (!show).toString());
+    };
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -272,9 +285,16 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         <MainLayout activePage="widgets">
             <div className="container-fluid py-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h1 className="fw-bold h2 mb-1">Widget Management</h1>
-                        <p className="text-muted small">Create and manage embeddable booking widgets for your websites.</p>
+                    <div className="d-flex align-items-center gap-3">
+                        <div>
+                            <h1 className="fw-bold h2 mb-1">Widget Management</h1>
+                            <p className="text-muted small mb-0">Create and manage embeddable booking widgets for your websites.</p>
+                        </div>
+                        {!showHowItWorks && (
+                            <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
+                                <i className="bi bi-info-circle me-1"></i> How it Works
+                            </button>
+                        )}
                     </div>
                     <button
                         className="btn btn-primary shadow-sm px-4 rounded-4"
@@ -288,6 +308,76 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
                         Create Widget
                     </button>
                 </div>
+
+                {showHowItWorks && (
+                    <div className="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden position-relative animate-fade-in">
+                        <button
+                            className="btn position-absolute top-0 end-0 m-3 text-white opacity-50 hover-opacity-100 p-2"
+                            style={{ zIndex: 1 }}
+                            onClick={() => toggleGuide(false)}
+                            title="Hide this section"
+                        >
+                            <i className="bi bi-x-lg"></i>
+                        </button>
+                        <div className="card-body p-4 p-lg-5">
+                            <div className="row align-items-center">
+                                <div className="col-lg-8">
+                                    <h3 className="fw-bold mb-3 text-white">Capture Leads Everywhere</h3>
+                                    <p className="opacity-75 mb-4">Virpanix Widgets turn any external website into a lead machine. Here is how to use them:</p>
+                                    <div className="row g-4">
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-code-square text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">1. Universal Embed</div>
+                                                    <div className="small opacity-75">Copy a single <code>&lt;script&gt;</code> tag to place your property listings on WordPress, Wix, or custom sites.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-filter-square text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">2. Specific Property Sync</div>
+                                                    <div className="small opacity-75">Bind a widget to a single property or project to show specific availability and pricing.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-calendar-check text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">3. Shared Forms</div>
+                                                    <div className="small opacity-75">Connect your Marketing Hub forms to capture custom data directly into your CRM.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="d-flex gap-3">
+                                                <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                    <i className="bi bi-palette text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold">4. Live Styling</div>
+                                                    <div className="small opacity-75">Customize colors and fonts to match the host website without changing a single line of code.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-lg-4 d-none d-lg-block text-center">
+                                    <i className="bi bi-code-slash display-1 opacity-25"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {showForm && (
                     <WidgetForm

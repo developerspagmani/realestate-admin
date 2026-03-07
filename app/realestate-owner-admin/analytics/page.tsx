@@ -29,6 +29,19 @@ export default function AdvancedAnalyticsPage() {
         campaignId: '',
         propertyId: ''
     });
+    const [showHowItWorks, setShowHowItWorks] = useState(true);
+
+    useEffect(() => {
+        const saved = localStorage.getItem('adv_analytics_hideGuide');
+        if (saved === 'true') {
+            setShowHowItWorks(false);
+        }
+    }, []);
+
+    const toggleGuide = (show: boolean) => {
+        setShowHowItWorks(show);
+        localStorage.setItem('adv_analytics_hideGuide', (!show).toString());
+    };
 
     useEffect(() => {
         fetchInitialData();
@@ -111,9 +124,16 @@ export default function AdvancedAnalyticsPage() {
                 <div className="container-fluid py-4">
                     {/* Header with Refresh */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h1 className="fw-bold h2 mb-1">Advanced Analytics</h1>
-                            <p className="text-muted small">Deep insights into your business growth and market demand.</p>
+                        <div className="d-flex align-items-center gap-3">
+                            <div>
+                                <h1 className="fw-bold h2 mb-1">Advanced Analytics</h1>
+                                <p className="text-muted small">Deep insights into your business growth and market demand.</p>
+                            </div>
+                            {!showHowItWorks && (
+                                <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
+                                    <i className="bi bi-info-circle me-1"></i> How it Works
+                                </button>
+                            )}
                         </div>
                         <div className="d-flex gap-2">
                             <Link href="/realestate-owner-admin/analytics/forecasting" className="btn btn-primary rounded-3 shadow-sm">
@@ -127,6 +147,76 @@ export default function AdvancedAnalyticsPage() {
                             </button>
                         </div>
                     </div>
+
+                    {showHowItWorks && (
+                        <div className="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden position-relative animate-fade-in">
+                            <button
+                                className="btn position-absolute top-0 end-0 m-3 text-white opacity-50 hover-opacity-100 p-2"
+                                style={{ zIndex: 1 }}
+                                onClick={() => toggleGuide(false)}
+                                title="Hide this section"
+                            >
+                                <i className="bi bi-x-lg"></i>
+                            </button>
+                            <div className="card-body p-4 p-lg-5">
+                                <div className="row align-items-center">
+                                    <div className="col-lg-8">
+                                        <h3 className="fw-bold mb-3 text-white">Master Your Growth Metrics</h3>
+                                        <p className="opacity-75 mb-4">Virpanix Analytics provides a 360° view of your real estate operation. Here is what we track for you:</p>
+                                        <div className="row g-4">
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-funnel text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">1. Revenue Funnel</div>
+                                                        <div className="small opacity-75">Visualize the journey from lead creation to final conversion and identify leakage points.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-person-up text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">2. Agent KPIs</div>
+                                                        <div className="small opacity-75">Compare conversion rates and revenue generated across your entire sales team.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-share text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">3. Acquisition ROI</div>
+                                                        <div className="small opacity-75">See which channels (Social, Direct, Widgets) are bringing in the highest quality leads.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-search-heart text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">4. Search Intelligence</div>
+                                                        <div className="small opacity-75">Uncover trending buyer keywords to align your inventory with actual market demand.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="col-lg-4 d-none d-lg-block text-center">
+                                        <i className="bi bi-graph-up-arrow display-1 opacity-25"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Filters Bar */}
                     <div className="card border-0 shadow-sm rounded-4 mb-4">

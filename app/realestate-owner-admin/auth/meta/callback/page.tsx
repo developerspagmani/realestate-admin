@@ -39,7 +39,8 @@ function MetaCallbackContent() {
             }
 
             // Construct redirectUri (must match what was used in the initial redirect)
-            const redirectUri = `${window.location.origin}${window.location.pathname}`;
+            // Use window.location.origin + window.location.pathname and strip any trailing slash to ensure consistency
+            const redirectUri = `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}`;
 
             // Exchange code for tokens
             const response = await connectedAccountsApi.exchangeMetaCode(code, redirectUri);

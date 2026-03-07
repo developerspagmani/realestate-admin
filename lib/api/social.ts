@@ -112,7 +112,7 @@ export const scheduledPostsApi = {
     // Get drafts
     getDrafts: async (params: Record<string, any> = {}): Promise<any> => {
         const query = new URLSearchParams(params).toString();
-        const response = await fetch(`${API_BASE_URL}/social/posts/drafts?${query}`, {
+        const response = await fetch(`${API_BASE_URL}/social/posts/scheduled/drafts?${query}`, {
             headers: getAuthHeaders()
         });
         return response.json();
@@ -138,7 +138,7 @@ export const scheduledPostsApi = {
 
     // Create draft
     createDraft: async (data: any): Promise<any> => {
-        const response = await fetch(`${API_BASE_URL}/social/posts/drafts`, {
+        const response = await fetch(`${API_BASE_URL}/social/posts/scheduled/drafts`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(data)
@@ -516,6 +516,14 @@ export const automationApi = {
 
     forceMatch: async (leadId: string, tenantId?: string): Promise<any> => {
         const response = await fetch(`${API_BASE_URL}/social/automation/force-match`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ leadId, tenantId })
+        });
+        return response.json();
+    },
+    previewMatch: async (leadId: string, tenantId?: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/automation/preview-match`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ leadId, tenantId })
