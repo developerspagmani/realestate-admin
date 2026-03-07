@@ -5,8 +5,12 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { leadService, bookingService, Lead, Booking } from '@/app/services/api';
 import Image from 'next/image';
 import MainLayout from '@/components/MainLayout';
+import VoiceOrb from './components/VoiceOrb';
+import LeadsDataView from './components/LeadsDataView';
+import BookingsDataView from './components/BookingsDataView';
+import { matchConversation } from './utils/conversationEngine';
 
-type ViewMode = 'idle' | 'listening' | 'processing' | 'leads' | 'bookings' | 'sleep';
+export type ViewMode = 'idle' | 'listening' | 'processing' | 'leads' | 'bookings' | 'sleep';
 
 export default function IntelligentVoiceManager() {
     const { user, token } = useAuthContext();
@@ -69,7 +73,7 @@ export default function IntelligentVoiceManager() {
             } else if (transcript.includes('go to sleep') || transcript.includes('goto sleep') || transcript.includes('sleep')) {
                 recognition.stop();
                 setViewMode('sleep');
-                speak("Going to sleep.");
+                speak("Will see you soon, Thank you.");
             }
         };
 
@@ -166,38 +170,40 @@ export default function IntelligentVoiceManager() {
         setLoading(true);
 
         try {
-            if (!token) throw new Error("Authentication required");
-
-            // Conversational triggers
-            if (command.includes('sleep') || command.includes('go to sleep')) {
-                speak("Going to sleep.");
+            // --- Sleep command (special: handled before conversation engine) ---
+            if (command.includes('sleep') || command.includes('go to sleep') || command.includes('goto sleep')) {
+                speak("Will see you soon, Thank you.");
                 setViewMode('sleep');
                 setCommandFeedback("Sleeping.");
+                setLoading(false);
                 return;
-            } else if (command.includes('thank') || command.includes('appreciate')) {
-                const responses = [
-                    "You're very welcome! Let me know if you need anything else.",
-                    "It's my pleasure! Do you have any other queries?",
-                    "Anytime! I'm here if you need more help."
-                ];
-                const msg = responses[Math.floor(Math.random() * responses.length)];
-                await speak(msg);
-                setCommandFeedback("Standing by for further instructions.");
-                setViewMode('idle');
+            }
+
+            // --- Conversation engine: handles greetings, small-talk, identity etc. ---
+            const conversationReply = matchConversation(command);
+            if (conversationReply) {
+                // If it's a goodbye, trigger sleep after speaking
+                const isGoodbye = ['bye', 'goodbye', 'see you', 'later', 'take care', 'talk soon']
+                    .some(w => command.toLowerCase().includes(w));
+                await speak(conversationReply);
+                setCommandFeedback(conversationReply.length > 80 ? conversationReply.substring(0, 80) + '…' : conversationReply);
+                if (isGoodbye) {
+                    setViewMode('sleep');
+                } else {
+                    setViewMode('idle');
+                    triggerAutoSleep();
+                }
                 setActiveData('none');
-                triggerAutoSleep();
+                setLoading(false);
                 return;
-            } else if (command.trim() === 'hello' || command.trim() === 'hi' || command.includes('how are you')) {
-                const responses = [
-                    "Hello there! I am ready to assist you.",
-                    "Hi! How can I help you today?",
-                    "Greetings! What data can I pull up for you?"
-                ];
-                const msg = responses[Math.floor(Math.random() * responses.length)];
-                await speak(msg);
-                setCommandFeedback("Listening for instructions...");
+            }
+
+            // --- Data commands need authentication ---
+            if (!token) {
+                await speak("You need to be logged in to access data.");
+                setCommandFeedback("Authentication required. Please log in.");
                 setViewMode('idle');
-                setActiveData('none');
+                setLoading(false);
                 return;
             }
 
@@ -237,9 +243,18 @@ export default function IntelligentVoiceManager() {
                     setLeads(fetchedLeads);
                     setActiveData('leads');
                     setViewMode('idle');
-                    setCommandFeedback(`Found ${fetchedLeads.length} leads matching your criteria.`);
+
+                    const count = fetchedLeads.length;
+                    if (count === 0) {
+                        await speak("I couldn't find any leads matching that criteria.");
+                        setCommandFeedback('No leads found matching your criteria.');
+                    } else {
+                        await speak(`I have listed ${count} ${count === 1 ? 'lead' : 'leads'} for you.`);
+                        setCommandFeedback(`Found ${count} ${count === 1 ? 'lead' : 'leads'} matching your criteria.`);
+                    }
                     triggerAutoSleep();
                 } else {
+                    await speak("Sorry, I had trouble loading your leads. Please try again.");
                     setCommandFeedback(`Failed to load leads or format unknown.`);
                     setActiveData('none');
                     setViewMode('idle');
@@ -276,9 +291,18 @@ export default function IntelligentVoiceManager() {
                     setBookings(bookingsData);
                     setActiveData('bookings');
                     setViewMode('idle');
-                    setCommandFeedback(`Found ${bookingsData.length} bookings matching your criteria.`);
+
+                    const count = bookingsData.length;
+                    if (count === 0) {
+                        await speak("I couldn't find any bookings matching that criteria.");
+                        setCommandFeedback('No bookings found matching your criteria.');
+                    } else {
+                        await speak(`I have listed ${count} ${count === 1 ? 'booking' : 'bookings'} for you.`);
+                        setCommandFeedback(`Found ${count} ${count === 1 ? 'booking' : 'bookings'} matching your criteria.`);
+                    }
                     triggerAutoSleep();
                 } else {
+                    await speak("Sorry, I had trouble loading your bookings. Please try again.");
                     setCommandFeedback(`Failed to load bookings or format unknown.`);
                     setActiveData('none');
                     setViewMode('idle');
@@ -296,26 +320,6 @@ export default function IntelligentVoiceManager() {
             setViewMode('idle');
         } finally {
             setLoading(false);
-        }
-    };
-
-    const getStatusBadge = (status: number, type: 'lead' | 'booking') => {
-        if (type === 'lead') {
-            switch (status) {
-                case 1: return <span className="badge bg-primary-subtle text-primary">New</span>;
-                case 2: return <span className="badge bg-info-subtle text-info">Contacted</span>;
-                case 3: return <span className="badge bg-success-subtle text-success">Qualified</span>;
-                case 4: return <span className="badge bg-danger-subtle text-danger">Lost</span>;
-                default: return <span className="badge bg-secondary-subtle text-secondary">Unknown</span>;
-            }
-        } else {
-            switch (status) {
-                case 1: return <span className="badge bg-warning-subtle text-warning">Pending</span>;
-                case 2: return <span className="badge bg-success-subtle text-success">Confirmed</span>;
-                case 3: return <span className="badge bg-danger-subtle text-danger">Cancelled</span>;
-                case 4: return <span className="badge bg-secondary-subtle text-secondary">Completed</span>;
-                default: return <span className="badge bg-secondary-subtle text-secondary">Unknown</span>;
-            }
         }
     };
 
@@ -361,73 +365,14 @@ export default function IntelligentVoiceManager() {
                         </div>
                     )}
 
-                    {/* The Voice Hub Orb (Relative when awake, Absolute/Fixed when asleep) */}
-                    <div
-                        className={`z-3 text-center ${viewMode === 'sleep' ? 'position-fixed' : 'position-relative'}`}
-                        style={viewMode === 'sleep' ? {
-                            transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            bottom: '30px',
-                            right: '30px',
-                            pointerEvents: 'none',
-                            transform: 'scale(0.65)'
-                        } : {
-                            transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            pointerEvents: 'none',
-                            transform: 'scale(1)',
-                            marginTop: activeData !== 'none' ? '0' : '20px',
-                            marginBottom: activeData !== 'none' ? '2.5rem' : '0'
-                        }}
-                    >
-                        <div style={{ pointerEvents: 'auto' }}>
-                            <button
-                                onClick={startListening}
-                                className={`btn rounded-circle p-0 position-relative border-0 shadow-lg ${viewMode === 'listening' ? 'bg-danger' : 'bg-primary'}`}
-                                style={{
-                                    width: viewMode === 'listening' ? '120px' : '100px',
-                                    height: viewMode === 'listening' ? '120px' : '100px',
-                                    transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-                                }}
-                            >
-                                <i className={`bi bi-mic-fill text-white ${viewMode === 'listening' ? 'fs-1' : 'fs-2'}`}></i>
-                                {(viewMode === 'listening' || viewMode === 'processing') && (
-                                    <div className="position-absolute top-0 start-0 w-100 h-100 rounded-circle border border-2 border-white" style={{ animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }}></div>
-                                )}
-                            </button>
-
-                            {/* Text under orb */}
-                            {viewMode === 'sleep' ? (
-                                <div className="mt-3 bg-white px-3 py-2 rounded-pill shadow-sm d-inline-block" style={{ opacity: 0.9 }}>
-                                    <h6 className="fw-bold text-dark mb-0 small">Sleeping. Say "Wake up"</h6>
-                                </div>
-                            ) : (
-                                <div className="mt-4 bg-white px-4 py-2 rounded-4 shadow-sm text-center d-inline-block" style={{ minWidth: '250px', opacity: 0.95 }}>
-                                    {viewMode === 'listening' || viewMode === 'processing' ? (
-                                        <div className="d-flex justify-content-center gap-1 mb-2" style={{ height: '30px', alignItems: 'center' }}>
-                                            {speechIntensity.map((height, i) => (
-                                                <div
-                                                    key={i}
-                                                    style={{
-                                                        width: '4px',
-                                                        height: `${height}px`,
-                                                        backgroundColor: '#0d6efd',
-                                                        borderRadius: '2px',
-                                                        transition: 'height 0.1s ease',
-                                                        animation: viewMode === 'processing' ? 'pulse 1s infinite alternate' : 'none'
-                                                    }}
-                                                />
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div style={{ height: '20px' }}></div>
-                                    )}
-                                    <h5 className="fw-bold text-dark mb-1">{commandFeedback}</h5>
-                                    {viewMode === 'idle' && (
-                                        <p className="text-secondary small mb-1">Try: "List new leads" or "Show today's bookings"</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    {/* The Voice Hub Orb (Relative when awake, Fixed when asleep) */}
+                    <VoiceOrb
+                        viewMode={viewMode}
+                        activeData={activeData}
+                        startListening={startListening}
+                        speechIntensity={speechIntensity}
+                        commandFeedback={commandFeedback}
+                    />
 
                     {/* Dynamic Data Views */}
                     <div className="w-100 mt-2 px-3" style={{ maxWidth: '1200px' }}>
@@ -440,114 +385,32 @@ export default function IntelligentVoiceManager() {
                         )}
 
                         {!loading && activeData === 'leads' && (
-                            <div className="card border-0 shadow-sm rounded-4 overflow-hidden" style={{ animation: 'fadeInUp 0.5s ease' }}>
-                                <div className="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
-                                    <h5 className="fw-bold mb-0"><i className="bi bi-funnel-fill text-primary me-2"></i> Artificial Lead Sourcing</h5>
-                                    <span className="badge bg-primary rounded-pill px-3 py-2">{leads.length} Results</span>
-                                </div>
-                                <div className="table-responsive">
-                                    <table className="table table-hover align-middle mb-0">
-                                        <thead className="table-light">
-                                            <tr>
-                                                <th className="ps-4">Client</th>
-                                                <th>Contact</th>
-                                                <th>Property Interest</th>
-                                                <th>Status</th>
-                                                <th className="pe-4 text-end">Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {leads.length > 0 ? leads.map((lead) => (
-                                                <tr key={lead.id}>
-                                                    <td className="ps-4">
-                                                        <div className="fw-bold text-dark">{lead.name}</div>
-                                                        <div className="small text-muted">Lead ID: {lead.id.substring(0, 8).toUpperCase()}</div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="small"><i className="bi bi-envelope me-1"></i>{lead.email || 'N/A'}</div>
-                                                        <div className="small"><i className="bi bi-telephone me-1"></i>{lead.phone || 'N/A'}</div>
-                                                    </td>
-                                                    <td>{lead.property?.title || 'General Inquiry'}</td>
-                                                    <td>{getStatusBadge(lead.status, 'lead')}</td>
-                                                    <td className="pe-4 text-end small text-secondary">{new Date(lead.createdAt).toLocaleDateString()}</td>
-                                                </tr>
-                                            )) : (
-                                                <tr><td colSpan={5} className="text-center py-5 text-muted">No leads found matching this criteria.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                            <LeadsDataView leads={leads} />
                         )}
 
                         {!loading && activeData === 'bookings' && (
-                            <div className="card border-0 shadow-sm rounded-4 overflow-hidden" style={{ animation: 'fadeInUp 0.5s ease' }}>
-                                <div className="card-header bg-white p-4 border-bottom d-flex justify-content-between align-items-center">
-                                    <h5 className="fw-bold mb-0"><i className="bi bi-calendar-check text-primary me-2"></i> Booking Intelligence</h5>
-                                    <span className="badge bg-primary rounded-pill px-3 py-2">{bookings.length} Results</span>
-                                </div>
-                                <div className="table-responsive">
-                                    <table className="table table-hover align-middle mb-0">
-                                        <thead className="table-light">
-                                            <tr>
-                                                <th className="ps-4">Reference</th>
-                                                <th>Client / Guest</th>
-                                                <th>Schedule</th>
-                                                <th>Status</th>
-                                                <th className="pe-4 text-end">Value</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {bookings.length > 0 ? bookings.map((booking) => (
-                                                <tr key={booking.id}>
-                                                    <td className="ps-4">
-                                                        <div className="fw-bold text-dark">{booking.id.substring(0, 8).toUpperCase()}</div>
-                                                        <div className="small text-muted">{booking.property?.title || 'Unknown Property'}</div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="fw-semibold">{booking.guestName || booking.user?.name || 'Unknown'}</div>
-                                                        <div className="small text-muted">{booking.guestEmail || booking.user?.email}</div>
-                                                    </td>
-                                                    <td>
-                                                        <div className="small fw-semibold">{new Date(booking.startAt).toLocaleDateString()}</div>
-                                                        <div className="small text-muted">to {new Date(booking.endAt).toLocaleDateString()}</div>
-                                                    </td>
-                                                    <td>{getStatusBadge(booking.status, 'booking')}</td>
-                                                    <td className="pe-4 text-end fw-bold">
-                                                        {booking.totalPrice ? `$${booking.totalPrice.toLocaleString()}` : '-'}
-                                                    </td>
-                                                </tr>
-                                            )) : (
-                                                <tr><td colSpan={5} className="text-center py-5 text-muted">No bookings found matching this criteria.</td></tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                            <BookingsDataView bookings={bookings} />
                         )}
 
                     </div>
                 </div>
 
                 <style>{`
-            @keyframes ping {
-                75%, 100% {
-                    transform: scale(1.5);
-                    opacity: 0;
-                }
-            }
-            @keyframes pulse {
-                0% { transform: scaleY(1); }
-                100% { transform: scaleY(1.2); }
-            }
-            @keyframes fadeInUp {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            .scale-75 {
-                transform: scale(0.75);
-            }
-        `}</style>
+                    @keyframes ping {
+                        75%, 100% {
+                            transform: scale(1.5);
+                            opacity: 0;
+                        }
+                    }
+                    @keyframes pulse {
+                        0% { transform: scaleY(1); }
+                        100% { transform: scaleY(1.2); }
+                    }
+                    @keyframes fadeInUp {
+                        from { opacity: 0; transform: translateY(20px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                `}</style>
             </div>
         </MainLayout>
     );
