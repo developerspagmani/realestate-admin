@@ -463,11 +463,6 @@ export const categoryEndpoints = {
   delete: (id: string) => `/categories/${id}`,
 };
 
-// Property 3D endpoints
-export const property3DEndpoints = {
-  getByPropertyId: (propertyId: string) => `/property-3d/${propertyId}`,
-  save: (propertyId: string) => `/property-3d/${propertyId}`,
-};
 
 // Subscription/Plan endpoints
 export const subscriptionEndpoints = {

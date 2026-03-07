@@ -5,7 +5,6 @@ import GallerySlider from './GallerySlider';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
 import { widgetService } from '@/app/services/api';
 import PlotMapViewer from '@/components/modules/realestate/properties/PlotMapViewer';
-import Plot3DViewer from './Plot3DViewer';
 import { Seats } from '@/types';
 import BookingModal from './BookingModal';
 
@@ -44,7 +43,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
     identifyLead,
     currencySymbol = '$'
 }) => {
-    const [show3DPlotView, setShow3DPlotView] = useState(false);
+
     const [showBookingModal, setShowBookingModal] = useState(false);
     const [bookingUnit, setBookingUnit] = useState<any>(null);
 
@@ -123,28 +122,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                 </div>
                             </div>
 
-                            {widget.configuration.workspace3D?.enabled && selectedProperty.workspace3D && (
-                                <button
-                                    className="btn btn-dark w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 mb-3"
-                                    onClick={() => setCurrentView('THREE_D')}
-                                >
-                                    <i className="bi bi-box-seam fs-5"></i>
-                                    <span className="fw-bold">Interactive Layout Explorer</span>
-                                </button>
-                            )}
 
-
-
-                            {widget.configuration.builder?.enableTour !== false && (
-                                <button
-                                    className="btn btn-primary w-100 rounded-4 py-3 shadow-lg d-flex align-items-center justify-content-center gap-3 transition-all hover:translate-y-[-2px] mb-3"
-                                    style={{ backgroundColor: theme.primaryColor, border: 'none' }}
-                                    onClick={() => setCurrentView('TOUR')}
-                                >
-                                    <i className="bi bi-view-stacked fs-5"></i>
-                                    <span className="fw-bold">Experience Full 3D Walkthrough</span>
-                                </button>
-                            )}
 
                             {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking !== false) && (
                                 <button
@@ -269,13 +247,6 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                         <i className="bi bi-map-fill me-2 text-primary" style={{ color: theme.primaryColor }}></i>
                                         Interactive Property Plot Layout
                                     </span>
-                                    <button
-                                        className="btn btn-dark btn-sm rounded-4 px-3 d-flex align-items-center gap-2"
-                                        onClick={() => setShow3DPlotView(true)}
-                                    >
-                                        <i className="bi bi-box-seam"></i>
-                                        View in 3D
-                                    </button>
                                 </h5>
                                 <div style={{ height: '1200px', width: '100%' }}>
                                     <PlotMapViewer
@@ -461,43 +432,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                 </div>
             </div>
 
-            {/* 3D Plot Viewer Modal */}
-            {show3DPlotView && selectedProperty.metadata?.interactiveSvg && (
-                <Plot3DViewer
-                    svgContent={selectedProperty.metadata.interactiveSvg}
-                    mapping={selectedProperty.metadata.svgMapping || {}}
-                    units={selectedProperty.units?.map((u: any) => {
-                        // Same status transformation as PlotMapViewer
-                        let statusStr = 'available';
 
-                        if (typeof u.status === 'string' && u.status.length > 0) {
-                            statusStr = u.status.toLowerCase().trim();
-                        } else {
-                            const statusNum = Number(u.status);
-                            if (statusNum === 1) statusStr = 'available';
-                            else if (statusNum === 2) statusStr = 'occupied';
-                            else if (statusNum === 3) statusStr = 'maintenance';
-                            else if (statusNum === 4) statusStr = 'sold';
-                        }
-
-                        return {
-                            id: u.id,
-                            unitCode: u.unitCode,
-                            name: u.unitCode || u.name || `Unit ${u.id.substring(0, 4)}`,
-                            status: statusStr,
-                            price: u.unitPricing?.[0]?.price || 0,
-                            sizeSqft: u.sizeSqft || 0
-                        };
-                    })}
-                    theme={theme}
-                    currencySymbol={currencySymbol}
-                    onClose={() => setShow3DPlotView(false)}
-                    onBookingSelect={(unit) => {
-                        setBookingUnit(unit);
-                        setShowBookingModal(true);
-                    }}
-                />
-            )}
 
             <BookingModal
                 show={showBookingModal}

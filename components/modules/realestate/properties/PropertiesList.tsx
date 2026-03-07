@@ -167,24 +167,7 @@ export default function PropertiesList({
                                                 >
                                                     <i className="bi bi-trash3"></i>
                                                 </button>
-                                                {userRole === 2 && (
-                                                    <Link
-                                                        href={`/realestate-admin/property-3d?propertyId=${property.id}&propertyName=${encodeURIComponent(property.name)}`}
-                                                        className="btn btn-sm btn-outline-info rounded-circle p-0 d-flex align-items-center justify-content-center"
-                                                        style={{ width: '32px', height: '32px' }}
-                                                        title="Architect 3D Layout"
-                                                    >
-                                                        <i className="bi bi-tools"></i>
-                                                    </Link>
-                                                )}
-                                                <Link
-                                                    href={`/realestate-owner-admin/tour/${property.id}`}
-                                                    className="btn btn-sm btn-primary rounded-circle p-0 d-flex align-items-center justify-content-center"
-                                                    style={{ width: '32px', height: '32px' }}
-                                                    title="Immersive 3D Tour"
-                                                >
-                                                    <i className="bi bi-eye-fill"></i>
-                                                </Link>
+
                                                 <Link
                                                     href={`${userRole === 3 ? '/realestate-owner-admin' : '/realestate-admin'}/plot-map-editor?propertyId=${property.id}&propertyName=${encodeURIComponent(property.name)}`}
                                                     className="btn btn-sm btn-outline-warning rounded-circle p-0 d-flex align-items-center justify-content-center"

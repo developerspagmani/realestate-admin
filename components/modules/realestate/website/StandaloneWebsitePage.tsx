@@ -8,12 +8,13 @@ import ListingView from '@/components/modules/realestate/shared/ListingView';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
 import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailView';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
-import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
+
 import { Property, Unit } from '@/types';
 import '@/components/modules/realestate/shared/shared.css';
 
-type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'TOUR';
+type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL';
+
 
 interface StandaloneWebsitePageProps {
     slugOrDomain: string;
@@ -221,25 +222,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
 
 
 
-            case 'TOUR':
-                return (
-                    <div className="container py-5">
-                        <div className="glass-panel p-0 rounded-4 overflow-hidden shadow-2xl">
-                            <div className="p-4 bg-white border-bottom d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 className="fw-bold mb-0">Virtual Reality Tour</h5>
-                                    <p className="extra-small text-muted mb-0">{selectedProperty?.title}</p>
-                                </div>
-                                <button className="btn btn-outline-dark btn-sm rounded-4 px-3" onClick={() => setCurrentView('PROPERTY_DETAIL')}>
-                                    <i className="bi bi-arrow-left me-2"></i>Exit Tour
-                                </button>
-                            </div>
-                            <div style={{ height: '70vh' }}>
-                                <PropertyTour propertyId={selectedProperty?.id || (data?.[0]?.id || '')} />
-                            </div>
-                        </div>
-                    </div>
-                );
+
         }
     };
 

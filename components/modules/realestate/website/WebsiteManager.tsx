@@ -62,8 +62,6 @@ const INITIAL_FORM_DATA = {
             columns: 3,
             showPrice: true,
             showStatus: true,
-            enable3D: true,
-            enableTour: true,
             enableBooking: true,
             detailViewType: 'tabs', // tabs | scrolling
             modules: [] // [{ id, type, data: { ... } }]

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect, MouseEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Seats } from '@/types';
 import Toast from '@/components/common/Toast';
@@ -138,21 +137,9 @@ export default function PlotMapEditor({ units, propertyName, initialMapping = {}
         showToast('Unit unassigned');
     };
 
-    const router = useRouter();
 
-    const handleConvertTo3D = () => {
-        if (!svgContent) {
-            showToast('No SVG content to convert', 'error');
-            return;
-        }
 
-        // Save to localStorage for the 3D converter page
-        localStorage.setItem('svg_to_3d_content', svgContent);
-        localStorage.setItem('svg_to_3d_mapping', JSON.stringify(mapping));
-        localStorage.setItem('svg_to_3d_units', JSON.stringify(units));
 
-        router.push('/realestate-owner-admin/svg-3d-converter');
-    };
 
     const handleSave = () => {
         if (!svgContent) {
@@ -287,9 +274,7 @@ export default function PlotMapEditor({ units, propertyName, initialMapping = {}
                     </label>
                 </div>
                 <div className="d-flex gap-2">
-                    <button className="btn btn-dark btn-sm px-4 rounded-4 fw-bold" onClick={handleConvertTo3D}>
-                        <i className="bi bi-box-fill me-2"></i>Convert to 3D
-                    </button>
+
                     <button className="btn btn-outline-primary btn-sm px-4 rounded-4 fw-bold" onClick={handleSave}>
                         <i className="bi bi-save me-2"></i>Save Mapping
                     </button>

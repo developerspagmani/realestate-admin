@@ -12,11 +12,12 @@ import ListingView from '@/components/modules/realestate/shared/ListingView';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
 import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailView';
 import PageBuilder from '@/components/modules/realestate/shared/PageBuilder';
-import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
+
 import Loader from '@/components/common/Loader';
 
-type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL' | 'TOUR';
+type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL';
+
 
 export default function PublicWidgetPage() {
     const params = useParams();
@@ -284,26 +285,7 @@ export default function PublicWidgetPage() {
                     />
                 );
 
-            case 'TOUR':
-                return (
-                    <div className="container">
-                        <div className="tour-view animate-fade-in widget-container">
-                            <div className="p-4 bg-white border-bottom d-flex justify-content-between align-items-center shadow-sm">
-                                <div>
-                                    <h5 className="fw-extrabold mb-0 d-flex align-items-center">
-                                        <i className="bi bi-box-fill me-2 text-primary"></i>
-                                        Immersive Property Tour
-                                    </h5>
-                                    <p className="extra-small text-muted mb-0">{selectedProperty?.title}</p>
-                                </div>
-                                <button className="btn btn-outline-dark btn-sm rounded-4 px-4 fw-bold" onClick={() => setCurrentView('PROPERTY_DETAIL')}>
-                                    <i className="bi bi-x-circle me-2"></i>Exit Tour
-                                </button>
-                            </div>
-                            <PropertyTour propertyId={selectedProperty?.id || ''} />
-                        </div>
-                    </div>
-                );
+
             default:
                 return null;
         }

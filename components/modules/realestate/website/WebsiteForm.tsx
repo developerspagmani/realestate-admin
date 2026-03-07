@@ -638,8 +638,6 @@ export default function WebsiteForm({
                                                 <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Advanced Modules Toggle</h6>
                                                 <div className="row g-3 p-3 bg-light rounded-4">
                                                     {[
-                                                        { id: 'enable3D', label: 'Interactive 3D Plot Map' },
-                                                        { id: 'enableTour', label: 'Virtual 3D Tours' },
                                                         { id: 'enableBooking', label: 'Suite Booking Engine' },
                                                         { id: 'showListing', label: 'Property Inventory Section' },
                                                         { id: 'showInquiry', label: 'Lead Capture Form' },

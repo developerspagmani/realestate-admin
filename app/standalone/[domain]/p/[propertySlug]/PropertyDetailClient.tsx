@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStandalone } from '../../StandaloneProvider';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
-import PropertyTour from '@/components/modules/realestate/tour/PropertyTour';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 
-type ViewType = 'PROPERTY_DETAIL' | 'TOUR';
+
+type ViewType = 'PROPERTY_DETAIL';
+
 
 export default function PropertyDetailClient({ propertySlug }: { propertySlug: string }) {
     const { website, properties, theme, trackAction, identifyLead, slugOrDomain } = useStandalone();
@@ -38,25 +39,7 @@ export default function PropertyDetailClient({ propertySlug }: { propertySlug: s
     const renderContent = () => {
         switch (currentView) {
 
-            case 'TOUR':
-                return (
-                    <div className="container py-5">
-                        <div className="glass-panel p-0 rounded-4 overflow-hidden shadow-2xl">
-                            <div className="p-4 bg-white border-bottom d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 className="fw-bold mb-0">Virtual Reality Tour</h5>
-                                    <p className="extra-small text-muted mb-0">{property.title}</p>
-                                </div>
-                                <button className="btn btn-outline-dark btn-sm rounded-4 px-3" onClick={() => setCurrentView('PROPERTY_DETAIL')}>
-                                    <i className="bi bi-arrow-left me-2"></i>Exit Tour
-                                </button>
-                            </div>
-                            <div style={{ height: '70vh' }}>
-                                <PropertyTour propertyId={property.id} />
-                            </div>
-                        </div>
-                    </div>
-                );
+
             default:
                 return (
                     <PropertyDetailView
