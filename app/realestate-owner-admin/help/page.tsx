@@ -343,6 +343,40 @@ const HELP_MODULES = [
                 content: 'Deploy AI chatbots that handle 80% of routine inquiries and property matching via WhatsApp 24/7.'
             }
         ]
+    },
+    {
+        id: 'voice-command',
+        title: 'Intelligent Voice Command',
+        icon: 'bi-mic',
+        color: 'danger',
+        description: 'Hands-free AI assistant to manage your entire real estate operation using natural language.',
+        impact: 'Accelerate decision-making with instant, voice-activated insights. Transition from "Manual Work" to "Command & Control," allowing you to manage leads, bookings, and market shortages while on the move or in high-pressure meetings.',
+        sections: [
+            {
+                name: 'Wake & Sleep Flow',
+                content: 'Activate using "Wake up", "Hello System", or "Virpanix". To end, say "Go to sleep". The system intelligently listens for 15 seconds after every command for seamless follow-up questions.'
+            },
+            {
+                name: 'Conversational Intelligence',
+                content: 'The assistant understands natural context. Try: \n• Identity: "Who are you?", "Introduce yourself" \n• Greetings: "Hello", "How is it going?" \n• Motivation/Humor: "Tell me a joke", "Inspire me" \n• Utilities: "What time is it?", "What day is today?".'
+            },
+            {
+                name: 'Leads & CRM Commands',
+                content: 'Direct data retrieval: \n• "List new leads" \n• "Show high-value leads" \n• "Find leads with 1.5 Crore budget" \n• "List my pending follow-ups".'
+            },
+            {
+                name: 'Forecasting & Growth Triggers',
+                content: 'Predictive market insights: \n• "Shortage" / "Gaps": Lists keyword & feature shortages. \n• "What client looking mostly": Analyzes top search intents. \n• "Improvement areas": Fetches AI recommendations. \n• "Show demand details": Speaks total search volume and average budget.'
+            },
+            {
+                name: 'Deal Prevention & Multi-turn',
+                content: 'Rescue critical revenue: \n• Trigger: "List inactive leads" or "High risk deals". \n• Action: System fetches risk scores & active leakage signals. \n• Multi-turn: System asks "Which agent should I assign this to?". Say the Agent Name to complete the assignment.'
+            },
+            {
+                name: 'Operation & Support',
+                content: 'Manage your daily schedule: \n• "Show today\'s bookings" \n• "List upcoming visits" \n• "What can you do?": Lists available features \n• "Thank you/Brilliant": Acknowledges and prepares for next question.'
+            }
+        ]
     }
 ];
 
@@ -453,7 +487,7 @@ export default function HelpPage() {
                                                 <div key={idx} className="col-md-6">
                                                     <div className="p-4 border rounded-4 h-100 hover-border-primary transition-all">
                                                         <h5 className="fw-bold mb-3">{section.name}</h5>
-                                                        <p className="text-muted small mb-0 lh-lg">{section.content}</p>
+                                                        <p className="text-muted small mb-0 lh-lg" style={{ whiteSpace: 'pre-wrap' }}>{section.content}</p>
                                                     </div>
                                                 </div>
                                             ))}
