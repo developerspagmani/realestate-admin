@@ -1,8 +1,10 @@
 'use client';
 
-import Link from "next/link";
 import { useEffect, useState } from 'react';
 import AOS from 'aos';
+import Navbar from '@/components/home/Navbar';
+import SEOManager from '@/components/home/SEOManager';
+import HomeFooter from '@/components/home/HomeFooter';
 
 export default function AboutPage() {
     const [scrolled, setScrolled] = useState(false);
@@ -16,18 +18,10 @@ export default function AboutPage() {
 
     return (
         <div className="bg-black text-white min-vh-100 font-inter">
+            <SEOManager pageKey="about" />
             <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" />
 
-            {/* Navigation */}
-            <nav className={`fixed-top w-100 transition-all ${scrolled ? 'bg-black/90 backdrop-blur-md border-bottom border-red/20' : 'bg-transparent'}`} style={{ zIndex: 1000, height: '80px' }}>
-                <div className="container h-100 d-flex justify-content-between align-items-center">
-                    <Link href="/" className="d-flex align-items-center gap-3 text-decoration-none">
-                        <div className="logo-box bg-red text-white fw-900 px-2 py-1 rounded-1">V</div>
-                        <span className="fw-900 text-uppercase tracking-widest text-white">Virpanix</span>
-                    </Link>
-                    <Link href="/" className="btn-outline-red py-2 px-4 small fw-700">Back to Home</Link>
-                </div>
-            </nav>
+            <Navbar scrolled={scrolled} />
 
             {/* Hero */}
             <section className="pt-10 pb-5 position-relative overflow-hidden bg-grid">
@@ -73,6 +67,8 @@ export default function AboutPage() {
                     </div>
                 </div>
             </section>
+
+            <HomeFooter />
 
             <style jsx>{`
         .pt-10 { padding-top: 10rem; }

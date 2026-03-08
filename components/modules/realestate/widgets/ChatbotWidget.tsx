@@ -94,6 +94,9 @@ export default function ChatbotWidget({
     const [filteredResults, setFilteredResults] = useState<any[]>([]);
     const [isExpanded, setIsExpanded] = useState(false);
     const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+    const [isNeuralProcessing, setIsNeuralProcessing] = useState(false);
+    const [intentScore, setIntentScore] = useState(0);
+    const [processingMessage, setProcessingMessage] = useState('');
     const chatBodyRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -152,7 +155,7 @@ export default function ChatbotWidget({
             setStep('HI');
             addMessage('bot', `Thank you ${formData.name}! We've saved your contact information safely. 🔒`);
             setTimeout(() => {
-                addMessage('bot', 'Hi there! I\'m your smart booking assistant. Need help finding the perfect space?');
+                addMessage('bot', 'Hi there! I\'m Virpa, your smart booking assistant. Need help finding the perfect space?');
                 setTimeout(() => {
                     if (flow && flow.length > 0) {
                         setStep('DYNAMIC_FLOW');
@@ -203,6 +206,29 @@ export default function ChatbotWidget({
 
     const calculateResults = (finalAnswers?: any) => {
         const currentAnswers = finalAnswers || answers;
+
+        // --- PHASE 1: Neural Vectoring Simulation ---
+        setIsNeuralProcessing(true);
+        const stages = [
+            "Initializing Linguistic Decoder...",
+            "Mapping Intent Vectors...",
+            "Decoding Semantic Requirements...",
+            "Synchronizing with Market Intelligence Hub..."
+        ];
+
+        let stageIdx = 0;
+        const stageInterval = setInterval(() => {
+            if (stageIdx < stages.length) {
+                setProcessingMessage(stages[stageIdx]);
+                stageIdx++;
+            } else {
+                clearInterval(stageInterval);
+                finishCalculation(currentAnswers);
+            }
+        }, 600);
+    };
+
+    const finishCalculation = (currentAnswers: any) => {
         const filtered = properties.filter(prop => {
             const cityMatch = !currentAnswers.CITY?.length || currentAnswers.CITY.some((c: string) => prop.city?.toLowerCase().includes(c.toLowerCase()));
             const locMatch = !currentAnswers.LOCATION?.length || currentAnswers.LOCATION.some((l: string) =>
@@ -251,6 +277,14 @@ export default function ChatbotWidget({
             sorted.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
         }
 
+        // --- PHASE 2: Intent Scoring Algorithm ---
+        let score = 70; // Base score
+        if (currentAnswers.BUDGET?.some((b: string) => b.includes('High') || b.includes('Luxury'))) score += 15;
+        if (currentAnswers.LOCATION?.length > 1) score += 10;
+        if (sorted.length > 0) score += 3;
+        setIntentScore(Math.min(99, score));
+
+        setIsNeuralProcessing(false);
         if (sorted.length > 0) {
             addMessage('bot', `I found ${sorted.length} matches for you!`);
 
@@ -369,7 +403,7 @@ export default function ChatbotWidget({
                         <i className="bi bi-robot" style={{ color: theme.primaryColor }}></i>
                     </div>
                     <div>
-                        <span className="fw-bold small d-block lh-1">Smart Assistant</span>
+                        <span className="fw-bold small d-block lh-1">Virpa AI</span>
                         <span className="extra-small opacity-75">Online</span>
                     </div>
                 </div>
@@ -388,7 +422,20 @@ export default function ChatbotWidget({
                 </div>
             </div>
 
-            <div className="chat-body p-3 overflow-auto flex-grow-1" style={{ backgroundColor: '#f9fafb', minHeight: '0' }} ref={chatBodyRef}>
+            <div className="chat-body p-3 overflow-auto flex-grow-1 position-relative" style={{ backgroundColor: '#f9fafb', minHeight: '0' }} ref={chatBodyRef}>
+
+                {/* Neural Processing Overlay */}
+                {isNeuralProcessing && (
+                    <div className="position-absolute inset-0 bg-white/95 z-3 d-flex flex-column align-items-center justify-content-center p-4">
+                        <div className="mb-4 d-flex gap-2">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="bg-red rounded-circle animate-pulse" style={{ width: '12px', height: '12px', animationDelay: `${i * 0.2}s` }}></div>
+                            ))}
+                        </div>
+                        <span className="extra-small fw-800 text-red letter-spacing-1 mb-2">VIRPA NEURAL HUB</span>
+                        <p className="extra-small text-muted text-center tracking-widest uppercase fw-700 animate-fade-in">{processingMessage}</p>
+                    </div>
+                )}
                 {step === 'IDLE' ? (
                     <div className="text-center py-5">
                         <div className="bounce-container mb-3">
@@ -569,8 +616,15 @@ export default function ChatbotWidget({
                 )}
             </div>
 
-            <div className="chat-footer p-2 bg-white border-top">
-                <div className="d-flex flex-wrap gap-1 justify-content-center mb-1">
+            <div className="chat-footer p-2 bg-white border-top position-relative">
+                {intentScore > 0 && (
+                    <div className="position-absolute top-0 start-50 translate-middle">
+                        <span className="badge bg-red text-white py-1 px-3 rounded-pill border border-white/20 shadow-sm" style={{ fontSize: '10px' }}>
+                            INTENT SCORE: {intentScore}%
+                        </span>
+                    </div>
+                )}
+                <div className="d-flex flex-wrap gap-1 justify-content-center mb-1 mt-2">
                     {properties.slice(0, 4).map(p => (
                         <span
                             key={p.id}
@@ -583,7 +637,7 @@ export default function ChatbotWidget({
                     ))}
                 </div>
                 <button className="btn btn-link btn-sm text-muted text-decoration-none extra-small w-100 opacity-50" onClick={onClose}>
-                    <i className="bi bi-power me-1"></i> Close Assistant
+                    <i className="bi bi-power me-1"></i> Close Virpa
                 </button>
             </div>
 

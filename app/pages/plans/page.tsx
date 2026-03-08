@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from 'react';
 import AOS from 'aos';
+import Navbar from '@/components/home/Navbar';
+import SEOManager from '@/components/home/SEOManager';
+import HomeFooter from '@/components/home/HomeFooter';
 
 export default function PlansPage() {
     const [scrolled, setScrolled] = useState(false);
@@ -44,18 +47,10 @@ export default function PlansPage() {
 
     return (
         <div className="bg-black text-white min-vh-100 font-inter">
+            <SEOManager pageKey="plans" />
             <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" />
 
-            {/* Navigation */}
-            <nav className={`fixed-top w-100 transition-all ${scrolled ? 'bg-black/90 backdrop-blur-md border-bottom border-red/20' : 'bg-transparent'}`} style={{ zIndex: 1000, height: '80px' }}>
-                <div className="container h-100 d-flex justify-content-between align-items-center">
-                    <Link href="/" className="logo-box bg-red text-white fw-900 px-2 py-1 rounded-1 text-decoration-none">V</Link>
-                    <div className="d-flex gap-4 align-items-center">
-                        <Link href="/" className="text-white opacity-50 text-decoration-none hvr-red small fw-700">Home</Link>
-                        <Link href="/register" className="btn-red py-2 px-4 small fw-700">Get Started</Link>
-                    </div>
-                </div>
-            </nav>
+            <Navbar scrolled={scrolled} />
 
             {/* Hero */}
             <section className="pt-10 pb-5 align-items-center justify-content-center text-center position-relative overflow-hidden bg-grid">
@@ -93,11 +88,7 @@ export default function PlansPage() {
                 </div>
             </section>
 
-            <div className="container py-10" data-aos="zoom-in">
-                <div className="p-2 glass-card rounded-5">
-                    <img src="/images/plans.png" className="w-100 rounded-4 grayscale" alt="Pricing Plans Visualization" />
-                </div>
-            </div>
+            <HomeFooter />
 
             <style jsx>{`
         .pt-10 { padding-top: 10rem; }

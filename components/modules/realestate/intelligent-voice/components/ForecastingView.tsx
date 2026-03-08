@@ -13,13 +13,13 @@ export default function ForecastingView({ data }: ForecastingViewProps) {
             <div className="row g-3 mb-4">
                 <div className="col-md-3">
                     <div style={{
-                        background: 'rgba(59,130,246,0.1)',
-                        border: '1px solid rgba(59,130,246,0.2)',
+                        background: 'rgba(239,68,68,0.08)',
+                        border: '1px solid rgba(239,68,68,0.15)',
                         borderRadius: '16px', padding: '16px', textAlign: 'center'
                     }}>
-                        <div style={{ color: '#93c5fd', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Potential Demand</div>
+                        <div style={{ color: '#fca5a5', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Potential Demand</div>
                         <div style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 800 }}>{data.summary?.totalSearches?.toLocaleString() || 0}</div>
-                        <div style={{ color: '#64748b', fontSize: '0.65rem' }}>Active Search Signals</div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.65rem' }}>Active Search Signals</div>
                     </div>
                 </div>
                 <div className="col-md-3">
@@ -35,13 +35,13 @@ export default function ForecastingView({ data }: ForecastingViewProps) {
                 </div>
                 <div className="col-md-3">
                     <div style={{
-                        background: 'rgba(139,92,246,0.1)',
-                        border: '1px solid rgba(139,92,246,0.2)',
+                        background: 'rgba(153,27,27,0.08)',
+                        border: '1px solid rgba(153,27,27,0.15)',
                         borderRadius: '16px', padding: '16px', textAlign: 'center'
                     }}>
-                        <div style={{ color: '#c4b5fd', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Inventory Sync</div>
+                        <div style={{ color: '#f87171', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Inventory Sync</div>
                         <div style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 800 }}>{data.summary?.totalInventory || 0}</div>
-                        <div style={{ color: '#64748b', fontSize: '0.65rem' }}>Properties In Portfolio</div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.65rem' }}>Properties In Portfolio</div>
                     </div>
                 </div>
                 <div className="col-md-3">
@@ -101,7 +101,7 @@ export default function ForecastingView({ data }: ForecastingViewProps) {
                                             <td style={{ padding: '12px 20px' }}>
                                                 <span style={{
                                                     fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 700,
-                                                    background: 'rgba(59,130,246,0.2)', color: '#93c5fd'
+                                                    background: 'rgba(185,28,28,0.2)', color: '#fca5a5'
                                                 }}>{item.severity}</span>
                                             </td>
                                         </tr>
@@ -134,7 +134,7 @@ export default function ForecastingView({ data }: ForecastingViewProps) {
                                         <span style={{ fontSize: '0.6rem', color: '#64748b', fontWeight: 700 }}>{rec.priority}</span>
                                     </div>
                                     <p style={{ color: '#94a3b8', fontSize: '0.78rem', marginBottom: '8px', lineHeight: 1.4 }}>{rec.detail}</p>
-                                    <div style={{ color: '#3b82f6', fontSize: '0.75rem', fontWeight: 600 }}>Action Plan: {rec.impact}</div>
+                                    <div style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: 600 }}>Action Plan: {rec.impact}</div>
                                 </div>
                             ))}
                         </div>

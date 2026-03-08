@@ -323,6 +323,28 @@ const HELP_MODULES = [
         ]
     },
     {
+        id: 'virpa-ai',
+        title: 'Virpa: Conversational Intelligence',
+        icon: 'bi-robot',
+        color: 'danger',
+        description: 'Advanced AI assistant for real-time lead qualification and linguistic intent decoding.',
+        impact: 'Dominating search results is only the beginning. Virpa qualifies 100% of inbound traffic instantly, decoding buyer intent with institutional precision and delivering 40% faster lead-to-agent qualification cycles.',
+        sections: [
+            {
+                name: 'Neural Vectoring',
+                content: 'Virpa utilizes sophisticated NLP (Natural Language Processing) to map linguistic keywords into specific property requirements. It understands context like "spacious balcony" or "near high-speed transit" and maps them to your inventory data vectors.'
+            },
+            {
+                name: 'Intent Scoring',
+                content: 'The assistant calculates a real-time "Intent Score" (0-100%) for every lead. High scores are triggered by specific budget disclosures, location depth, and requirement specificity, allowing your team to prioritize the most lucrative deals immediately.'
+            },
+            {
+                name: 'Lead-to-CRM Sync',
+                content: 'Qualified leads—along with their behavioral scores and full chat transcripts—are synchronized instantly with the Leads & CRM hub. This ensures your sales team has a 360-degree view of the buyer before the first phone call.'
+            }
+        ]
+    },
+    {
         id: 'whatsapp',
         title: 'WhatsApp Business',
         icon: 'bi-whatsapp',

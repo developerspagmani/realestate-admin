@@ -69,8 +69,8 @@ export default function PreventionView({ data }: PreventionViewProps) {
                                                 <div className="d-flex align-items-center gap-2">
                                                     <div style={{
                                                         width: '24px', height: '24px', borderRadius: '50%',
-                                                        background: 'rgba(59,130,246,0.2)', fontSize: '0.65rem',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#93c5fd'
+                                                        background: 'rgba(185,28,28,0.2)', fontSize: '0.65rem',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fca5a5'
                                                     }}>{deal.agent?.charAt(0) || 'U'}</div>
                                                     {deal.agent || 'Unassigned'}
                                                 </div>
@@ -122,10 +122,10 @@ export default function PreventionView({ data }: PreventionViewProps) {
                                 }}>
                                     <div className="d-flex justify-content-between align-items-center">
                                         <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '0.85rem' }}>{sig.signal}</span>
-                                        <span style={{ color: '#93c5fd', fontWeight: 700, fontSize: '0.9rem' }}>{sig.count}</span>
+                                        <span style={{ color: '#f87171', fontWeight: 700, fontSize: '0.9rem' }}>{sig.count}</span>
                                     </div>
                                     <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-                                        <div style={{ height: '100%', width: `${Math.min(100, sig.count * 10)}%`, background: '#3b82f6' }} />
+                                        <div style={{ height: '100%', width: `${Math.min(100, sig.count * 10)}%`, background: '#dc2626' }} />
                                     </div>
                                     <div style={{ color: '#64748b', fontSize: '0.65rem' }}>Affecting {sig.count} active sales deals</div>
                                 </div>

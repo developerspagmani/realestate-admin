@@ -19,13 +19,13 @@ export default function VoiceOrb({ viewMode, activeData, startListening, speechI
         ? 'linear-gradient(135deg, #ef4444, #dc2626)'
         : isProcessing
             ? 'linear-gradient(135deg, #f59e0b, #d97706)'
-            : 'linear-gradient(135deg, #3b82f6, #8b5cf6)';
+            : 'linear-gradient(135deg, #991b1b, #ef4444)';
 
     const orbGlow = isListening
         ? '0 0 40px rgba(239,68,68,0.5), 0 0 80px rgba(239,68,68,0.2)'
         : isProcessing
             ? '0 0 40px rgba(245,158,11,0.5), 0 0 80px rgba(245,158,11,0.2)'
-            : '0 0 40px rgba(59,130,246,0.4), 0 0 80px rgba(139,92,246,0.2)';
+            : '0 0 40px rgba(239,68,68,0.3), 0 0 80px rgba(153,27,27,0.15)';
 
     return (
         <>
@@ -86,7 +86,7 @@ export default function VoiceOrb({ viewMode, activeData, startListening, speechI
                                 position: 'absolute',
                                 width: '150px', height: '150px',
                                 borderRadius: '50%',
-                                border: '1px solid rgba(59,130,246,0.2)',
+                                border: '1px solid rgba(239,68,68,0.2)',
                                 animation: 'orbPulse 3s ease infinite',
                             }} />
                         )}

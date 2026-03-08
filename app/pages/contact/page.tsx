@@ -1,8 +1,10 @@
 'use client';
 
-import Link from "next/link";
 import { useEffect, useState } from 'react';
 import AOS from 'aos';
+import Navbar from '@/components/home/Navbar';
+import SEOManager from '@/components/home/SEOManager';
+import HomeFooter from '@/components/home/HomeFooter';
 
 export default function ContactPage() {
     const [scrolled, setScrolled] = useState(false);
@@ -16,18 +18,10 @@ export default function ContactPage() {
 
     return (
         <div className="bg-black text-white min-vh-100 font-inter">
+            <SEOManager pageKey="contact" />
             <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" />
 
-            {/* Navigation */}
-            <nav className={`fixed-top w-100 transition-all ${scrolled ? 'bg-black/90 backdrop-blur-md border-bottom border-red/20' : 'bg-transparent'}`} style={{ zIndex: 1000, height: '80px' }}>
-                <div className="container h-100 d-flex justify-content-between align-items-center">
-                    <Link href="/" className="logo-box bg-red text-white fw-900 px-2 py-1 rounded-1 text-decoration-none">V</Link>
-                    <div className="d-flex gap-4 align-items-center">
-                        <Link href="/about" className="text-white opacity-50 text-decoration-none hvr-red small fw-700">About Us</Link>
-                        <Link href="/" className="btn-outline-red py-2 px-4 small fw-700">Home</Link>
-                    </div>
-                </div>
-            </nav>
+            <Navbar scrolled={scrolled} />
 
             <section className="pt-10 pb-5 position-relative overflow-hidden bg-grid">
                 <div className="container pt-5">
@@ -74,11 +68,7 @@ export default function ContactPage() {
                 </div>
             </section>
 
-            <div className="container py-10" data-aos="zoom-in">
-                <div className="p-2 glass-card rounded-5 overflow-hidden shadow-red-lg">
-                    <img src="/images/contact_us.png" className="w-100 rounded-4 grayscale" alt="Contact Virpanix Support" />
-                </div>
-            </div>
+            <HomeFooter />
 
             <style jsx>{`
         .pt-10 { padding-top: 10rem; }

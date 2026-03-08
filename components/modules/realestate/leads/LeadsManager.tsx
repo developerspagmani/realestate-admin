@@ -104,6 +104,14 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [showHowItWorks, setShowHowItWorks] = useState(true);
 
+    const BUDGET_SEGMENTS = [
+        { id: 'institutional', label: 'Institutional', icon: 'bi-building-fill-check', color: 'danger', min: 10000, max: Infinity, display: `> ${currencySymbol}10k` },
+        { id: 'premium', label: 'Premium', icon: 'bi-star-fill', color: 'warning', min: 5000, max: 9999, display: `${currencySymbol}5k - ${currencySymbol}10k` },
+        { id: 'budget', label: 'Budget', icon: 'bi-cash-stack', color: 'success', min: 1, max: 4999, display: `< ${currencySymbol}5k` }
+    ];
+
+    const [activeSegment, setActiveSegment] = useState<string>('all');
+
     useEffect(() => {
         const saved = localStorage.getItem('leads_hideGuide');
         if (saved === 'true') {
@@ -259,7 +267,16 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         const matchesTag = filterTag === 'all' || lead.tags?.includes(filterTag);
         const matchesMaxBudget = filterBudget === '' || lead.budget <= Number(filterBudget);
         const matchesMinBudget = minBudget === '' || lead.budget >= Number(minBudget);
-        return matchesSearch && matchesStatus && matchesSource && matchesTag && matchesMaxBudget && matchesMinBudget;
+
+        let matchesSegment = true;
+        if (activeSegment !== 'all') {
+            const segment = BUDGET_SEGMENTS.find(s => s.id === activeSegment);
+            if (segment) {
+                matchesSegment = lead.budget >= (segment.min || 0) && lead.budget <= (segment.max || Infinity);
+            }
+        }
+
+        return matchesSearch && matchesStatus && matchesSource && matchesTag && matchesMaxBudget && matchesMinBudget && matchesSegment;
     });
 
     useEffect(() => {
@@ -865,6 +882,31 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                         </div>
                     </div>
                 )}
+
+                <div className="d-flex flex-wrap gap-2 mb-4">
+                    <button
+                        className={`btn btn-sm rounded-pill px-4 py-2 border transition-all ${activeSegment === 'all' ? 'btn-dark fw-bold' : 'btn-white text-muted shadow-xs'}`}
+                        onClick={() => setActiveSegment('all')}
+                    >
+                        Total Fleet ({leads.length})
+                    </button>
+
+                    {BUDGET_SEGMENTS.map(seg => {
+                        const count = leads.filter(l => l.budget >= (seg.min || 0) && l.budget <= (seg.max || Infinity)).length;
+                        return (
+                            <button
+                                key={seg.id}
+                                className={`btn btn-sm rounded-pill px-4 py-2 border transition-all d-flex align-items-center gap-2 ${activeSegment === seg.id ? `btn-${seg.color} text-white fw-bold shadow-sm` : 'btn-white text-muted hover-bg-light shadow-xs'}`}
+                                onClick={() => setActiveSegment(seg.id)}
+                            >
+                                <i className={`bi ${seg.icon}`}></i>
+                                <span>{seg.label}</span>
+                                <span className={`extra-small opacity-75 fw-normal ps-1 ${activeSegment === seg.id ? 'text-white' : 'text-muted'}`}>({seg.display})</span>
+                                <span className="badge bg-white bg-opacity-25 rounded-circle ms-1" style={{ fontSize: '0.65rem' }}>{count}</span>
+                            </button>
+                        );
+                    })}
+                </div>
 
                 <div className="card border-0 shadow-sm mb-4 rounded-4">
                     <div className="card-body p-3">

@@ -17,8 +17,8 @@ export type ActiveDataType = 'leads' | 'bookings' | 'forecasting' | 'prevention'
 
 export default function IntelligentVoiceManager() {
     const { user, token } = useAuthContext();
-    const [viewMode, setViewMode] = useState<ViewMode>('idle');
-    const [commandFeedback, setCommandFeedback] = useState('Say "Wake up" or click the mic to begin');
+    const [viewMode, setViewMode] = useState<ViewMode>('sleep');
+    const [commandFeedback, setCommandFeedback] = useState('Assistant Resting · Say "Wake up" to begin');
     const [speechIntensity, setSpeechIntensity] = useState([1, 1, 1, 1, 1]);
     const [leads, setLeads] = useState<Lead[]>([]);
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -36,7 +36,7 @@ export default function IntelligentVoiceManager() {
         if (sleepTimeoutRef.current) clearTimeout(sleepTimeoutRef.current);
         sleepTimeoutRef.current = setTimeout(() => {
             setViewMode(prev => {
-                if (prev === 'leads' || prev === 'bookings' || prev === 'idle') return 'sleep';
+                if (prev === 'leads' || prev === 'bookings' || prev === 'idle' || prev === 'processing') return 'sleep';
                 return prev;
             });
         }, 15000);
@@ -109,7 +109,7 @@ export default function IntelligentVoiceManager() {
 
         return () => {
             if (passiveRecognitionRef.current) {
-                passiveRecognitionRef.current.stop();
+                try { passiveRecognitionRef.current.abort(); } catch (e) { }
             }
         };
     }, [viewMode]);
@@ -134,17 +134,29 @@ export default function IntelligentVoiceManager() {
         }
 
         try {
+            // 🛑 FORCED RESET (Avoid 'Busy' or 'Aborted' glitches)
+            if (recognitionRef.current) {
+                try { recognitionRef.current.abort(); } catch (e) { }
+            }
+            if (passiveRecognitionRef.current) {
+                try { passiveRecognitionRef.current.abort(); } catch (e) { }
+            }
+
             setCommandFeedback('Waking up...');
             setViewMode('listening');
+
+            // Check mic permission - but don't let it hang the UI
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach(track => track.stop());
         } catch (e) {
             console.error('Mic error:', e);
             setCommandFeedback('Microphone permission blocked.');
-            setViewMode('idle');
+            setViewMode('sleep');
             return;
         }
 
+        // 🔊 Clear previous speech before speaking "I'm listening"
+        window.speechSynthesis.cancel();
         await speak("I'm listening.");
 
         const recognition = new SpeechRecognition();
@@ -173,12 +185,27 @@ export default function IntelligentVoiceManager() {
         recognition.onerror = (event: any) => {
             clearInterval(interval);
             setSpeechIntensity([1, 1, 1, 1, 1]);
+
+            console.warn('Speech Recognition Error:', event.error);
+
             if (event.error === 'not-allowed') {
                 setCommandFeedback('Microphone Blocked. Allow access.');
-            } else if (event.error !== 'no-speech') {
-                setCommandFeedback('Connection interrupted.');
+            } else if (event.error === 'network') {
+                setCommandFeedback('Network lost. Checking connection...');
+            } else if (event.error === 'no-speech') {
+                // Ignore no-speech, just go back to idle silently
+                setCommandFeedback('No speech detected.');
+            } else if (event.error === 'aborted') {
+                setCommandFeedback('Engine reset. Try again.');
+            } else {
+                setCommandFeedback('Service interrupted. Restarting...');
             }
-            setTimeout(() => setViewMode('idle'), 2000);
+
+            // Always try to recover to idle/sleep so wake-word can resume
+            setTimeout(() => {
+                setViewMode('idle');
+                triggerAutoSleep();
+            }, 1800);
         };
 
         recognition.onend = () => {
@@ -186,12 +213,20 @@ export default function IntelligentVoiceManager() {
             if (viewMode === 'listening') {
                 setViewMode('idle');
                 setCommandFeedback('Ready.');
+                triggerAutoSleep(); // Start auto-sleep countdown
             }
         };
 
+        // Small delay to ensure synthesis is fully finished and audio channel is clear
         setTimeout(() => {
-            recognition.start();
-        }, 400);
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error("Failed to start active recognition:", e);
+                setCommandFeedback("Voice engine busy. Please try again.");
+                setViewMode('sleep');
+            }
+        }, 150);
     };
 
     const processCommand = async (command: string) => {
@@ -258,6 +293,7 @@ export default function IntelligentVoiceManager() {
                 } else {
                     setViewMode('idle');
                     setActiveData('none');
+                    triggerAutoSleep();
                     // Re-open mic immediately for follow-up
                     startFollowUpListening();
                 }
@@ -270,6 +306,7 @@ export default function IntelligentVoiceManager() {
                 await speak("You need to be logged in to access data.");
                 setCommandFeedback("Authentication required. Please log in.");
                 setViewMode('idle');
+                triggerAutoSleep();
                 setLoading(false);
                 return;
             }
@@ -283,6 +320,7 @@ export default function IntelligentVoiceManager() {
                     setForecastingData(res.data);
                     setActiveData('forecasting');
                     setViewMode('idle');
+                    triggerAutoSleep();
 
                     let voiceMsg = "";
                     if (command.includes('shortage') || command.includes('gaps')) {
@@ -303,6 +341,7 @@ export default function IntelligentVoiceManager() {
                     await speak("I couldn't retrieve the growth intelligence. System busy.");
                     setCommandFeedback("Forecasting API failed.");
                     setViewMode('idle');
+                    triggerAutoSleep();
                 }
             }
             // --- Risk Prevention & Inactive Leads ---
@@ -339,11 +378,13 @@ export default function IntelligentVoiceManager() {
                         setCommandFeedback("No high risk deals found.");
                         setViewMode('idle');
                     }
+                    triggerAutoSleep();
                     startFollowUpListening();
                 } else {
                     await speak("Unable to run risk assessment currently.");
                     setCommandFeedback("Prevention API failed.");
                     setViewMode('idle');
+                    triggerAutoSleep();
                 }
             }
             else if (command.includes('lead')) {
@@ -379,6 +420,7 @@ export default function IntelligentVoiceManager() {
                     setLeads(fetchedLeads);
                     setActiveData('leads');
                     setViewMode('idle');
+                    triggerAutoSleep();
 
                     const count = fetchedLeads.length;
                     if (count === 0) {
@@ -429,6 +471,7 @@ export default function IntelligentVoiceManager() {
                     setBookings(bookingsData);
                     setActiveData('bookings');
                     setViewMode('idle');
+                    triggerAutoSleep();
 
                     const count = bookingsData.length;
                     if (count === 0) {
@@ -452,6 +495,7 @@ export default function IntelligentVoiceManager() {
                 await speak("I didn't recognize that command. Please ask for leads, bookings, or market forecasting.");
                 setCommandFeedback("Unrecognized. Try 'List inactive leads' or 'Show demand'.");
                 setViewMode('idle');
+                triggerAutoSleep();
                 startFollowUpListening();
             }
 
@@ -479,7 +523,7 @@ export default function IntelligentVoiceManager() {
             <div
                 className="min-vh-100 d-flex flex-column position-relative"
                 style={{
-                    background: 'linear-gradient(135deg, #0a0e1a 0%, #0d1b2a 40%, #0a1628 100%)',
+                    background: 'linear-gradient(155deg, #020202 0%, #050505 70%, #450a0a 100%)',
                     fontFamily: "'Inter', sans-serif"
                 }}
             >
@@ -487,8 +531,8 @@ export default function IntelligentVoiceManager() {
                 <div style={{
                     position: 'fixed', inset: 0, zIndex: 0,
                     backgroundImage: `
-                        linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px)
+                        linear-gradient(rgba(239,68,68,0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(239,68,68,0.03) 1px, transparent 1px)
                     `,
                     backgroundSize: '40px 40px',
                     pointerEvents: 'none'
@@ -497,12 +541,12 @@ export default function IntelligentVoiceManager() {
                 {/* Glowing orbs in background */}
                 <div style={{
                     position: 'fixed', top: '10%', left: '5%', width: '400px', height: '400px',
-                    background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)',
+                    background: 'radial-gradient(circle, rgba(239,68,68,0.06) 0%, transparent 70%)',
                     borderRadius: '50%', pointerEvents: 'none', zIndex: 0
                 }} />
                 <div style={{
                     position: 'fixed', bottom: '10%', right: '5%', width: '350px', height: '350px',
-                    background: 'radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)',
+                    background: 'radial-gradient(circle, rgba(153,27,27,0.06) 0%, transparent 70%)',
                     borderRadius: '50%', pointerEvents: 'none', zIndex: 0
                 }} />
 
@@ -512,15 +556,15 @@ export default function IntelligentVoiceManager() {
                         {/* Logo / Brand */}
                         <div style={{
                             width: '42px', height: '42px', borderRadius: '12px',
-                            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                            background: 'linear-gradient(135deg, #991b1b, #ef4444)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 0 20px rgba(59,130,246,0.4)'
+                            boxShadow: '0 0 20px rgba(239,68,68,0.3)'
                         }}>
                             <i className="bi bi-cpu-fill text-white" style={{ fontSize: '1.2rem' }}></i>
                         </div>
                         <div>
                             <h5 className="fw-bold mb-0" style={{ color: '#f1f5f9', letterSpacing: '0.5px' }}>
-                                Virpanix <span style={{ color: '#3b82f6' }}>Intelligence</span>
+                                Virpanix <span style={{ color: '#ef4444' }}>Intelligence</span>
                             </h5>
                             <p className="mb-0" style={{ color: '#64748b', fontSize: '0.75rem' }}>
                                 AI-Powered Voice Command Center
@@ -573,7 +617,7 @@ export default function IntelligentVoiceManager() {
                             }}>
                                 <div style={{
                                     width: '24px', height: '24px', borderRadius: '50%',
-                                    background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                                    background: 'linear-gradient(135deg, #991b1b, #ef4444)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontSize: '0.65rem', color: 'white', fontWeight: 700
                                 }}>
@@ -593,19 +637,19 @@ export default function IntelligentVoiceManager() {
                     {/* Default Screen — no data */}
                     {activeData === 'none' && viewMode !== 'sleep' && (
                         <div className="text-center mb-5" style={{ animation: 'fadeInUp 0.8s ease' }}>
-                            <p style={{ color: '#3b82f6', fontSize: '0.78rem', letterSpacing: '3px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '12px' }}>
+                            <p style={{ color: '#ef4444', fontSize: '0.78rem', letterSpacing: '3px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '12px' }}>
                                 ◆ VIRPANIX AI ◆
                             </p>
                             <h1 style={{
                                 fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
                                 fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.1,
-                                background: 'linear-gradient(135deg, #ffffff 0%, #93c5fd 50%, #a78bfa 100%)',
+                                background: 'linear-gradient(135deg, #7b0000 0%, #ff0000 50%, #820000 100%)',
                                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                                 marginBottom: '16px'
                             }}>
                                 Intelligent Command
                             </h1>
-                            <p style={{ color: '#475569', fontSize: '1.05rem' }}>
+                            <p style={{ color: 'rgb(134 5 5)', fontSize: '1.05rem' }}>
                                 Speak naturally · Get instant real-estate insights
                             </p>
 
@@ -614,10 +658,10 @@ export default function IntelligentVoiceManager() {
                                 <div className="d-flex flex-wrap justify-content-center gap-2 mt-4">
                                     {['"List new leads"', '"Show today\'s bookings"', '"How are you?"', '"Who are you?"'].map(cmd => (
                                         <span key={cmd} style={{
-                                            background: 'rgba(59,130,246,0.08)',
-                                            border: '1px solid rgba(59,130,246,0.2)',
+                                            background: 'rgb(255 0 0 / 21%)',
+                                            border: '1px solid rgb(200 50 50 / 39%)',
                                             borderRadius: '20px', padding: '5px 14px',
-                                            color: '#93c5fd', fontSize: '0.8rem', fontWeight: 500
+                                            color: '#ff4949', fontSize: '0.8rem', fontWeight: 500
                                         }}>
                                             {cmd}
                                         </span>
@@ -632,13 +676,13 @@ export default function IntelligentVoiceManager() {
                         <div className="text-center" style={{ animation: 'fadeInUp 1s ease', marginTop: '10vh' }}>
                             <h1 style={{
                                 fontSize: '4rem', fontWeight: 800, letterSpacing: '-2px',
-                                background: 'linear-gradient(135deg, #1e3a5f, #2d1b69)',
+                                background: 'linear-gradient(135deg, rgb(124 8 8), rgb(255 0 0), rgb(116 3 3)) text',
                                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                                opacity: 0.4
+                                opacity: 0.89
                             }}>
                                 Virpanix Intelligent
                             </h1>
-                            <p style={{ color: '#334155', fontSize: '1rem', opacity: 0.5, marginTop: '8px' }}>
+                            <p style={{ color: 'rgb(213 3 3)', fontSize: '1rem', opacity: 0.9, marginTop: '8px' }}>
                                 Resting · Say &quot;Wake up&quot; to resume
                             </p>
                         </div>
@@ -659,12 +703,12 @@ export default function IntelligentVoiceManager() {
                             <div className="text-center py-5">
                                 <div style={{
                                     width: '48px', height: '48px', borderRadius: '50%',
-                                    border: '3px solid rgba(59,130,246,0.2)',
-                                    borderTopColor: '#3b82f6',
+                                    border: '3px solid rgba(220,38,38,0.2)',
+                                    borderTopColor: '#dc2626',
                                     animation: 'spin 0.8s linear infinite',
                                     margin: '0 auto 16px'
                                 }} />
-                                <p style={{ color: '#475569', fontWeight: 600 }}>Synthesizing data matrices...</p>
+                                <p style={{ color: '#dc2626', fontWeight: 600 }}>Synthesizing data matrices...</p>
                             </div>
                         )}
 
