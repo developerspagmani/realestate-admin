@@ -149,16 +149,34 @@ export default function RealEstateRegisterPage() {
                                 <i className="bi bi-building-check display-1 text-white opacity-25"></i>
                             </div>
                             <h3 className="fw-extrabold mb-3 text-white">Real Estate Pro</h3>
-                            <p className="small opacity-75 mb-5">Enterprise-grade property management tools for modern agencies and portfolio owners.</p>
+                            <p className="small opacity-75 mb-4">Enterprise-grade property management tools for modern agencies and portfolio owners.</p>
 
-                            <div className="mt-auto">
-                                <div className="d-flex align-items-center gap-2 mb-2">
-                                    <i className="bi bi-patch-check-fill text-success"></i>
-                                    <span className="extra-small fw-semibold">Multi-Tenant Support</span>
-                                </div>
-                                <div className="d-flex align-items-center gap-2">
-                                    <i className="bi bi-patch-check-fill text-success"></i>
-                                    <span className="extra-small fw-semibold">Advanced CRM</span>
+
+
+                            <div className="mt-auto pt-3 border-top border-white/10">
+                                <div className="modules-grid mb-2">
+                                    {/* <div className="extra-small fw-800 text-white opacity-40 uppercase tracking-widest mb-3 border-bottom border-white/10 pb-2">Institutional Modules</div> */}
+                                    <div className="row g-2">
+                                        {[
+                                            { n: 'AI Neural Layer', i: 'bi-cpu' },
+                                            { n: 'Intelligent CRM', i: 'bi-people' },
+                                            { n: 'Global Inventory', i: 'bi-building' },
+                                            { n: 'Social Hub (WA)', i: 'bi-whatsapp' },
+                                            { n: 'Voice Hub', i: 'bi-mic' },
+                                            { n: 'Interactive Maps', i: 'bi-map' },
+                                            { n: 'Analytics Pro', i: 'bi-graph-up' },
+                                            { n: 'Matching Engine', i: 'bi-link' },
+                                            { n: 'Marketing Hub', i: 'bi-megaphone' },
+                                            { n: 'Secure Protocol', i: 'bi-shield-lock' }
+                                        ].map((m, idx) => (
+                                            <div key={idx} className="col-12">
+                                                <div className="d-flex align-items-center gap-2 opacity-80 hvr-translate-right pointer py-1">
+                                                    <i className={`bi ${m.i} text-white extra-small`}></i>
+                                                    <span className="extra-small truncate" style={{ fontSize: '0.65rem' }}>{m.n}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -350,6 +368,9 @@ export default function RealEstateRegisterPage() {
                 .btn-primary:hover { background-color: #222; transform: translateY(-1px); }
                 .cursor-pointer { cursor: pointer; }
                 .hover-bg-light:hover { background-color: #f8fafc; }
+                .hvr-translate-right { transition: all 0.3s ease; }
+                .hvr-translate-right:hover { transform: translateX(5px); opacity: 1 !important; }
+                .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                 .country-dropdown { z-index: 1000; border: 1px solid #e2e8f0; }
                 .dropdown-item { font-size: 0.875rem; color: #334155; }
                 .dropdown-item:hover { color: #000; }

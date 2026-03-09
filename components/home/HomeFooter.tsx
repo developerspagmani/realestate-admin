@@ -14,7 +14,7 @@ export default function HomeFooter() {
                     <div className="row align-items-center position-relative z-2">
                         <div className="col-lg-7 mb-4 mb-lg-0">
                             <span className="text-red fw-800 uppercase tracking-widest small mb-2 d-block">// INTUITIVE PROPTECH OS</span>
-                            <h2 className="display-5 fw-900 text-white mb-3 tracking-tight">Access the <span className="text-red">Intelligence</span> Protocol</h2>
+                            <h2 className="display-5 text-white mb-3 tracking-tight">Access the <span className="text-red">Intelligence</span> Protocol</h2>
                             <p className="lead opacity-60 mb-0 max-w-500">
                                 Stop managing disparate tools. Deploy Virpanix today and unify your real estate operations under one sentient ecosystem.
                             </p>

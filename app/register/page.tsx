@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default function RegisterSelectionPage() {
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light p-4">
+    <div className="register-selection-page min-vh-100 d-flex align-items-center justify-content-center bg-light p-4">
       <div className="container" style={{ maxWidth: '900px' }}>
         <div className="card shadow-lg border-0 rounded-4 overflow-hidden animate-fade-in">
           <div className="row g-0">
@@ -46,7 +46,7 @@ export default function RegisterSelectionPage() {
                 >
                   <div className="text-start">
                     <div className="badge bg-primary-soft text-primary rounded-4 px-2 py-1 extra-small mb-2">Recommended</div>
-                    <h5 className="fw-bold mb-1">Real Estate Owner</h5>
+                    <h5 className="fw-bold mb-1 text-dark">Real Estate Owner </h5>
                     <p className="mb-0 extra-small text-muted">Manage buildings, units, leads, and assets</p>
                   </div>
                   <div className="bg-light p-3 rounded-4">
@@ -78,16 +78,37 @@ export default function RegisterSelectionPage() {
         </div>
       </div>
 
-      <style jsx>{`
-                .fw-extrabold { font-weight: 800; }
-                .extra-small { font-size: 0.72rem; }
-                .small-caps { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; color: #94a3b8; }
-                .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+      <style jsx global>{`
+                .register-selection-page .fw-extrabold { font-weight: 800; }
+                .register-selection-page .extra-small { font-size: 0.72rem; }
+                .register-selection-page .small-caps { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; color: #94a3b8; }
+                .register-selection-page .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
                 @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-                .hover-option:hover { border-color: #000 !important; background-color: #f8fafc; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); }
-                .transition-all { transition: all 0.3s ease; }
-                .bg-primary-soft { background-color: rgba(0,0,0,0.05); }
-                .cursor-not-allowed { cursor: not-allowed; }
+                
+                .register-selection-page .hover-option {
+                    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+                }
+
+                .register-selection-page .hover-option:hover { 
+                    border-color: #000 !important; 
+                    background-color: #000 !important; 
+                    transform: translateY(-4px) scale(1.01); 
+                    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3); 
+                }
+                .register-selection-page .hover-option:hover h5, 
+                .register-selection-page .hover-option:hover p, 
+                .register-selection-page .hover-option:hover i { 
+                    color: #fff !important; 
+                }
+                .register-selection-page .hover-option:hover .badge {
+                    background-color: #fff !important;
+                    color: #000 !important;
+                }
+                .register-selection-page .hover-option:hover .bg-light {
+                    background-color: rgba(255,255,255,0.15) !important;
+                }
+                .register-selection-page .bg-primary-soft { background-color: rgba(0,0,0,0.05); }
+                .register-selection-page .cursor-not-allowed { cursor: not-allowed; }
             `}</style>
     </div>
   );

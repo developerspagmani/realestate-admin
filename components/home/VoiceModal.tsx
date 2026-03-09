@@ -12,13 +12,32 @@ export default function VoiceModal({ isListening, setIsListening, commandFeedbac
 
     return (
         <div className="voice-modal-overlay position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style={{ zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)' }}>
-            <div className="voice-modal-content glass-card p-5 text-center border border-red/20 shadow-red-lg animate-zoom-in" style={{ width: '500px' }}>
-                <div className="siri-container mb-5 d-flex justify-content-center align-items-center gap-1">
-                    {speechIntensity.map((h, i) => (
-                        <div key={i} className="siri-bar" style={{ height: `${h}px` }}></div>
-                    ))}
+            <div className="voice-modal-content glass-card p-5 text-center border border-red/20 shadow-red-lg animate-zoom-in" style={{ width: '600px', maxWidth: '95vw' }}>
+                <div className="wave-line-container mb-2 w-100 d-flex align-items-center justify-content-center gap-1 position-relative" style={{ height: '100px' }}>
+                    <div className="position-absolute w-100" style={{ height: '2px', backgroundColor: 'rgba(230,0,38,0.2)', top: '50%', transform: 'translateY(-50%)' }}></div>
+                    {Array.from({ length: 60 }).map((_, i) => {
+                        const intensity = speechIntensity[i % 5] || 0;
+                        const factor = Math.sin((i / 59) * Math.PI); // Makes it look like a smooth wave curve
+                        const height = 4 + (intensity * factor);
+                        return (
+                            <div
+                                key={i}
+                                className="wave-bar-element position-relative"
+                                style={{
+                                    height: `${height}px`,
+                                    width: '3px',
+                                    backgroundColor: '#e60026',
+                                    borderRadius: '20px',
+                                    zIndex: 2,
+                                    boxShadow: '0 0 15px rgba(230,0,38,0.5)',
+                                    opacity: 0.3 + (factor * 0.7),
+                                    transition: 'height 0.1s ease-out'
+                                }}
+                            ></div>
+                        );
+                    })}
                 </div>
-                <h3 className="fw-900 text-white mb-3 uppercase tracking-tighter fs-2">{commandFeedback}</h3>
+                <h3 className="fw-900 text-white mb-3 tracking-tighter fs-2">{commandFeedback}</h3>
 
                 {commandFeedback === 'PERMISSION BLOCKED' ? (
                     <div className="bg-red/10 p-4 rounded-4 mb-4 border border-red/20 shadow-sm animate-fade-in">
@@ -39,7 +58,7 @@ export default function VoiceModal({ isListening, setIsListening, commandFeedbac
                     <p className="opacity-40 small mb-4">Neural Voice Layer Active. Try saying &quot;Open login page&quot;.</p>
                 )}
 
-                <button onClick={() => setIsListening(false)} className="btn btn-outline-danger btn-sm rounded-pill px-4 tracking-widest fw-800">DISCONNECT HUB</button>
+                <button onClick={() => setIsListening(false)} className="btn btn-outline-danger btn-sm rounded-pill px-4 tracking-widest fw-800">CLOSE</button>
             </div>
         </div>
     );

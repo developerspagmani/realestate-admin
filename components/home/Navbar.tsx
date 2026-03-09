@@ -41,12 +41,13 @@ export default function Navbar({ scrolled, onMicClick }: NavbarProps) {
     return (
         <nav className={`fixed-top w-100 transition-all glassy-navbar ${scrolled ? 'scrolled shadow-2xl' : ''}`} style={{ zIndex: 1000, height: '80px' }}>
             <div className="container h-100 d-flex justify-content-between align-items-center">
-                <Link href="/" className="d-flex align-items-center gap-2 text-decoration-none p-2 p-md-3 bg-white rounded-4 shadow-sm">
+                <Link href="/" className="logo-link d-flex align-items-center gap-2 text-decoration-none p-2 p-md-3 bg-white rounded-0 shadow-sm border-bottom border-3 border-danger">
                     <img
                         src="/images/Virpanix-logo.svg"
                         alt="Virpanix Logo"
+                        className="logo-img"
                         style={{
-                            height: '38px',
+                            height: '45px',
                             width: 'auto',
                         }}
                     />
@@ -226,6 +227,19 @@ export default function Navbar({ scrolled, onMicClick }: NavbarProps) {
             )}
 
             <style jsx>{`
+                .logo-link {
+                    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+                }
+                .logo-link:hover {
+                    background-color: #000 !important;
+                    border-bottom-color: #fff !important;
+                }
+                .logo-img {
+                    transition: all 0.4s ease;
+                }
+                .logo-link:hover .logo-img {
+                    filter: invert(1) brightness(1.2);
+                }
                 .glassy-navbar {
                     background: rgba(0, 0, 0, 0.05);
                     backdrop-filter: blur(12px) saturate(180%);

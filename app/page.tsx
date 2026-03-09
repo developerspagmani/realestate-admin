@@ -15,6 +15,7 @@ import HomeFooter from '@/components/home/HomeFooter';
 import VoiceModal from '@/components/home/VoiceModal';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
 import Platform from '@/components/home/Platform';
+import SecureData from '@/components/home/SecureData';
 import { seoData, SEOConfig } from '@/utils/seoData';
 
 const MOCK_PROPERTIES = [
@@ -187,12 +188,13 @@ export default function Home() {
 
       <AboutSection />
 
-      <VoiceShowcase />
+      <SecureData />
 
       <Modules />
 
-
       <StatsROI />
+
+      <VoiceShowcase />
 
       <HomeFooter />
 
@@ -292,9 +294,6 @@ export default function Home() {
         }
 
         .glass-card {
-          background: rgba(255, 255, 255, 0.02);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
           border-radius: 2.5rem;
         }
 

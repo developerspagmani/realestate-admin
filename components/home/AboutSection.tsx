@@ -44,22 +44,23 @@ export default function AboutSection() {
                     </div>
 
                     <div className="col-lg-6" data-aos="fade-left">
-                        <div className="p-2 glass-card rounded-5 position-relative">
-                            <img src="/images/about_us.png" className="w-100 rounded-4 grayscale hover-color transition-all duration-700" alt="Virpanix Application" />
 
-                            {/* Floating Stats */}
-                            <div className="position-absolute top-10 end-0 translate-middle-y glass-card p-3 border border-red/20 shadow-red-lg animate-float">
-                                <div className="text-center">
-                                    <h4 className="fw-900 text-red mb-0">95%</h4>
-                                    <span className="extra-small opacity-50 uppercase fw-800 letter-spacing-1">Accuracy</span>
-                                </div>
+                        <div className="position-relative">
+                            <div className="voice-orbit-animation"></div>
+                            <div className="glass-card p-2 rounded-5 overflow-hidden shadow-red-lg border border-red/30 bg-black/40">
+                                <img
+                                    src="/images/about_us.png"
+                                    className="w-100 rounded-4 hover-color"
+                                    alt="Intelligent Voice Interface"
+                                    style={{ filter: 'brightness(1.2) contrast(1.1)' }}
+                                />
                             </div>
-
-                            <div className="position-absolute bottom-10 start-0 translate-middle-y glass-card p-3 border border-red/20 shadow-red-lg animate-float-delayed">
-                                <div className="text-center">
-                                    <h4 className="fw-900 text-red mb-0">Instituional</h4>
-                                    <span className="extra-small opacity-50 uppercase fw-800 letter-spacing-1">Precision</span>
-                                </div>
+                            {/* Floating tags */}
+                            <div className="position-absolute top-10 start-0 glass-card px-3 py-2 border border-red/20 animate-float">
+                                <span className="text-red extra-small fw-800">98% Accuracy</span>
+                            </div>
+                            <div className="position-absolute bottom-20 end-0 glass-card px-3 py-2 border border-red/20 animate-float-delayed">
+                                <span className="text-red extra-small fw-800">Institutional Grade</span>
                             </div>
                         </div>
                     </div>

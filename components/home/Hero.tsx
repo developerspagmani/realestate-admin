@@ -34,7 +34,7 @@ export default function Hero() {
                         </p>
                         <div className="d-flex justify-content-center gap-4 flex-wrap" data-aos="fade-up" data-aos-delay="600">
                             <Link href="/register" className="btn-red btn-lg px-5 py-3 rounded-pill text-decoration-none">Initialize System</Link>
-                            <Link href="/plans" className="btn-outline-red btn-lg px-5 py-3 rounded-pill text-decoration-none">View Global Plans</Link>
+                            <Link href="/pages/plans" className="btn-outline-red btn-lg px-5 py-3 rounded-pill text-decoration-none">View Global Plans</Link>
                         </div>
                     </div>
                 </div>
