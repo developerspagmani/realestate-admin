@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import Loader from '@/components/common/Loader';
 import Toast from './common/Toast';
+import { bookingService, taskService, agentService } from '@/app/services/api';
 
 interface AdminHeaderProps {
     onMenuClick?: () => void;
@@ -22,6 +23,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         setActiveOwnerAndTenant,
         activeTenant
     } = useManagementContext();
+    const [attentionCount, setAttentionCount] = useState(0);
 
     const [owners, setOwners] = useState<any[]>([]);
     const [currentTime, setCurrentTime] = useState(new Date());
@@ -312,10 +314,65 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             newNotifications.sort((a, b) => b.rawTime.getTime() - a.rawTime.getTime());
             setNotifications(newNotifications.slice(0, 10)); // Keep top 10
 
+            if (isAgent) {
+                calculateAttentionItems();
+            }
+
         } catch (error) {
             console.error('Fetch notifications error:', error);
         } finally {
             setNotifLoading(false);
+        }
+    };
+
+    const calculateAttentionItems = async () => {
+        if (!isAgent) return;
+        const token = getAuthToken();
+        if (!token) return;
+
+        try {
+            // First get profile to be sure we have the correct agent ID (though backend handles it for role 4)
+            const profileRes = await agentService.getMyProfile(token);
+            const agentId = profileRes.success ? (profileRes.data?.agent?.id || profileRes.data?.id) : undefined;
+
+            const [leadsRes, tasksRes, bookingsRes] = await Promise.all([
+                agentService.getMyLeads(token),
+                taskService.getMyTasks(),
+                bookingService.getBookings(token, { agentId, limit: '100' })
+            ]);
+
+            let count = 0;
+            const twoDaysAgo = new Date();
+            twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+            // 1. Pending tasks older than 2 days
+            if (tasksRes.success && Array.isArray(tasksRes.data)) {
+                const pendingTasks = tasksRes.data.filter((t: any) =>
+                    t.status < 3 && new Date(t.createdAt) < twoDaysAgo
+                );
+                count += pendingTasks.length;
+            }
+
+            // 2. Leads not followed up in 2 days
+            if (leadsRes.success && leadsRes.data.leads) {
+                const neglectedLeads = leadsRes.data.leads.filter((l: any) =>
+                    l.status < 5 && new Date(l.updatedAt) < twoDaysAgo
+                );
+                count += neglectedLeads.length;
+            }
+
+            // 3. Visiting customers (bookings) not updated in 2 days
+            if (bookingsRes.success && (bookingsRes.data.bookings || bookingsRes.data)) {
+                const bookings = bookingsRes.data.bookings || bookingsRes.data || [];
+                const staleBookings = bookings.filter((b: any) =>
+                    b.status === 1 && new Date(b.createdAt) < twoDaysAgo
+                );
+                count += staleBookings.length;
+            }
+
+            setAttentionCount(count);
+        } catch (error) {
+            console.error('Error calculating attention items:', error);
         }
     };
 
@@ -636,6 +693,15 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                                 </div>
                             )}
                         </div>
+
+                        {isAgent && attentionCount > 0 && (
+                            <Link href="/realestate-agent/attention" className="btn btn-icon rounded-3 btn-light-soft text-danger border border-danger border-opacity-25 shadow-sm nav-attention-btn position-relative" title={`${attentionCount} items need your attention`}>
+                                <i className="bi bi-exclamation-triangle-fill text-danger fs-5 animate-pulse"></i>
+                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm" style={{ fontSize: '10px' }}>
+                                    {attentionCount}
+                                </span>
+                            </Link>
+                        )}
                     </div>
 
                     {/* User Profile Dropdown */}
@@ -883,6 +949,17 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
                 .bg-primary-soft { background-color: rgba(13, 110, 253, 0.1); }
                 .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+                .nav-attention-btn {
+                    position: relative;
+                }
+                .animate-pulse {
+                    animation: pulse-danger 1.5s infinite;
+                }
+                @keyframes pulse-danger {
+                    0% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.5; transform: scale(1.1); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }

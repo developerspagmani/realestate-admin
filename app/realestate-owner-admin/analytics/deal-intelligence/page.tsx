@@ -25,7 +25,7 @@ function DealIntelligenceContent({ mode }: { mode: string }) {
     const [topReasons, setTopReasons] = useState<any[]>([]);
     const [employeeAnalysis, setEmployeeAnalysis] = useState<any[]>([]);
     const [projectAnalysis, setProjectAnalysis] = useState<any[]>([]);
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('deal_intel_hideGuide');

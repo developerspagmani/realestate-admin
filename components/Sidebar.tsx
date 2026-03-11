@@ -286,7 +286,9 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Workforce',
           items: [
             { href: '/realestate-agent/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2', active: activePage === 'dashboard' },
+            { href: '/realestate-agent/attention', label: 'Attention', icon: 'bi-exclamation-triangle', active: activePage === 'attention' },
             { href: '/realestate-agent/leads', label: 'My Leads', icon: 'bi-person-badge', active: activePage === 'leads' },
+            { href: '/realestate-agent/bookings', label: 'Visits & Tours', icon: 'bi-calendar-event', active: activePage === 'bookings' },
             { href: '/realestate-agent/tasks', label: 'My Tasks', icon: 'bi-check2-square', active: activePage === 'tasks' },
             { href: '/realestate-agent/commissions', label: 'Commissions', icon: 'bi-cash-stack', active: activePage === 'commissions' },
 

@@ -102,7 +102,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     const [leadToMarkLost, setLeadToMarkLost] = useState<Lead | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     const BUDGET_SEGMENTS = [
         { id: 'institutional', label: 'Institutional', icon: 'bi-building-fill-check', color: 'danger', min: 10000, max: Infinity, display: `> ${currencySymbol}10k` },

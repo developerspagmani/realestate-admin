@@ -19,6 +19,8 @@ interface ListingViewProps {
     onFilter?: (filters: any) => void;
     trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
     identifyLead?: (id: string, email?: string) => void;
+    noContainer?: boolean;
+    showHeader?: boolean;
 }
 
 const ListingView: React.FC<ListingViewProps> = ({
@@ -30,7 +32,9 @@ const ListingView: React.FC<ListingViewProps> = ({
     onSelectProperty,
     onFilter,
     trackAction,
-    colClass: propColClass
+    colClass: propColClass,
+    noContainer = false,
+    showHeader = true
 }) => {
     const [showPopup, setShowPopup] = React.useState(false);
     const [popupImageUrl, setPopupImageUrl] = React.useState('');
@@ -57,14 +61,16 @@ const ListingView: React.FC<ListingViewProps> = ({
     };
 
     return (
-        <div className="container py-4 widget-container overflow-hidden">
+        <div className={`${noContainer ? 'py-2' : 'container py-4'} widget-container overflow-hidden`}>
             <div className="row g-4">
-                <div className="col-12 mb-2 d-flex justify-content-between align-items-center animate-fade-up">
-                    <div>
-                        <h4 className="fw-bold mb-0">Discover Premium Properties</h4>
-                        <p className="text-muted small mb-0">Exclusive listings curated for your needs</p>
+                {showHeader && (
+                    <div className="col-12 mb-2 d-flex justify-content-between align-items-center animate-fade-up">
+                        <div>
+                            <h4 className="fw-bold mb-0">Discover Premium Properties</h4>
+                            <p className="text-muted small mb-0">Exclusive listings curated for your needs</p>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {onFilter && (
                     <div className="col-12 animate-fade-up">
@@ -118,7 +124,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                                     )}
                                 </div>
                                 <div className="card-body p-4">
-                                    <h5 className="fw-bold mb-2 text-truncate">{property.title}</h5>
+                                    <h5 className="fw-bold mb-2 text-truncate" style={{ color: theme.primaryColor }}>{property.title}</h5>
                                     <p className="small text-muted mb-3 d-flex align-items-center">
                                         <i className="bi bi-geo-alt-fill me-2 text-primary" style={{ color: theme.primaryColor }}></i>
                                         {property.city}, {property.state}

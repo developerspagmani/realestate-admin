@@ -60,5 +60,8 @@ export default async function PropertyPage(props: any) {
         return <div className="p-5 text-center">Invalid property address.</div>;
     }
 
-    return <PropertyDetailClient propertySlug={propertySlug} />;
+    // Fetch full data on server to ensure metadata is present for SEO and for components like PlotMap
+    const data = await getPropertyData(propertySlug);
+
+    return <PropertyDetailClient propertySlug={propertySlug} initialProperty={data?.data} />;
 }

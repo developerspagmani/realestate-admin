@@ -166,9 +166,15 @@ export default function TaskModal({ isOpen, onClose, leadId, leadName, agentId, 
                                     disabled={loading}
                                 >
                                     <option value="">Select an Agent...</option>
-                                    {Array.isArray(agents) && agents.map(a => (
-                                        <option key={a.id} value={a.id}>{a.user?.name || (a as any).name}</option>
-                                    ))}
+                                    {Array.isArray(agents) && agents.map(a => {
+                                        const agentName = a.user?.name || 
+                                                        (a.user?.firstName ? `${a.user.firstName} ${a.user.lastName || ''}`.trim() : '') || 
+                                                        (a as any).name || 
+                                                        'Unknown Agent';
+                                        return (
+                                            <option key={a.id} value={a.id}>{agentName}</option>
+                                        );
+                                    })}
                                 </select>
                             </div>
 

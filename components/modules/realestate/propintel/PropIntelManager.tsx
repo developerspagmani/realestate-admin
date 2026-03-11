@@ -47,7 +47,7 @@ export default function PropIntelManager() {
         message: '',
         type: 'success'
     });
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('propintel_hideGuide');

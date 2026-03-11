@@ -42,7 +42,7 @@ export default function CampaignsListPage() {
         ? '/realestate-owner-admin'
         : '/realestate-admin';
 
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('campaigns_hideGuide');

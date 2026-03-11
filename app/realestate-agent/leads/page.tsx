@@ -5,6 +5,7 @@ import { agentService, getAuthToken } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Loader from '@/components/common/Loader';
 import { useAuthContext } from '@/app/contexts/AuthContext';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 import StructuredLossModal from '@/components/modules/realestate/leads/StructuredLossModal';
 
 export default function AgentLeads() {
@@ -16,6 +17,7 @@ export default function AgentLeads() {
     const [showLossModal, setShowLossModal] = useState(false);
     const [leadToMarkLost, setLeadToMarkLost] = useState<any>(null);
     const { hasModule } = useAuthContext();
+    const { currencySymbol } = useManagementContext();
 
     useEffect(() => {
         loadLeads();
@@ -126,8 +128,10 @@ export default function AgentLeads() {
                             <table className="table table-hover align-middle mb-0">
                                 <thead className="bg-light">
                                     <tr>
-                                        <th className="ps-4">Lead Info</th>
+                                        <th className="ps-4">Lead Name</th>
+                                        <th>Contact Detail</th>
                                         <th>Property/Unit</th>
+                                        <th>Budget</th>
                                         <th>Status</th>
                                         <th>Assigned Date</th>
                                         <th className="pe-4 text-end">Action</th>
@@ -136,24 +140,30 @@ export default function AgentLeads() {
                                 <tbody>
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={5} className="text-center py-5">
+                                            <td colSpan={7} className="text-center py-5">
                                                 <Loader size="sm" message="" />
                                             </td>
                                         </tr>
                                     ) : leads.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="text-center py-5 text-muted">No leads assigned yet.</td>
+                                            <td colSpan={7} className="text-center py-5 text-muted">No leads assigned yet.</td>
                                         </tr>
                                     ) : (
                                         leads.map(lead => (
-                                            <tr key={lead.id}>
+                                            <tr key={lead.assignmentId || lead.id}>
                                                 <td className="ps-4">
                                                     <div className="fw-bold">{lead.name}</div>
-                                                    <div className="small text-muted">{lead.email} | {lead.phone}</div>
+                                                </td>
+                                                <td>
+                                                    <div className="small text-dark">{lead.email}</div>
+                                                    <div className="small text-muted">{lead.phone}</div>
                                                 </td>
                                                 <td className="small">
                                                     {lead.property?.title || 'General Inquiry'}
                                                     {lead.unit?.unitCode && <span className="text-muted ms-1">({lead.unit.unitCode})</span>}
+                                                </td>
+                                                <td className="fw-semibold text-primary">
+                                                    {lead.budget ? `${currencySymbol}${lead.budget.toLocaleString()}` : 'N/A'}
                                                 </td>
                                                 <td>{getStatusBadge(lead.status)}</td>
                                                 <td className="small text-muted">{new Date(lead.createdAt).toLocaleDateString()}</td>
@@ -165,7 +175,7 @@ export default function AgentLeads() {
                                                             setStatusUpdate({ ...statusUpdate, status: lead.status });
                                                         }}
                                                     >
-                                                        Update Status
+                                                        Update
                                                     </button>
                                                 </td>
                                             </tr>

@@ -5,20 +5,24 @@ import MainLayout from '@/components/MainLayout';
 import BrochureManager from './BrochureManager';
 import { propertyService, amenityService, mediaService } from '@/app/services/api';
 import { useAuthContext } from '@/app/contexts/AuthContext';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { Property, Amenity, MediaItem } from '@/types';
 
 interface BrochureIntelligentProps {
     mode: 'admin' | 'owner';
+    initialPropertyId?: string;
 }
 
-export default function BrochureIntelligent({ mode }: BrochureIntelligentProps) {
-    const { token } = useAuthContext();
+export default function BrochureIntelligent({ mode, initialPropertyId }: BrochureIntelligentProps) {
+    const { token, user } = useAuthContext();
+    const { activeTenantId, tenantType, activeOwnerId } = useManagementContext();
     const [properties, setProperties] = useState<Property[]>([]);
     const [amenities, setAmenities] = useState<Amenity[]>([]);
     const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('brochure_ai_hideGuide');
@@ -36,39 +40,58 @@ export default function BrochureIntelligent({ mode }: BrochureIntelligentProps) 
         if (token) {
             loadData();
         }
-    }, [token]);
+    }, [token, activeTenantId, activeOwnerId]);
 
     const loadData = async () => {
         if (!token) return;
         try {
             setLoading(true);
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
+            const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
+
             const [pRes, aRes, mRes] = await Promise.all([
-                propertyService.getProperties(token, { limit: '100' }),
+                propertyService.getProperties(token, { 
+                    tenantId: tenantId || undefined,
+                    industryType,
+                    ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId }),
+                    limit: '100' 
+                }),
                 amenityService.getAmenities(token),
-                mediaService.getMedia(token)
+                mediaService.getMedia(token, tenantId ? { tenantId } : undefined)
             ]);
 
             if (pRes.success) {
-                const propsList: Property[] = (pRes.data.properties || []).map((p: any) => ({
+                const rawProps = pRes.data.properties || pRes.data || [];
+                const propsList: Property[] = rawProps.map((p: any) => ({
                     ...p,
                     name: p.title || p.name || 'Untitled',
+                    address: p.addressLine1 || p.address || '',
+                    addressLine2: p.addressLine2 || '',
+                    zipCode: p.postalCode || p.zipCode || '',
                     priceType: 'fixed',
                     squareFootage: p.area || p.sizeSqft || 0,
                     features: [],
                     photos: p.gallery || [],
                     rating: 0,
                     totalReviews: 0,
-                    propertyType: p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use',
+                    propertyType: typeof p.propertyType === 'number'
+                        ? (p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use')
+                        : (p.propertyType || 'residential'),
                     listingType: (p.listingType?.toLowerCase() as Property['listingType']) || 'rent',
-                    status: p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance',
+                    status: typeof p.status === 'number'
+                        ? (p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance')
+                        : (p.status || 'active'),
+                    mainImageId: p.mainImageId || '',
                 }));
                 setProperties(propsList);
-                if (propsList.length > 0) {
-                    await fetchFullProperty(propsList[0].id, propsList);
+                
+                const targetId = initialPropertyId || (propsList.length > 0 ? propsList[0].id : null);
+                if (targetId) {
+                    await fetchFullProperty(targetId, propsList);
                 }
             }
             if (aRes.success) setAmenities(aRes.data.amenities || []);
-            if (mRes.success) setMediaItems(mRes.data.media || []);
+            if (mRes.success) setMediaItems(Array.isArray(mRes.data) ? mRes.data : (mRes.data?.media || []));
         } catch (error) {
             console.error('Failed to load data for Brochure Intelligent:', error);
         } finally {
@@ -77,36 +100,54 @@ export default function BrochureIntelligent({ mode }: BrochureIntelligentProps) 
     };
 
     const fetchFullProperty = async (id: string, currentProperties?: Property[]) => {
+        if (!token) return;
         try {
-            const res = await propertyService.getPropertyById(token!, id);
-            if (res.success) {
+            setIsFetchingDetails(true);
+            const tenantId = mode === 'admin' ? activeTenantId : user?.tenantId;
+            const res = await propertyService.getPropertyById(token, id, tenantId || undefined);
+
+            const list = currentProperties || properties;
+            const basic = list.find(p => p.id === id);
+
+            if (res.success && res.data.property) {
                 const p = res.data.property;
                 const fullProperty: Property = {
                     ...p,
-                    name: p.title || p.name || 'Untitled',
+                    name: p.title || p.name || basic?.name || 'Untitled Property',
+                    address: p.addressLine1 || p.address || basic?.address || '',
+                    addressLine2: p.addressLine2 || basic?.addressLine2 || '',
+                    zipCode: p.postalCode || p.zipCode || basic?.zipCode || '',
                     priceType: 'fixed',
-                    squareFootage: p.area || p.sizeSqft || 0,
+                    squareFootage: p.area || p.sizeSqft || basic?.squareFootage || 0,
                     features: [],
-                    photos: p.gallery || [],
+                    photos: p.gallery || basic?.photos || [],
                     rating: 0,
                     totalReviews: 0,
-                    propertyType: p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use',
-                    listingType: (p.listingType?.toLowerCase() as Property['listingType']) || 'rent',
-                    status: p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance',
+                    propertyType: typeof p.propertyType === 'number'
+                        ? (p.propertyType === 1 ? 'residential' : p.propertyType === 2 ? 'commercial' : p.propertyType === 3 ? 'industrial' : 'mixed_use')
+                        : (p.propertyType || basic?.propertyType || 'residential'),
+                    listingType: (p.listingType?.toLowerCase() as Property['listingType']) || basic?.listingType || 'rent',
+                    status: typeof p.status === 'number'
+                        ? (p.status === 1 ? 'active' : p.status === 2 ? 'inactive' : 'maintenance')
+                        : (p.status || basic?.status || 'active'),
+                    mainImageId: p.mainImageId || basic?.mainImageId || '',
                 };
                 setSelectedProperty(fullProperty);
             } else {
-                // Fallback to basic data if full fetch fails
-                const list = currentProperties || properties;
-                const basic = list.find(p => p.id === id);
                 if (basic) setSelectedProperty(basic);
             }
         } catch (error) {
             console.error('Error fetching full property details:', error);
+            const list = currentProperties || properties;
+            const basic = list.find(p => p.id === id);
+            if (basic) setSelectedProperty(basic);
+        } finally {
+            setTimeout(() => setIsFetchingDetails(false), 300);
         }
     };
 
     const handlePropertyChange = (id: string) => {
+        if (!id) return;
         fetchFullProperty(id);
     };
 
@@ -118,6 +159,14 @@ export default function BrochureIntelligent({ mode }: BrochureIntelligentProps) 
                         <div>
                             <h4 className="fw-bold mb-0">Brochure Intelligent AI</h4>
                             <p className="text-muted small mb-0">Generate professional property brochures using Gemini Nano AI</p>
+                        </div>
+                        <div className="d-flex gap-2">
+                            <span className={`badge ${properties.length > 0 ? 'bg-success' : 'bg-warning'} rounded-pill px-3`}>
+                                <i className="bi bi-database-check me-1"></i> {properties.length} Props
+                            </span>
+                            <span className={`badge ${selectedProperty ? 'bg-primary' : 'bg-secondary'} rounded-pill px-3`}>
+                                <i className="bi bi-tag me-1"></i> {selectedProperty ? 'Ready' : 'Waiting...'}
+                            </span>
                         </div>
                         {!showHowItWorks && (
                             <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
@@ -221,6 +270,7 @@ export default function BrochureIntelligent({ mode }: BrochureIntelligentProps) 
                                 allAmenities={amenities}
                                 allMedia={mediaItems}
                                 onPropertyChange={handlePropertyChange}
+                                fetching={isFetchingDetails}
                                 onClose={() => { }}
                             />
                         </div>

@@ -173,7 +173,7 @@ export const marketingService = {
     },
 
     // Interaction Tracking
-    trackInteraction: async (data: { leadId?: string, email?: string, type: string, metadata?: any }) => {
+    trackInteraction: async (data: { leadId?: string, email?: string, visitorId?: string, type: string, metadata?: any }) => {
         return await makeApiCall('/public/track', {
             method: 'POST',
             body: JSON.stringify(data)

@@ -24,7 +24,7 @@ function MatchingContent() {
     const [matchingLeadId, setMatchingLeadId] = useState<string | null>(null);
     const [previewLead, setPreviewLead] = useState<any>(null);
     const [previewData, setPreviewData] = useState<any>(null);
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'info' });
 
     useEffect(() => {
@@ -141,7 +141,7 @@ function MatchingContent() {
                     <div className="d-flex gap-2">
                         {!showHowItWorks && (
                             <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border" onClick={() => toggleGuide(true)}>
-                                <i className="bi bi-info-circle me-1"></i> Show AI Guide
+                                <i className="bi bi-info-circle me-1"></i> How it works
                             </button>
                         )}
                         <button className="btn btn-outline-primary btn-sm rounded-3 px-3 shadow-sm" onClick={() => fetchLeads(true)}>
@@ -176,7 +176,7 @@ function MatchingContent() {
                                         <div className="col-md-6">
                                             <div className="d-flex gap-3">
                                                 <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                                                    <i className="bi bi-brain text-white"></i>
+                                                    <i className="bi bi-robot text-white"></i>
                                                 </div>
                                                 <div>
                                                     <div className="fw-bold">1. Intelligence</div>

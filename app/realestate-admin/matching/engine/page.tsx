@@ -24,7 +24,7 @@ function MatchingContent() {
     const [matchingLeadId, setMatchingLeadId] = useState<string | null>(null);
     const [previewLead, setPreviewLead] = useState<any>(null);
     const [previewData, setPreviewData] = useState<any>(null);
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'info' });
 
     useEffect(() => {

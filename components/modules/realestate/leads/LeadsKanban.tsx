@@ -130,7 +130,7 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                                             columnLeads.map(lead => (
                                                 <div
                                                     key={lead.id}
-                                                    className={`kanban-card card border-0 shadow-sm rounded-3 cursor-grab ${animationLead?.id === lead.id ? (animationLead.type === 'blast' ? 'animate-blast' : 'animate-shake') : ''}`}
+                                                    className={`kanban-card card overflow-visible border-0 shadow-sm rounded-3 cursor-grab ${animationLead?.id === lead.id ? (animationLead.type === 'blast' ? 'animate-blast' : 'animate-shake') : ''}`}
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, lead.id)}
                                                     onDragEnd={handleDragEnd}

@@ -153,7 +153,7 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
                             {submitting ? (
                                 <span className="spinner-border spinner-border-sm me-2"></span>
                             ) : <i className="bi bi-send me-2"></i>}
-                            Submit Inquiry
+                            {localConfig.submitButtonLabel || 'Submit Inquiry'}
                         </button>
                     </div>
                 </div>

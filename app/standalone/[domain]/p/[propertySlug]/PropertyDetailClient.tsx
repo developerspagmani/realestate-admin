@@ -10,17 +10,40 @@ import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 type ViewType = 'PROPERTY_DETAIL';
 
 
-export default function PropertyDetailClient({ propertySlug }: { propertySlug: string }) {
+export default function PropertyDetailClient({ propertySlug, initialProperty }: { propertySlug: string, initialProperty?: any }) {
     const { website, properties, theme, trackAction, identifyLead, slugOrDomain } = useStandalone();
     const router = useRouter();
 
-    // Find the property in the pre-loaded list by ID or Slug
-    const property = properties.find(p => p.id === propertySlug || p.slug === propertySlug);
+    // Find the property in the pre-loaded list by ID or Slug, or use the initial data from server
+    const [property, setProperty] = useState(initialProperty || properties.find(p => p.id === propertySlug || p.slug === propertySlug));
+    const [fullPropertyLoading, setFullPropertyLoading] = useState(false);
 
     const [currentView, setCurrentView] = useState<ViewType>('PROPERTY_DETAIL');
     const [propertyImageIndex, setPropertyImageIndex] = useState(0);
     const [selectedUnit, setSelectedUnit] = useState<any>(null);
     const [unitImageIndex, setUnitImageIndex] = useState(0);
+
+    // Fetch full property details if metadata is missing (usually partial data from list)
+    React.useEffect(() => {
+        const fetchFullDetails = async () => {
+            if (!property || property.metadata?.interactiveSvg) return;
+            try {
+                setFullPropertyLoading(true);
+                // Use relative path or env-aware URL
+                const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
+                const res = await fetch(`${BACKEND_URL}/public/properties/${property.id || propertySlug}`);
+                const result = await res.json();
+                if (result.success && result.data) {
+                    setProperty(result.data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch full property details:', err);
+            } finally {
+                setFullPropertyLoading(false);
+            }
+        };
+        fetchFullDetails();
+    }, [propertySlug, property?.id, property?.metadata?.interactiveSvg]);
 
     if (!property) return <div className="p-5 text-center">Property not found.</div>;
 

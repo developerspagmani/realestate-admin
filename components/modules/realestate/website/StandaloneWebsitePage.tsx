@@ -38,16 +38,8 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     // UI State
     const [propertyImageIndex, setPropertyImageIndex] = useState(0);
     const [unitImageIndex, setUnitImageIndex] = useState(0);
-    const [leadIdentity, setLeadIdentity] = useState<{ id?: string, email?: string } | null>(null);
-
-    // ... (rest of the file remains same until RenderView) ...
-    // Note: I need to preserve the rest of the file logic but I'm doing a huge replace.
-    // To be safe, I should target specific blocks. But imports are at top, state is at top, button in middle, modal at bottom.
-    // I'll use multi-edit if possible, or just replace the whole file content carefully?
-    // replace_file_content is for SINGLE CONTIGUOUS BLOCK.
-    // I can't update imports AND render return in one go unless I replace EVERYTHING between them.
-    // I'll use `multi_replace_file_content` instead.
-
+    const [leadIdentity, setLeadIdentity] = useState<{ id?: string, email?: string, visitorId?: string } | null>(null);
+    const [userContext, setUserContext] = useState<{ lat?: number, lng?: number, city?: string }>({});
 
     const loadWebsiteData = useCallback(async () => {
         if (!slugOrDomain) return;
@@ -72,9 +64,56 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         loadWebsiteData();
     }, [loadWebsiteData]);
 
+    // Initialize Persistent Visitor Identity & Geo Context
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        
+        // 1. Get or Generate Global Visitor ID
+        let vid = localStorage.getItem('virpanix_visitor_id');
+        if (!vid) {
+            vid = window.crypto?.randomUUID?.() || Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('virpanix_visitor_id', vid);
+        }
+
+        // 2. Fetch User Geo Context (IP-based, lightweight)
+        if (!userContext.city) {
+            fetch('https://ipapi.co/json/')
+                .then(res => res.json())
+                .then(geo => {
+                    setUserContext({
+                        lat: geo.latitude,
+                        lng: geo.longitude,
+                        city: geo.city
+                    });
+                })
+                .catch(() => {
+                    // Fallback to basic TZ based guessing if IP geo fails
+                    setUserContext({ city: Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[1] });
+                });
+        }
+
+        // 3. Restore site-specific lead identity
+        if (website && !leadIdentity) {
+            const saved = localStorage.getItem(`website_lead_${website.id}`);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    setLeadIdentity({ ...parsed, visitorId: vid });
+                } catch (e) {
+                    setLeadIdentity({ visitorId: vid });
+                }
+            } else {
+                setLeadIdentity({ visitorId: vid });
+            }
+        } else if (!leadIdentity) {
+            setLeadIdentity({ visitorId: vid });
+        }
+    }, [website, leadIdentity, userContext.city]);
+
 
     const identifyLead = (id: string, email?: string) => {
-        const identity = { id, email };
+        const vid = localStorage.getItem('virpanix_visitor_id');
+        const identity = { id, email, visitorId: vid || undefined };
         setLeadIdentity(identity);
         if (website) localStorage.setItem(`website_lead_${website.id}`, JSON.stringify(identity));
     };
@@ -85,8 +124,15 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
             await marketingService.trackInteraction({
                 leadId: leadIdentity.id,
                 email: leadIdentity.email,
+                visitorId: leadIdentity.visitorId, // Critical for Identity Resolution
                 type,
-                metadata: { websiteId: website.id, ...metadata }
+                metadata: { 
+                    websiteId: website.id, 
+                    userLat: userContext.lat,
+                    userLng: userContext.lng,
+                    city: userContext.city,
+                    ...metadata 
+                }
             });
         } catch (err) {
             console.error('Telemetery fail:', err);
@@ -459,6 +505,10 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                         } else if (contact) {
                                             leadPayload.phone = contact;
                                         }
+
+                                        // Inject Visitor ID for stitching
+                                        const vid = localStorage.getItem('virpanix_visitor_id');
+                                        if (vid) leadPayload.visitorId = vid;
 
                                         if (contact && contact.includes('|')) {
                                             const [e, p] = contact.split('|').map(s => s.trim());

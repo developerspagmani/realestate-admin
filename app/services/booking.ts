@@ -3,7 +3,7 @@ import { Booking } from './types';
 import { CacheTags, cacheManager } from './cacheManager';
 
 export const bookingService = {
-    getBookings: async (token: string, params?: { page?: string; limit?: string; status?: string; userId?: string; unitId?: string; startDate?: string; endDate?: string; tenantId?: string; ownerId?: string; industryType?: number | string }, skipCache: boolean = false) => {
+    getBookings: async (token: string, params?: { page?: string; limit?: string; status?: string; userId?: string; unitId?: string; startDate?: string; endDate?: string; tenantId?: string; ownerId?: string; agentId?: string; industryType?: number | string }, skipCache: boolean = false) => {
         return await makeApiCall(bookingEndpoints.getAll(params), {
             headers: { 'Authorization': `Bearer ${token}` },
             ...({ tags: [CacheTags.BOOKINGS] } as any)

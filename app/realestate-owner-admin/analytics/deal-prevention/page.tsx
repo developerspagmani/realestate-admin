@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import MainLayout from '@/components/MainLayout';
 import ModuleGuard from '@/components/common/ModuleGuard';
-import { analyticsProService } from '@/app/services/api';
+import { analyticsProService, agentService, leadService } from '@/app/services/api';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     LineChart, Line
@@ -27,6 +27,7 @@ function DealPreventionContent({ mode }: { mode: string }) {
     const [topRiskSignals, setTopRiskSignals] = useState<any[]>([]);
     const [agentCoaching, setAgentCoaching] = useState<any[]>([]);
     const [agents, setAgents] = useState<any[]>([]);
+    const [leads, setLeads] = useState<any[]>([]);
     const [selectedDeal, setSelectedDeal] = useState<any>(null);
     const [taskModalOpen, setTaskModalOpen] = useState(false);
     const [showHowItWorks, setShowHowItWorks] = useState(true);
@@ -56,16 +57,33 @@ function DealPreventionContent({ mode }: { mode: string }) {
     useEffect(() => {
         fetchPreventionData();
         fetchAgents();
+        fetchLeads();
     }, []);
 
     const fetchAgents = async () => {
         try {
             const token = localStorage.getItem('authToken') || '';
-            const { agentService } = await import('@/app/services/api');
             const res = await agentService.getAgents(token);
-            if (res.success) setAgents(res.data);
+            if (res.success) {
+                // Handle different response structures gracefully
+                const agentsData = res.data.agents || (Array.isArray(res.data) ? res.data : []);
+                setAgents(agentsData);
+            }
         } catch (error) {
             showToast('Failed to fetch agents', 'error');
+        }
+    };
+
+    const fetchLeads = async () => {
+        try {
+            const token = localStorage.getItem('authToken') || '';
+            const res = await leadService.getLeads(token, { limit: '1000' });
+            if (res.success) {
+                const leadsData = res.data.leads || (Array.isArray(res.data) ? res.data : []);
+                setLeads(leadsData);
+            }
+        } catch (error) {
+            console.error('Failed to fetch leads', error);
         }
     };
 
@@ -403,6 +421,7 @@ function DealPreventionContent({ mode }: { mode: string }) {
                 agentId={selectedDeal?.agentId}
                 agentName={selectedDeal?.agentName}
                 agents={agents}
+                leads={leads}
                 onSuccess={onTaskAssigned}
             />
 

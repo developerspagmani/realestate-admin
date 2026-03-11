@@ -45,6 +45,21 @@ export default function WebsiteForm({
 
     const [verificationStatus, setVerificationStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
 
+    const generateSlug = () => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setFormData({ ...formData, slug: result });
+    };
+
+    React.useEffect(() => {
+        if (!editingWebsite && !formData.slug) {
+            generateSlug();
+        }
+    }, [editingWebsite]);
+
     // Helper to manage modular blocks
     const addModule = (type: string) => {
         const currentModules = formData.configuration.builder?.modules || [];
@@ -304,20 +319,35 @@ export default function WebsiteForm({
                                                 />
                                             </div>
                                             <div className="col-md-12">
-                                                <label className="form-label small fw-bold">Custom Favicon URL (.ico, .png)</label>
-                                                <div className="input-group">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <label className="form-label small fw-bold mb-0">Custom Favicon (.ico, .png)</label>
+                                                    {formData.configuration.builder?.faviconUrl && (
+                                                        <div className="bg-white p-1 rounded-2 border shadow-sm">
+                                                            <img src={formData.configuration.builder.faviconUrl} alt="Favicon Preview" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="input-group shadow-sm">
                                                     <input
                                                         type="text"
-                                                        className="form-control rounded-start-3"
-                                                        placeholder="https://example.com/favicon.png"
+                                                        className="form-control rounded-start-3 border-light-subtle"
+                                                        placeholder="Select from media or enter URL"
                                                         value={formData.configuration.builder?.faviconUrl || ''}
                                                         onChange={(e) => toggleNestedConfig('builder', 'faviconUrl', e.target.value)}
                                                     />
-                                                    <button type="button" className="btn btn-outline-secondary rounded-end-3" onClick={() => { setMediaTarget('faviconUrl' as any); setShowMediaSelector(true); }}>
-                                                        <i className="bi bi-bookmark-star"></i>
+                                                    <button 
+                                                        type="button" 
+                                                        className="btn btn-outline-primary rounded-end-3 px-3 d-flex align-items-center gap-2" 
+                                                        onClick={() => { setMediaTarget('faviconUrl' as any); setShowMediaSelector(true); }}
+                                                    >
+                                                        <i className="bi bi-image"></i>
+                                                        <span className="small fw-bold">Select</span>
                                                     </button>
                                                 </div>
-                                                <div className="extra-small text-muted mt-1">Recommended size: 32x32 or 64x64 pixels.</div>
+                                                <div className="extra-small text-muted mt-2">
+                                                    <i className="bi bi-info-circle me-1"></i>
+                                                    Recommended size: 32x32 or 64x64 pixels. This icon will appear in browser tabs.
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -329,17 +359,29 @@ export default function WebsiteForm({
                                                 <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Access & Hosting</h6>
                                             </div>
                                             <div className="col-md-12">
-                                                <label className="form-label small fw-bold text-primary">App URL Slug</label>
-                                                <div className="input-group">
-                                                    <span className="input-group-text bg-light border-light-subtle extra-small">/go/</span>
+                                                <label className="form-label small fw-bold text-primary">App URL Code (Slug)</label>
+                                                <div className="input-group shadow-sm">
+                                                    <span className="input-group-text bg-light border-light-subtle extra-small">/standalone/</span>
                                                     <input
                                                         type="text"
-                                                        className="form-control rounded-end-3 border-light-subtle shadow-sm"
-                                                        placeholder="my-project-portal"
-                                                        value={formData.slug}
-                                                        onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                                                        className="form-control border-light-subtle fw-bold text-center bg-light"
+                                                        value={formData.slug || ''}
+                                                        readOnly
                                                         required
                                                     />
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-outline-primary border-light-subtle d-flex align-items-center gap-2"
+                                                        onClick={generateSlug}
+                                                        title="Regenerate unique code"
+                                                    >
+                                                        <i className="bi bi-arrow-clockwise"></i>
+                                                        <span className="small fw-bold">Generate</span>
+                                                    </button>
+                                                </div>
+                                                <div className="extra-small text-muted mt-2">
+                                                    <i className="bi bi-shield-check me-1"></i>
+                                                    This unique 6-digit code ensures your portal URL is completely unique.
                                                 </div>
                                             </div>
                                             <div className="col-md-12">

@@ -238,6 +238,10 @@ export interface Lead {
   requirements?: string;
   notes?: string;
   assignedTo?: string;
+  propertyId?: string;
+  unitId?: string;
+  property?: Property;
+  unit?: Unit;
   createdAt: string;
   updatedAt: string;
   lastContacted?: string;

@@ -120,7 +120,7 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
         message: '',
         type: 'success'
     });
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('website_mgmt_hideGuide');

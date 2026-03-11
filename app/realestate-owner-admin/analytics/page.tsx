@@ -29,7 +29,7 @@ export default function AdvancedAnalyticsPage() {
         campaignId: '',
         propertyId: ''
     });
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('adv_analytics_hideGuide');
@@ -136,6 +136,9 @@ export default function AdvancedAnalyticsPage() {
                             )}
                         </div>
                         <div className="d-flex gap-2">
+                            <Link href="/realestate-owner-admin/analytics/deep-report" className="btn btn-dark rounded-3 shadow-sm">
+                                <i className="bi bi-graph-up-arrow me-2"></i>Deep Report Explorer
+                            </Link>
                             <Link href="/realestate-owner-admin/analytics/forecasting" className="btn btn-primary rounded-3 shadow-sm">
                                 <i className="bi bi-robot me-2"></i>Forecasting AI
                             </Link>
@@ -205,6 +208,17 @@ export default function AdvancedAnalyticsPage() {
                                                     <div>
                                                         <div className="fw-bold">4. Search Intelligence</div>
                                                         <div className="small opacity-75">Uncover trending buyer keywords to align your inventory with actual market demand.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="d-flex gap-3">
+                                                    <div className="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                        <i className="bi bi-link-45deg text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold">5. Identity Resolution</div>
+                                                        <div className="small opacity-75">Browser-persistent stitching tracks visitors across sessions, combining multiple touches into a single journey.</div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -321,6 +335,50 @@ export default function AdvancedAnalyticsPage() {
                                     <div className="extra-small text-muted text-uppercase fw-bold mb-1">Demand Keywords</div>
                                     <div className="h2 fw-bold mb-0 text-warning">{marketingInsights?.topSearchKeywords?.length || 0}</div>
                                     <div className="small text-muted mt-1">Trending search terms</div>
+                                </div>
+                            </div>
+
+                            {/* Identity Stitiching Metrics Row */}
+                            <div className="col-md-4">
+                                <div className="card border-0 shadow-sm rounded-4 p-4 h-100 bg-dark text-white">
+                                    <div className="d-flex align-items-center mb-3">
+                                        <div className="bg-primary rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                            <i className="bi bi-people-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div className="extra-small opacity-50 text-uppercase fw-bold">Human Reach</div>
+                                            <div className="h3 fw-bold mb-0">{marketingInsights?.stitching?.totalUniqueVisitors || 0}</div>
+                                        </div>
+                                    </div>
+                                    <p className="small opacity-75 mb-0">Total unique people identified across all browser sessions and touchpoints.</p>
+                                </div>
+                            </div>
+                            <div className="col-md-4">
+                                <div className="card border-0 shadow-sm rounded-4 p-4 h-100">
+                                    <div className="d-flex align-items-center mb-3">
+                                        <div className="bg-success-subtle text-success rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                            <i className="bi bi-patch-check"></i>
+                                        </div>
+                                        <div>
+                                            <div className="extra-small text-muted text-uppercase fw-bold">Stitched Identities</div>
+                                            <div className="h3 fw-bold mb-0 text-success">{marketingInsights?.stitching?.totalIdentifiedVisitors || 0}</div>
+                                        </div>
+                                    </div>
+                                    <p className="small text-muted mb-0">Total lead profiles created or updated using browser identity stitching.</p>
+                                </div>
+                            </div>
+                            <div className="col-md-4">
+                                <div className="card border-0 shadow-sm rounded-4 p-4 h-100">
+                                    <div className="d-flex align-items-center mb-3">
+                                        <div className="bg-info-subtle text-info rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                            <i className="bi bi-lightning-charge"></i>
+                                        </div>
+                                        <div>
+                                            <div className="extra-small text-muted text-uppercase fw-bold">Stitching Efficiency</div>
+                                            <div className="h3 fw-bold mb-0 text-info">{marketingInsights?.stitching?.stitchingRate || 0}%</div>
+                                        </div>
+                                    </div>
+                                    <p className="small text-muted mb-0">Percentage of duplicate lead attempts combined into single profiles.</p>
                                 </div>
                             </div>
 

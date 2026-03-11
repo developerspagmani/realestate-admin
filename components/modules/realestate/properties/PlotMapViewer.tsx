@@ -244,7 +244,12 @@ export default function PlotMapViewer({ units, svgContent, mapping, themeColor =
                             <div className="col-6">
                                 <div className="p-2 bg-light rounded-3">
                                     <span className="text-muted extra-small d-block">Price</span>
-                                    <span className="fw-bold text-dark small">{currencySymbol}{selectedUnit.price?.toLocaleString('en-US') || 'N/A'}</span>
+                                    <span className="fw-bold text-dark small">
+                                        {selectedUnit.price && Number(selectedUnit.price) > 0 
+                                            ? `${currencySymbol} ${Number(selectedUnit.price).toLocaleString('en-US')}` 
+                                            : 'Price on Inquiry'
+                                        }
+                                    </span>
                                 </div>
                             </div>
                             <div className="col-6">

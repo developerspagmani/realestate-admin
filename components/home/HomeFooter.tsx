@@ -42,7 +42,7 @@ export default function HomeFooter() {
 
             <div className="container position-relative z-1">
                 <div className="row g-5 align-items-center">
-                    <div className="col-md-4" data-aos="fade-right">
+                    <div className="col-md-4">
                         <Link href="/" className="d-flex align-items-center gap-2 text-decoration-none bg-white rounded-4 justify-content-center p-3 w-50">
                             <img
                                 src="/images/Virpanix-logo.svg"

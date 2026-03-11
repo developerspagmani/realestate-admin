@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { agentService, getAuthToken, leadService, propertyService } from '@/app/services/api';
 import { Agent, Commission, Lead } from '@/types';
 import { Property } from '@/app/services/api';
@@ -10,11 +10,10 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import Loader from '@/components/common/Loader';
 import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface ExtendedLead extends Lead {
-    property?: {
-        title: string;
-    };
+    // Lead already has property?: Property
 }
 
 interface PropertyAssignment {
@@ -40,6 +39,8 @@ interface AgentsManagerProps {
 }
 
 export default function AgentsManager({ mode }: AgentsManagerProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, tenantId: authTenantId } = useAuthContext();
     const { activeTenantId } = useManagementContext();
     const [agents, setAgents] = useState<Agent[]>([]);
@@ -47,9 +48,6 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
     const [showModal, setShowModal] = useState(false);
     const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
     const [viewingCommissions, setViewingCommissions] = useState<Agent | null>(null);
-    const [viewingAgent, setViewingAgent] = useState<Agent | null>(null);
-    const [viewingAgentProperties, setViewingAgentProperties] = useState<PropertyAssignment[]>([]);
-    const [viewingAgentLeads, setViewingAgentLeads] = useState<LeadAssignment[]>([]);
     const [commissions, setCommissions] = useState<Commission[]>([]);
     const [showAssignModal, setShowAssignModal] = useState<'leads' | 'properties' | null>(null);
     const [targetAgent, setTargetAgent] = useState<Agent | null>(null);
@@ -106,6 +104,23 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
     useEffect(() => {
         loadAgents();
     }, [loadAgents]);
+
+    // Handle deep links for editing or assigning
+    useEffect(() => {
+        if (!loading && agents.length > 0) {
+            const editId = searchParams.get('edit');
+            const assignType = searchParams.get('assign') as 'leads' | 'properties' | null;
+            const agentId = searchParams.get('agentId');
+
+            if (editId) {
+                const agent = agents.find(a => a.id === editId);
+                if (agent) handleEdit(agent);
+            } else if (assignType && agentId) {
+                const agent = agents.find(a => a.id === agentId);
+                if (agent) handleAssignClick(assignType, agent);
+            }
+        }
+    }, [loading, agents, searchParams]);
 
     const loadCommissions = async (agentId: string) => {
         const token = getAuthToken();
@@ -380,26 +395,9 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
         loadCommissions(agent.id);
     };
 
-    const handleViewDetails = async (agent: Agent) => {
-        setViewingAgent(agent);
-        const token = getAuthToken();
-        if (!token) return;
-
-        try {
-            const [propRes, leadsRes] = await Promise.all([
-                agentService.getAssignments(token, agent.id),
-                agentService.getAgentLeads(token, agent.id)
-            ]);
-
-            if (propRes.success) {
-                setViewingAgentProperties(propRes.data || []);
-            }
-            if (leadsRes.success) {
-                setViewingAgentLeads(leadsRes.data || []);
-            }
-        } catch (error) {
-            console.error('Failed to load agent details', error);
-        }
+    const handleViewDetails = (agent: Agent) => {
+        const baseUrl = mode === 'admin' ? '/realestate-admin' : '/realestate-owner-admin';
+        router.push(`${baseUrl}/agents/${agent.id}`);
     };
 
     return (
@@ -953,158 +951,7 @@ export default function AgentsManager({ mode }: AgentsManagerProps) {
                     </div>
                 )}
 
-                {/* Agent Detail Modal */}
-                {viewingAgent && (
-                    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1080 }}>
-                        <div className="modal-dialog modal-dialog-centered modal-lg">
-                            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                                <div className="bg-primary p-4 text-white position-relative">
-                                    <button type="button" className="btn-close btn-close-white position-absolute end-0 top-0 m-4" onClick={() => setViewingAgent(null)}></button>
-                                    <div className="d-flex align-items-center">
-                                        <div className="avatar bg-white text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-4 shadow-sm" style={{ width: '80px', height: '80px', fontSize: '2rem' }}>
-                                            {viewingAgent.user?.firstName?.[0]}{viewingAgent.user?.lastName?.[0]}
-                                        </div>
-                                        <div>
-                                            <h3 className="fw-bold mb-1 text-white">{viewingAgent.user?.firstName} {viewingAgent.user?.lastName}</h3>
-                                            <div className="badge bg-white text-primary rounded-4 mb-2">Agent ID: {viewingAgent.id.substring(0, 8)}</div>
-                                            <div className="d-flex gap-3 small opacity-75">
-                                                <span><i className="bi bi-envelope me-1"></i> {viewingAgent.user?.email}</span>
-                                                <span><i className="bi bi-telephone me-1"></i> {viewingAgent.user?.phone}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="modal-body p-4 bg-light">
-                                    <div className="row g-4">
-                                        {/* Left Column: Info & Stats */}
-                                        <div className="col-md-5">
-                                            <div className="bg-white p-4 rounded-4 shadow-sm mb-4">
-                                                <h6 className="fw-bold mb-3 border-bottom pb-2">Profile Information</h6>
-                                                <div className="mb-3">
-                                                    <label className="small text-muted text-uppercase mb-1 fw-bold">Specialization</label>
-                                                    <p className="mb-0 fw-medium">{viewingAgent.specialization || 'General Agent'}</p>
-                                                </div>
-                                                <div className="mb-3">
-                                                    <label className="small text-muted text-uppercase mb-1 fw-bold">Commission Rate</label>
-                                                    <p className="mb-0 fw-medium text-success">{viewingAgent.commissionRate}%</p>
-                                                </div>
-                                                <div>
-                                                    <label className="small text-muted text-uppercase mb-1 fw-bold">Join Date</label>
-                                                    <p className="mb-0 fw-medium">{new Date(viewingAgent.createdAt).toLocaleDateString()}</p>
-                                                </div>
-                                            </div>
-
-                                            <div className="bg-white p-4 rounded-4 shadow-sm">
-                                                <h6 className="fw-bold mb-3 border-bottom pb-2">Performance Metrics</h6>
-                                                <div className="row text-center">
-                                                    <div className="col-6">
-                                                        <div className="h3 fw-bold text-primary mb-0">{viewingAgent.totalLeads}</div>
-                                                        <div className="small text-muted text-uppercase">Leads</div>
-                                                    </div>
-                                                    <div className="col-6">
-                                                        <div className="h3 fw-bold text-success mb-0">{viewingAgent.totalDeals}</div>
-                                                        <div className="small text-muted text-uppercase">Deals</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Right Column: Assigned Properties & Leads */}
-                                        <div className="col-md-7">
-                                            {/* Assigned Properties Section */}
-                                            <div className="bg-white rounded-4 shadow-sm overflow-hidden mb-4">
-                                                <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
-                                                    <h6 className="fw-bold mb-0">Assigned Properties ({viewingAgentProperties.length})</h6>
-                                                    <button className="btn btn-sm btn-outline-primary rounded-4 py-0" onClick={() => { setViewingAgent(null); handleAssignClick('properties', viewingAgent); }}>
-                                                        <i className="bi bi-plus"></i> Manage
-                                                    </button>
-                                                </div>
-                                                <div className="max-vh-50 overflow-auto">
-                                                    {viewingAgentProperties.length === 0 ? (
-                                                        <div className="p-5 text-center text-muted">
-                                                            <i className="bi bi-building fs-1 opacity-25 mb-3 d-block"></i>
-                                                            No properties assigned.
-                                                        </div>
-                                                    ) : (
-                                                        <div className="list-group list-group-flush">
-                                                            {viewingAgentProperties.map(assign => (
-                                                                <div key={assign.id} className="list-group-item p-3">
-                                                                    <div className="d-flex align-items-center">
-                                                                        <div className="rounded-3 bg-light me-3 d-flex align-items-center justify-content-center overflow-hidden" style={{ width: '48px', height: '48px', position: 'relative' }}>
-                                                                            {assign.property?.mainImage?.url ? (
-                                                                                <Image src={assign.property.mainImage.url} alt={assign.property?.title || "Property"} fill className="object-fit-cover" />
-                                                                            ) : (
-                                                                                <i className="bi bi-geo-alt text-muted"></i>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex-grow-1 overflow-hidden">
-                                                                            <div className="fw-bold text-truncate mb-0" title={assign.property?.title}>{assign.property?.title}</div>
-                                                                            <div className="text-muted small text-truncate">{assign.property?.city}, {assign.property?.state}</div>
-                                                                        </div>
-                                                                        <div className="text-end ms-2">
-                                                                            <div className="badge bg-success-subtle text-success">{assign.commissionRate}%</div>
-                                                                            {assign.isPrimary && <div className="small text-primary fw-bold" style={{ fontSize: '10px' }}>PRIMARY</div>}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Assigned Leads Section */}
-                                            <div className="bg-white rounded-4 shadow-sm overflow-hidden">
-                                                <div className="p-4 border-bottom d-flex justify-content-between align-items-center">
-                                                    <h6 className="fw-bold mb-0">Assigned Leads ({viewingAgentLeads.length})</h6>
-                                                    <button className="btn btn-sm btn-outline-primary rounded-4 py-0" onClick={() => { setViewingAgent(null); handleAssignClick('leads', viewingAgent); }}>
-                                                        <i className="bi bi-plus"></i> Manage
-                                                    </button>
-                                                </div>
-                                                <div className="max-vh-50 overflow-auto">
-                                                    {viewingAgentLeads.length === 0 ? (
-                                                        <div className="p-5 text-center text-muted">
-                                                            <i className="bi bi-people fs-1 opacity-25 mb-3 d-block"></i>
-                                                            No leads assigned.
-                                                        </div>
-                                                    ) : (
-                                                        <div className="list-group list-group-flush">
-                                                            {viewingAgentLeads.map(assign => (
-                                                                <div key={assign.id} className="list-group-item p-3">
-                                                                    <div className="d-flex align-items-center">
-                                                                        <div className="rounded-circle bg-primary-subtle text-primary me-3 d-flex align-items-center justify-content-center fw-bold" style={{ width: '40px', height: '40px' }}>
-                                                                            {assign.lead?.name?.[0]}
-                                                                        </div>
-                                                                        <div className="flex-grow-1 overflow-hidden">
-                                                                            <div className="fw-bold text-truncate mb-0">{assign.lead?.name}</div>
-                                                                            <div className="text-muted small text-truncate">{assign.lead?.email}</div>
-                                                                        </div>
-                                                                        <div className="text-end ms-2">
-                                                                            <div className={`badge bg-${assign.status === 1 ? 'success' : 'secondary'}-subtle text-${assign.status === 1 ? 'success' : 'secondary'}`}>
-                                                                                {assign.status === 1 ? 'Active' : 'Inactive'}
-                                                                            </div>
-                                                                            {assign.isPrimary && <div className="small text-primary fw-bold" style={{ fontSize: '10px' }}>PRIMARY</div>}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="modal-footer border-0 p-4 bg-white">
-                                    <button type="button" className="btn btn-light rounded-4 px-4" onClick={() => setViewingAgent(null)}>Close Profile</button>
-                                    <button type="button" className="btn btn-primary rounded-4 px-4" onClick={() => { setViewingAgent(null); handleEdit(viewingAgent); }}>
-                                        <i className="bi bi-pencil me-2"></i> Edit Account
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* Agent Detail Modal removed - now opens to new screen */}
             </div>
             <Toast
                 show={toast.show}

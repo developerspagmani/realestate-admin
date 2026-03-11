@@ -587,7 +587,7 @@ export default function StandaloneProvider({
                             <div className="modal-content border-0 shadow-2xl rounded-4 overflow-hidden animate-fade-in">
                                 <div className="modal-header border-0 pb-0 pt-4 px-4">
                                     <div>
-                                        <h5 className="fw-black mb-1">Get in Touch</h5>
+                                        <h3 className="fw-black mb-1 fs-4" style={{ color: theme.primaryColor }}>Get in Touch</h3>
                                         <p className="extra-small text-muted mb-0">Our team typically responds within 24 hours.</p>
                                     </div>
                                     <button
@@ -600,10 +600,11 @@ export default function StandaloneProvider({
                                 <div className="modal-body p-4">
                                     <FormRenderer
                                         config={website.configuration?.inquiryForm || {
-                                            enabled: true, title: 'Send an Inquiry', description: '', fields: [
+                                            enabled: true, title: 'Send an Inquiry', description: '', submitButtonLabel: 'Send Inquiry', fields: [
                                                 { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Your full name', required: true },
                                                 { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true },
                                                 { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+1 (555) 000-0000', required: false },
+                                                { id: 'budget', label: 'Expected Budget', type: 'text', placeholder: 'e.g. $500,000', required: false },
                                                 { id: 'message', label: 'Message', type: 'textarea', placeholder: 'Tell us what you are looking for...', required: false },
                                             ]
                                         }}
@@ -616,8 +617,8 @@ export default function StandaloneProvider({
                                                     notes: `Popup inquiry from ${website.name} portal.`
                                                 });
                                                 if (res.success) {
-                                                    const leadId = res.data?.id || res.id;
-                                                    identifyLead(leadId, fd.email);
+                                                     const lead = res.data;
+                                                     identifyLead(lead.id, lead.email);
                                                     trackAction('INQUIRY_SUBMIT', { formId: config.marketingFormId || 'custom', source: 'popup' });
                                                     setTimeout(() => setShowInquiryModal(false), 2500);
                                                 }

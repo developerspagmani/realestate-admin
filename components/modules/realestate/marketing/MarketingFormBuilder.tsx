@@ -22,9 +22,12 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
             enabled: true,
             title: 'Request a Callback',
             description: 'Fill out the form below and we will get back to you.',
+            submitButtonLabel: 'Submit Inquiry',
             fields: [
-                { id: 'mkt_f1', label: 'Full Name', type: 'text', placeholder: 'Enter your name', required: true },
-                { id: 'mkt_f2', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true }
+                { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter your name', required: true },
+                { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true },
+                { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+1 (555) 000-0000', required: false },
+                { id: 'budget', label: 'Expected Budget', type: 'text', placeholder: 'e.g. $500,000', required: false }
             ]
         }
     });
@@ -161,9 +164,12 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                 enabled: true,
                 title: 'Request a Callback',
                 description: 'Fill out the form below and we will get back to you.',
+                submitButtonLabel: 'Submit Inquiry',
                 fields: [
-                    { id: 'mkt_f1', label: 'Full Name', type: 'text', placeholder: 'Enter your name', required: true },
-                    { id: 'mkt_f2', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true }
+                    { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter your name', required: true },
+                    { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true },
+                    { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+1 (555) 000-0000', required: false },
+                    { id: 'budget', label: 'Expected Budget', type: 'text', placeholder: 'e.g. $500,000', required: false }
                 ]
             }
         });
@@ -229,6 +235,17 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                                     className="form-control bg-light border-0 py-2"
                                     value={currentForm.configuration.title || ''}
                                     onChange={e => setCurrentForm({ ...currentForm, configuration: { ...currentForm.configuration, title: e.target.value } })}
+                                />
+                            </div>
+
+                            <div className="mb-3">
+                                <label className="form-label extra-small fw-bold text-muted text-uppercase">Submit Button Label</label>
+                                <input
+                                    type="text"
+                                    className="form-control bg-light border-0 py-2"
+                                    placeholder="e.g. Submit Inquiry"
+                                    value={currentForm.configuration.submitButtonLabel || ''}
+                                    onChange={e => setCurrentForm({ ...currentForm, configuration: { ...currentForm.configuration, submitButtonLabel: e.target.value } })}
                                 />
                             </div>
 
@@ -340,7 +357,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                         <div className="card border-0 shadow-sm rounded-4 p-5 d-flex align-items-center justify-content-center bg-light bg-opacity-50" style={{ minHeight: '600px' }}>
                             <div className="w-100" style={{ maxWidth: '400px' }}>
                                 <div className="text-center mb-4">
-                                    <span className="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-4 mb-2 px-3 fw-bold">Live Preview</span>
+                                    <span className="badge bg-primary bg-opacity-10 text-white border border-primary border-opacity-25 rounded-4 mb-2 px-3 fw-bold">Live Preview</span>
                                 </div>
                                 <div className="bg-white p-4 shadow-sm rounded-4 border">
                                     <FormRenderer

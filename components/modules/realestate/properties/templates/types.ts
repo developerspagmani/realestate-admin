@@ -28,6 +28,7 @@ export interface BaseTemplateProps {
     fontStyle?: string;
     accentColor?: string;
     textColor?: string;
+    currency?: string;
     allAmenities?: Amenity[];
     allMedia?: MediaItem[];
     aiTagline?: string;

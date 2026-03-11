@@ -31,7 +31,7 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
         message: '',
         type: 'success'
     });
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('marketing_hideGuide');

@@ -1,404 +1,380 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import AOS from 'aos';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuthContext } from '@/app/contexts/AuthContext';
+import Loader from '@/components/common/Loader';
+import Link from 'next/link';
 
-// Components
-import Navbar from '@/components/home/Navbar';
-import Hero from '@/components/home/Hero';
-import AboutSection from '@/components/home/AboutSection';
-import Modules from '@/components/home/Modules';
-import VoiceShowcase from '@/components/home/VoiceShowcase';
-import StatsROI from '@/components/home/StatsROI';
-import HomeFooter from '@/components/home/HomeFooter';
-import VoiceModal from '@/components/home/VoiceModal';
-import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
-import Platform from '@/components/home/Platform';
-import SecureData from '@/components/home/SecureData';
-import { seoData, SEOConfig } from '@/utils/seoData';
-
-const MOCK_PROPERTIES = [
-  { id: '1', title: 'Skyline Institutional Tower', city: 'Dubai', neighborhood: 'Marina', propertyTypeLabel: 'Office', listingType: 'Rent', units: [{ unitPricing: [{ price: 15000 }] }], createdAt: new Date().toISOString() },
-  { id: '2', title: 'Oasis Luxury Villa', city: 'Dubai', neighborhood: 'Palm Jumeirah', propertyTypeLabel: 'Villa', listingType: 'Sale', units: [{ unitPricing: [{ price: 45000 }] }], createdAt: new Date().toISOString() },
-  { id: '3', title: 'Urban Tech Hub', city: 'Bangalore', neighborhood: 'Whitefield', propertyTypeLabel: 'Apartment', listingType: 'Rent', units: [{ unitPricing: [{ price: 2500 }] }], createdAt: new Date().toISOString() }
-];
-
-export default function Home() {
+function LoginContent() {
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
+  const [localLoading, setLocalLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { login, isAuthenticated, error: authError, getRedirectPath } = useAuthContext();
   const router = useRouter();
-  const [scrolled, setScrolled] = useState(false);
-  const [showVirpa, setShowVirpa] = useState(false);
+  const searchParams = useSearchParams();
 
-  // --- Voice Protocol Hub Logic ---
-  const [isListening, setIsListening] = useState(false);
-  const [commandFeedback, setCommandFeedback] = useState('How can I help you?');
-  const [speechIntensity, setSpeechIntensity] = useState([1, 1, 1, 1, 1]);
+  // --- Voice Logic Hooks (Moved up to avoid conditional hook call) ---
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState('');
 
   useEffect(() => {
-    AOS.init({
-      duration: 1200,
-      once: false,
-      mirror: true,
-      anchorPlacement: 'top-bottom',
-    });
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'session_expired') {
+      setError('Your session has expired. Please log in again.');
+    }
+  }, [searchParams]);
 
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirectPath = getRedirectPath();
+      router.push(redirectPath);
+    }
+  }, [isAuthenticated, router, getRedirectPath]);
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  if (isAuthenticated) {
+    return null;
+  }
 
-  const runVoiceCommand = async () => {
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    if (!SpeechRecognition) {
-      alert("Speech recognition not supported. Please use Chrome or Edge.");
+    if (!formData.username || !formData.password) {
+      setError('Please fill in all fields');
       return;
     }
 
-    setIsListening(true);
-
-    if (!window.isSecureContext && window.location.hostname !== 'localhost') {
-      setCommandFeedback('INSECURE ORIGIN (HTTPS REQUIRED)');
-      return;
-    }
-
-    setCommandFeedback('Initializing Neural Hub...');
+    setError('');
+    setLocalLoading(true);
 
     try {
+      const isEmail = formData.username.includes('@');
+      const loginPayload = isEmail
+        ? { email: formData.username, password: formData.password }
+        : { phone: formData.username, password: formData.password };
+
+      const success = await login(loginPayload);
+
+      if (success) {
+        const redirectPath = getRedirectPath();
+        router.push(redirectPath);
+      } else {
+        setLocalLoading(false);
+      }
+    } catch (err) {
+      setLocalLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    if (error) {
+      setError('');
+    }
+  };
+
+  // --- Voice Logic ---
+  const runVoiceAuth = async () => {
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SpeechRecognition) {
+      setError('Voice recognition not supported. Use Chrome or Edge.');
+      return;
+    }
+
+    try {
+      // PRE-FLIGHT CHECK: Request microphone permission synchronously on user click.
+      // Doing this here ensures the browser prompt appears directly from the click event,
+      // which bypasses strict browser policies that block async mic requests.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(track => track.stop());
     } catch (e) {
-      setCommandFeedback('PERMISSION BLOCKED');
+      console.error('Microphone access denied:', e);
+      setError('Microphone permission blocked. Please check your browser URL bar and allow microphone access.');
       return;
     }
 
-    try {
-      const speak = (text: string) => {
-        return new Promise((resolve) => {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(text);
-          utterance.rate = 1.0;
-          utterance.pitch = 0.8;
-          utterance.onend = () => resolve(true);
-          window.speechSynthesis.speak(utterance);
-        });
-      };
+    setIsVoiceActive(true);
+    setError('');
 
-      setCommandFeedback('Waking up...');
-      await speak("Welcome to Virpanix. Protocol engaged. How can I help you?");
+    const speak = (text: string) => {
+      return new Promise((resolve) => {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 0.8;
+        utterance.onend = () => resolve(true);
+        window.speechSynthesis.speak(utterance);
+      });
+    };
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      const interval = setInterval(() => {
-        setSpeechIntensity(Array.from({ length: 5 }, () => Math.floor(Math.random() * 40) + 10));
-      }, 100);
-
-      recognition.onstart = () => {
-        setCommandFeedback('Listening...');
-      };
-
-      recognition.onresult = (event: any) => {
-        clearInterval(interval);
-        setSpeechIntensity([5, 5, 5, 5, 5]);
-        const command = event.results[0][0].transcript.toLowerCase();
-        setCommandFeedback(`Processing: ${command}`);
-
-        // Command Matching: Dynamic + Fallbacks
-        let matched = false;
-
-        // 1. Dynamic check against all SEO pages
-        for (const [key, data] of Object.entries(seoData) as [string, SEOConfig][]) {
-          // Check if the spoken command includes the page's title or key
-          // We use simple token matching for robustness
-          const tokens = key.split('-');
-          const titleTokens = data.title.toLowerCase().split(' ');
-
-          if (
-            tokens.some((t: string) => command.includes(t)) ||
-            titleTokens.some((t: string) => t.length > 3 && command.includes(t))
-          ) {
-            router.push(`/pages/${key}`);
-            matched = true;
-            break;
-          }
-        }
-
-        // 2. Static Fallbacks for core interactions
-        if (!matched) {
-          if (command.includes('home')) {
-            router.push('/');
-            matched = true;
-          } else if (command.includes('login') || command.includes('sign in')) {
-            router.push('/login');
-            matched = true;
-          } else if (command.includes('register') || command.includes('join')) {
-            router.push('/register');
-            matched = true;
-          } else if (command.includes('dashboard')) {
-            router.push('/realestate-owner-admin');
-            matched = true;
-          }
-        }
-
-        if (!matched) {
-          setCommandFeedback('Protocol unrecognized.');
-          setTimeout(() => setIsListening(false), 2000);
+    const listen = (statusText: string) => {
+      return new Promise<string>((resolve, reject) => {
+        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+        if (!SpeechRecognition) {
+          reject({ error: 'not-supported' });
           return;
         }
 
-        setTimeout(() => setIsListening(false), 1500);
-      };
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
 
-      recognition.onerror = (event: any) => {
-        clearInterval(interval);
-        setSpeechIntensity([1, 1, 1, 1, 1]);
-        if (event.error === 'not-allowed') {
-          setCommandFeedback('PERMISSION BLOCKED');
-        } else {
-          setCommandFeedback('Connection interrupted.');
-          setTimeout(() => setIsListening(false), 2000);
+        setVoiceStatus(statusText);
+
+        recognition.onresult = (event: any) => {
+          const result = event.results[0][0].transcript;
+          console.log("Captured speech:", result);
+          resolve(result);
+        };
+
+        recognition.onerror = (e: any) => {
+          console.error("Speech Recognition Individual Error:", e.error);
+          reject(e);
+        };
+
+        recognition.onend = () => {
+          console.log("Speech recognition session ended.");
+        };
+
+        try {
+          // Extra buffer to let hardware transition from output (synthesis) to input (recognition)
+          setTimeout(() => {
+            recognition.start();
+          }, 400);
+        } catch (e) {
+          reject(e);
         }
-      };
+      });
+    };
 
-      setTimeout(() => {
-        recognition.start();
-      }, 200);
+    try {
+      await speak("Welcome to Virpanix. State your username.");
+      const rawUser = await listen("Listening for Username...");
+      const username = rawUser.toLowerCase().replace(/\s/g, '');
+      setFormData(prev => ({ ...prev, username }));
 
-    } catch (e) {
-      setIsListening(false);
-      alert("Could not start voice protocol.");
+      // Short delay before next step
+      await new Promise(r => setTimeout(r, 600));
+
+      await speak(`Username set to ${username}. Now state your password.`);
+      const rawPass = await listen("Listening for Password...");
+      const password = rawPass.replace(/\s/g, '');
+      setFormData(prev => ({ ...prev, password }));
+
+      await speak("Authenticating credentials.");
+      setLocalLoading(true);
+
+      const loginPayload = username.includes('@')
+        ? { email: username, password }
+        : { phone: username, password };
+
+      const success = await login(loginPayload);
+      if (success) {
+        router.push(getRedirectPath());
+      } else {
+        setIsVoiceActive(false);
+        setLocalLoading(false);
+      }
+    } catch (err: any) {
+      const errorCode = err?.error || 'unknown_failure';
+      console.error("Voice Flow Failure Code:", errorCode);
+      console.error("Voice Flow Full Error:", err);
+
+      let friendlyError = 'Voice authentication interrupted. Please log in manually.';
+      if (errorCode === 'no-speech') friendlyError = 'System did not hear any voice. Please try again.';
+      if (errorCode === 'not-allowed') friendlyError = 'Microphone permission blocked. Please enable it in browser settings.';
+      if (errorCode === 'network') friendlyError = 'Voice network error. Check your internet.';
+
+      setError(friendlyError);
+      setIsVoiceActive(false);
+      setLocalLoading(false);
     }
   };
 
   return (
-    <div className="landing-page bg-black text-white min-vh-100">
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800&display=swap" />
+    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light p-4">
+      <div className="container" style={{ maxWidth: '900px' }}>
+        <div className="card shadow-lg border-0 rounded-4 overflow-hidden animate-fade-in">
+          <div className="row g-0">
+            {/* Brand/Accent Side */}
+            <div className="col-lg-5 bg-dark text-white p-5 d-none d-lg-flex flex-column justify-content-center">
+              <div className="mb-4">
+                <i className="bi bi-grid-1x2-fill display-4 text-white opacity-25"></i>
+              </div>
+              <h2 className="fw-extrabold mb-3 text-white">Welcome Back</h2>
+              <p className="small opacity-75 mb-5">Access your property management workspace and leverage AI insights to grow your business.</p>
 
-      <Navbar scrolled={scrolled} onMicClick={runVoiceCommand} />
-
-      <Hero />
-
-      <Platform />
-
-      <AboutSection />
-
-      <SecureData />
-
-      <Modules />
-
-      <StatsROI />
-
-      <VoiceShowcase />
-
-      <HomeFooter />
-
-      <VoiceModal
-        isListening={isListening}
-        setIsListening={setIsListening}
-        commandFeedback={commandFeedback}
-        speechIntensity={speechIntensity}
-      />
-
-      {/* Floating Voice Button */}
-      {!isListening && (
-        <div className="fixed-bottom p-4 d-flex flex-column align-items-center gap-3" style={{ zIndex: 1100 }}>
-
-          {/* Virpa Testing Shortcut */}
-          {!showVirpa && (
-            <button
-              onClick={() => setShowVirpa(true)}
-              className="btn glass-card border-red/20 px-4 py-3 d-flex align-items-center gap-3 animate-bounce-subtle shadow-red-lg"
-              style={{ borderRadius: '100px' }}
-            >
-              <div className="bg-red rounded-circle pulse" style={{ width: '10px', height: '10px' }}></div>
-              <span className="small fw-900 text-white letter-spacing-1">PREVIEW VIRPA AI</span>
-            </button>
-          )}
-
-          {/* Chatbot Instance */}
-          {showVirpa && (
-            <div className="shadow-red-lg rounded-4 overflow-hidden animate-zoom-in" style={{ width: '380px', height: '600px', marginBottom: '10px' }}>
-              <ChatbotWidget
-                theme={{ primaryColor: '#e60026' }}
-                properties={MOCK_PROPERTIES}
-                onFilterResults={() => { }}
-                onClose={() => setShowVirpa(false)}
-                onSelectProperty={() => { }}
-                onCreateLead={async () => { }}
-              />
+              <div className="mt-auto">
+                <div className="d-flex align-items-center gap-3 mb-3">
+                  <div className="bg-white bg-opacity-10 p-2 rounded-3">
+                    <i className="bi bi-graph-up text-white"></i>
+                  </div>
+                  <span className="extra-small fw-semibold">Real-time Analytics</span>
+                </div>
+                <div className="d-flex align-items-center gap-3">
+                  <div className="bg-white bg-opacity-10 p-2 rounded-3">
+                    <i className="bi bi-robot text-white"></i>
+                  </div>
+                  <span className="extra-small fw-semibold">AI Lead Predictions</span>
+                </div>
+              </div>
             </div>
-          )}
 
+            {/* Login Form Side */}
+            <div className="col-lg-7 bg-white p-4 p-md-5 position-relative">
+              {isVoiceActive && (
+                <div className="voice-overlay position-absolute top-0 start-0 w-100 h-100 bg-black text-white z-3 d-flex flex-column align-items-center justify-content-center p-5 text-center">
+                  <div className="orb-pulse mb-4"></div>
+                  <h3 className="fw-900 text-red mb-2 uppercase tracking-widest">{voiceStatus}</h3>
+                  <p className="opacity-50 small">Protocol active. Please speak clearly into the microphone.</p>
+                  <button onClick={() => { setIsVoiceActive(false); window.speechSynthesis.cancel(); }} className="btn btn-outline-danger btn-sm mt-4 rounded-pill px-4">CANCEL VOICE PROTOCOL</button>
+                </div>
+              )}
+
+              <div className="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                  <h2 className="fw-extrabold text-dark mb-1">Sign In</h2>
+                  <p className="text-muted small">Enter your credentials to manage your portfolio</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={runVoiceAuth}
+                  className="btn btn-dark rounded-circle p-2 d-flex align-items-center justify-content-center shadow-lg hvr-red-pulse"
+                  style={{ width: '50px', height: '50px' }}
+                  title="Voice Login"
+                >
+                  <i className="bi bi-mic-fill fs-4 text-red"></i>
+                </button>
+              </div>
+
+              {(error || authError) && (
+                <div className="alert alert-danger border-0 rounded-3 small mb-4 animate-fade-in">
+                  <i className="bi bi-exclamation-circle-fill me-2"></i>
+                  {error || authError}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit}>
+                <div className="mb-4">
+                  <label className="form-label small-caps mb-2">Email or Phone</label>
+                  <div className="input-group">
+                    <span className="input-group-text bg-light border-end-0 rounded-start-3"><i className="bi bi-person text-muted"></i></span>
+                    <input
+                      type="text"
+                      className="form-control bg-light border-start-0 ps-0"
+                      name="username"
+                      placeholder="email@example.com"
+                      value={formData.username}
+                      onChange={handleChange}
+                      required
+                      disabled={localLoading}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <label className="form-label small-caps mb-0">Password</label>
+                    <Link href="/forgot-password" style={{ fontSize: '0.7rem' }} className="text-dark fw-bold text-decoration-none">Forgot?</Link>
+                  </div>
+                  <div className="input-group">
+                    <span className="input-group-text bg-light border-end-0 rounded-start-3"><i className="bi bi-lock text-muted"></i></span>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      className="form-control bg-light border-start-0 ps-0"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                      disabled={localLoading}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline-light border-start-0 text-muted"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-lg d-flex align-items-center justify-content-center gap-2"
+                  disabled={localLoading}
+                >
+                  {localLoading ? (
+                    <span className="spinner-border spinner-border-sm"></span>
+                  ) : (
+                    <i className="bi bi-box-arrow-in-right"></i>
+                  )}
+                  {localLoading ? 'Signing in...' : 'Sign In'}
+                </button>
+              </form>
+
+              <div className="text-center mt-5 pt-3 border-top">
+                <p className="extra-small text-muted mb-0">
+                  Don't have a account? <Link href="/register" className="text-dark fw-bold text-decoration-none">Register Portfolio</Link>
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
 
-      <style jsx global>{`
-        :root {
-          --primary-red: #e60026;
+      <style jsx>{`
+        .fw-extrabold { font-weight: 800; }
+        .extra-small { font-size: 0.72rem; }
+        .small-caps { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; color: #94a3b8; }
+        .animate-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .form-control { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+        .form-control:focus { background-color: #fff; border-color: #000; box-shadow: 0 0 0 4px rgba(0,0,0,0.05); }
+        .input-group-text { border: 1px solid #e2e8f0; }
+        .btn-primary { background-color: #000; border: none; }
+        .btn-primary:hover { background-color: #222; transform: translateY(-1px); }
+
+        .orb-pulse {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          background: #e60026;
+          box-shadow: 0 0 0 0 rgba(230, 0, 38, 0.7);
+          animation: pulse 1.5s infinite;
         }
 
-        .text-red { color: var(--primary-red) !important; }
-        .bg-red { background-color: var(--primary-red) !important; }
-        .border-red { border-color: var(--primary-red) !important; }
-        .btn-red { 
-          background-color: var(--primary-red); 
-          color: white; 
-          border: none; 
-          border-radius: 0.5rem;
-          font-weight: 800;
-          transition: all 0.3s ease;
-        }
-        .btn-red:hover { background-color: #c40020; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(230,0,38,0.4); }
-        .btn-outline-red {
-          background-color: transparent;
-          color: var(--primary-red);
-          border: 1px solid var(--primary-red);
-          border-radius: 0.5rem;
-          font-weight: 800;
-          transition: all 0.3s ease;
-        }
-        .btn-outline-red:hover { background-color: rgba(230,0,38,0.05); transform: translateY(-2px); }
-
-        .shadow-red-lg { box-shadow: 0 20px 40px -10px rgba(230,0,38,0.3); }
-
-        .tracking-widest { letter-spacing: 0.2em; }
-        .tracking-tight { letter-spacing: -0.02em; }
-        .tracking-tighter { letter-spacing: -0.05em; }
-
-        .extra-small { font-size: 0.65rem; }
-        .x-small { font-size: 0.75rem; }
-
-        .hvr-red { transition: all 0.3s ease; }
-        .hvr-red:hover { color: var(--primary-red) !important; opacity: 1 !important; transform: translateY(-1px); }
-        .hvr-translate-right { transition: all 0.3s ease; display: inline-block; }
-        .hvr-translate-right:hover { transform: translateX(8px); }
-
-        .fw-800 { font-weight: 800; }
-        .fw-900 { font-weight: 900; }
-        .max-w-800 { max-width: 800px; }
-        .pt-10 { padding-top: 10rem; }
-        .mb-10 { margin-bottom: 10rem; }
-        .section-padding { padding: 100px 0; }
-        
-        .bg-grid-hero {
-          background-image: 
-            linear-gradient(rgba(230,0,38,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(230,0,38,0.03) 1px, transparent 1px);
-          background-size: 60px 60px;
-        }
-
-        .glass-card {
-          border-radius: 2.5rem;
-        }
-
-        .hero-glow-center {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 800px;
-          height: 800px;
-          background: radial-gradient(circle, rgba(230,0,38,0.08) 0%, transparent 70%);
-          filter: blur(100px);
-          pointer-events: none;
-        }
-
-        .shadow-red-pulse {
-          box-shadow: 0 0 30px rgba(230,0,38,0.2);
-          animation: pulse-red-border 4s infinite;
-        }
-
-        @keyframes pulse-red-border {
-          0% { transform: scale(1); border-color: rgba(230,0,38,0.1); }
-          50% { transform: scale(1.02); border-color: rgba(230,0,38,0.4); }
-          100% { transform: scale(1); border-color: rgba(230,0,38,0.1); }
-        }
-
-        .grayscale { filter: grayscale(100%) brightness(0.6); transition: all 0.8s ease; }
-        .hover-color:hover { filter: grayscale(0%) brightness(1); }
-
-        .hover-bg-red-light:hover { background: rgba(230,0,38,0.05); }
-
-        .siri-bar {
-            width: 4px;
-            background: #e60026;
-            border-radius: 10px;
-            transition: height 0.1s ease;
-            box-shadow: 0 0 10px rgba(230,0,38,0.5);
-        }
-
-        .wave-bar {
-            width: 4px;
-            border-radius: 2px;
-            animation: wave-animation 1s infinite alternate ease-in-out;
-            box-shadow: 0 0 15px rgba(230, 0, 38, 0.4);
-        }
-
-        @keyframes wave-animation {
-            from { transform: scaleY(1); opacity: 0.6; }
-            to { transform: scaleY(1.8); opacity: 1; }
-        }
-
-        .max-w-500 { max-width: 500px; }
-        .pulse-slow { animation: pulse-opacity 3s infinite; }
-        @keyframes pulse-opacity {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 1; }
-        }
-
-        .animate-zoom-in {
-            animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        @keyframes zoomIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        @keyframes pulse {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 38, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(230, 0, 38, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 38, 0); }
         }
 
         .hvr-red-pulse:hover {
           animation: pulse 1.5s infinite;
         }
 
-        @keyframes pulse {
-          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 38, 0.7); }
-          70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(230, 0, 38, 0); }
-          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 0, 38, 0); }
-        }
-
-        .scanline {
-          width: 100%;
-          height: 100px;
-          z-index: 2;
-          background: linear-gradient(0deg, rgba(230,0,38,0) 0%, rgba(230,0,38,0.02) 50%, rgba(230,0,38,0) 100%);
-          position: absolute;
-          bottom: 100%;
-          animation: scanline 10s linear infinite;
-          pointer-events: none;
-        }
-
-        @keyframes scanline {
-          0% { bottom: 100%; }
-          100% { bottom: -100px; }
-        }
-
-        @keyframes bounce-subtle {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
-        .animate-bounce-subtle { animation: bounce-subtle 3s ease-in-out infinite; }
-
-        @media (max-width: 991px) {
-          .display-1 { font-size: 3rem; }
-          .display-4 { font-size: 2.5rem; }
-          .display-3 { font-size: 3rem; }
-          .section-padding { padding: 60px 0; }
+        .voice-overlay {
+          border-radius: 1rem;
+          animation: fadeIn 0.3s ease-out;
         }
       `}</style>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">Loading Portal...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

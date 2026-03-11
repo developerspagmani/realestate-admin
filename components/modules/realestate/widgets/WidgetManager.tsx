@@ -103,7 +103,7 @@ export default function WidgetManager({ mode = 'admin' }: WidgetManagerProps) {
         message: '',
         type: 'success'
     });
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('widget_mgmt_hideGuide');

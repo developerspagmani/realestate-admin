@@ -17,15 +17,17 @@ interface BrochureManagerProps {
     allAmenities?: Amenity[];
     allMedia?: MediaItem[];
     isEmbedded?: boolean;
+    fetching?: boolean;
 }
 
-export default function BrochureManager({ property, properties = [], mode, companyInfo, show, onClose, onPropertyChange, allAmenities = [], allMedia = [], isEmbedded = false }: BrochureManagerProps) {
+export default function BrochureManager({ property, properties = [], mode, companyInfo, show, onClose, onPropertyChange, allAmenities = [], allMedia = [], isEmbedded = false, fetching = false }: BrochureManagerProps) {
     const [generating, setGenerating] = useState(false);
     const [progress, setProgress] = useState(0);
     const [fontStyle, setFontStyle] = useState("'Outfit', sans-serif");
     const [design, setDesign] = useState<'modern' | 'luxury' | 'classic' | 'elegant_landscape' | 'premium_landscape' | 'artistic'>('modern');
     const [accentColor, setAccentColor] = useState('#6366f1');
     const [textColor, setTextColor] = useState('#333333');
+    const [currency, setCurrency] = useState('$');
     const [aiTagline, setAiTagline] = useState<string>('');
     const [aiDescription, setAiDescription] = useState<string>('');
     const [isAiLoading, setIsAiLoading] = useState(false);
@@ -53,15 +55,35 @@ export default function BrochureManager({ property, properties = [], mode, compa
     });
 
     const [activeTab, setActiveTab] = useState<'design' | 'content' | 'images'>('design');
+    const [lastPropId, setLastPropId] = useState<string | null>(null);
+
+    // Reset state when property changes to avoid stale data
+    React.useEffect(() => {
+        if (property && property.id !== lastPropId) {
+            setLastPropId(property.id);
+            setAiTagline('');
+            setAiDescription('');
+            setSelectedImages({
+                cover: property.mainImage?.url || '',
+                bg1: '',
+                bg2: '',
+                bg3: ''
+            });
+
+            // Automatically trigger AI content for new property
+            if (!isAiLoading) generateAiContent();
+        }
+    }, [property, lastPropId, isAiLoading]);
 
     const getMediaUrl = (idOrUrl: string) => {
         if (!idOrUrl) return '';
+        if (typeof idOrUrl !== 'string') return '';
         if (idOrUrl.startsWith('http')) return idOrUrl;
         const media = allMedia.find(m => m.id === idOrUrl);
         return media ? media.url : '';
     };
 
-    const generateAiContent = async () => {
+    const generateAiContent = React.useCallback(async () => {
         if (!property) return;
         setIsAiLoading(true);
         try {
@@ -108,7 +130,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
         } finally {
             setIsAiLoading(false);
         }
-    };
+    }, [property, setAiTagline, setAiDescription, setIsAiLoading]);
 
     const handleDownload = async () => {
         if (!property) return;
@@ -237,7 +259,11 @@ export default function BrochureManager({ property, properties = [], mode, compa
                                     ].map(p => (
                                         <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${accentColor === p.color ? 'border-primary' : 'border-transparent'}`} onClick={() => setAccentColor(p.color)} title={p.name} style={{ width: '28px', height: '28px', background: p.color }} />
                                     ))}
-                                    <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: '28px', height: '28px' }} />
+                                    <br />
+                                    <div className='d-flex align-items-center gap-2'>
+                                        <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: '38px', height: '38px' }} />
+                                        <span className='text-muted small'>Custom</span>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex-fill">
@@ -250,8 +276,35 @@ export default function BrochureManager({ property, properties = [], mode, compa
                                     ].map(p => (
                                         <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${textColor === p.color ? 'border-primary' : 'border-transparent'}`} onClick={() => setTextColor(p.color)} title={p.name} style={{ width: '28px', height: '28px', background: p.color, border: p.color === '#ffffff' ? '1px solid #ddd !important' : '' }} />
                                     ))}
-                                    <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={textColor} onChange={(e) => setTextColor(e.target.value)} style={{ width: '28px', height: '28px' }} />
+                                    <br />
+                                    <div className='d-flex align-items-center gap-2'>
+                                        <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={textColor} onChange={(e) => setTextColor(e.target.value)} style={{ width: '38px', height: '38px' }} />
+                                        <span className='text-muted small'>Custom</span>
+                                    </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="form-label fw-bold small">Currency Preference</label>
+                            <div className="d-flex flex-wrap gap-2">
+                                {[
+                                    { label: '$ USD', value: '$' },
+                                    { label: '€ EUR', value: '€' },
+                                    { label: '£ GBP', value: '£' },
+                                    { label: '₹ INR', value: '₹' },
+                                    { label: '¥ JPY', value: '¥' },
+                                    { label: 'AED', value: 'AED' },
+                                ].map(c => (
+                                    <button 
+                                        key={c.value} 
+                                        className={`btn btn-sm rounded-pill fw-bold border ${currency === c.value ? 'btn-primary border-primary' : 'bg-white border-light text-muted'}`}
+                                        onClick={() => setCurrency(c.value)}
+                                        style={{ fontSize: '11px', padding: '6px 15px' }}
+                                    >
+                                        {c.label}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -259,7 +312,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
 
                 {activeTab === 'content' && (
                     <div className="animate-in">
-                        <div className="mb-4 bg-primary bg-opacity-10 p-4 rounded-4 border border-primary border-opacity-10">
+                        <div className="mb-4 bg-dark bg-opacity-10 p-4 rounded-4 border border-opacity-10">
                             <label className="form-label fw-bold small text-primary d-flex align-items-center gap-2 mb-3">
                                 <i className="bi bi-robot"></i> AI Engine (Chrome Nano)
                             </label>
@@ -268,7 +321,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
                             </button>
                             <div className="mb-3">
                                 <label className="form-label fw-bold extra-small text-muted text-uppercase">Signature Tagline</label>
-                                <textarea className="form-control form-control-sm border-0 shadow-none bg-white rounded-3 mt-1" rows={2} value={aiTagline} onChange={(e) => setAiTagline(e.target.value)} style={{ fontSize: '11px' }} placeholder="AI will generate this..." />
+                                <textarea className="form-control form-control-sm border-0 shadow-none bg-white rounded-3 mt-1" rows={4} value={aiTagline} onChange={(e) => setAiTagline(e.target.value)} style={{ fontSize: '11px' }} placeholder="AI will generate this..." />
                             </div>
                         </div>
 
@@ -362,7 +415,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
                     </div>
                 ) : (
                     <button className="btn btn-dark btn-lg w-100 rounded-4 py-3 fw-bold shadow-lg transition-all hover-scale" onClick={handleDownload} disabled={!property}>
-                        <i className="bi bi-lightning-fill text-warning me-2"></i> Ignite Production
+                        <i className="bi bi-lightning-fill text-warning me-2"></i> Generate Brochure
                     </button>
                 )}
             </div>
@@ -380,44 +433,106 @@ export default function BrochureManager({ property, properties = [], mode, compa
     );
 
     const renderContent = () => (
-        <div className="row g-0 h-100">
+        <div id="brochure-intelligent-content" className="row g-0 h-100">
             {/* Sidebar Configuration */}
             <div className="col-md-4 col-lg-3 border-end h-100 overflow-hidden" style={{ minWidth: '350px' }}>
                 {renderSidebar()}
             </div>
 
-            {/* Preview Area */}
-            <div className="col-md-8 col-lg-9 bg-secondary bg-opacity-10 d-flex flex-column align-items-center justify-content-start h-100 overflow-auto py-5" style={{ background: '#f0f2f5' }}>
+            {/* Preview Area - Neural Proofing System */}
+            <div id="brochure-viewer-portal" className="col-md-8 col-lg-9 d-flex flex-column align-items-center h-100 overflow-auto py-5 px-3"
+                style={{
+                    background: '#f1f5f9',
+                    backgroundImage: 'linear-gradient(45deg, #f8fafc 25%, transparent 25%), linear-gradient(-45deg, #f8fafc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f8fafc 75%), linear-gradient(-45deg, transparent 75%, #f8fafc 75%)',
+                    backgroundSize: '40px 40px',
+                    position: 'relative',
+                    minHeight: '600px',
+                    zIndex: 5
+                }}>
+
+                {/* Visual Link Diagnostic */}
+                <div className="position-absolute top-0 end-0 m-4 d-flex gap-2 z-3 pt-2">
+                    <div className={`p-2 rounded-4 shadow-lg border d-flex align-items-center gap-2 ${property ? 'bg-white border-success' : 'bg-white border-warning'}`} style={{ minWidth: '180px' }}>
+                        <div className={`rounded-circle ${property ? 'bg-success animate-ping' : 'bg-warning'}`} style={{ width: '10px', height: '10px' }}></div>
+                        <div className="text-dark small fw-bold text-truncate" style={{ maxWidth: '120px' }}>{property ? property.name : 'NO DATA LINKED'}</div>
+                    </div>
+                </div>
+
                 {!property ? (
-                    <div className="text-muted text-center animate-pulse">
-                        <i className="bi bi-building-slash display-1 opacity-25 mb-4 d-block"></i>
-                        <h4 className="fw-bold">Ready to Begin?</h4>
-                        <p>Select a property from the sidebar to visualize your brochure.</p>
+                    <div className="my-auto text-muted text-center animate-in p-5 bg-white rounded-5 shadow-2xl border" style={{ maxWidth: '500px' }}>
+                        <div className="mb-4 bg-primary bg-opacity-10 display-4 p-4 rounded-circle d-inline-block shadow-sm">
+                            <i className="bi bi-cpu text-primary"></i>
+                        </div>
+                        <h4 className="fw-bold text-dark">Neural Proofing Engine</h4>
+                        <p className="text-muted small">The visualization gateway is active. Please select a property from your portfolio to synchronize the high-fidelity proofing data.</p>
+                        <div className="pt-3 mt-4 border-top opacity-50 small">System ID: BROCHURE_PRO_V3</div>
                     </div>
                 ) : (
-                    <div className="preview-container position-relative mt-4">
-                        <div className="preview-badge position-absolute top-0 start-50 translate-middle-x z-3 px-3 py-1 bg-dark text-white rounded-pill small fw-bold shadow-lg" style={{ marginTop: '-40px' }}>
-                            Digital Proof (A4 Scale)
+                    <div className="preview-viewport-v4 w-100 d-flex flex-column align-items-center position-relative h-100" style={{ minWidth: '800px' }}>
+
+                        {(fetching || isAiLoading) && (
+                            <div className="position-absolute top-0 start-50 translate-middle-x z-3 text-center bg-white p-4 rounded-4 shadow-2xl border mt-5"
+                                style={{ minWidth: '300px', border: '2px solid rgba(var(--bs-primary-rgb), 0.1)' }}>
+                                <div className="spinner-border text-primary border-4 mb-3" style={{ width: '3rem', height: '3rem' }} role="status"></div>
+                                <div className="fw-bold text-dark">{fetching ? 'Synchronizing Data...' : 'AI Rewriting Content...'}</div>
+                                <div className="text-muted small">Updating live proof dimensions</div>
+                            </div>
+                        )}
+
+                        <div className="preview-status-header mb-5 sticky-top z-2 pt-2">
+                            <div className="px-5 py-3 bg-dark text-white rounded-pill small fw-bold shadow-2xl d-flex align-items-center gap-3 border border-secondary"
+                                style={{ letterSpacing: '2px', fontSize: '10px', backdropFilter: 'blur(10px)' }}>
+                                <i className="bi bi-broadcast text-success"></i>
+                                <span>LIVE VISUAL SYNCHRONIZATION</span>
+                                <span className="text-white-50">|</span>
+                                <span className="text-warning text-uppercase">{property.name}</span>
+                            </div>
                         </div>
-                        <div className="shadow-2xl" style={{ transform: 'scale(0.38)', transformOrigin: 'top center', marginBottom: '-180mm' }}>
-                            <BrochureTemplate
-                                property={property}
-                                mode={mode}
-                                companyInfo={companyInfo}
-                                fontStyle={fontStyle}
-                                design={design}
-                                accentColor={accentColor}
-                                textColor={textColor}
-                                allAmenities={allAmenities}
-                                allMedia={allMedia}
-                                aiTagline={aiTagline}
-                                aiDescription={aiDescription}
-                                isPreview={true}
-                                // Pass advance features to template
-                                customContact={customContact}
-                                selectedImages={selectedImages}
-                                toggles={toggles}
-                            />
+
+                        {/* FORCED VISIBILITY CONTAINER */}
+                        <div className="brochure-proofing-field p-0 bg-white shadow-2xl border-4 border-white rounded-1"
+                            style={{
+                                width: design.includes('landscape') ? '297mm' : '210mm',
+                                height: 'auto',
+                                marginBottom: '150px',
+                                minHeight: '600px',
+                                transition: 'filter 0.4s ease',
+                                filter: (fetching || isAiLoading) ? 'blur(10px)' : 'none',
+                                overflow: 'visible',
+                                boxSizing: 'content-box',
+                                display: 'block'
+                            }}>
+                            <div className="brochure-scale-root" style={{
+                                transform: `scale(${design.includes('landscape') ? 0.32 : 0.42})`, 
+                                transformOrigin: 'top center',
+                                width: design.includes('landscape') ? '297mm' : '210mm',
+                                marginBottom: design.includes('landscape') ? '-140mm' : '-170mm',
+                                background: '#fff',
+                                boxShadow: '0 0 100px rgba(0,0,0,0.1)'
+                            }}>
+                                <BrochureTemplate
+                                    property={property}
+                                    mode={mode}
+                                    companyInfo={companyInfo}
+                                    fontStyle={fontStyle}
+                                    design={design}
+                                    accentColor={accentColor}
+                                    textColor={textColor}
+                                    currency={currency}
+                                    allAmenities={allAmenities}
+                                    allMedia={allMedia}
+                                    aiTagline={aiTagline}
+                                    aiDescription={aiDescription}
+                                    isPreview={true}
+                                    customContact={customContact}
+                                    selectedImages={selectedImages}
+                                    toggles={toggles}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="text-muted extra-small fw-bold opacity-50 mt-auto mb-5 p-3 bg-white rounded-pill shadow-sm border text-uppercase" style={{ letterSpacing: '1px' }}>
+                            <i className="bi bi-mouse-fill me-2 text-primary"></i> Scroll to explore proof
                         </div>
                     </div>
                 )}
@@ -433,6 +548,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
                     design={design}
                     accentColor={accentColor}
                     textColor={textColor}
+                    currency={currency}
                     allAmenities={allAmenities}
                     allMedia={allMedia}
                     aiTagline={aiTagline}

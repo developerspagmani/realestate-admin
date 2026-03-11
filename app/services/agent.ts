@@ -56,6 +56,12 @@ export const agentService = {
         });
     },
 
+    getMyProfile: async (token: string) => {
+        return await makeApiCall(agentEndpoints.getMyProfile(), {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
     // Assignment methods
     getAssignments: async (token: string, agentId: string) => {
         return await makeApiCall(agentEndpoints.getAssignments(agentId), {

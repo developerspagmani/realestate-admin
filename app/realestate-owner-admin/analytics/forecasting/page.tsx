@@ -62,7 +62,7 @@ export default function ForecastingPage() {
         startDate: '',
         endDate: ''
     });
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem('forecasting_hideGuide');

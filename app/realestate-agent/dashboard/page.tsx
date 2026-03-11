@@ -7,9 +7,11 @@ import MainLayout from '@/components/MainLayout';
 import { useAuth } from '@/app/hooks/useAuth';
 import Loader from '@/components/common/Loader';
 import Link from 'next/link';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 export default function AgentDashboard() {
     const { user } = useAuthContext();
+    const { currencySymbol } = useManagementContext();
     const [stats, setStats] = useState({
         totalLeads: 0,
         activeLeads: 0,
@@ -71,13 +73,13 @@ export default function AgentDashboard() {
                     <div className="row g-4">
                         {/* Stats Cards */}
                         <div className="col-12 col-md-6 col-lg-3">
-                            <div className="card border-0 shadow-sm rounded-4 h-100 p-3 bg-primary text-white">
+                            <div className="card border-0 shadow-sm rounded-4 h-100 p-3 bg-info text-white">
                                 <div className="card-body">
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <div className="fs-5 fw-bold">My Leads</div>
                                         <i className="bi bi-person-lines-fill fs-3 opacity-50"></i>
                                     </div>
-                                    <h2 className="display-6 fw-bold mb-1">{stats.totalLeads}</h2>
+                                    <h2 className="text-white display-6 fw-bold mb-1">{stats.totalLeads}</h2>
                                     <div className="small opacity-75">{stats.activeLeads} active leads</div>
                                 </div>
                             </div>
@@ -90,7 +92,7 @@ export default function AgentDashboard() {
                                         <div className="fs-5 fw-bold">Earnings</div>
                                         <i className="bi bi-wallet2 fs-3 opacity-50"></i>
                                     </div>
-                                    <h2 className="display-6 fw-bold mb-1">${stats.totalCommission.toFixed(2)}</h2>
+                                    <h2 className="display-6 fw-bold mb-1">{currencySymbol}{stats.totalCommission.toFixed(2)}</h2>
                                     <div className="small opacity-75">Accumulated so far</div>
                                 </div>
                             </div>
@@ -103,7 +105,7 @@ export default function AgentDashboard() {
                                         <div className="fs-5 fw-bold">Pending</div>
                                         <i className="bi bi-clock-history fs-3 opacity-50"></i>
                                     </div>
-                                    <h2 className="display-6 fw-bold mb-1">${stats.pendingCommission.toFixed(2)}</h2>
+                                    <h2 className="display-6 fw-bold mb-1">{currencySymbol}{stats.pendingCommission.toFixed(2)}</h2>
                                     <div className="small opacity-75">Awaiting payout</div>
                                 </div>
                             </div>
@@ -134,6 +136,9 @@ export default function AgentDashboard() {
                                     <div className="d-flex flex-wrap gap-3">
                                         <Link href="/realestate-agent/leads" className="btn btn-primary px-4 py-2 rounded-3 shadow-sm">
                                             <i className="bi bi-person-check me-2"></i>Manage Leads
+                                        </Link>
+                                        <Link href="/realestate-agent/bookings" className="btn btn-outline-primary px-4 py-2 rounded-3">
+                                            <i className="bi bi-calendar-event me-2"></i>Manage Visits
                                         </Link>
                                         <Link href="/realestate-agent/commissions" className="btn btn-outline-primary px-4 py-2 rounded-3">
                                             <i className="bi bi-cash-stack me-2"></i>My Commissions

@@ -239,87 +239,128 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                         </div>
                     </div>
 
-                    {widget.configuration.builder?.enable3D !== false && selectedProperty.metadata?.interactiveSvg && (
+                    {selectedProperty.metadata?.interactiveSvg && (
                         <div className="col-12 mt-5">
-                            <div className="glass-panel p-4 rounded-4 shadow-sm">
-                                <h5 className="fw-bold mb-4 d-flex align-items-center justify-content-between">
-                                    <span>
-                                        <i className="bi bi-map-fill me-2 text-primary" style={{ color: theme.primaryColor }}></i>
-                                        Interactive Property Plot Layout
-                                    </span>
-                                </h5>
-                                <div style={{ height: '1200px', width: '100%' }}>
-                                    <PlotMapViewer
-                                        units={selectedProperty.units?.map((u: any) => {
-                                            // Enhanced status transformation with better fallback logic
-                                            let statusStr = 'available';
-
-                                            // Check if status is already a string
-                                            if (typeof u.status === 'string' && u.status.length > 0) {
-                                                statusStr = u.status.toLowerCase().trim();
-                                            }
-                                            // Otherwise convert from number
-                                            else {
-                                                const statusNum = Number(u.status);
-                                                if (statusNum === 1) statusStr = 'available';
-                                                else if (statusNum === 2) statusStr = 'occupied';
-                                                else if (statusNum === 3) statusStr = 'maintenance';
-                                                else if (statusNum === 4) statusStr = 'sold';
-                                            }
-
-                                            return {
-                                                id: u.id,
-                                                unitCode: u.unitCode,
-                                                name: u.unitCode || u.name || `Unit ${u.id.substring(0, 4)}`,
-                                                status: statusStr,
-                                                price: u.unitPricing?.[0]?.price || 0,
-                                                sizeSqft: u.sizeSqft || 0
-                                            } as any;
-                                        })}
-                                        svgContent={selectedProperty.metadata.interactiveSvg}
-                                        mapping={selectedProperty.metadata.svgMapping || {}}
-                                        themeColor={theme.primaryColor}
-                                        currencySymbol={currencySymbol}
-                                        onUnitSelect={(id) => {
-                                            const unit = selectedProperty.units.find((u: any) => u.id === id);
-                                            if (unit) {
-                                                setSelectedUnit(unit);
-                                                setUnitImageIndex(0);
-                                                setCurrentView('UNIT_DETAIL');
-                                                if (trackAction) trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
-                                            }
-                                        }}
-                                        onBookingSelect={(id) => {
-                                            const unit = selectedProperty.units.find((u: any) => u.id === id);
-                                            if (unit) {
-                                                setBookingUnit(unit);
-                                                setShowBookingModal(true);
-                                                if (trackAction) trackAction('UNIT_BOOKING_START', { unitId: unit.id, propertyId: selectedProperty.id });
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <div className="mt-4 d-flex gap-4 justify-content-center p-3 bg-light rounded-4 border">
-                                    <div className="d-flex align-items-center gap-2">
-                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#4ade80', border: '2px solid #16a34a' }}></div>
-                                        <span className="small fw-bold text-dark">Available</span>
+                            <div className="interactive-plot-container position-relative p-[2px] rounded-4 overflow-hidden mb-5 shadow-lg">
+                                <div className="border-trace"></div>
+                                <div className="glass-panel p-4 rounded-4 shadow-sm position-relative bg-white" style={{ zIndex: 2 }}>
+                                    <h5 className="fw-bold mb-4 d-flex align-items-center justify-content-between" style={{ color: theme.primaryColor }}>
+                                        <span>
+                                            <i className="bi bi-map-fill me-2"></i>
+                                            Interactive Property Plot Layout
+                                        </span>
+                                    </h5>
+                                    <div style={{ height: 'min(1200px, 90vh)', width: '100%' }}>
+                                        <PlotMapViewer
+                                            units={(selectedProperty.units || []).map((u: any) => {
+                                                let statusStr = 'available';
+                                                if (typeof u.status === 'string' && u.status.length > 0) {
+                                                    statusStr = u.status.toLowerCase().trim();
+                                                } else {
+                                                    const statusNum = Number(u.status);
+                                                    if (statusNum === 2) statusStr = 'occupied';
+                                                    else if (statusNum === 3) statusStr = 'maintenance';
+                                                    else if (statusNum === 4) statusStr = 'sold';
+                                                }
+                                                return {
+                                                    id: u.id,
+                                                    unitCode: u.unitCode,
+                                                    name: u.unitCode || u.name || `Unit ${u.id.substring(0, 4)}`,
+                                                    status: statusStr,
+                                                    price: u.unitPricing?.[0]?.price || 0,
+                                                    sizeSqft: u.sizeSqft || 0
+                                                } as any;
+                                            })}
+                                            svgContent={selectedProperty.metadata.interactiveSvg}
+                                            mapping={selectedProperty.metadata.svgMapping || {}}
+                                            themeColor={theme.primaryColor}
+                                            currencySymbol={currencySymbol}
+                                            onUnitSelect={(id) => {
+                                                const unit = selectedProperty.units?.find((u: any) => u.id === id);
+                                                if (unit) {
+                                                    setSelectedUnit(unit);
+                                                    setUnitImageIndex(0);
+                                                    setCurrentView('UNIT_DETAIL');
+                                                    if (trackAction) trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
+                                                }
+                                            }}
+                                            onBookingSelect={(id) => {
+                                                const unit = selectedProperty.units?.find((u: any) => u.id === id);
+                                                if (unit) {
+                                                    setBookingUnit(unit);
+                                                    setShowBookingModal(true);
+                                                    if (trackAction) trackAction('UNIT_BOOKING_START', { unitId: unit.id, propertyId: selectedProperty.id });
+                                                }
+                                            }}
+                                        />
                                     </div>
-                                    <div className="d-flex align-items-center gap-2">
-                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#fb7185', border: '2px solid #e11d48' }}></div>
-                                        <span className="small fw-bold text-dark">Reserved</span>
-                                    </div>
-                                    <div className="d-flex align-items-center gap-2">
-                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#ef4444', border: '2px solid #b91c1c' }}></div>
-                                        <span className="small fw-bold text-dark">Sold Out</span>
-                                    </div>
-                                    <div className="d-flex align-items-center gap-2">
-                                        <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#94a3b8', border: '2px solid #475569' }}></div>
-                                        <span className="small fw-bold text-dark">Maintenance</span>
+                                    <div className="mt-4 d-flex gap-4 justify-content-center p-3 bg-light rounded-4 border">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#4ade80', border: '2px solid #16a34a' }}></div>
+                                            <span className="small fw-bold text-dark">Available</span>
+                                        </div>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#fb7185', border: '2px solid #e11d48' }}></div>
+                                            <span className="small fw-bold text-dark">Reserved</span>
+                                        </div>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#ef4444', border: '2px solid #b91c1c' }}></div>
+                                            <span className="small fw-bold text-dark">Sold Out</span>
+                                        </div>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <div className="rounded-circle shadow-sm" style={{ width: '14px', height: '14px', background: '#94a3b8', border: '2px solid #475569' }}></div>
+                                            <span className="small fw-bold text-dark">Maintenance</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
+
+                    <style jsx>{`
+                        .interactive-plot-container {
+                            padding: 5px;
+                            transition: all 5s ease;
+                        }
+
+                        .interactive-plot-container:hover {
+                            transform: translateY(-5px);
+                            box-shadow: 0 1rem 3rem rgba(0,0,0,0.175) !important;
+                        }
+                        
+                        .border-trace {
+                            position: absolute;
+                            top: -100%;
+                            left: -100%;
+                            width: 300%;
+                            height: 300%;
+                            background: conic-gradient(
+                                from 0deg,
+                                transparent 0%,
+                                transparent 70%,
+                                ${theme.primaryColor} 90%,
+                                transparent 100%
+                            );
+                            animation: rotate-border 5s linear infinite;
+                            z-index: 1;
+                            opacity: 0.7;
+                        }
+
+                        .interactive-plot-container:hover .border-trace {
+                            opacity: 1;
+                            animation-duration: 3s;
+                        }
+
+                        @keyframes rotate-border {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+
+                        .glass-panel {
+                            position: relative;
+                            z-index: 2;
+                        }
+                    `}</style>
 
                     <div className="col-12 mt-4">
                         <h4 className="fw-bold mb-4">Unit Availability</h4>
