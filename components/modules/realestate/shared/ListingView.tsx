@@ -66,8 +66,8 @@ const ListingView: React.FC<ListingViewProps> = ({
                 {showHeader && (
                     <div className="col-12 mb-2 d-flex justify-content-between align-items-center animate-fade-up">
                         <div>
-                            <h4 className="fw-bold mb-0">Discover Premium Properties</h4>
-                            <p className="text-muted small mb-0">Exclusive listings curated for your needs</p>
+                            <h4 className="fw-bold mb-0" style={{ color: theme.primaryColor }}>Discover Premium Properties</h4>
+                            <p className="small mb-0 text-dark">Exclusive listings curated for your needs</p>
                         </div>
                     </div>
                 )}
@@ -81,7 +81,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                 {!filteredData || filteredData.length === 0 ? (
                     <div className="col-12 text-center py-5">
                         <i className="bi bi-search fs-1 text-muted opacity-25 d-block mb-3"></i>
-                        <h5 className="text-muted">No properties found matching your criteria.</h5>
+                        <h5 className="text-dark">No properties found matching your criteria.</h5>
                         <button className="btn btn-link" onClick={onReset}>Clear all filters</button>
                     </div>
                 ) : (

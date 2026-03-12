@@ -139,10 +139,12 @@ export default function CampaignDesigner({ tenantId, initialData, onClose }: Cam
                                             className={`card rounded-4 border-2 p-3 cursor-pointer h-100 designer-card ${campaignData.templateId === t.id ? 'active' : 'inactive'}`}
                                             onClick={() => setCampaignData({ ...campaignData, templateId: t.id })}
                                         >
-                                            <div className={`p-2 rounded-3 mb-2 d-inline-block ${campaignData.templateId === t.id ? 'bg-primary text-white' : 'bg-light text-muted'}`}>
-                                                <i className="bi bi-layout-text-window fs-5"></i>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <div className={`px-3 py-2 rounded-3 mb-2 d-inline-block ${campaignData.templateId === t.id ? 'bg-dark text-white' : 'bg-light text-muted'}`}>
+                                                    <i className="bi bi-layout-text-window fs-5"></i>
+                                                </div>
+                                                <h6 className="fw-bold small mb-1">{t.name}</h6>
                                             </div>
-                                            <h6 className="fw-bold small mb-1">{t.name}</h6>
                                             <div className="extra-small text-muted line-clamp-1">{t.subject}</div>
                                         </div>
                                     </div>

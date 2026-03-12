@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { marketingService, propertyService, getAuthToken } from '@/app/services/api';
 import { Property } from '@/app/services/types';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
+import Toast from '@/components/common/Toast';
 
 const DEFAULT_THEMES = [
     {
@@ -159,6 +160,10 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
         content: '',
         type: 'email'
     });
+
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({ show: false, message: '', type: 'info' });
+
+
 
     const [design, setDesign] = useState<designState>({
         theme: 'modern',
@@ -396,7 +401,7 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
 
     const handleSendTest = async () => {
         if (!testEmail) {
-            alert('Please enter a test email address');
+            setToast({ show: true, message: 'Please enter a test email address', type: 'error' });
             return;
         }
 
@@ -419,14 +424,14 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
             });
 
             if (res.success) {
-                alert('Test email sent successfully!');
+                setToast({ show: true, message: 'Test email sent successfully!', type: 'success' });
                 setShowTestInput(false);
             } else {
-                alert(res.message || 'Failed to send test email');
+                setToast({ show: true, message: res.message || 'Failed to send test email', type: 'error' });
             }
         } catch (error) {
             console.error('Failed to send test email:', error);
-            alert('Error sending test email');
+            setToast({ show: true, message: 'Error sending test email', type: 'error' });
         } finally {
             setSendingTest(false);
         }
@@ -852,6 +857,13 @@ export default function TemplateManager({ tenantId }: TemplateManagerProps) {
                     </div>
                 </div>
             )}
+
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type === 'info' ? 'success' : toast.type as 'success' | 'error'}
+                onClose={() => setToast({ ...toast, show: false })}
+            />
 
             <style jsx>{`
                 .template-card { transition: all 0.3s ease; border: 1px solid rgba(0,0,0,0.05); }

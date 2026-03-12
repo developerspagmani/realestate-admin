@@ -120,7 +120,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                     <div className={`row align-items-center g-5 ${isReverse ? 'flex-row-reverse' : ''}`}>
                                         <div className="col-lg-6">
                                             <h2 className="fw-black h1 mb-4">{moduleData.title}</h2>
-                                            <p className="lead opacity-75 mb-4">{moduleData.description}</p>
+                                            <p className="lead opacity-75 mb-4 text-dark">{moduleData.description}</p>
                                             {moduleData.buttonText && (
                                                 <button className="btn btn-primary rounded-pill px-5 py-3 shadow-lg" style={{ backgroundColor: theme.primaryColor, border: 'none' }}>
                                                     {moduleData.buttonText}
@@ -151,8 +151,8 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                             <section key={module.id || index} className="py-5 property-slider-section border-top border-bottom" style={style}>
                                 <div className="container">
                                     <div className="text-center mb-5">
-                                        <h2 className="fw-black display-5 mb-2">{moduleData.title || 'Featured Collections'}</h2>
-                                        <p className="lead opacity-75">{moduleData.description || 'Handpicked properties from our premium portfolio'}</p>
+                                        <h2 className="fw-bold display-5 mb-2" style={{ color: theme.primaryColor }}>{moduleData.title || 'Featured Collections'}</h2>
+                                        <p className="lead opacity-75" style={{ color: theme.primaryColor }}>{moduleData.description || 'Handpicked properties from our premium portfolio'}</p>
                                     </div>
 
                                     <Swiper
