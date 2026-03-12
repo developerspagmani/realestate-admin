@@ -30,6 +30,12 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
         upsellEnabled: true,
         crossSellEnabled: true,
         recommendationLogic: 'price-match',
+        budgetRanges: [
+            { label: 'Low (< $1k)', min: 0, max: 1000 },
+            { label: 'Mid ($1k - $5k)', min: 1000, max: 5000 },
+            { label: 'High ($5k - $10k)', min: 5000, max: 10000 },
+            { label: 'Luxury (> $10k)', min: 10000 }
+        ]
     });
 
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -217,6 +223,82 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
                                             </div>
                                         </div>
                                     ))}
+
+                                    {config.flow.includes('BUDGET') && (
+                                        <div className="mt-4 p-4 border rounded-4 bg-white animate-fade-in">
+                                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                                <h6 className="fw-bold mb-0">Customize Budget Ranges</h6>
+                                                <button 
+                                                    className="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                                    onClick={() => {
+                                                        const newRanges = [...(config.budgetRanges || [])];
+                                                        newRanges.push({ label: 'New Range', min: 0, max: 1000 });
+                                                        setConfig({ ...config, budgetRanges: newRanges });
+                                                    }}
+                                                >
+                                                    <i className="bi bi-plus-lg me-1"></i> Add Range
+                                                </button>
+                                            </div>
+                                            <div className="row g-2">
+                                                {(config.budgetRanges || []).map((range: any, idx: number) => (
+                                                    <div key={idx} className="col-12 p-3 bg-light rounded-3 mb-2">
+                                                        <div className="row g-2 align-items-center">
+                                                            <div className="col-md-5">
+                                                                <label className="extra-small fw-bold text-muted mb-1">Label</label>
+                                                                <input 
+                                                                    type="text" 
+                                                                    className="form-control form-control-sm rounded-2" 
+                                                                    value={range.label}
+                                                                    onChange={(e) => {
+                                                                        const newRanges = [...config.budgetRanges];
+                                                                        newRanges[idx].label = e.target.value;
+                                                                        setConfig({ ...config, budgetRanges: newRanges });
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <div className="col-md-3">
+                                                                <label className="extra-small fw-bold text-muted mb-1">Min Price</label>
+                                                                <input 
+                                                                    type="number" 
+                                                                    className="form-control form-control-sm rounded-2" 
+                                                                    value={range.min}
+                                                                    onChange={(e) => {
+                                                                        const newRanges = [...config.budgetRanges];
+                                                                        newRanges[idx].min = Number(e.target.value);
+                                                                        setConfig({ ...config, budgetRanges: newRanges });
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <div className="col-md-3">
+                                                                <label className="extra-small fw-bold text-muted mb-1">Max Price</label>
+                                                                <input 
+                                                                    type="number" 
+                                                                    className="form-control form-control-sm rounded-2" 
+                                                                    value={range.max}
+                                                                    onChange={(e) => {
+                                                                        const newRanges = [...config.budgetRanges];
+                                                                        newRanges[idx].max = Number(e.target.value);
+                                                                        setConfig({ ...config, budgetRanges: newRanges });
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <div className="col-md-1 d-flex align-items-end justify-content-center">
+                                                                <button 
+                                                                    className="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                                                                    onClick={() => {
+                                                                        const newRanges = config.budgetRanges.filter((_: any, i: number) => i !== idx);
+                                                                        setConfig({ ...config, budgetRanges: newRanges });
+                                                                    }}
+                                                                >
+                                                                    <i className="bi bi-trash"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -344,6 +426,7 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
                                     upsellEnabled={config.upsellEnabled}
                                     crossSellEnabled={config.crossSellEnabled}
                                     recommendationLogic={config.recommendationLogic}
+                                    budgetRanges={config.budgetRanges}
                                     previewMode={true}
                                 />
                             </div>

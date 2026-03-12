@@ -492,6 +492,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                 upsellEnabled={chatbotConfig.upsellEnabled}
                                 crossSellEnabled={chatbotConfig.crossSellEnabled}
                                 recommendationLogic={chatbotConfig.recommendationLogic}
+                                budgetRanges={chatbotConfig.budgetRanges}
                                 currencySymbol={getCurrencyConfig(website?.tenant?.settings?.general?.currency || website?.tenant?.country)?.symbol || '$'}
                                 onCreateLead={async (contact, name) => {
                                     try {

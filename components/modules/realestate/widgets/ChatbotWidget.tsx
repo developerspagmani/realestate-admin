@@ -21,6 +21,7 @@ interface ChatbotProps {
     previewMode?: boolean;
     trackAction?: (type: string, metadata?: Record<string, unknown>) => void;
     currencySymbol?: string;
+    budgetRanges?: { label: string, min?: number, max?: number }[];
 }
 
 type Step = 'IDLE' | 'LEAD_CAPTURE' | 'HI' | 'DYNAMIC_FLOW' | 'RESULTS';
@@ -77,7 +78,13 @@ export default function ChatbotWidget({
     recommendationLogic = 'price-match',
     previewMode = false,
     trackAction,
-    currencySymbol = '$'
+    currencySymbol = '$',
+    budgetRanges = [
+        { label: `Low (< 1k)`, min: 0, max: 1000 },
+        { label: `Mid (1k - 5k)`, min: 1000, max: 5000 },
+        { label: `High (5k - 10k)`, min: 5000, max: 10000 },
+        { label: `Luxury (> 10k)`, min: 10000 }
+    ]
 }: ChatbotProps) {
     const [step, setStep] = useState<Step>('IDLE');
     const [flowIndex, setFlowIndex] = useState(0);
@@ -242,11 +249,13 @@ export default function ChatbotWidget({
             }, 1000000);
 
             const budgetMatch = !currentAnswers.BUDGET?.length || currentAnswers.BUDGET.some((b: string) => {
-                if (b.includes('<') || b.includes('Low')) return minPrice < 1000;
-                if (b.includes('-') && (b.includes('1k') || b.includes('5k'))) return minPrice >= 1000 && minPrice <= 5000;
-                if (b.includes('-') && (b.includes('5k') || b.includes('10k'))) return minPrice > 5000 && minPrice <= 10000;
-                if (b.includes('>') || b.includes('Luxury')) return minPrice > 10000;
-                return false;
+                const range = budgetRanges.find(r => r.label === b);
+                if (!range) return false;
+                
+                const min = range.min ?? 0;
+                const max = range.max ?? Infinity;
+                
+                return minPrice >= min && minPrice <= max;
             });
 
             const bedMatch = !currentAnswers.BEDROOMS?.length || currentAnswers.BEDROOMS.some((b: string) => {
@@ -366,12 +375,10 @@ export default function ChatbotWidget({
             return cities.map(c => ({ label: c, value: c }));
         }
         if (currentStepKey === 'BUDGET') {
-            return [
-                { label: `Low (< ${currencySymbol}1k)`, value: 'Low' },
-                { label: `Mid (${currencySymbol}1k - ${currencySymbol}5k)`, value: 'Mid' },
-                { label: `High (${currencySymbol}5k - ${currencySymbol}10k)`, value: 'High' },
-                { label: `Luxury (> ${currencySymbol}10k)`, value: 'Luxury' }
-            ];
+            return budgetRanges.map(r => ({
+                label: r.label.replace('$', currencySymbol),
+                value: r.label
+            }));
         }
         if (currentStepKey === 'BEDROOMS') {
             return [

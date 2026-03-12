@@ -1121,6 +1121,91 @@ export default function WebsiteForm({
                                                                     </select>
                                                                 </div>
                                                                 <div className="col-12 mt-3">
+                                                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                                                        <label className="form-label fw-bold extra-small text-uppercase text-muted mb-0">Custom Budget Ranges</label>
+                                                                        <button 
+                                                                            type="button"
+                                                                            className="btn btn-link btn-sm text-primary text-decoration-none p-0 extra-small fw-bold"
+                                                                            onClick={() => {
+                                                                                const current = formData.configuration.chatbot?.budgetRanges || [
+                                                                                    { label: 'Low (< $1k)', min: 0, max: 1000 },
+                                                                                    { label: 'Mid ($1k - $5k)', min: 1000, max: 5000 },
+                                                                                    { label: 'High ($5k - $10k)', min: 5000, max: 10000 },
+                                                                                    { label: 'Luxury (> $10k)', min: 10000 }
+                                                                                ];
+                                                                                toggleNestedConfig('chatbot', 'budgetRanges', [...current, { label: 'New Range', min: 0, max: 1000 }]);
+                                                                            }}
+                                                                        >
+                                                                            <i className="bi bi-plus-lg me-1"></i> Add Range
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="row g-2">
+                                                                        {(formData.configuration.chatbot?.budgetRanges || [
+                                                                            { label: 'Low (< $1k)', min: 0, max: 1000 },
+                                                                            { label: 'Mid ($1k - $5k)', min: 1000, max: 5000 },
+                                                                            { label: 'High ($5k - $10k)', min: 5000, max: 10000 },
+                                                                            { label: 'Luxury (> $10k)', min: 10000 }
+                                                                        ]).map((range: any, rIdx: number) => (
+                                                                            <div key={rIdx} className="col-12 p-3 bg-white rounded-4 border border-light-subtle shadow-sm mb-2">
+                                                                                <div className="row g-2 align-items-center">
+                                                                                    <div className="col-md-5">
+                                                                                        <label className="extra-small fw-bold text-muted mb-1">Label</label>
+                                                                                        <input 
+                                                                                            type="text" 
+                                                                                            className="form-control form-control-sm rounded-3 shadow-sm" 
+                                                                                            value={range.label}
+                                                                                            onChange={(e) => {
+                                                                                                const ranges = [...(formData.configuration.chatbot.budgetRanges || [])];
+                                                                                                ranges[rIdx].label = e.target.value;
+                                                                                                toggleNestedConfig('chatbot', 'budgetRanges', ranges);
+                                                                                            }}
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="col-md-3">
+                                                                                        <label className="extra-small fw-bold text-muted mb-1">Min</label>
+                                                                                        <input 
+                                                                                            type="number" 
+                                                                                            className="form-control form-control-sm rounded-3 shadow-sm" 
+                                                                                            value={range.min}
+                                                                                            onChange={(e) => {
+                                                                                                const ranges = [...(formData.configuration.chatbot.budgetRanges || [])];
+                                                                                                ranges[rIdx].min = Number(e.target.value);
+                                                                                                toggleNestedConfig('chatbot', 'budgetRanges', ranges);
+                                                                                            }}
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="col-md-3">
+                                                                                        <label className="extra-small fw-bold text-muted mb-1">Max</label>
+                                                                                        <input 
+                                                                                            type="number" 
+                                                                                            className="form-control form-control-sm rounded-3 shadow-sm" 
+                                                                                            value={range.max}
+                                                                                            onChange={(e) => {
+                                                                                                const ranges = [...(formData.configuration.chatbot.budgetRanges || [])];
+                                                                                                ranges[rIdx].max = Number(e.target.value);
+                                                                                                toggleNestedConfig('chatbot', 'budgetRanges', ranges);
+                                                                                            }}
+                                                                                        />
+                                                                                    </div>
+                                                                                    <div className="col-md-1 d-flex align-items-end justify-content-center">
+                                                                                        <button 
+                                                                                            type="button"
+                                                                                            className="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                                                                                            onClick={() => {
+                                                                                                const ranges = (formData.configuration.chatbot.budgetRanges || []).filter((_: any, i: number) => i !== rIdx);
+                                                                                                toggleNestedConfig('chatbot', 'budgetRanges', ranges);
+                                                                                            }}
+                                                                                        >
+                                                                                            <i className="bi bi-trash"></i>
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="col-12 mt-3">
                                                                     <label className="form-label fw-bold extra-small text-uppercase text-muted d-block mb-3">AI Sales Engine</label>
                                                                     <div className="d-flex flex-wrap gap-4 p-3 bg-white rounded-4 border border-light-subtle shadow-sm">
                                                                         <div className="form-check form-switch">
