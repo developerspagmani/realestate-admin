@@ -67,7 +67,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     // Initialize Persistent Visitor Identity & Geo Context
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        
+
         // 1. Get or Generate Global Visitor ID
         let vid = localStorage.getItem('virpanix_visitor_id');
         if (!vid) {
@@ -126,12 +126,12 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                 email: leadIdentity.email,
                 visitorId: leadIdentity.visitorId, // Critical for Identity Resolution
                 type,
-                metadata: { 
-                    websiteId: website.id, 
+                metadata: {
+                    websiteId: website.id,
                     userLat: userContext.lat,
                     userLng: userContext.lng,
                     city: userContext.city,
-                    ...metadata 
+                    ...metadata
                 }
             });
         } catch (err) {
@@ -280,7 +280,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                     <div className="container d-flex justify-content-between align-items-center">
                         <div className="website-logo cursor-pointer" onClick={() => setCurrentView('LISTING')}>
                             {builder.logoUrl ? (
-                                <img src={builder.logoUrl} alt={website?.name || "Brand Logo"} style={{ height: '42px', objectFit: 'contain' }} />
+                                <img src={builder.logoUrl} alt={website?.name || "Brand Logo"} style={{ height: '65px', objectFit: 'contain' }} />
                             ) : (
                                 <div className="fw-black h4 mb-0 text-primary tracking-tighter" style={{ color: theme.primaryColor }}>{website?.name?.toUpperCase()}</div>
                             )}

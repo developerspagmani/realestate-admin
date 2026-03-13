@@ -143,10 +143,10 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h1 className="fw-bold h2 mb-1">
-                            {mode === 'admin' ? 'Dashboard' : 'Owner Dashboard'}
+                            {mode === 'admin' ? 'System Dashboard' : 'Vipranix Command Center'}
                         </h1>
                         <p className="text-muted small">
-                            Welcome back, {user?.name}. Here&apos;s your system overview.
+                            {mode === 'admin' ? `Welcome back, ${user?.name}. Global operations overview.` : `Neural insights for ${user?.name}. Everything is under control.`}
                         </p>
                     </div>
                     <button

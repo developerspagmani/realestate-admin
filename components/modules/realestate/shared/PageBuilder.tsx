@@ -75,9 +75,10 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                                     style={{ zIndex: -1 }}
                                                     alt={slide.title}
                                                 />
+                                                <div className="overlay" style={{ backgroundColor: theme.primaryColor, opacity: 0.1 }}></div>
                                                 {/* <div className="position-absolute top-0 start-0 w-100 h-100 bg-black opacity-40" style={{ zIndex: 0 }}></div> */}
                                                 <div className="container position-relative z-1 py-5">
-                                                    <h1 className="display-2 fw-black mb-3 animate-fade-up">{slide.title}</h1>
+                                                    <h1 className="display-2 fw-bold mb-3 animate-fade-up">{slide.title}</h1>
                                                     <p className="lead mb-4 opacity-90 animate-fade-up delay-100">{slide.subtitle}</p>
                                                     {slide.buttonText && (
                                                         <div className="animate-fade-up delay-200">

@@ -322,8 +322,8 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div className="d-flex align-items-center gap-3">
                         <div>
-                            <h1 className="fw-bold h2 mb-1 text-dark">Website Management</h1>
-                            <p className="text-muted small mb-0">Create and manage standalone landing pages with custom domain support.</p>
+                            <h1 className="fw-bold h2 mb-1 text-dark">Vipranix Site Builder</h1>
+                            <p className="text-muted small mb-0">Launch neural-powered, high-converting property sites in under 60 seconds.</p>
                         </div>
                         {!showHowItWorks && (
                             <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
@@ -357,8 +357,8 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
                         <div className="card-body p-4 p-lg-5">
                             <div className="row align-items-center">
                                 <div className="col-lg-8">
-                                    <h3 className="fw-bold mb-3 text-white">Your Property, Brand-Named</h3>
-                                    <p className="opacity-75 mb-4">The Website Hub allows you to launch high-converting landing pages in seconds. Here is your builder toolkit:</p>
+                                    <h3 className="fw-bold mb-3 text-white">Vipranix Neural Sites</h3>
+                                    <p className="opacity-75 mb-4">Deploy high-converting property ecosystems that track buyer intent automatically:</p>
                                     <div className="row g-4">
                                         <div className="col-md-6">
                                             <div className="d-flex gap-3">
@@ -366,8 +366,8 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
                                                     <i className="bi bi-lightning text-white"></i>
                                                 </div>
                                                 <div>
-                                                    <div className="fw-bold">1. Instant Builder</div>
-                                                    <div className="small opacity-75">Switch between "Listing Layout" for property details or "Builder" for a custom branded experience.</div>
+                                                    <div className="fw-bold">1. Zero-Code Deployment</div>
+                                                    <div className="small opacity-75">Switch between "Direct Listing" for quick speed or "Neural Builder" for custom branding.</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -399,8 +399,8 @@ export default function WebsiteManager({ mode = 'admin' }: WebsiteManagerProps) 
                                                     <i className="bi bi-graph-up text-white"></i>
                                                 </div>
                                                 <div>
-                                                    <div className="fw-bold">4. SEO & Pixels</div>
-                                                    <div className="small opacity-75">Add custom headers/footers for Meta Pixels, Google Analytics, and SEO title tags.</div>
+                                                    <div className="fw-bold">4. V-Track Integration</div>
+                                                    <div className="small opacity-75">Pre-embedded identity stitching for Meta, Google, and Vipranix's own intent tracking.</div>
                                                 </div>
                                             </div>
                                         </div>

@@ -213,18 +213,15 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                                                         )}
 
                                                         <div className="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                                                            <div className="d-flex align-items-center gap-1">
-                                                                <div className="lead-score-box rounded-circle d-flex align-items-center justify-content-center text-white fw-bold small"
-                                                                    style={{
-                                                                        width: '24px',
-                                                                        height: '24px',
-                                                                        fontSize: '10px',
-                                                                        backgroundColor: lead.leadScore > 50 ? '#dc3545' : lead.leadScore > 20 ? '#ffc107' : '#198754'
-                                                                    }}>
-                                                                    {lead.leadScore}
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <div className="v-score-mini" style={{
+                                                                    borderColor: lead.leadScore > 75 ? '#dc3545' : lead.leadScore > 40 ? '#ffc107' : '#198754'
+                                                                }}>
+                                                                    {lead.leadScore}%
                                                                 </div>
-                                                                <i className="bi bi-magic text-primary ms-1" style={{ fontSize: '0.7rem' }}></i>
+                                                                <span className="small text-muted fw-bold">V-Score</span>
                                                             </div>
+                                                            <i className="bi bi-magic text-primary" style={{ fontSize: '0.7rem' }}></i>
                                                             <div className="d-flex align-items-center">
                                                                 {lead.assignedAgent ? (
                                                                     <div className="agent-avatar" title={lead.assignedAgent.user?.name}>
@@ -395,6 +392,14 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                     100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
                 }
                 .extra-small-badge { font-size: 0.6rem; padding: 0.2rem 0.5rem; letter-spacing: 0.5px; }
+                .v-score-mini {
+                    font-size: 10px;
+                    font-weight: 800;
+                    padding: 2px 6px;
+                    border: 1.5px solid;
+                    border-radius: 6px;
+                    background: #fff;
+                }
             `}</style>
             </div>
         </div>

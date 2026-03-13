@@ -50,11 +50,11 @@ export default function BrochureIntelligent({ mode, initialPropertyId }: Brochur
             const industryType = (mode === 'admin' && !activeOwnerId && !activeTenantId) ? tenantType : undefined;
 
             const [pRes, aRes, mRes] = await Promise.all([
-                propertyService.getProperties(token, { 
+                propertyService.getProperties(token, {
                     tenantId: tenantId || undefined,
                     industryType,
                     ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId }),
-                    limit: '100' 
+                    limit: '100'
                 }),
                 amenityService.getAmenities(token),
                 mediaService.getMedia(token, tenantId ? { tenantId } : undefined)
@@ -84,7 +84,7 @@ export default function BrochureIntelligent({ mode, initialPropertyId }: Brochur
                     mainImageId: p.mainImageId || '',
                 }));
                 setProperties(propsList);
-                
+
                 const targetId = initialPropertyId || (propsList.length > 0 ? propsList[0].id : null);
                 if (targetId) {
                     await fetchFullProperty(targetId, propsList);
@@ -157,8 +157,8 @@ export default function BrochureIntelligent({ mode, initialPropertyId }: Brochur
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div className="d-flex align-items-center gap-3">
                         <div>
-                            <h4 className="fw-bold mb-0">Brochure Intelligent AI</h4>
-                            <p className="text-muted small mb-0">Generate professional property brochures using Gemini Nano AI</p>
+                            <h4 className="fw-bold mb-0">Vipranix V-Brochure Intelligent</h4>
+                            <p className="text-muted small mb-0">Neural-powered brochure automation with real-time property sync.</p>
                         </div>
                         <div className="d-flex gap-2">
                             <span className={`badge ${properties.length > 0 ? 'bg-success' : 'bg-warning'} rounded-pill px-3`}>
@@ -189,8 +189,8 @@ export default function BrochureIntelligent({ mode, initialPropertyId }: Brochur
                         <div className="card-body p-4 p-lg-5">
                             <div className="row align-items-center">
                                 <div className="col-lg-8">
-                                    <h3 className="fw-bold mb-3 text-white">Instant Property Brochures</h3>
-                                    <p className="opacity-75 mb-4">Transform your property inventory into stunning, print-ready sales material using advanced generative AI:</p>
+                                    <h3 className="fw-bold mb-3 text-white">Vipranix V-Brochure Engine</h3>
+                                    <p className="opacity-75 mb-4">Neural-generate stunning, print-ready sales material using advanced V-Track synchronization:</p>
                                     <div className="row g-4">
                                         <div className="col-md-6">
                                             <div className="d-flex gap-3">

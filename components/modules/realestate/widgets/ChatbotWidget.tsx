@@ -162,7 +162,7 @@ export default function ChatbotWidget({
             setStep('HI');
             addMessage('bot', `Thank you ${formData.name}! We've saved your contact information safely. 🔒`);
             setTimeout(() => {
-                addMessage('bot', 'Hi there! I\'m Virpa, your smart booking assistant. Need help finding the perfect space?');
+                addMessage('bot', 'Hi there! I\'m Virpa, your smart assistant. Need help finding the perfect place?');
                 setTimeout(() => {
                     if (flow && flow.length > 0) {
                         setStep('DYNAMIC_FLOW');
@@ -251,10 +251,10 @@ export default function ChatbotWidget({
             const budgetMatch = !currentAnswers.BUDGET?.length || currentAnswers.BUDGET.some((b: string) => {
                 const range = budgetRanges.find(r => r.label === b);
                 if (!range) return false;
-                
+
                 const min = range.min ?? 0;
                 const max = range.max ?? Infinity;
-                
+
                 return minPrice >= min && minPrice <= max;
             });
 

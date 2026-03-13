@@ -275,7 +275,7 @@ export default function StandaloneProvider({
                         <div className="container d-flex justify-content-between align-items-center">
                             <Link href={`/standalone/${slugOrDomain}`} className="website-logo text-decoration-none">
                                 {builder.logoUrl ? (
-                                    <img src={builder.logoUrl} alt="Brand Logo" style={{ height: '42px', objectFit: 'contain' }} />
+                                    <img src={builder.logoUrl} alt="Brand Logo" style={{ height: '65px', objectFit: 'contain' }} />
                                 ) : (
                                     <div className="fw-black h4 mb-0 text-primary tracking-tighter" style={{ color: theme.primaryColor }}>{website.name.toUpperCase()}</div>
                                 )}
@@ -617,8 +617,8 @@ export default function StandaloneProvider({
                                                     notes: `Popup inquiry from ${website.name} portal.`
                                                 });
                                                 if (res.success) {
-                                                     const lead = res.data;
-                                                     identifyLead(lead.id, lead.email);
+                                                    const lead = res.data;
+                                                    identifyLead(lead.id, lead.email);
                                                     trackAction('INQUIRY_SUBMIT', { formId: config.marketingFormId || 'custom', source: 'popup' });
                                                     setTimeout(() => setShowInquiryModal(false), 2500);
                                                 }

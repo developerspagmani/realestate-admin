@@ -846,8 +846,8 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                                     <i className="bi bi-graph-up text-white"></i>
                                                 </div>
                                                 <div>
-                                                    <div className="fw-bold">2. Smart Scoring</div>
-                                                    <div className="small opacity-75">AI analyzes lead behavior and assigns a score so you can focus on hot buyers.</div>
+                                                    <div className="fw-bold">2. V-Score Analytics</div>
+                                                    <div className="small opacity-75">AI analyzes lead behavior and assigns a V-Score so you can focus on hot buyers.</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1001,7 +1001,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                         </th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Lead Name</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Agent</th>
-                                        <th className="py-3 text-uppercase small fw-bold text-muted">Score</th>
+                                        <th className="py-3 text-uppercase small fw-bold text-muted">V-Score</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Priority</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Contact Info</th>
                                         <th className="py-3 text-uppercase small fw-bold text-muted">Source</th>
@@ -1060,9 +1060,24 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                             </td>
                                             <td className="py-3">
                                                 <div className="d-flex align-items-center gap-2">
-                                                    <span className={`badge rounded-4 px-2 py-1 ${lead.leadScore > 50 ? 'bg-danger' : lead.leadScore > 20 ? 'bg-warning text-dark' : 'bg-success'}`}>
-                                                        {lead.leadScore}
-                                                    </span>
+                                                    <div className="position-relative d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }}>
+                                                        <svg viewBox="0 0 36 36" className="position-absolute" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                                                            <path
+                                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                                fill="none"
+                                                                stroke={lead.leadScore > 75 ? '#dc354520' : lead.leadScore > 40 ? '#ffc10720' : '#19875420'}
+                                                                strokeWidth="3"
+                                                            />
+                                                            <path
+                                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                                fill="none"
+                                                                stroke={lead.leadScore > 75 ? '#dc3545' : lead.leadScore > 40 ? '#ffc107' : '#198754'}
+                                                                strokeWidth="3"
+                                                                strokeDasharray={`${lead.leadScore}, 100`}
+                                                            />
+                                                        </svg>
+                                                        <span className="fw-bold small" style={{ fontSize: '0.75rem', zIndex: 1 }}>{lead.leadScore}%</span>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="py-3">

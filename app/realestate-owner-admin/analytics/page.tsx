@@ -126,8 +126,8 @@ export default function AdvancedAnalyticsPage() {
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <div className="d-flex align-items-center gap-3">
                             <div>
-                                <h1 className="fw-bold h2 mb-1">Advanced Analytics</h1>
-                                <p className="text-muted small">Deep insights into your business growth and market demand.</p>
+                                <h1 className="fw-bold h2 mb-1">Vipranix Neural Analytics</h1>
+                                <p className="text-muted small">Predictive insights and real-time V-Track behavior analysis.</p>
                             </div>
                             {!showHowItWorks && (
                                 <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary shadow-sm border mt-1" onClick={() => toggleGuide(true)}>
@@ -164,8 +164,8 @@ export default function AdvancedAnalyticsPage() {
                             <div className="card-body p-4 p-lg-5">
                                 <div className="row align-items-center">
                                     <div className="col-lg-8">
-                                        <h3 className="fw-bold mb-3 text-white">Master Your Growth Metrics</h3>
-                                        <p className="opacity-75 mb-4">Virpanix Analytics provides a 360° view of your real estate operation. Here is what we track for you:</p>
+                                        <h3 className="fw-bold mb-3 text-white">Vipranix Intelligence Hub</h3>
+                                        <p className="opacity-75 mb-4">V-Track technology provides a 360° view of your real estate operation. Here is what we track for you:</p>
                                         <div className="row g-4">
                                             <div className="col-md-6">
                                                 <div className="d-flex gap-3">
@@ -217,9 +217,9 @@ export default function AdvancedAnalyticsPage() {
                                                         <i className="bi bi-link-45deg text-white"></i>
                                                     </div>
                                                     <div>
-                                                        <div className="fw-bold">5. Identity Resolution</div>
-                                                        <div className="small opacity-75">Browser-persistent stitching tracks visitors across sessions, combining multiple touches into a single journey.</div>
-                                                    </div>
+                                                       <div className="fw-bold">5. V-Track Identity Resolution</div>
+                                                    <div className="small opacity-75">Browser-persistent stitching tracks visitors across sessions, combining multiple touches into a single journey.</div>
+                                                </div>
                                                 </div>
                                             </div>
                                         </div>

@@ -10,8 +10,8 @@ export default function ChatbotConfigPage() {
             <ModuleGuard moduleSlug="discovery">
                 <div className="container-fluid p-4">
                     <div className="mb-4">
-                        <h4 className="fw-bold mb-1">Global Chatbot Wizard</h4>
-                        <p className="text-muted mb-0">Configure your organization&apos;s primary AI engagement settings</p>
+                        <h4 className="fw-bold mb-1">Vipranix Conversational AI Wizard</h4>
+                        <p className="text-muted mb-0">Configure your organization&apos;s primary AI engagement settings with Vipranix Intelligence</p>
                     </div>
                     <ChatbotConfigManager propertyId="" onClose={() => { }} />
                 </div>

@@ -108,8 +108,8 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                 <div className="card-body p-4 bg-primary text-white">
                     <div className="d-flex justify-content-between align-items-center">
                         <div>
-                            <h4 className="fw-bold mb-1 text-white"><i className="bi bi-robot me-2"></i> Intelligent Email Engine</h4>
-                            <p className="mb-0 text-white">AI-powered property recommendations based on lead budget and behavior.</p>
+                            <h4 className="fw-bold mb-1 text-white"><i className="bi bi-robot me-2"></i> Vipranix V-Mail Engine</h4>
+                            <p className="mb-0 text-white">Neural property matching that connects the right buyer to the right home automatically.</p>
                         </div>
                         <div className="form-check form-switch fs-4">
                             <input
@@ -210,7 +210,7 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                             <div className="d-flex flex-column gap-4">
                                 <div className="d-flex gap-3">
                                     <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '24px', height: '24px', fontSize: '12px' }}>1</div>
-                                    <p className="extra-small mb-0 text-white">Engine analyzes all **leads** with an active status and a specified budget.</p>
+                                    <p className="extra-small mb-0 text-white">V-Mail analyzes **lead V-Scores** and active search history.</p>
                                 </div>
                                 <div className="d-flex gap-3">
                                     <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '24px', height: '24px', fontSize: '12px' }}>2</div>

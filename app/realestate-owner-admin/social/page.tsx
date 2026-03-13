@@ -95,8 +95,8 @@ function DashboardContent() {
                 {/* Header */}
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h1 className="fw-bold h2 mb-1">Social Dashboard</h1>
-                        <p className="text-muted small">Overview of your social media engagement</p>
+                        <h1 className="fw-bold h2 mb-1">Vipranix Social Pilot</h1>
+                        <p className="text-muted small">AI-driven social engagement and multi-channel campaign orchestration.</p>
                     </div>
                     <button
                         onClick={() => navigateTo('/social/campaigns/create')}

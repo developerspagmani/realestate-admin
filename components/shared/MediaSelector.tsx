@@ -167,7 +167,7 @@ export default function MediaSelector({
                                     disabled={isUploading}
                                 >
                                     {isUploading ? (
-                                        <Loader size="sm" message="" />
+                                        <span>Uploading...</span>
                                     ) : (
                                         <i className="bi bi-upload me-2"></i>
                                     )}
