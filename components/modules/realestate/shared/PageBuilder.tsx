@@ -152,7 +152,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                             <section key={module.id || index} className="py-5 property-slider-section border-top border-bottom" style={style}>
                                 <div className="container">
                                     <div className="text-center mb-5">
-                                        <h2 className="fw-bold display-5 mb-2" style={{ color: theme.primaryColor }}>{moduleData.title || 'Featured Collections'}</h2>
+                                        <h3 className="fw-bold mb-2" style={{ color: theme.primaryColor }}>{moduleData.title || 'Featured Collections'}</h3>
                                         <p className="lead opacity-75" style={{ color: theme.primaryColor }}>{moduleData.description || 'Handpicked properties from our premium portfolio'}</p>
                                     </div>
 
