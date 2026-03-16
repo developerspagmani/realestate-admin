@@ -630,3 +630,47 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface WebsitePopup {
+  id: string;
+  name: string;
+  websiteId: string;
+  type: 'modal' | 'banner' | 'slide_in';
+  trigger: 'on_load' | 'exit_intent' | 'scroll' | 'delay';
+  triggerValue?: string;
+    content: {
+    title?: string;
+    body?: string;
+    imageUrl?: string;
+    ctaText?: string;
+    ctaUrl?: string;
+    marketingFormId?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    buttonColor?: string;
+    buttonTextColor?: string;
+    afterSubmitAction?: 'none' | 'download_document' | 'redirect';
+    downloadUrl?: string;
+    redirectUrl?: string;
+    layout?: 'stacked' | 'split';
+    textAlign?: 'left' | 'center' | 'right';
+    showFloatingTrigger?: boolean;
+    emailEnabled?: boolean;
+    mobileEnabled?: boolean;
+    autoDownload?: boolean;
+    inputBorderColor?: string;
+    inputBorderRadius?: string;
+    inputBackgroundColor?: string;
+    buttonBorderRadius?: string;
+    buttonBorderColor?: string;
+    buttonBorderWidth?: string;
+    width?: 'small' | 'medium' | 'large';
+    height?: 'auto' | 'small' | 'medium' | 'large';
+    thankYouTitle?: string;
+    thankYouBody?: string;
+  };
+  isActive: boolean;
+  tenantId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+

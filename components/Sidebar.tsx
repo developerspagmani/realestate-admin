@@ -94,7 +94,16 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             { href: '/realestate-admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill', active: activePage === 'dashboard' },
             { href: '/realestate-admin/bookings', label: labels.bookings, icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
-            { href: '/realestate-admin/leads', label: labels.leads, icon: 'bi-person-badge-fill', active: activePage === 'leads' },
+            { 
+                href: '/realestate-admin/leads', 
+                label: labels.leads, 
+                icon: 'bi-person-badge-fill', 
+                active: activePage === 'leads' || activePage === 'leads-qualification',
+                children: [
+                    { href: '/realestate-admin/leads', label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
+                    { href: '/realestate-admin/leads/qualification', label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
+                ]
+            },
             { href: '/realestate-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' }
           ]
         },
@@ -153,6 +162,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             ...(hasModule('website_cms') ? [
               { href: '/realestate-admin/websites', label: 'Website', icon: 'bi-window-stack', active: activePage === 'websites' },
               { href: '/realestate-admin/cms', label: 'CMS', icon: 'bi-file-earmark-richtext-fill', active: activePage === 'cms' },
+              { href: '/realestate-admin/websites/popups', label: 'Website Popups', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
             ] : []),
             ...(hasModule('widget_creator') ? [
               { href: '/realestate-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
@@ -180,7 +190,16 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-owner-admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', active: activePage === 'dashboard' },
             { href: '/realestate-owner-admin/intelligent-voice', label: 'Intelligent Voice', icon: 'bi-mic-fill', active: activePage === 'intelligent-voice' },
             { href: '/realestate-owner-admin/bookings', label: 'Bookings', icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
-            { href: '/realestate-owner-admin/leads', label: 'Leads', icon: 'bi-funnel-fill', active: activePage === 'leads' },
+            { 
+                href: '/realestate-owner-admin/leads', 
+                label: 'Leads', 
+                icon: 'bi-funnel-fill', 
+                active: activePage === 'leads' || activePage === 'leads-qualification',
+                children: [
+                    { href: '/realestate-owner-admin/leads', label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
+                    { href: '/realestate-owner-admin/leads/qualification', label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
+                ]
+            },
             { href: '/realestate-owner-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' },
             { href: '/realestate-owner-admin/tasks', label: 'Task Management', icon: 'bi-check2-square', active: activePage === 'tasks' },
             { href: '/realestate-owner-admin/agents', label: 'My Agents', icon: 'bi-person-badge-fill', active: activePage === 'agents' },
@@ -256,6 +275,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             ...(hasModule('website_cms') ? [
               { href: '/realestate-owner-admin/websites', label: 'Website', icon: 'bi-globe', active: activePage === 'websites' },
               { href: '/realestate-owner-admin/cms', label: 'CMS', icon: 'bi-layers-fill', active: activePage === 'cms' },
+              { href: '/realestate-owner-admin/websites/popups', label: 'Website Popups', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
             ] : []),
             ...(hasModule('discovery') ? [
               { href: '/realestate-owner-admin/chatbot-config', label: 'AI Agent Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },

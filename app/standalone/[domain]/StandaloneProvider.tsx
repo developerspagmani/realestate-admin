@@ -7,6 +7,7 @@ import { websiteService, marketingService } from '@/app/services/api';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
+import PopupRenderer from '@/components/modules/realestate/website/PopupRenderer';
 import '@/components/modules/realestate/shared/shared.css';
 
 interface StandaloneContextType {
@@ -643,6 +644,16 @@ export default function StandaloneProvider({
                     theme={theme}
                     identifyLead={identifyLead}
                 />
+
+                {/* Conversion Popups Engine */}
+                {website?.id && (
+                    <PopupRenderer 
+                        websiteId={website.id} 
+                        theme={theme}
+                        properties={properties}
+                        trackAction={trackAction}
+                    />
+                )}
             </div>
         </StandaloneContext.Provider>
     );

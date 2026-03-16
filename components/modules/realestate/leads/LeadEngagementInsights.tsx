@@ -79,6 +79,8 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
             case 'PROPERTY_VIEW': return 'bi-eye text-success';
             case 'UNIT_VIEW': return 'bi-door-closed text-success';
             case 'FORM_SUBMIT': return 'bi-file-earmark-check text-warning';
+            case 'POPUP_SUBMIT': return 'bi-megaphone-fill text-warning';
+            case 'POPUP_VIEW': return 'bi-eye-fill text-info';
             case 'CHAT_INIT': return 'bi-chat-dots text-secondary';
             case 'BOOKING_REQUEST': return 'bi-calendar-check text-danger';
             case 'UNIT_BOOKING_START': return 'bi-calendar-plus text-danger';
@@ -163,7 +165,12 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                                         </div>
                                                         <div className="flex-grow-1 bg-white p-2 rounded-3 border-light shadow-xs">
                                                             <div className="d-flex justify-content-between align-items-start">
-                                                                <div className="fw-bold small text-dark">{item.type.replace(/_/g, ' ')}</div>
+                                                                <div className="fw-bold small text-dark">
+                                                                    {item.type === 'POPUP_SUBMIT' ? 'POPUP SUBMITTED' : 
+                                                                     item.type === 'POPUP_VIEW' ? 'POPUP VIEWED' : 
+                                                                     (item.type === 'FORM_SUBMIT' && item.metadata?.popupId) ? 'POPUP SUBMITTED' :
+                                                                     item.type.replace(/_/g, ' ')}
+                                                                </div>
                                                                 <div className="badge bg-success-soft text-success border-0 extra-small">+{item.scoreWeight}</div>
                                                             </div>
                                                             <div className="text-muted" style={{ fontSize: '0.65rem' }}>{new Date(item.occurredAt).toLocaleString()}</div>
@@ -284,7 +291,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                     </div>
 
                                     <div className="card border-0 bg-dark text-white rounded-4 p-4 shadow-lg mb-4">
-                                        <h6 className="extra-small text-uppercase opacity-50 mb-3">Predicted Intent</h6>
+                                        <h6 className="text-white extra-small text-uppercase mb-3">Predicted Intent</h6>
                                         <div className="d-flex align-items-center gap-3">
                                             <div className="bg-white bg-opacity-10 rounded-circle p-2">
                                                 <i className="bi bi-lightning-charge-fill text-warning fs-4"></i>

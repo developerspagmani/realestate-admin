@@ -8,6 +8,7 @@ import ListingView from '@/components/modules/realestate/shared/ListingView';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
 import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailView';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
+import PopupRenderer from '@/components/modules/realestate/website/PopupRenderer';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 
 import { Property, Unit } from '@/types';
@@ -541,6 +542,16 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                 theme={theme}
                 identifyLead={identifyLead}
             />
+
+            {/* Conversion Popups Engine */}
+            {website?.id && (
+                <PopupRenderer
+                    websiteId={website.id}
+                    theme={theme}
+                    properties={data}
+                    trackAction={trackAction}
+                />
+            )}
         </div>
     );
 }

@@ -66,7 +66,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                 {showHeader && (
                     <div className="col-12 mb-2 d-flex justify-content-between align-items-center animate-fade-up">
                         <div>
-                            <h4 className="fw-bold mb-0" style={{ color: theme.primaryColor }}>Discover Premium Properties</h4>
+                            <h2 className="fw-bold mb-3" style={{ color: theme.primaryColor }}>Discover Premium Properties</h2>
                             <p className="small mb-0 text-dark">Exclusive listings curated for your needs</p>
                         </div>
                     </div>

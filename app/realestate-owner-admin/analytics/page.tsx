@@ -382,6 +382,80 @@ export default function AdvancedAnalyticsPage() {
                                 </div>
                             </div>
 
+                            {/* Website Popup Performance Row */}
+                            <div className="col-12 mt-2">
+                                <div className="card border-0 shadow-sm rounded-4 border-start border-warning border-5 overflow-hidden">
+                                    <div className="card-body p-4">
+                                        <div className="d-flex align-items-center justify-content-between mb-4">
+                                            <div className="d-flex align-items-center">
+                                                <div className="bg-warning text-dark rounded-3 p-2 me-3">
+                                                    <i className="bi bi-megaphone-fill fs-5"></i>
+                                                </div>
+                                                <div>
+                                                    <h5 className="fw-bold mb-0 text-dark">Website Popup Conversion Analysis</h5>
+                                                    <p className="text-muted small mb-0">Track engagement and ROI for your active website popups.</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-end">
+                                                <div className="h3 fw-bold mb-0 text-warning">{marketingInsights?.popups?.conversionRate || 0}%</div>
+                                                <div className="extra-small text-muted text-uppercase fw-bold">Avg. Conversion Rate</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="row g-4 mb-4 text-center">
+                                            <div className="col-md-4">
+                                                <div className="p-3 bg-light rounded-4 border">
+                                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Total Impressions</div>
+                                                    <div className="h4 fw-bold mb-0 text-dark">{marketingInsights?.popups?.totalImpressions || 0}</div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-4">
+                                                <div className="p-3 bg-light rounded-4 border">
+                                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Total Clicks</div>
+                                                    <div className="h4 fw-bold mb-0 text-dark">{marketingInsights?.popups?.totalClicks || 0}</div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-4">
+                                                <div className="p-3 bg-light rounded-4 border">
+                                                    <div className="extra-small text-muted text-uppercase fw-bold mb-1">Total Submissions</div>
+                                                    <div className="h4 fw-bold mb-0 text-warning">{marketingInsights?.popups?.totalSubmissions || 0}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {marketingInsights?.popups?.topPopups?.length > 0 && (
+                                            <div className="p-3 bg-light rounded-4 border">
+                                                <div className="text-muted extra-small fw-bold text-uppercase mb-3">Top Performing Popups</div>
+                                                <div className="table-responsive">
+                                                    <table className="table table-sm table-borderless align-middle mb-0">
+                                                        <thead>
+                                                            <tr className="text-muted extra-small text-uppercase">
+                                                                <th>Popup Name</th>
+                                                                <th className="text-center">Views</th>
+                                                                <th className="text-center">Clicks</th>
+                                                                <th className="text-center">Subs</th>
+                                                                <th className="text-end">Conv. Rate</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {marketingInsights.popups.topPopups.map((p: any, idx: number) => (
+                                                                <tr key={idx} className="border-bottom border-light">
+                                                                    <td><span className="fw-bold text-dark text-truncate d-block" style={{ maxWidth: '200px' }}>{p.name}</span></td>
+                                                                    <td className="text-center">{p.views}</td>
+                                                                    <td className="text-center">{p.clicks}</td>
+                                                                    <td className="text-center text-warning fw-bold">{p.submissions}</td>
+                                                                    <td className="text-end fw-bold">{p.views > 0 ? (p.submissions / p.views * 100).toFixed(1) : 0}%</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* High-Performing Properties and Opportunity Metric */}
                             <div className="col-12">
                                 <div className="card border-0 shadow-sm rounded-4 border-start border-success border-5 mb-2">

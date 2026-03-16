@@ -530,6 +530,17 @@ export const taskEndpoints = {
 
 
 
+// Popup endpoints
+export const popupEndpoints = {
+  getAll: (params?: Record<string, any>) =>
+    params ? `/popups?${buildQueryString(params)}` : '/popups',
+  getById: (id: string, tenantId?: string) => `/popups/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  create: () => '/popups',
+  update: (id: string, tenantId?: string) => `/popups/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  delete: (id: string, tenantId?: string) => `/popups/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  getPublic: (websiteId: string) => `/popups/public/${websiteId}`,
+};
+
 // PropIntel AI endpoints
 export const propIntelEndpoints = {
   getDiagnostics: (params?: Record<string, any>) =>

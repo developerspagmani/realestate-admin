@@ -10,6 +10,7 @@ import Toast from '@/components/common/Toast';
 import { Agent } from '@/types';
 import LeadEngagementInsights from './LeadEngagementInsights';
 import LeadsKanban from './LeadsKanban';
+import LeadQualificationHub from './LeadQualificationHub';
 import Loader from '@/components/common/Loader';
 import StructuredLossModal from './StructuredLossModal';
 import ConfirmationModal from '@/components/common/ConfirmationModal';
@@ -49,9 +50,10 @@ export interface Lead {
 
 interface LeadsManagerProps {
     mode: 'admin' | 'owner';
+    initialView?: 'table' | 'kanban' | 'qualification';
 }
 
-export default function LeadsManager({ mode }: LeadsManagerProps) {
+export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
     const { user, isAuthenticated } = useAuthContext();
     const { tenantType, activeTenantId, activeOwnerId, currencySymbol } = useManagementContext();
     const [mounted, setMounted] = useState(false);
@@ -93,7 +95,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
         type: 'success'
     });
     const [selectedLeadForInsights, setSelectedLeadForInsights] = useState<Lead | null>(null);
-    const [viewMode, setViewMode] = useState<'table' | 'kanban'>('kanban');
+    const [viewMode, setViewMode] = useState<'table' | 'kanban' | 'qualification'>(initialView || 'kanban');
     const [isLoading, setIsLoading] = useState(true);
     const [isConverting, setIsConverting] = useState(false);
     const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
@@ -753,7 +755,7 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
     };
 
     return (
-        <MainLayout activePage="leads">
+        <MainLayout activePage={viewMode === 'qualification' ? 'leads-qualification' : 'leads'}>
             <div className="container-fluid py-4">
                 <div className="d-flex flex-column flex-xl-row justify-content-between align-items-start align-items-xl-center gap-3 mb-4">
                     <div className="d-flex align-items-center gap-3">
@@ -780,6 +782,12 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                 onClick={() => setViewMode('table')}
                             >
                                 <i className="bi bi-table me-2"></i>Table
+                            </button>
+                            <button
+                                className={`btn btn-sm px-3 rounded-2 ${viewMode === 'qualification' ? 'btn-white shadow-sm fw-bold' : 'btn-light border-0 text-muted'}`}
+                                onClick={() => setViewMode('qualification')}
+                            >
+                                <i className="bi bi-lightning-charge-fill me-2"></i>Qualification
                             </button>
                         </div>
                         <div className="d-flex flex-wrap gap-2 flex-grow-1 flex-md-grow-0 justify-content-start justify-content-md-end">
@@ -983,6 +991,12 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                     <div className="py-5 my-5">
                         <Loader message="Fetching your leads..." />
                     </div>
+                ) : viewMode === 'qualification' ? (
+                    <LeadQualificationHub 
+                        leads={filteredLeads}
+                        loading={isLoading}
+                        onViewInsights={setSelectedLeadForInsights}
+                    />
                 ) : viewMode === 'table' ? (
                     <div className="card border-0 shadow-sm rounded-4 mt-2">
                         <div className="table-responsive">
@@ -1034,14 +1048,14 @@ export default function LeadsManager({ mode }: LeadsManagerProps) {
                                                     <div className="cursor-pointer d-flex align-items-center gap-2" onClick={() => setSelectedLeadForInsights(lead)}>
                                                         <div>
                                                             <div className="fw-bold text-dark d-flex align-items-center gap-2">
-                                                                {lead.name}
-                                                                {isStale(lead) && (
-                                                                    <span className="badge bg-danger rounded-4 extra-small-badge" title="No activity for 3+ days">REQUIRES ATTENTION</span>
-                                                                )}
-                                                                {lead.lossData?.revivalStatus === 2 && (
-                                                                    <span className="badge bg-success rounded-4 extra-small-badge pulse-revival" title="Ready for Smart Revival">REVIVAL CANDIDATE</span>
-                                                                )}
-                                                                <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
+                                                                 {lead.name}
+                                                                 {isStale(lead) && (
+                                                                     <span className="badge bg-danger rounded-4 extra-small-badge" title="No activity for 3+ days">REQUIRES ATTENTION</span>
+                                                                 )}
+                                                                 {lead.lossData?.revivalStatus === 2 && (
+                                                                     <span className="badge bg-success rounded-4 extra-small-badge pulse-revival" title="Ready for Smart Revival">REVIVAL CANDIDATE</span>
+                                                                 )}
+                                                                 <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
                                                             </div>
                                                             <div className="small text-muted">{lead.company || 'No Company'}</div>
                                                         </div>

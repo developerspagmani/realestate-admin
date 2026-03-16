@@ -29,4 +29,5 @@ export * from './analyticsPro';
 export * from './portal';
 export * from './task';
 export * from './propIntel';
+export * from './popup';
 
