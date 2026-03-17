@@ -243,6 +243,14 @@ export const publishedPostsApi = {
             headers: getAuthHeaders()
         });
         return response.json();
+    },
+
+    // Get detailed engagement (comments with user info)
+    getEngagementDetails: async (id: string): Promise<any> => {
+        const response = await fetch(`${API_BASE_URL}/social/posts/published/${id}/engagement`, {
+            headers: getAuthHeaders()
+        });
+        return response.json();
     }
 };
 

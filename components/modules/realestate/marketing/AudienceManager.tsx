@@ -378,7 +378,7 @@ export default function AudienceManager({ tenantId }: AudienceManagerProps) {
                                     <div className="mt-auto">
                                         {(group.propertyId || group.listingId || group.filters?.propertyId) && (
                                             <div className="d-flex align-items-center gap-2 mb-3 px-3 py-2 bg-light rounded-3">
-                                                <i className="bi bi-building small text-primary"></i>
+                                                <i className="bi bi-building small text-white"></i>
                                                 <span className="extra-small text-muted text-truncate" title="Linked Property">
                                                     {properties.find(p => p.id === (group.propertyId || group.listingId || group.filters?.propertyId))?.title || 'Linked Property'}
                                                 </span>
