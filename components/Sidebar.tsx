@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
@@ -24,6 +24,8 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
   const [mounted, setMounted] = useState(false);
   const [isMounting, setIsMounting] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -60,6 +62,22 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     }
   }, [openMenus]);
 
+  // Restore scroll position
+  useEffect(() => {
+    if (mounted && scrollContainerRef.current) {
+      const savedScroll = sessionStorage.getItem('sidebar_scroll_top');
+      if (savedScroll) {
+        scrollContainerRef.current.scrollTop = parseInt(savedScroll);
+      }
+    }
+  }, [mounted]);
+
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      sessionStorage.setItem('sidebar_scroll_top', String(scrollContainerRef.current.scrollTop));
+    }
+  };
+
   useEffect(() => {
     // Notify parent of sidebar width changes
     if (onSidebarCollapse) {
@@ -94,15 +112,15 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             { href: '/realestate-admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill', active: activePage === 'dashboard' },
             { href: '/realestate-admin/bookings', label: labels.bookings, icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
-            { 
-                href: '/realestate-admin/leads', 
-                label: labels.leads, 
-                icon: 'bi-person-badge-fill', 
-                active: activePage === 'leads' || activePage === 'leads-qualification',
-                children: [
-                    { href: '/realestate-admin/leads', label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
-                    { href: '/realestate-admin/leads/qualification', label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
-                ]
+            {
+              href: '/realestate-admin/leads',
+              label: labels.leads,
+              icon: 'bi-person-badge-fill',
+              active: activePage === 'leads' || activePage === 'leads-qualification',
+              children: [
+                { href: '/realestate-admin/leads', label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
+                { href: '/realestate-admin/leads/qualification', label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
+              ]
             },
             { href: '/realestate-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' }
           ]
@@ -190,15 +208,15 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
             { href: '/realestate-owner-admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', active: activePage === 'dashboard' },
             { href: '/realestate-owner-admin/intelligent-voice', label: 'Intelligent Voice', icon: 'bi-mic-fill', active: activePage === 'intelligent-voice' },
             { href: '/realestate-owner-admin/bookings', label: 'Bookings', icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
-            { 
-                href: '/realestate-owner-admin/leads', 
-                label: 'Leads', 
-                icon: 'bi-funnel-fill', 
-                active: activePage === 'leads' || activePage === 'leads-qualification',
-                children: [
-                    { href: '/realestate-owner-admin/leads', label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
-                    { href: '/realestate-owner-admin/leads/qualification', label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
-                ]
+            {
+              href: '/realestate-owner-admin/leads',
+              label: 'Leads',
+              icon: 'bi-funnel-fill',
+              active: activePage === 'leads' || activePage === 'leads-qualification',
+              children: [
+                { href: '/realestate-owner-admin/leads', label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
+                { href: '/realestate-owner-admin/leads/qualification', label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
+              ]
             },
             { href: '/realestate-owner-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' },
             { href: '/realestate-owner-admin/tasks', label: 'Task Management', icon: 'bi-check2-square', active: activePage === 'tasks' },
@@ -445,7 +463,11 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
         </div>
 
         {/* Navigation Menu */}
-        <div className="flex-grow-1 overflow-auto px-2 py-4 custom-scrollbar">
+        <div 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex-grow-1 overflow-auto px-2 py-4 custom-scrollbar"
+        >
           {menuItems.map((section: any, sectionIndex: number) => (
             <div key={sectionIndex} className="mb-4">
               {(!collapsed || showMobile) && (
@@ -458,7 +480,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               {section.items.map((item: any) => {
                 const hasChildren = item.children && item.children.length > 0;
                 const isParentActive = item.active || (hasChildren && item.children.some((c: any) => c.active));
-                const isOpen = openMenus[item.label] ?? isParentActive;
+                const isOpen = !!openMenus[item.label];
 
                 return (
                   <div key={item.label} className="mb-1">
@@ -486,7 +508,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                               <Link
                                 key={child.href}
                                 href={child.href}
-                                className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all small ${child.active ? 'bg-primary text-white fw-semibold shadow-sm' : 'text-secondary hover-bg-light'
+                                className={`nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all small ${child.active ? 'active bg-primary text-white fw-semibold shadow-sm' : 'text-secondary hover-bg-light'
                                   }`}
                                 style={{ textDecoration: 'none' }}
                               >

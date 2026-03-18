@@ -121,9 +121,10 @@ function AccountsContent() {
     }, [loadAccounts, loadMetaSDK]);
 
     const handleConnect = async (platform: string) => {
-        const redirectUri = `${window.location.origin}${basePath}/auth/${platform.toLowerCase()}/callback`;
+        let redirectUri = `${window.location.origin}${basePath}/auth/${platform.toLowerCase()}/callback`;
 
-        if (platform === 'FACEBOOK') {
+        if (platform === 'FACEBOOK' || platform === 'INSTAGRAM') {
+            redirectUri = `${window.location.origin}${basePath}/auth/meta/callback`;
             const isLocal = typeof window !== 'undefined' &&
                 (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
@@ -141,7 +142,7 @@ function AccountsContent() {
                             try {
                                 setLoading(true);
                                 const res = await connectedAccountsApi.connect({
-                                    platform: 'FACEBOOK',
+                                    platform: platform,
                                     accessToken: accessToken,
                                     accountId: userId,
                                     accountName: 'Facebook User',
@@ -149,7 +150,7 @@ function AccountsContent() {
                                 });
 
                                 if (res.success) {
-                                    showToast('Facebook connected successfully!', 'success');
+                                    showToast(`${platform.charAt(0) + platform.slice(1).toLowerCase()} connected successfully!`, 'success');
                                     loadAccounts();
                                 } else {
                                     showToast(res.message || 'Failed to connect Facebook', 'error');

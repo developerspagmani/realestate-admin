@@ -94,7 +94,7 @@ function CampaignDetailContent() {
 
                     setMetrics(aggregated);
 
-                    // 2. Fetch fresh detailed engagement (including comments with name/id)
+                    // 2. Fetch fresh detailed engagement (including comments with name/id) and fresh metrics
                     try {
                         const promises = campaignData.publishedPosts.map((p: any) => 
                             fetch(`/api/social/posts/published/${p.id}/engagement`, {
@@ -102,6 +102,22 @@ function CampaignDetailContent() {
                             }).then(res => res.ok ? res.json() : null)
                         );
                         const results = await Promise.all(promises);
+                        
+                        // Set fresh metrics from live results
+                        const freshMetrics = results.reduce((acc: any, r: any) => {
+                            const m = r?.data?.summary || {};
+                            return {
+                                reach: acc.reach + (m.reach || 0),
+                                impressions: acc.impressions + (m.impressions || 0),
+                                likes: acc.likes + (m.likes || 0),
+                                comments: acc.comments + (m.comments || 0),
+                                shares: acc.shares + (m.shares || 0),
+                                engagements: acc.engagements + (m.engagements || 0)
+                            };
+                        }, { reach: 0, impressions: 0, likes: 0, comments: 0, shares: 0, engagements: 0 });
+                        
+                        setMetrics(freshMetrics);
+
                         const allComments = results.flatMap((r: any) => r?.data?.comments || []);
                         setComments(allComments);
                     } catch (e) {
@@ -212,12 +228,27 @@ function CampaignDetailContent() {
                                     );
                                     const results = await Promise.all(promises);
                                     
-                                    // Collect all comments from results
+                                    // 1. Calculate and set new metrics immediately from live results
+                                    const freshMetrics = results.reduce((acc: any, r: any) => {
+                                        const m = r?.data?.summary || {};
+                                        return {
+                                            reach: acc.reach + (m.reach || 0),
+                                            impressions: acc.impressions + (m.impressions || 0),
+                                            likes: acc.likes + (m.likes || 0),
+                                            comments: acc.comments + (m.comments || 0),
+                                            shares: acc.shares + (m.shares || 0),
+                                            engagements: acc.engagements + (m.engagements || 0)
+                                        };
+                                    }, { reach: 0, impressions: 0, likes: 0, comments: 0, shares: 0, engagements: 0 });
+                                    
+                                    setMetrics(freshMetrics);
+
+                                    // 2. Collect all comments from results
                                     const allComments = results.flatMap((r: any) => r.data?.comments || []);
                                     setComments(allComments);
                                     
                                     showToast('Metrics refreshed successfully!', 'success');
-                                    loadCampaign();
+                                    // loadCampaign(); // No longer necessary as main action for UI update
                                 } catch (e) {
                                     console.error('Refresh failed:', e);
                                     showToast('Failed to refresh some metrics', 'error');
