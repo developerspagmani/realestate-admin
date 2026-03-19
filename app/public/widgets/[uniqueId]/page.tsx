@@ -59,24 +59,33 @@ export default function PublicWidgetPage() {
         localStorage.setItem(`widget_lead_${widgetId}`, JSON.stringify(identity));
     };
 
-    const trackAction = async (type: string, metadata: any = {}, identityOverride?: { id?: string, email?: string }) => {
+    const trackAction = useCallback(async (type: string, metadata: any = {}, identityOverride?: { id?: string, email?: string }) => {
         const identity = identityOverride || leadIdentity;
-        if (!identity) return;
+        
+        // Generate or get visitorId for anonymous tracking
+        let visitorId = localStorage.getItem(`widget_v_id_${widgetId}`);
+        if (!visitorId) {
+            visitorId = `v_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`;
+            localStorage.setItem(`widget_v_id_${widgetId}`, visitorId);
+        }
 
         try {
             await marketingService.trackInteraction({
-                leadId: identity.id,
-                email: identity.email,
+                leadId: identity?.id,
+                email: identity?.email,
+                visitorId,
                 type,
                 metadata: {
                     widgetId,
+                    url: typeof window !== 'undefined' ? window.location.href : '',
+                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
                     ...metadata
                 }
             });
         } catch (err) {
             console.error('Tracking failed:', err);
         }
-    };
+    }, [leadIdentity, widgetId]);
 
     const handleChatFilters = useCallback((filteredResults: any[]) => {
         setFilteredData(filteredResults);
@@ -86,6 +95,57 @@ export default function PublicWidgetPage() {
         const container = document.querySelector('.widget-container');
         if (container) container.scrollIntoView({ behavior: 'smooth' });
     }, []);
+
+    const onFilter = useCallback((filters: any) => {
+        let results = [...data];
+
+        if (filters.search) {
+            const s = filters.search.toLowerCase();
+            results = results.filter(p =>
+                p.title?.toLowerCase().includes(s) ||
+                p.city?.toLowerCase().includes(s) ||
+                p.neighborhood?.toLowerCase().includes(s) ||
+                p.units?.some((u: any) => u.unitCode?.toLowerCase().includes(s) || u.name?.toLowerCase().includes(s))
+            );
+        }
+
+        if (filters.minPrice) {
+            results = results.filter(p => {
+                const pPrice = Number(p.price) || 0;
+                if (pPrice >= Number(filters.minPrice)) return true;
+                // If property price is 0 (maybe it's a project), check unit prices
+                return p.units?.some((u: any) => (u.unitPricing?.[0]?.price || 0) >= Number(filters.minPrice));
+            });
+        }
+        if (filters.maxPrice) {
+            results = results.filter(p => {
+                const pPrice = Number(p.price) || 0;
+                if (pPrice > 0 && pPrice <= Number(filters.maxPrice)) return true;
+                return p.units?.some((u: any) => (u.unitPricing?.[0]?.price || 0) <= Number(filters.maxPrice));
+            });
+        }
+        if (filters.bedrooms) {
+            results = results.filter(p =>
+                (p.bedrooms || p.realEstateDetails?.bedrooms || 0) >= Number(filters.bedrooms) ||
+                p.units?.some((u: any) => (u.realEstateDetails?.bedrooms || 0) >= Number(filters.bedrooms))
+            );
+        }
+        if (filters.bathrooms) {
+            results = results.filter(p =>
+                (p.bathrooms || p.realEstateDetails?.bathrooms || 0) >= Number(filters.bathrooms) ||
+                p.units?.some((u: any) => (u.realEstateDetails?.bathrooms || 0) >= Number(filters.bathrooms))
+            );
+        }
+        if (filters.propertyType) {
+            results = results.filter(p => String(p.propertyType) === String(filters.propertyType));
+        }
+        if (filters.listingType) {
+            results = results.filter(p => p.listingType === filters.listingType);
+        }
+
+        setFilteredData(results);
+        setIsFiltered(Object.keys(filters).length > 0 && Object.values(filters).some(v => v !== ''));
+    }, [data]);
 
     const loadWidgetData = useCallback(async () => {
         if (!widgetId) return;
@@ -97,6 +157,14 @@ export default function PublicWidgetPage() {
                 setWidget(response.widget);
                 setData(response.data || []);
                 setFilteredData(response.data || []);
+
+                // Track initial page view for EVERYONE (now using visitorId inside trackAction)
+                if (response.widget) {
+                    trackAction('WIDGET_VIEW', {
+                        widgetName: response.widget.name,
+                        resultsCount: response.data?.length || 0
+                    });
+                }
             } else {
                 setError(response.message || 'Failed to load widget data.');
             }
@@ -105,7 +173,7 @@ export default function PublicWidgetPage() {
         } finally {
             setLoading(false);
         }
-    }, [widgetId]);
+    }, [widgetId, trackAction]);
 
     useEffect(() => {
         loadWidgetData();
@@ -191,29 +259,49 @@ export default function PublicWidgetPage() {
                 pricing.pricingModel === 4 ? 'mo' :
                     pricing.pricingModel === 5 ? 'yr' : '';
 
-        // Get currency from tenant country
+        // Get currency from tenant settings first, then country
+        const tenantSettings = widget?.tenant?.settings || {};
+        const baseCurrency = tenantSettings.general?.currency;
         const country = widget?.tenant?.country || 'USA';
-        const config = getCurrencyConfig(country);
+        const config = getCurrencyConfig(baseCurrency || country);
         const symbol = config?.symbol || '$';
 
         return `${symbol}${Number(pricing.price).toLocaleString()}${label ? `/${label}` : ''}`;
     };
 
     const renderContent = () => {
+        const tenantSettings = widget?.tenant?.settings || {};
+        const baseCurrency = tenantSettings.general?.currency;
         const country = widget?.tenant?.country || 'USA';
-        const currencyConfig = getCurrencyConfig(country);
+        const currencyConfig = getCurrencyConfig(baseCurrency || country);
         const currencySymbol = currencyConfig?.symbol || '$';
+
+        const isChatbotEnabled = widget?.configuration?.chatbot?.enabled === true || 
+                                widget?.configuration?.chatbot?.enabled === "true" || 
+                                widget?.configuration?.chatbot?.enabled === 1;
+
+        const commonProps = {
+            widget,
+            widgetId: widgetId as string,
+            data: filteredData,
+            theme,
+            onFilter,
+            setCurrentView,
+            getFormattedPrice,
+            trackAction,
+            identifyLead,
+            currencySymbol,
+            setShowChat,
+            isChatbotEnabled
+        };
 
         switch (currentView) {
             case 'LISTING':
                 if (widget.configuration?.settings?.layout === 'builder' || widget.configuration?.pageBuilder?.enabled) {
                     return (
                         <PageBuilder
+                            {...commonProps}
                             config={widget.configuration.builder || widget.configuration.pageBuilder}
-                            data={filteredData}
-                            theme={theme}
-                            widget={widget}
-                            widgetId={widgetId as string}
                             onSelectProperty={(property) => {
                                 setSelectedProperty(property);
                                 setPropertyImageIndex(0);
@@ -226,12 +314,10 @@ export default function PublicWidgetPage() {
                 }
                 return (
                     <ListingView
+                        {...commonProps}
                         filteredData={filteredData}
                         isFiltered={isFiltered}
                         colClass={colClass}
-                        theme={theme}
-                        widget={widget}
-                        widgetId={widgetId as string}
                         onReset={() => {
                             setFilteredData(data);
                             setIsFiltered(false);
@@ -243,48 +329,36 @@ export default function PublicWidgetPage() {
                             trackAction('PROPERTY_VIEW', { propertyId: property.id });
                             window.scrollTo(0, 0);
                         }}
-                        trackAction={trackAction}
-                        identifyLead={identifyLead}
                     />
                 );
             case 'PROPERTY_DETAIL':
                 return (
                     <PropertyDetailView
+                        {...commonProps}
                         selectedProperty={selectedProperty}
                         propertyImageIndex={propertyImageIndex}
                         setPropertyImageIndex={setPropertyImageIndex}
-                        theme={theme}
-                        widget={widget}
-                        widgetId={widgetId as string}
-                        colClass={colClass}
-                        setCurrentView={setCurrentView}
                         selectedUnit={selectedUnit}
-                        setSelectedUnit={setSelectedUnit}
+                        setSelectedUnit={(unit: any) => {
+                            setSelectedUnit(unit);
+                            setUnitImageIndex(0);
+                            setCurrentView('UNIT_DETAIL');
+                            trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
+                        }}
                         setUnitImageIndex={setUnitImageIndex}
-                        getFormattedPrice={getFormattedPrice}
-                        trackAction={trackAction}
-                        identifyLead={identifyLead}
-                        currencySymbol={currencySymbol}
+                        colClass={colClass}
                     />
                 );
             case 'UNIT_DETAIL':
                 return (
                     <UnitDetailView
+                        {...commonProps}
                         selectedUnit={selectedUnit}
                         selectedProperty={selectedProperty}
                         unitImageIndex={unitImageIndex}
                         setUnitImageIndex={setUnitImageIndex}
-                        theme={theme}
-                        widget={widget}
-                        widgetId={widgetId as string}
-                        setCurrentView={setCurrentView}
-                        getFormattedPrice={getFormattedPrice}
-                        trackAction={trackAction}
-                        identifyLead={identifyLead}
-                        currencySymbol={currencySymbol}
                     />
                 );
-
 
             default:
                 return null;
@@ -304,7 +378,7 @@ export default function PublicWidgetPage() {
             </main>
 
             {/* Chatbot Integration */}
-            {widget?.configuration?.chatbot?.enabled && (
+            {(widget?.configuration?.chatbot?.enabled === true || widget?.configuration?.chatbot?.enabled === "true" || widget?.configuration?.chatbot?.enabled === 1) && (
                 <>
                     <button
                         className="btn rounded-circle shadow-lg floating-chat-btn d-flex align-items-center justify-content-center animate-bounce"

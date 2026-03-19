@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import PublicFontInter from '@/components/common/PublicFontInter';
 
 export default function RegisterSelectionPage() {
   return (
     <div className="register-selection-page min-vh-100 d-flex align-items-center justify-content-center bg-light p-4">
+      <PublicFontInter />
       <div className="container" style={{ maxWidth: '900px' }}>
         <div className="card shadow-lg border-0 rounded-4 overflow-hidden animate-fade-in">
           <div className="row g-0">
@@ -79,6 +81,7 @@ export default function RegisterSelectionPage() {
       </div>
 
       <style jsx global>{`
+                html, body { font-family: 'Inter', sans-serif !important; }
                 .register-selection-page .fw-extrabold { font-weight: 800; }
                 .register-selection-page .extra-small { font-size: 0.72rem; }
                 .register-selection-page .small-caps { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; color: #94a3b8; }

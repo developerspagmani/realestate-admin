@@ -21,10 +21,12 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
     const [formData, setFormData] = useState<any>({});
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [localConfig, setLocalConfig] = useState<any>(config);
     const [fetching, setFetching] = useState(false);
+    const [localConfig, setLocalConfig] = useState<any>(config || { enabled: false, title: '', description: '', fields: [] });
 
     React.useEffect(() => {
+        if (!config) return;
+
         const fetchManagedForm = async () => {
             if (config.useMarketingForm && config.marketingFormId) {
                 setFetching(true);
@@ -54,9 +56,9 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
         };
 
         fetchManagedForm();
-    }, [config.marketingFormId, config.useMarketingForm, config]);
+    }, [config?.marketingFormId, config?.useMarketingForm, config]);
 
-    if (!localConfig || !localConfig.enabled) return null;
+    if (!config || !localConfig || !localConfig.enabled) return null;
     if (fetching) return <div className="text-center p-4"><div className="spinner-border spinner-border-sm text-primary"></div></div>;
 
     const handleSubmit = async (e: React.FormEvent) => {

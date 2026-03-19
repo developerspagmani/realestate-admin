@@ -10,7 +10,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: number; // 1: user, 2: admin, 3: owner, 4: agent
+  role: number; // 1: user, 2: admin, 3: owner, 4: agent, 5: partner
   firstName?: string;
   lastName?: string;
   phone?: string;
@@ -42,6 +42,7 @@ export interface AuthContextType extends AuthState {
   isOwner: boolean;
   isUser: boolean;
   isAgent: boolean;
+  isPartner: boolean;
   hasRole: (role: number) => boolean;
   // Tenant helper
   tenantId?: string;
@@ -393,6 +394,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return '/realestate-owner-admin/dashboard';
       case 4: // Agent
         return '/realestate-agent/dashboard';
+      case 5: // Partner
+        return '/partner-dashboard';
       case 1: // Regular User
       default:
         return '/user/dashboard';
@@ -411,6 +414,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     isOwner: state.user?.role === 3,    // Owner (role 3)
     isUser: state.user?.role === 1,     // Regular User (role 1)
     isAgent: state.user?.role === 4,    // Agent (role 4)
+    isPartner: state.user?.role === 5,  // Partner (role 5)
     hasRole: (role: number) => state.user?.role === role,
     // Tenant helper
     tenantId: state.user?.tenantId,

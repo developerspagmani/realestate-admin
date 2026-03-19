@@ -9,7 +9,7 @@ import UnitListingView from '@/components/modules/realestate/shared/UnitListingV
 export default function ExplorePageClient({ domain, initialWebsite }: { domain?: string, initialWebsite?: any }) {
     const context = useStandalone();
     const website = initialWebsite || context.website;
-    const { properties, theme: contextTheme, slugOrDomain: contextSlug, trackAction, identifyLead, updateFilters, loading } = context;
+    const { properties, theme: contextTheme, slugOrDomain: contextSlug, trackAction, identifyLead, updateFilters, loading, currencySymbol } = context;
 
     const slugOrDomain = domain || contextSlug;
     const theme = website?.configuration?.theme || contextTheme;
@@ -95,6 +95,7 @@ export default function ExplorePageClient({ domain, initialWebsite }: { domain?:
                                     identifyLead={identifyLead}
                                     noContainer={true}
                                     showHeader={false}
+                                    currencySymbol={currencySymbol}
                                 />
                             ) : (
                                 <UnitListingView
@@ -103,6 +104,7 @@ export default function ExplorePageClient({ domain, initialWebsite }: { domain?:
                                     widget={website}
                                     onSelectUnit={onSelectUnit}
                                     trackAction={trackAction}
+                                    currencySymbol={currencySymbol}
                                 />
                             )}
                         </div>

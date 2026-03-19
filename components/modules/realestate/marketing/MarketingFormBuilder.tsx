@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { marketingService, getAuthToken } from '@/app/services/api';
 import FormRenderer from '../widgets/FormRenderer';
+import ConfirmationModal from '@/components/common/ConfirmationModal';
 
 interface MarketingFormBuilderProps {
     tenantId: string;
@@ -13,6 +14,7 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [deleteModal, setDeleteModal] = useState({ show: false, formId: '', formName: '' });
 
     // Form Configuration State
     const [currentForm, setCurrentForm] = useState<any>({
@@ -127,16 +129,21 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!window.confirm(`Are you sure you want to delete form "${name}"?`)) return;
+    const confirmDelete = async () => {
         try {
             const token = getAuthToken();
             if (!token) return;
-            const res = await marketingService.deleteForm(token, id);
+            const res = await marketingService.deleteForm(token, deleteModal.formId);
             if (res.success) loadData();
         } catch (error) {
             console.error('Delete failed:', error);
+        } finally {
+            setDeleteModal({ show: false, formId: '', formName: '' });
         }
+    };
+
+    const handleDelete = (id: string, name: string) => {
+        setDeleteModal({ show: true, formId: id, formName: name });
     };
 
     const openEdit = (form: any) => {
@@ -424,6 +431,24 @@ export default function MarketingFormBuilder({ tenantId }: MarketingFormBuilderP
                         </div>
                     ))}
                 </div>
+            )}
+
+            {deleteModal.show && (
+                <ConfirmationModal
+                    show={deleteModal.show}
+                    title="Delete Form"
+                    message={
+                        <span>
+                            Are you sure you want to delete form <strong>&quot;{deleteModal.formName}&quot;</strong>?<br />
+                            <span className="text-danger">This action cannot be undone.</span>
+                        </span>
+                    }
+                    confirmText="Delete Lead Form"
+                    onConfirm={confirmDelete}
+                    onCancel={() => setDeleteModal({ show: false, formId: '', formName: '' })}
+                    type="danger"
+                    icon="bi-trash3-fill"
+                />
             )}
 
             <style jsx>{`

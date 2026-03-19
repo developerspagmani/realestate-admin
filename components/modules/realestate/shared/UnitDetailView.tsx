@@ -199,48 +199,66 @@ const UnitDetailView: React.FC<UnitDetailViewProps> = ({
                                 </div>
                             </div>
 
-                            {(widget.configuration.inquiryForm?.enabled || widget.configuration.builder?.showInquiry !== false) && (
-                                <div className="col-md-4">
-                                    <div className="glass-panel p-4 rounded-4 h-100 unit-inquiry-form shadow-sm">
-                                        <div className="text-center mb-4">
-                                            <div className="rounded-4 p-3 d-inline-flex mb-3" style={{ backgroundColor: theme.primaryColor }}>
-                                                <i className="bi bi-headset fs-4 text-white"></i>
+                            {(() => {
+                                const inquiryConfig = (widget.configuration.inquiryForm && widget.configuration.inquiryForm.enabled)
+                                    ? widget.configuration.inquiryForm
+                                    : (widget.configuration.builder?.showInquiry !== false ? {
+                                        enabled: true,
+                                        title: 'Unit Inquiry',
+                                        description: 'Send us a message about this unit and we will get back to you shortly.',
+                                        submitButtonLabel: 'Submit Inquiry',
+                                        fields: [
+                                            { id: 'f1', type: 'text', label: 'Full Name', required: true, placeholder: 'Your Name' },
+                                            { id: 'f2', type: 'email', label: 'Email Address', required: true, placeholder: 'email@example.com' },
+                                            { id: 'f3', type: 'phone', label: 'Phone Number', required: false, placeholder: '+1 234 567 890' },
+                                            { id: 'f4', type: 'textarea', label: 'Message', required: true, placeholder: 'I am interested in this unit...' }
+                                        ]
+                                    } : null);
+
+                                if (!inquiryConfig || !inquiryConfig.enabled) return null;
+
+                                return (
+                                    <div className="col-md-4">
+                                        <div className="glass-panel p-4 rounded-4 h-100 unit-inquiry-form shadow-sm">
+                                            <div className="text-center mb-4">
+                                                <div className="rounded-4 p-3 d-inline-flex mb-3" style={{ backgroundColor: theme.primaryColor }}>
+                                                    <i className="bi bi-headset fs-4 text-white"></i>
+                                                </div>
+                                                <h5 className="fw-bold">Contact Listing Agent</h5>
+                                                <p className="extra-small text-muted">Receive a call within 15 minutes</p>
                                             </div>
-                                            <h5 className="fw-bold">Contact Listing Agent</h5>
-                                            <p className="extra-small text-muted">Receive a call within 15 minutes</p>
+                                            <FormRenderer
+                                                config={inquiryConfig}
+                                                primaryColor={theme.primaryColor}
+                                                onSubmit={async (formData, configUsed) => {
+                                                    const leadPayload: any = {
+                                                        source: 1,
+                                                        propertyId: selectedProperty.id,
+                                                        notes: `Unit Specific Inquiry: ${selectedUnit.unitCode}\n${(configUsed.fields || []).map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
+                                                    };
+
+                                                    (configUsed.fields || []).forEach((field: any) => {
+                                                        const val = formData[field.id];
+                                                        if (!val) return;
+                                                        if (field.type === 'email' && !leadPayload.email) leadPayload.email = val;
+                                                        else if (field.type === 'phone' && !leadPayload.phone) leadPayload.phone = val;
+                                                        else if ((field.type === 'text' || field.id === 'f1') && !leadPayload.name) leadPayload.name = val;
+                                                        else if (field.id === 'f2' && !leadPayload.email) leadPayload.email = val;
+                                                    });
+
+                                                    if (!leadPayload.name) leadPayload.name = 'Direct Unit Inquiry';
+                                                    const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
+
+                                                    if (res.success && res.data?.id) {
+                                                        const identity = { id: res.data.id, email: res.data.email };
+                                                        if (identifyLead) identifyLead(identity.id, identity.email);
+                                                    }
+                                                }}
+                                            />
                                         </div>
-
-                                        <FormRenderer
-                                            config={widget.configuration.inquiryForm}
-                                            primaryColor={theme.primaryColor}
-                                            onSubmit={async (formData, configUsed) => {
-                                                const leadPayload: any = {
-                                                    source: 1,
-                                                    propertyId: selectedProperty.id,
-                                                    notes: `Unit Specific Inquiry: ${selectedUnit.unitCode}\n${(configUsed.fields || []).map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
-                                                };
-
-                                                (configUsed.fields || []).forEach((field: any) => {
-                                                    const val = formData[field.id];
-                                                    if (!val) return;
-                                                    if (field.type === 'email' && !leadPayload.email) leadPayload.email = val;
-                                                    else if (field.type === 'phone' && !leadPayload.phone) leadPayload.phone = val;
-                                                    else if ((field.type === 'text' || field.id === 'f1') && !leadPayload.name) leadPayload.name = val;
-                                                    else if (field.id === 'f2' && !leadPayload.email) leadPayload.email = val;
-                                                });
-
-                                                if (!leadPayload.name) leadPayload.name = 'Direct Unit Inquiry';
-                                                const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
-
-                                                if (res.success && res.data?.id) {
-                                                    const identity = { id: res.data.id, email: res.data.email };
-                                                    if (identifyLead) identifyLead(identity.id, identity.email);
-                                                }
-                                            }}
-                                        />
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

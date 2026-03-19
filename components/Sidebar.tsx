@@ -101,218 +101,110 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     const labels = {
       properties: tenantType === 2 ? 'Spaces / Centers' : 'Properties',
       units: tenantType === 2 ? 'Workspaces / Desks' : 'Units / Flats',
-      bookings: tenantType === 2 ? 'Bookings' : 'Leases & Inquiries',
+      bookings: 'Site Visits',
       leads: 'Leads',
     };
 
-    if (isAdmin) {
+    const adminPrefix = isAdmin ? '/realestate-admin' : '/realestate-owner-admin';
+
+    if (isAdmin || isOwner) {
       return [
         {
           title: 'Operations',
           items: [
-            { href: '/realestate-admin/dashboard', label: 'Dashboard', icon: 'bi-grid-1x2-fill', active: activePage === 'dashboard' },
-            { href: '/realestate-admin/bookings', label: labels.bookings, icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
-            {
-              href: '/realestate-admin/leads',
-              label: labels.leads,
-              icon: 'bi-person-badge-fill',
-              active: activePage === 'leads' || activePage === 'leads-qualification',
-              children: [
-                { href: '/realestate-admin/leads', label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
-                { href: '/realestate-admin/leads/qualification', label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
-              ]
-            },
-            { href: '/realestate-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' }
-          ]
-        },
-        {
-          title: 'Core Management',
-          items: [
-            { href: '/realestate-admin/properties', label: labels.properties, icon: 'bi-building-fill', active: activePage === 'properties' },
-            { href: '/realestate-admin/units', label: labels.units, icon: 'bi-door-open-fill', active: activePage === 'units' },
-            { href: '/realestate-admin/owners', label: 'Property Owners', icon: 'bi-person-vcard-fill', active: activePage === 'owners' },
-            { href: '/realestate-admin/agents', label: 'Sales Agents', icon: 'bi-briefcase-fill', active: activePage === 'agents' },
-            { href: '/realestate-admin/users', label: 'System Users', icon: 'bi-people-fill', active: activePage === 'users' },
-          ]
-        },
-        {
-          title: 'Design Studio',
-          items: [
-            { href: '/realestate-admin/media-library', label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' },
-            { href: '/realestate-admin/plot-map', label: 'Plot Map Manager', icon: 'bi-map-fill', active: activePage === 'plot-map' },
-            { href: '/realestate-admin/brochures', label: 'Brochure Intelligent', icon: 'bi-file-earmark-pdf-fill', active: activePage === 'brochures' },
-            { href: '/realestate-admin/amenities', label: 'Amenities', icon: 'bi-ui-checks-grid', active: activePage === 'amenities' },
-            { href: '/realestate-admin/categories', label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },
-          ]
-        },
-        ...(hasModule('marketing_hub') || hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') || hasModule('website_cms') || hasModule('widget_creator') || hasModule('portal_market') ? [{
-          title: 'Marketing Suite',
-          items: [
-            ...(hasModule('marketing_hub') ? [
-              { href: '/realestate-admin/marketing', label: 'Email Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
-              { href: '/realestate-admin/marketing/intelligent', label: 'Intelligent Email', icon: 'bi-robot', active: activePage === 'intelligent-email' },
-            ] : []),
-            ...(hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') ? [
-              {
-                href: '/realestate-admin/social',
-                label: 'Social Media',
-                icon: 'bi-share-fill',
-                active: activePage === 'social' || activePage?.startsWith('social-'),
-                children: [
-                  ...(hasModule('social_posts') ? [
-                    { href: '/realestate-admin/social/accounts', label: 'Accounts', icon: 'bi-person-badge', active: activePage === 'social-accounts' },
-                    { href: '/realestate-admin/social/analytics', label: 'Analytics', icon: 'bi-graph-up', active: activePage === 'social-analytics' },
-                    { href: '/realestate-admin/social/campaigns', label: 'Campaigns', icon: 'bi-megaphone', active: activePage === 'social-campaigns' },
-                    { href: '/realestate-admin/social/scheduled', label: 'Scheduled', icon: 'bi-calendar-event', active: activePage === 'social-schedule' },
-                  ] : []),
-                  ...(hasModule('social_whatsapp') ? [
-                    { href: '/realestate-admin/social/whatsapp', label: 'WhatsApp', icon: 'bi-whatsapp', active: activePage === 'social-whatsapp' },
-                  ] : []),
-                  ...(hasModule('automation_engine') ? [
-                    { href: '/realestate-admin/social/automation', label: 'Automation Hub', icon: 'bi-robot', active: activePage === 'social-automation' },
-                  ] : []),
-                ]
-              },
-            ] : []),
-            ...(hasModule('portal_market') ? [
-              { href: '/realestate-admin/portals', label: 'Portal Hub', icon: 'bi-cloud-arrow-up', active: activePage === 'portals' },
-            ] : []),
-            ...(hasModule('website_cms') ? [
-              { href: '/realestate-admin/websites', label: 'Website', icon: 'bi-window-stack', active: activePage === 'websites' },
-              { href: '/realestate-admin/cms', label: 'CMS', icon: 'bi-file-earmark-richtext-fill', active: activePage === 'cms' },
-              { href: '/realestate-admin/websites/popups', label: 'Website Popups', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
-            ] : []),
-            ...(hasModule('widget_creator') ? [
-              { href: '/realestate-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' }
-            ] : [])
-          ]
-        }] : []),
-        {
-          title: 'Administration',
-          items: [
-            { href: '/realestate-admin/subscriptions', label: 'Subscriptions', icon: 'bi-credit-card-2-front-fill', active: activePage === 'subscriptions' },
-            { href: '/realestate-admin/upgrade-requests', label: 'Upgrade Requests', icon: 'bi-rocket-takeoff-fill', active: activePage === 'upgrade-requests' },
-            { href: '/realestate-admin/modules', label: 'Feature Modules', icon: 'bi-plugin', active: activePage === 'modules' },
-            { href: '/realestate-admin/help', label: 'Knowledge Base', icon: 'bi-question-circle-fill', active: activePage === 'help' },
-            { href: '/realestate-admin/settings', label: 'Global Settings', icon: 'bi-gear-fill', active: activePage === 'settings' }
-          ]
-        }
-      ];
-    }
-
-    if (isOwner) {
-      return [
-        {
-          title: 'Operations',
-          items: [
-            { href: '/realestate-owner-admin/dashboard', label: 'Dashboard', icon: 'bi-speedometer2', active: activePage === 'dashboard' },
-            { href: '/realestate-owner-admin/intelligent-voice', label: 'Intelligent Voice', icon: 'bi-mic-fill', active: activePage === 'intelligent-voice' },
-            { href: '/realestate-owner-admin/bookings', label: 'Bookings', icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
-            {
-              href: '/realestate-owner-admin/leads',
-              label: 'Leads',
-              icon: 'bi-funnel-fill',
-              active: activePage === 'leads' || activePage === 'leads-qualification',
-              children: [
-                { href: '/realestate-owner-admin/leads', label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
-                { href: '/realestate-owner-admin/leads/qualification', label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
-              ]
-            },
-            { href: '/realestate-owner-admin/matching/engine', label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' },
-            { href: '/realestate-owner-admin/tasks', label: 'Task Management', icon: 'bi-check2-square', active: activePage === 'tasks' },
-            { href: '/realestate-owner-admin/agents', label: 'My Agents', icon: 'bi-person-badge-fill', active: activePage === 'agents' },
-
+            { href: `${adminPrefix}/dashboard`, label: 'Dashboard', icon: 'bi-grid-1x2-fill', active: activePage === 'dashboard' },
           ]
         },
         {
           title: 'Inventory',
           items: [
-            { href: '/realestate-owner-admin/properties', label: 'My Properties', icon: 'bi-building-fill', active: activePage === 'properties' },
-            { href: '/realestate-owner-admin/units', label: 'Unit Management', icon: 'bi-door-open-fill', active: activePage === 'units' },
-            { href: '/realestate-owner-admin/users', label: 'Staff & Users', icon: 'bi-people-fill', active: activePage === 'users' }
+            { href: `${adminPrefix}/properties`, label: labels.properties, icon: 'bi-building-fill', active: activePage === 'properties' },
+            { href: `${adminPrefix}/units`, label: labels.units, icon: 'bi-door-open-fill', active: activePage === 'units' },
+            { href: `${adminPrefix}/media-library`, label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' },
+            { href: `${adminPrefix}/amenities`, label: 'Amenities', icon: 'bi-ui-checks-grid', active: activePage === 'amenities' },
+            { href: `${adminPrefix}/categories`, label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },
           ]
         },
         {
-          title: 'Content & Resources',
+          title: 'Marketing',
           items: [
-            { href: '/realestate-owner-admin/media-library', label: 'Media Library', icon: 'bi-images', active: activePage === 'media-library' },
-            { href: '/realestate-owner-admin/plot-map', label: 'Plot Map Editor', icon: 'bi-map-fill', active: activePage === 'plot-map' },
-            { href: '/realestate-owner-admin/amenities', label: 'Amenities', icon: 'bi-ui-checks-grid', active: activePage === 'amenities' },
-            { href: '/realestate-owner-admin/categories', label: 'Categories', icon: 'bi-tags-fill', active: activePage === 'categories' },
+            {
+              href: `${adminPrefix}/websites`,
+              label: 'Website',
+              icon: 'bi-window-stack',
+              active: activePage === 'websites' || activePage === 'cms' || activePage === 'popups' || activePage === 'widgets',
+              children: [
+                { href: `${adminPrefix}/websites`, label: 'Website Hub', icon: 'bi-globe', active: activePage === 'websites' },
+                { href: `${adminPrefix}/cms`, label: 'CMS', icon: 'bi-file-earmark-richtext-fill', active: activePage === 'cms' },
+                { href: `${adminPrefix}/websites/popups`, label: 'Popup Notifications', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
+                { href: `${adminPrefix}/widgets`, label: 'Public Widgets', icon: 'bi-bounding-box', active: activePage === 'widgets' },
+              ]
+            },
+            {
+              href: `${adminPrefix}/social`,
+              label: 'Social Media',
+              icon: 'bi-share-fill',
+              active: activePage === 'social' || activePage?.startsWith('social-'),
+              children: [
+                { href: `${adminPrefix}/social/accounts`, label: 'Accounts', icon: 'bi-person-badge', active: activePage === 'social-accounts' },
+                { href: `${adminPrefix}/social/analytics`, label: 'Analytics', icon: 'bi-graph-up', active: activePage === 'social-analytics' },
+                { href: `${adminPrefix}/social/campaigns`, label: 'Campaigns', icon: 'bi-megaphone', active: activePage === 'social-campaigns' },
+                { href: `${adminPrefix}/social/scheduled`, label: 'Scheduled', icon: 'bi-calendar-event', active: activePage === 'social-schedule' },
+              ]
+            },
+            { href: `${adminPrefix}/social/whatsapp`, label: 'WhatsApp', icon: 'bi-whatsapp', active: activePage === 'social-whatsapp' },
+            {
+              href: `${adminPrefix}/marketing`,
+              label: 'Email Campaigns',
+              icon: 'bi-envelope-paper-heart-fill',
+              active: activePage === 'marketing' || activePage === 'intelligent-email' || activePage === 'email-config',
+              children: [
+                { href: `${adminPrefix}/marketing`, label: 'Email Marketing', icon: 'bi-envelope', active: activePage === 'marketing' },
+                { href: `${adminPrefix}/marketing/intelligent`, label: 'Intelligent Email', icon: 'bi-stars', active: activePage === 'intelligent-email' },
+                { href: `${adminPrefix}/marketing/config`, label: 'Email Configuration', icon: 'bi-gear', active: activePage === 'email-config' },
+              ]
+            },
+            { href: isOwner ? '/realestate-owner-admin/chatbot-config' : '/realestate-admin/widgets', label: 'Chatbot', icon: 'bi-robot', active: activePage === 'chatbot-config' || activePage === 'widgets' },
+            { href: `${adminPrefix}/brochures`, label: 'Brochures', icon: 'bi-file-earmark-pdf-fill', active: activePage === 'brochures' },
+            { href: `${adminPrefix}/plot-map`, label: 'Plot Map Editor', icon: 'bi-map-fill', active: activePage === 'plot-map' },
+            { href: `${adminPrefix}/portals`, label: 'Portal Hub', icon: 'bi-cloud-arrow-up', active: activePage === 'portals' },
+            { href: `${adminPrefix}/matching/engine`, label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' },
+            ...(isOwner ? [{ href: '/realestate-owner-admin/tasks', label: 'Task Management', icon: 'bi-check2-square', active: activePage === 'tasks' }] : []),
           ]
         },
-        ...(hasModule('marketing_hub') || hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') || hasModule('widget_creator') || hasModule('website_cms') || hasModule('discovery') || hasModule('analytics_pro') || hasModule('portal_market') || hasModule('deal_intelligence') || hasModule('brochure_ai') ? [{
-          title: 'Premium Channels',
-          items: [
-            ...(hasModule('marketing_hub') ? [
-              { href: '/realestate-owner-admin/marketing', label: 'Email Marketing Hub', icon: 'bi-megaphone-fill', active: activePage === 'marketing' },
-              { href: '/realestate-owner-admin/marketing/intelligent', label: 'Intelligent Email', icon: 'bi-robot', active: activePage === 'intelligent-email' },
-            ] : []),
-            ...(hasModule('analytics_pro') || hasModule('deal_intelligence') || hasModule('propintel_ai') ? [
-              {
-                href: '/realestate-owner-admin/analytics',
-                label: 'Advanced Analytics',
-                icon: 'bi-bar-chart-line-fill',
-                active: activePage === 'analytics' || activePage === 'forecasting' || activePage === 'deal-intelligence' || activePage === 'deal-prevention' || activePage === 'propintel',
-                children: [
-                  { href: '/realestate-owner-admin/analytics', label: 'Performance Reports', icon: 'bi-grid-fill', active: activePage === 'analytics' },
-                  { href: '/realestate-owner-admin/analytics/prop-intel', label: 'PropIntel AI Dashboard', icon: 'bi-robot', active: activePage === 'propintel' },
-                  { href: '/realestate-owner-admin/analytics/forecasting', label: 'AI Demand Forecasting', icon: 'bi-robot', active: activePage === 'forecasting' },
-                  ...(hasModule('deal_intelligence') ? [
-                    { href: '/realestate-owner-admin/analytics/deal-intelligence', label: 'Deal Closer (Lost)', icon: 'bi-shield-x', active: activePage === 'deal-intelligence' },
-                    { href: '/realestate-owner-admin/analytics/deal-prevention', label: 'Risk Prevention', icon: 'bi-lightning-charge-fill', active: activePage === 'deal-prevention' }
-                  ] : [])
-                ]
-              },
-            ] : []),
-            ...(hasModule('social_posts') || hasModule('social_whatsapp') || hasModule('automation_engine') ? [
-              {
-                href: '/realestate-owner-admin/social',
-                label: 'Social Media',
-                icon: 'bi-share-fill',
-                active: activePage === 'social' || activePage?.startsWith('social-'),
-                children: [
-                  ...(hasModule('social_posts') ? [
-                    { href: '/realestate-owner-admin/social/accounts', label: 'Accounts', icon: 'bi-person-badge', active: activePage === 'social-accounts' },
-                    { href: '/realestate-owner-admin/social/analytics', label: 'Analytics', icon: 'bi-graph-up', active: activePage === 'social-analytics' },
-                    { href: '/realestate-owner-admin/social/campaigns', label: 'Campaigns', icon: 'bi-megaphone', active: activePage === 'social-campaigns' },
-                    { href: '/realestate-owner-admin/social/scheduled', label: 'Scheduled', icon: 'bi-calendar-event', active: activePage === 'social-schedule' },
-                  ] : []),
-                  ...(hasModule('social_whatsapp') ? [
-                    { href: '/realestate-owner-admin/social/whatsapp', label: 'WhatsApp', icon: 'bi-whatsapp', active: activePage === 'social-whatsapp' },
-                  ] : []),
-                  ...(hasModule('automation_engine') ? [
-                    { href: '/realestate-owner-admin/social/automation', label: 'Automation Hub', icon: 'bi-robot', active: activePage === 'social-automation' },
-                  ] : []),
-                ]
-              },
-            ] : []),
-            ...(hasModule('portal_market') ? [
-              { href: '/realestate-owner-admin/portals', label: 'Portal Market', icon: 'bi-cloud-arrow-up', active: activePage === 'portals' },
-            ] : []),
-            ...(hasModule('website_cms') ? [
-              { href: '/realestate-owner-admin/websites', label: 'Website', icon: 'bi-globe', active: activePage === 'websites' },
-              { href: '/realestate-owner-admin/cms', label: 'CMS', icon: 'bi-layers-fill', active: activePage === 'cms' },
-              { href: '/realestate-owner-admin/websites/popups', label: 'Website Popups', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
-            ] : []),
-            ...(hasModule('discovery') ? [
-              { href: '/realestate-owner-admin/chatbot-config', label: 'AI Agent Config', icon: 'bi-robot', active: activePage === 'chatbot-config' },
-            ] : []),
-            ...(hasModule('brochure_ai') ? [
-              { href: '/realestate-owner-admin/brochures', label: 'Brochure Intelligent', icon: 'bi-robot', active: activePage === 'brochure-ai' },
-            ] : []),
-            ...(hasModule('widget_creator') ? [
-              { href: '/realestate-owner-admin/widgets', label: 'Public Widgets', icon: 'bi-code-slash', active: activePage === 'widgets' },
-            ] : []),
-          ]
-        }] : []),
         {
-          title: 'Account',
+          title: 'Sales',
           items: [
-            { href: '/realestate-owner-admin/subscriptions', label: 'Subscription Plan', icon: 'bi-credit-card-fill', active: activePage === 'subscriptions' },
-            { href: '/realestate-owner-admin/integrations', label: 'Connected Sites', icon: 'bi-link-45deg', active: activePage === 'integrations' },
-            { href: '/realestate-owner-admin/help', label: 'Knowledge Base', icon: 'bi-question-circle-fill', active: activePage === 'help' },
-            { href: '/realestate-owner-admin/settings', label: 'Business Settings', icon: 'bi-gear-fill', active: activePage === 'settings' }
+            {
+              href: `${adminPrefix}/leads`,
+              label: labels.leads,
+              icon: 'bi-funnel-fill',
+              active: activePage === 'leads' || activePage === 'leads-qualification',
+              children: [
+                { href: `${adminPrefix}/leads`, label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
+                { href: `${adminPrefix}/leads/qualification`, label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
+              ]
+            },
+            { href: `${adminPrefix}/bookings`, label: labels.bookings, icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
+            { href: isOwner ? '/realestate-owner-admin/analytics' : '/realestate-admin/dashboard', label: 'Sales Intelligence', icon: 'bi-graph-up-arrow', active: activePage === 'analytics' },
+            { href: `${adminPrefix}/agents`, label: 'Sales Agents', icon: 'bi-people-fill', active: activePage === 'agents' },
+          ]
+        },
+        {
+          title: 'Administration',
+          items: [
+            { href: `${adminPrefix}/subscriptions`, label: 'Subscriptions', icon: 'bi-credit-card-2-front-fill', active: activePage === 'subscriptions' },
+            ...(isAdmin ? [
+              { href: '/realestate-admin/owners', label: 'Property Owners', icon: 'bi-person-vcard-fill', active: activePage === 'owners' },
+              { href: '/realestate-admin/users', label: 'System Users', icon: 'bi-people-fill', active: activePage === 'users' },
+              { href: '/realestate-admin/partners', label: 'Partner Management', icon: 'bi-person-hearts', active: activePage === 'partners' },
+              { href: '/realestate-admin/modules', label: 'Feature Modules', icon: 'bi-plugin', active: activePage === 'modules' },
+            ] : [
+              { href: '/realestate-owner-admin/users', label: 'Staff & Users', icon: 'bi-people-fill', active: activePage === 'users' },
+              { href: '/realestate-owner-admin/integrations', label: 'Connected Sites', icon: 'bi-link-45deg', active: activePage === 'integrations' },
+            ]),
+            { href: `${adminPrefix}/help`, label: 'Knowledge Base', icon: 'bi-question-circle-fill', active: activePage === 'help' },
+            { href: `${adminPrefix}/settings`, label: 'Global Settings', icon: 'bi-gear-fill', active: activePage === 'settings' }
           ]
         }
       ];
@@ -463,7 +355,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
         </div>
 
         {/* Navigation Menu */}
-        <div 
+        <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
           className="flex-grow-1 overflow-auto px-2 py-4 custom-scrollbar"
@@ -541,7 +433,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           ))}
 
           {/* Quick Logout Item for Sidebar (Optional, added for convenience) */}
-          <div className="px-2 mt-4 pt-4 border-top">
+          {/* <div className="px-2 mt-4 pt-4 border-top">
             <button
               onClick={handleLogoutInitiate}
               className="nav-link d-flex align-items-center gap-3 px-3 py-2 rounded-3 transition-all text-danger hover-bg-danger-light w-100 border-0 bg-transparent"
@@ -549,7 +441,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               <i className="bi bi-box-arrow-right fs-5"></i>
               {(!collapsed || showMobile) && <span className="text-nowrap fw-semibold">Logout</span>}
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* User Profile Section */}

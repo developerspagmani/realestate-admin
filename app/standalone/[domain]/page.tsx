@@ -30,6 +30,11 @@ export async function generateMetadata(props: any): Promise<Metadata> {
         return {
             title: seo.title || website.name,
             description: seo.description || `Welcome to ${website.name} real estate portal.`,
+            icons: {
+                icon: website.configuration?.builder?.faviconUrl || '/favicon.ico',
+                shortcut: website.configuration?.builder?.faviconUrl || '/favicon.ico',
+                apple: website.configuration?.builder?.faviconUrl || '/favicon.ico',
+            },
             openGraph: {
                 title: seo.title || website.name,
                 description: seo.description,

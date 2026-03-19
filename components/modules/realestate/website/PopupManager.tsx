@@ -29,6 +29,16 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
         message: '',
         type: 'success'
     });
+    const [viewMode, setViewMode] = useState<'list' | 'form' | 'audience'>('list');
+    const [activePopup, setActivePopup] = useState<WebsitePopup | null>(null);
+    const [submissions, setSubmissions] = useState<any[]>([]);
+    const [metrics, setMetrics] = useState<any>(null);
+    const [loadingAudience, setLoadingAudience] = useState(false);
+
+    // Pagination and Filter State
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const showToast = (message: string, type: 'success' | 'error' = 'success') => {
         setToast({ show: true, message, type });
@@ -129,8 +139,51 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
 
     const handleEdit = (popup: WebsitePopup) => {
         setEditingPopup(popup);
+        setViewMode('form');
         setShowForm(true);
     };
+
+    const handleViewAudience = async (popup: WebsitePopup) => {
+        setActivePopup(popup);
+        setViewMode('audience');
+        setShowForm(false);
+        loadSubmissions(popup.id);
+    };
+
+    const loadSubmissions = async (popupId: string) => {
+        try {
+            setLoadingAudience(true);
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const response = await popupService.getSubmissions(token, popupId, tenantId);
+            if (response.success) {
+                setSubmissions(response.data);
+                setMetrics(response.metrics);
+                setCurrentPage(1); // Reset to page 1 on new load
+            }
+        } catch (error) {
+            console.error('Failed to load submissions:', error);
+            showToast('Failed to load submissions', 'error');
+        } finally {
+            setLoadingAudience(false);
+        }
+    };
+
+    // Derived filtered and paginated submissions
+    const filteredSubmissions = submissions.filter((sub: any) => {
+        const query = searchTerm.toLowerCase();
+        const nameMatch = (sub.lead?.name || 'Anonymous').toLowerCase().includes(query);
+        const emailMatch = (sub.lead?.email || '').toLowerCase().includes(query);
+        const phoneMatch = (sub.lead?.phone || '').toLowerCase().includes(query);
+        return nameMatch || emailMatch || phoneMatch;
+    });
+
+    const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage);
+    const paginatedSubmissions = filteredSubmissions.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     const POPUP_TEMPLATES = [
         {
@@ -209,13 +262,196 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
             updatedAt: new Date().toISOString(),
             websiteId: websites[0]?.id || ''
         } as WebsitePopup);
+        setViewMode('form');
         setShowForm(true);
     };
 
     return (
         <MainLayout activePage="popups" hideHeader={showForm}>
             <div className="container-fluid py-4 h-100 position-relative">
-                {!showForm ? (
+                {showForm ? (
+                    <div className="position-absolute top-0 start-0 w-100 h-100 bg-white" style={{ zIndex: 100, minHeight: 'calc(100vh - 40px)' }}>
+                        <PopupForm
+                            popup={editingPopup}
+                            websites={websites}
+                            marketingForms={marketingForms}
+                            onClose={() => {
+                                setShowForm(false);
+                                setViewMode('list');
+                            }}
+                            onSuccess={() => {
+                                setShowForm(false);
+                                setViewMode('list');
+                                loadPopups();
+                                showToast(editingPopup?.id ? 'Popup updated successfully' : 'Popup created successfully');
+                            }}
+                            mode={mode}
+                        />
+                    </div>
+                ) : viewMode === 'audience' && activePopup ? (
+                    <div className="animate-fade-in">
+                        <div className="d-flex align-items-center mb-4">
+                            <button className="btn btn-light rounded-circle p-2 me-3 shadow-sm border" onClick={() => setViewMode('list')}>
+                                <i className="bi bi-arrow-left px-1"></i>
+                            </button>
+                            <div>
+                                <h2 className="fw-bold mb-0">Audience: {activePopup.name}</h2>
+                                <p className="text-muted small mb-0">Tracking all conversions and leads captured via this popup.</p>
+                            </div>
+                        </div>
+
+                        {metrics && (
+                            <div className="row g-3 mb-4">
+                                <div className="col-md-4">
+                                    <div className="card border-0 shadow-sm rounded-4 p-4 text-center bg-white h-100">
+                                        <div className="text-muted small fw-bold text-uppercase mb-2">Total Views</div>
+                                        <div className="h1 fw-bold mb-0 text-primary">{metrics.views}</div>
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="card border-0 shadow-sm rounded-4 p-4 text-center bg-white h-100">
+                                        <div className="text-muted small fw-bold text-uppercase mb-2">Submissions</div>
+                                        <div className="h1 fw-bold mb-0 text-success">{metrics.submissions}</div>
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="card border-0 shadow-sm rounded-4 p-4 text-center bg-white h-100">
+                                        <div className="text-muted small fw-bold text-uppercase mb-2">Conv. Rate</div>
+                                        <div className="h1 fw-bold mb-0 text-warning">{metrics.conversionRate}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+                            <div className="card-header bg-white border-0 p-4">
+                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                    <h5 className="fw-bold mb-0">Conversion Log</h5>
+                                    <div className="d-flex align-items-center bg-light rounded-pill px-3 py-2 w-100" style={{ maxWidth: '350px' }}>
+                                        <i className="bi bi-search text-muted me-2"></i>
+                                        <input
+                                            type="text"
+                                            className="form-control form-control-sm border-0 bg-transparent p-0 shadow-none"
+                                            placeholder="Search by name, email or phone..."
+                                            value={searchTerm}
+                                            onChange={(e) => {
+                                                setSearchTerm(e.target.value);
+                                                setCurrentPage(1);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="table-responsive">
+                                <table className="table table-hover align-middle mb-0">
+                                    <thead className="bg-light bg-opacity-50">
+                                        <tr>
+                                            <th className="px-4 py-3 border-0 small text-muted text-uppercase fw-bold">Lead Name</th>
+                                            <th className="py-3 border-0 small text-muted text-uppercase fw-bold">Contact Info</th>
+                                            <th className="py-3 border-0 small text-muted text-uppercase fw-bold">Status</th>
+                                            <th className="py-3 border-0 small text-muted text-uppercase fw-bold">Captured Date</th>
+                                            <th className="py-3 border-0 text-end px-4 small text-muted text-uppercase fw-bold">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {loadingAudience ? (
+                                            <tr>
+                                                <td colSpan={5} className="py-5 text-center">
+                                                    <Loader message="Fetching audience data..." />
+                                                </td>
+                                            </tr>
+                                        ) : paginatedSubmissions.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="py-5 text-center text-muted">
+                                                    <div className="py-4">
+                                                        <i className="bi bi-people display-4 opacity-25 mb-3 d-block"></i>
+                                                        <h6 className="fw-bold text-dark">No participants found</h6>
+                                                        <p className="small mb-0 text-primary">{searchTerm ? 'Try adjusting your search query.' : 'No submissions captured yet.'}</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            paginatedSubmissions.map((sub: any) => (
+                                                <tr key={sub.id}>
+                                                    <td className="px-4 py-3">
+                                                        <div className="d-flex align-items-center gap-3">
+                                                            <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style={{ width: 40, height: 40, minWidth: 40 }}>
+                                                                {(sub.lead?.name || 'A')[0].toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <div className="fw-bold">{sub.lead?.name || 'Anonymous'}</div>
+                                                                <small className="text-muted opacity-75">{sub.lead?.source === 5 ? 'Website Visitor' : (sub.lead?.source === 7 ? 'Chatbot Lead' : 'Direct Lead')}</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3">
+                                                        <div className="d-flex flex-column">
+                                                            <span className="small">{sub.lead?.email || <span className="text-muted small">No Email</span>}</span>
+                                                            <span className="extra-small text-muted">{sub.lead?.phone || ''}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3">
+                                                        <span className={`badge rounded-pill pt-1.5 pb-1.5 px-3 ${sub.lead?.status === 1 ? 'bg-success-soft text-success' : 'bg-light text-muted'}`}>
+                                                            {sub.lead?.status === 1 ? 'Active' : 'Unconfirmed'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 small text-muted">
+                                                        <div className="fw-bold">{new Date(sub.occurredAt).toLocaleDateString()}</div>
+                                                        <div className="extra-small opacity-75">{new Date(sub.occurredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                    </td>
+                                                    <td className="py-3 text-end px-4">
+                                                        <a href={`/leads/${sub.lead?.id}`} className="btn btn-sm btn-white border rounded-pill px-3 shadow-sm hvr-grow" target="_blank" rel="noopener noreferrer">
+                                                            Details <i className="bi bi-box-arrow-up-right ms-1"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination Footer */}
+                            {!loadingAudience && filteredSubmissions.length > 0 && (
+                                <div className="card-footer bg-white border-top p-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                                    <div className="text-muted small">
+                                        Showing <strong>{(currentPage - 1) * itemsPerPage + 1}</strong> to <strong>{Math.min(currentPage * itemsPerPage, filteredSubmissions.length)}</strong> of <strong>{filteredSubmissions.length}</strong> results
+                                    </div>
+                                    <nav>
+                                        <ul className="pagination pagination-sm mb-0 gap-1 border-0">
+                                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                                <button className="page-link border-0 rounded-circle shadow-sm" onClick={() => setCurrentPage(currentPage - 1)}>
+                                                    <i className="bi bi-chevron-left"></i>
+                                                </button>
+                                            </li>
+
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => {
+                                                // Show only limited page numbers for cleaner UI
+                                                if (totalPages > 5 && (p < currentPage - 1 || p > currentPage + 1) && p !== 1 && p !== totalPages) {
+                                                    if (p === 2 || p === totalPages - 1) return <li key={p} className="page-item disabled"><span className="page-link border-0">...</span></li>;
+                                                    return null;
+                                                }
+                                                return (
+                                                    <li key={p} className={`page-item ${currentPage === p ? 'active' : ''}`}>
+                                                        <button className={`page-link border-0 rounded-circle shadow-sm px-3 ${currentPage === p ? 'bg-primary' : 'bg-white'}`} onClick={() => setCurrentPage(p)}>
+                                                            {p}
+                                                        </button>
+                                                    </li>
+                                                );
+                                            })}
+
+                                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                                <button className="page-link border-0 rounded-circle shadow-sm" onClick={() => setCurrentPage(currentPage + 1)}>
+                                                    <i className="bi bi-chevron-right"></i>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : (
                     <>
                         <div className="d-flex justify-content-between align-items-center mb-4">
                             <div>
@@ -226,6 +462,7 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                                 className="btn btn-primary shadow-sm px-4 rounded-4"
                                 onClick={() => {
                                     setEditingPopup(null);
+                                    setViewMode('form');
                                     setShowForm(true);
                                 }}
                             >
@@ -243,7 +480,7 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                             <div className="row g-3">
                                 {POPUP_TEMPLATES.map((tmpl, idx) => (
                                     <div key={idx} className="col-lg-4">
-                                        <div 
+                                        <div
                                             className="card border-0 shadow-sm rounded-4 h-100 template-card p-4"
                                             style={{ cursor: 'pointer', transition: 'all 0.3s' }}
                                             onClick={() => handleCreateFromTemplate(tmpl.data)}
@@ -278,7 +515,10 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                                         <div className="mt-3">
                                             <button
                                                 className="btn btn-outline-primary rounded-pill px-4"
-                                                onClick={() => setShowForm(true)}
+                                                onClick={() => {
+                                                    setViewMode('form');
+                                                    setShowForm(true);
+                                                }}
                                             >
                                                 Get Started
                                             </button>
@@ -293,26 +533,12 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                                         onEdit={handleEdit}
                                         onDelete={handleDelete}
                                         onToggleStatus={handleToggleStatus}
+                                        onViewSubmissions={handleViewAudience}
                                     />
                                 </div>
                             ))}
                         </div>
                     </>
-                ) : (
-                    <div className="position-absolute top-0 start-0 w-100 h-100 bg-white" style={{ zIndex: 100, minHeight: 'calc(100vh - 40px)' }}>
-                        <PopupForm
-                            popup={editingPopup}
-                            websites={websites}
-                            marketingForms={marketingForms}
-                            onClose={() => setShowForm(false)}
-                            onSuccess={() => {
-                                setShowForm(false);
-                                loadPopups();
-                                showToast(editingPopup?.id ? 'Popup updated successfully' : 'Popup created successfully');
-                            }}
-                            mode={mode}
-                        />
-                    </div>
                 )}
             </div>
 
@@ -336,6 +562,7 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                     width: 54px;
                     height: 54px;
                 }
+                .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
             `}</style>
         </MainLayout>
     );

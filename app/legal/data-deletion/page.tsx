@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Metadata } from 'next';
+import PublicFontInter from '@/components/common/PublicFontInter';
 
 export const metadata: Metadata = {
     title: 'Data Deletion Instructions | Virpanix',
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 export default function DataDeletion() {
     return (
         <div className="min-vh-100 bg-white text-dark py-5">
+            <PublicFontInter />
             <div className="container" style={{ maxWidth: '800px' }}>
                 <div className="mb-5 text-center">
                     <h1 className="fw-bold display-5 mb-3">Data Deletion Instructions</h1>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Loader from '@/components/common/Loader';
 import { marketingService, getAuthToken } from '@/app/services/api';
+import Toast from '@/components/common/Toast';
 
 interface LeadInteraction {
     id: string;
@@ -25,6 +26,12 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [activeView, setActiveView] = useState<'timeline' | 'recommendations' | 'report'>('timeline');
+
+    const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'info' }>({
+        show: false,
+        message: '',
+        type: 'success'
+    });
 
     const loadData = async () => {
         setLoading(true);
@@ -59,14 +66,14 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
 
             const res = await marketingService.sendRecommendations(token, leadId);
             if (res.success) {
-                alert('Success: Recommendation email has been sent to the lead.');
+                setToast({ show: true, message: 'Success: Recommendation email has been sent to the lead.', type: 'success' });
                 loadData(); // Reload to show the EMAIL_SENT interaction
             } else {
-                alert('Error: ' + res.message);
+                setToast({ show: true, message: 'Error: ' + res.message, type: 'error' });
             }
         } catch (error) {
             console.error('Send error:', error);
-            alert('Error: Failed to send recommendation email');
+            setToast({ show: true, message: 'Error: Failed to send recommendation email', type: 'error' });
         } finally {
             setSending(false);
         }
@@ -166,10 +173,10 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                                         <div className="flex-grow-1 bg-white p-2 rounded-3 border-light shadow-xs">
                                                             <div className="d-flex justify-content-between align-items-start">
                                                                 <div className="fw-bold small text-dark">
-                                                                    {item.type === 'POPUP_SUBMIT' ? 'POPUP SUBMITTED' : 
-                                                                     item.type === 'POPUP_VIEW' ? 'POPUP VIEWED' : 
-                                                                     (item.type === 'FORM_SUBMIT' && item.metadata?.popupId) ? 'POPUP SUBMITTED' :
-                                                                     item.type.replace(/_/g, ' ')}
+                                                                    {item.type === 'POPUP_SUBMIT' ? 'POPUP SUBMITTED' :
+                                                                        item.type === 'POPUP_VIEW' ? 'POPUP VIEWED' :
+                                                                            (item.type === 'FORM_SUBMIT' && item.metadata?.popupId) ? 'POPUP SUBMITTED' :
+                                                                                item.type.replace(/_/g, ' ')}
                                                                 </div>
                                                                 <div className="badge bg-success-soft text-success border-0 extra-small">+{item.scoreWeight}</div>
                                                             </div>
@@ -325,6 +332,13 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                     )}
                 </div>
             </div>
+
+            <Toast
+                show={toast.show}
+                message={toast.message}
+                type={toast.type}
+                onClose={() => setToast({ show: false, message: '', type: 'success' })}
+            />
 
             <style jsx>{`
                 .extra-small { font-size: 0.7rem; }

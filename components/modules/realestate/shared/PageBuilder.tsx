@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import ListingView from './ListingView';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
 import { widgetService } from '@/app/services/api';
 import DiscoveryFilter from './DiscoveryFilter';
+import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 
 // Swiper Imports
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -24,12 +26,41 @@ interface PageBuilderProps {
     onFilter?: (filters: any) => void;
     trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
     hideHero?: boolean;
+    currencySymbol?: string;
 }
 
-const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, widgetId, onSelectProperty, onFilter, trackAction, hideHero = false }) => {
+const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, widgetId, onSelectProperty, onFilter, trackAction, hideHero = false, currencySymbol }) => {
+
+    const [activeLightboxImage, setActiveLightboxImage] = useState<string | null>(null);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
+    const [lightboxItems, setLightboxItems] = useState<string[]>([]);
+
+    const handleNext = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const nextIndex = (lightboxIndex + 1) % lightboxItems.length;
+        setLightboxIndex(nextIndex);
+        setActiveLightboxImage(lightboxItems[nextIndex]);
+    };
+
+    const handlePrev = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const prevIndex = (lightboxIndex - 1 + lightboxItems.length) % lightboxItems.length;
+        setLightboxIndex(prevIndex);
+        setActiveLightboxImage(lightboxItems[prevIndex]);
+    };
 
     // ── Modular Modules Renderer ───────────────────────────────────────────
     const modules = config.modules || [];
+
+    const getSymbol = (propertyCountry?: string) => {
+        if (currencySymbol) return currencySymbol;
+        const tenantSettings = widget?.tenant?.settings || {};
+        const baseCurrency = tenantSettings.general?.currency;
+        const tenantCountry = widget?.tenant?.country;
+        const input = baseCurrency || tenantCountry || propertyCountry || 'USA';
+        const currConfig = getCurrencyConfig(input);
+        return currConfig?.symbol || '$';
+    };
 
     return (
         <div className="page-builder-modular">
@@ -185,7 +216,7 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                                         <h4 className="fw-bold h5 mb-2 text-truncate">{prop.title}</h4>
                                                         <div className="d-flex justify-content-between align-items-center mt-3">
                                                             <div className="h5 fw-black mb-0" style={{ color: theme.primaryColor }}>
-                                                                {prop.currency || '$'}{Number(prop.price).toLocaleString('en-US')}
+                                                                {getSymbol(prop.country)}{Number(prop.price).toLocaleString('en-US')}
                                                             </div>
                                                             <div className="extra-small text-muted text-uppercase fw-bold tracking-wider">
                                                                 <i className="bi bi-geo-alt-fill me-1"></i> {prop.city}
@@ -262,17 +293,65 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                             </div>
                                             <div className="col-lg-7">
                                                 <div className="form-wrapper bg-light rounded-4 p-4 shadow-sm">
-                                                    <FormRenderer
-                                                        config={widget.configuration.inquiryForm}
-                                                        primaryColor={theme.primaryColor}
-                                                        onSubmit={async (formData, configUsed) => {
-                                                            const leadPayload: any = {
-                                                                source: 1,
-                                                                notes: `Modular Inquiry: ${widget.name}\n${configUsed.fields.map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
+                                                    {(() => {
+                                                        const inquiryConfig = (widget.configuration?.inquiryForm?.useMarketingForm && widget.configuration?.inquiryForm?.marketingFormId)
+                                                            ? widget.configuration.inquiryForm
+                                                            : (widget.configuration.inquiryForm && widget.configuration.inquiryForm.enabled)
+                                                                ? widget.configuration.inquiryForm
+                                                                : {
+                                                                    enabled: true,
+                                                                title: 'Send an Inquiry',
+                                                                description: 'Our consultants will get back to you shortly.',
+                                                                submitButtonLabel: 'Submit Message',
+                                                                fields: [
+                                                                    { id: 'f1', type: 'text', label: 'Full Name', required: true, placeholder: 'Your Name' },
+                                                                    { id: 'f2', type: 'email', label: 'Email Address', required: true, placeholder: 'email@example.com' },
+                                                                    { id: 'f3', type: 'phone', label: 'Phone Number', required: false, placeholder: '+1 234 567 890' },
+                                                                    { id: 'f4', type: 'textarea', label: 'Message', required: true, placeholder: 'How can we help you?' }
+                                                                ]
                                                             };
-                                                            await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
-                                                        }}
-                                                    />
+
+                                                        return (
+                                                            <FormRenderer
+                                                                config={inquiryConfig}
+                                                                primaryColor={theme.primaryColor}
+                                                                onSubmit={async (formData, configUsed) => {
+                                                                    const leadPayload: any = {
+                                                                        source: 1,
+                                                                        notes: `Modular Inquiry: ${widget.name}`
+                                                                    };
+                                                                    
+                                                                    // Extract fields based on common IDs or Types
+                                                                    (configUsed.fields || []).forEach((field: any) => {
+                                                                        const val = formData[field.id];
+                                                                        if (!val) return;
+
+                                                                        const label = (field.label || '').toLowerCase();
+                                                                        const fid = (field.id || '').toLowerCase();
+                                                                        const type = (field.type || '').toLowerCase();
+
+                                                                        if (label.includes('name') || fid.includes('name')) {
+                                                                            leadPayload.name = val;
+                                                                        } else if (type === 'email' || label.includes('email') || fid.includes('email')) {
+                                                                            leadPayload.email = val;
+                                                                        } else if (type === 'phone' || type === 'tel' || label.includes('phone') || label.includes('contact') || fid.includes('phone')) {
+                                                                            leadPayload.phone = val;
+                                                                        } else if (label.includes('budget') || label.includes('price') || fid.includes('budget')) {
+                                                                            // Remove currency symbols and commas before parsing
+                                                                            const cleanedBudget = String(val).replace(/[^\d.]/g, '');
+                                                                            leadPayload.budget = Number(cleanedBudget) || 0;
+                                                                        } else if (label.includes('company') || fid.includes('company')) {
+                                                                            leadPayload.company = val;
+                                                                        } else {
+                                                                            leadPayload.notes += `\n${field.label}: ${val}`;
+                                                                        }
+                                                                    });
+
+                                                                    await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
+                                                                }}
+                                                            />
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
                                         </div>
@@ -302,9 +381,71 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                                         onSelectProperty={onSelectProperty}
                                         onFilter={onFilter}
                                         trackAction={trackAction}
+                                        currencySymbol={currencySymbol}
                                     />
                                 </div>
                             </div>
+                        );
+
+                    case 'gallery':
+                        const galleryLayout = moduleData.layout || 'grid';
+                        const galleryItems = moduleData.items || [];
+                        const cols = moduleData.columns || 3;
+                        const gapSize = moduleData.gap || 'g-3';
+
+                        return (
+                            <section key={module.id || index} className="py-5 gallery-section" style={style}>
+                                <div className="container">
+                                    {(moduleData.title || moduleData.description) && (
+                                        <div className="text-center mb-5">
+                                            {moduleData.title && <h2 className="fw-black h1 mb-3">{moduleData.title}</h2>}
+                                            {moduleData.description && <p className="lead opacity-75">{moduleData.description}</p>}
+                                        </div>
+                                    )}
+
+                                    {galleryLayout === 'swiper' ? (
+                                        <Swiper
+                                            modules={[Navigation, Pagination, Autoplay]}
+                                            spaceBetween={20}
+                                            slidesPerView={1}
+                                            navigation
+                                            pagination={{ clickable: true }}
+                                            breakpoints={{
+                                                640: { slidesPerView: 2 },
+                                                1024: { slidesPerView: 3 },
+                                            }}
+                                            autoplay={{ delay: 3000 }}
+                                            className="pb-5 gallery-swiper"
+                                        >
+                                            {galleryItems.map((img: string, i: number) => (
+                                                <SwiperSlide key={i}>
+                                                    <div className="ratio ratio-4x3 rounded-4 shadow-sm overflow-hidden hvr-zoom cursor-pointer shadow-hover" onClick={() => {
+                                                        setLightboxItems(galleryItems);
+                                                        setLightboxIndex(i);
+                                                        setActiveLightboxImage(img);
+                                                    }}>
+                                                        <img src={img} className="object-fit-cover w-100 h-100" alt="Gallery item" />
+                                                    </div>
+                                                </SwiperSlide>
+                                            ))}
+                                        </Swiper>
+                                    ) : (
+                                        <div className={`row ${gapSize}`}>
+                                            {galleryItems.map((img: string, i: number) => (
+                                                <div key={i} className={`col-sm-6 col-md-${12 / cols}`}>
+                                                    <div className="ratio ratio-1x1 rounded-4 shadow-sm overflow-hidden hvr-float cursor-pointer shadow-hover" onClick={() => {
+                                                        setLightboxItems(galleryItems);
+                                                        setLightboxIndex(i);
+                                                        setActiveLightboxImage(img);
+                                                    }}>
+                                                        <img src={img} className="object-fit-cover w-100 h-100 animate-fade-in" alt="Gallery item" />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
                         );
 
                     default:
@@ -326,22 +467,97 @@ const PageBuilder: React.FC<PageBuilderProps> = ({ config, data, theme, widget, 
                         onSelectProperty={onSelectProperty}
                         onFilter={onFilter}
                         trackAction={trackAction}
+                        currencySymbol={currencySymbol}
                     />
                 </div>
             )}
 
+            {/* Gallery Lightbox Modal - Using Portals to break out of transformed parents */}
+            {activeLightboxImage && typeof document !== 'undefined' && createPortal(
+                <div className="animate-fade-in px-3" 
+                     style={{ 
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.95)', 
+                        zIndex: 99999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        userSelect: 'none'
+                     }}
+                     onClick={() => setActiveLightboxImage(null)}>
+                    
+                    {/* Navigation Arrows */}
+                    {lightboxItems.length > 1 && (
+                        <>
+                            <button className="btn btn-link text-white position-absolute start-0 ms-4 p-3 hvr-grow d-none d-md-block" 
+                                    style={{ zIndex: 100002, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)' }}
+                                    onClick={handlePrev}>
+                                <i className="bi bi-chevron-left fs-1"></i>
+                            </button>
+                            <button className="btn btn-link text-white position-absolute end-0 me-4 p-3 hvr-grow d-none d-md-block" 
+                                    style={{ zIndex: 100002, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)' }}
+                                    onClick={handleNext}>
+                                <i className="bi bi-chevron-right fs-1"></i>
+                            </button>
+                        </>
+                    )}
+
+                    <div className="position-relative animate-zoom-in" style={{ maxWidth: '90vw' }} onClick={(e) => e.stopPropagation()}>
+                        <button className="btn btn-white rounded-circle position-absolute top-0 end-0 m-2 m-lg-n4 shadow-lg d-flex align-items-center justify-content-center border-0 transition-all cursor-pointer hvr-grow" 
+                                style={{ zIndex: 100005, width: '48px', height: '48px', background: '#fff' }}
+                                onClick={() => setActiveLightboxImage(null)}>
+                            <i className="bi bi-x-lg text-dark fs-4"></i>
+                        </button>
+                        
+                        <img src={activeLightboxImage} 
+                             className="img-fluid rounded-4 shadow-2xl" 
+                             style={{ maxHeight: '85vh', objectFit: 'contain', display: 'block' }} 
+                             alt="Full view" />
+
+                        {/* Pagination Counter */}
+                        {lightboxItems.length > 1 && (
+                            <div className="position-absolute bottom-0 start-50 translate-middle-x mb-n5 bg-white bg-opacity-10 text-white px-4 py-2 rounded-pill fw-bold small border border-white border-opacity-10 shadow">
+                                {lightboxIndex + 1} / {lightboxItems.length}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mobile Navigation Area (Invisible overlay to tap sides) */}
+                    <div className="d-md-none d-flex w-100 h-100 position-absolute top-0 start-0 pointer-events-none">
+                        <div className="flex-grow-1 pointer-events-auto" style={{ cursor: 'w-resize' }} onClick={handlePrev}></div>
+                        <div className="flex-grow-1 pointer-events-auto" style={{ cursor: 'e-resize' }} onClick={handleNext}></div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
             <style jsx global>{`
+                @keyframes zoomIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-zoom-in {
+                    animation: zoomIn 0.3s ease-out forwards;
+                }
+                .z-index-modal { z-index: 10000; }
+                .shadow-hover:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important; }
+                
                 .hero-slider-section .swiper-button-next,
                 .hero-slider-section .swiper-button-prev,
                 .property-slider-section .swiper-button-next,
-                .property-slider-section .swiper-button-prev {
+                .property-slider-section .swiper-button-prev,
+                .gallery-section .swiper-button-next,
+                .gallery-section .swiper-button-prev {
                     color: white;
                     background: rgba(0,0,0,0.3);
                     width: 50px;
                     height: 50px;
                     border-radius: 50%;
                     transition: all 0.3s ease;
-
                 }
                 .property-slider-section .swiper-button-next,
                 .property-slider-section .swiper-button-prev {

@@ -1,22 +1,8 @@
 import { ReactNode } from 'react';
 import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
 import ClientProviders from '@/app/ClientProviders';
 import "./globals.css";
 
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
-
-
-// PERF-F09 fix: Proper SEO metadata (requires Server Component)
-// FUNC-F07 fix: Updated description from "co-working" to real estate
 export const metadata: Metadata = {
   title: "Virpanix - Intelligent Real Estate Platform",
   description: "Modern real estate management platform with AI-powered analytics, lead tracking, and property management tools.",

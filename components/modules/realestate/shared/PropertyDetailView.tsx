@@ -24,6 +24,8 @@ interface PropertyDetailViewProps {
     trackAction?: (type: string, metadata?: any, identity?: { id?: string, email?: string }) => void;
     identifyLead?: (id: string, email?: string) => void;
     currencySymbol?: string;
+    setShowChat?: (show: boolean) => void;
+    isChatbotEnabled?: boolean;
 }
 
 const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
@@ -41,11 +43,15 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
     getFormattedPrice,
     trackAction,
     identifyLead,
-    currencySymbol = '$'
+    currencySymbol = '$',
+    setShowChat = () => { },
+    isChatbotEnabled = false
 }) => {
 
     const [showBookingModal, setShowBookingModal] = useState(false);
     const [bookingUnit, setBookingUnit] = useState<any>(null);
+    const [unitSearch, setUnitSearch] = useState('');
+    const [unitStatusFilter, setUnitStatusFilter] = useState('');
 
     const images = [
         ...(selectedProperty.mainImage ? [selectedProperty.mainImage] : []),
@@ -221,7 +227,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                     View Floor Plan
                                                 </a>
                                             )}
-                                            {selectedProperty.brochure && (
+                                             {selectedProperty.brochure && (
                                                 <a
                                                     href={selectedProperty.brochure.url}
                                                     target="_blank"
@@ -231,6 +237,16 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                     <i className="bi bi-file-earmark-pdf-fill"></i>
                                                     Download Brochure
                                                 </a>
+                                            )}
+                                            {isChatbotEnabled && (
+                                                <button
+                                                    onClick={() => setShowChat(true)}
+                                                    className="btn btn-dark d-flex align-items-center gap-2 rounded-3 px-4 py-2 small fw-bold animate-pulse"
+                                                    style={{ backgroundColor: theme.primaryColor, borderColor: theme.primaryColor }}
+                                                >
+                                                    <i className="bi bi-robot"></i>
+                                                    Chat with AI Expert
+                                                </button>
                                             )}
                                         </div>
                                     </div>
@@ -362,85 +378,162 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                         }
                     `}</style>
 
-                    <div className="col-12 mt-4">
-                        <h4 className="fw-bold mb-4">Unit Availability</h4>
-                        <div className="row g-3">
-                            {selectedProperty.units?.map((unit: any) => (
-                                <div key={unit.id} className={colClass}>
-                                    <div
-                                        className="card border-0 shadow-sm rounded-4 h-100 feature-box p-0 cursor-pointer overflow-hidden"
-                                        onClick={() => {
-                                            setSelectedUnit(unit);
-                                            setUnitImageIndex(0);
-                                            setCurrentView('UNIT_DETAIL');
-                                            if (trackAction) trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
-                                        }}
+                    <div className="col-12 mt-5">
+                        <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                            <h4 className="fw-bold mb-0">Unit Availability</h4>
+                            <div className="d-flex gap-2 flex-grow-1 flex-md-grow-0" style={{ maxWidth: '600px' }}>
+                                <div className="input-group input-group-sm">
+                                    <span className="input-group-text bg-white border-end-0 rounded-start-4 ps-3">
+                                        <i className="bi bi-search text-muted"></i>
+                                    </span>
+                                    <input 
+                                        type="text" 
+                                        className="form-control border-start-0 rounded-end-0 py-2" 
+                                        placeholder="Search unit name or code..."
+                                        onChange={(e) => setUnitSearch(e.target.value)}
+                                        value={unitSearch}
+                                    />
+                                    <select 
+                                        className="form-select border-start-0 rounded-end-4 py-2" 
+                                        style={{ maxWidth: '140px' }}
+                                        onChange={(e) => setUnitStatusFilter(e.target.value)}
+                                        value={unitStatusFilter}
                                     >
-                                        <div className="bg-light" style={{ height: '240px' }}>
-                                            {unit.mainImage ? (
-                                                <img src={unit.mainImage.url} alt={unit.unitCode} className="w-100 h-100 object-fit-cover" />
-                                            ) : (
-                                                <div className="h-100 d-flex align-items-center justify-content-center opacity-25"><i className="bi bi-door-closed fs-1"></i></div>
-                                            )}
-                                        </div>
-                                        <div className="p-3">
-                                            <div className="d-flex justify-content-between align-items-center mb-2">
-                                                {widget.configuration.builder?.showPrice !== false && (
-                                                    <span className="fw-extrabold text-primary" style={{ color: theme.primaryColor }}>
-                                                        {getFormattedPrice(unit)}
-                                                    </span>
-                                                )}
-                                                {(() => {
-                                                    const statusNum = Number(unit.status);
-                                                    if (statusNum === 2) return <span className="badge bg-warning bg-opacity-10 text-warning extra-small">Reserved</span>;
-                                                    if (statusNum === 3) return <span className="badge bg-secondary bg-opacity-10 text-secondary extra-small">Maintenance</span>;
-                                                    if (statusNum === 4) return <span className="badge bg-danger bg-opacity-10 text-danger extra-small">Sold Out</span>;
-                                                    return <span className="badge bg-success bg-opacity-10 text-success extra-small">Available</span>;
-                                                })()}
-                                            </div>
-                                            <h6 className="fw-bold mb-1 text-truncate" style={{ color: theme.primaryColor }}>{unit.name || `${unit.unitCode}`}</h6>
-                                            <div className="d-flex gap-2 mb-3">
-                                                <span className="extra-small text-muted"><i className="bi bi-bed me-1"></i>{unit.realEstateDetails?.bedrooms || 0} Bed</span>
-                                                <span className="extra-small text-muted"><i className="bi bi-arrows-fullscreen me-1"></i>{unit.sizeSqft || 0} sqft</span>
-                                                <span className="extra-small text-muted"><i className="bi bi-bath me-1"></i>{unit.realEstateDetails?.bathrooms || 0} Bath</span>
+                                        <option value="">All Status</option>
+                                        <option value="1">Available</option>
+                                        <option value="2">Reserved</option>
+                                        <option value="4">Sold Out</option>
+                                        <option value="3">Maintenance</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
 
-                                            </div>
-                                            <div className="d-flex gap-2">
-                                                <button
-                                                    className="btn btn-outline-primary btn-sm flex-grow-1 rounded-4 extra-small fw-bold"
-                                                    style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
-                                                >
-                                                    View Details
-                                                </button>
-                                                {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking !== false) && Number(unit.status) === 1 && (
-                                                    <button
-                                                        className="btn btn-dark btn-sm flex-grow-1 rounded-4 extra-small fw-bold"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setBookingUnit(unit);
-                                                            setShowBookingModal(true);
-                                                        }}
-                                                    >
-                                                        Reserve Now
-                                                    </button>
+                        <div className="row g-3">
+                            {(() => {
+                                let units = selectedProperty.units || [];
+                                
+                                if (unitSearch) {
+                                    const s = unitSearch.toLowerCase();
+                                    units = units.filter((u: any) => 
+                                        (u.name || '').toLowerCase().includes(s) || 
+                                        (u.unitCode || '').toLowerCase().includes(s)
+                                    );
+                                }
+
+                                if (unitStatusFilter) {
+                                    units = units.filter((u: any) => String(u.status) === String(unitStatusFilter));
+                                }
+
+                                if (units.length === 0) {
+                                    return (
+                                        <div className="col-12 text-center py-5 bg-light rounded-4">
+                                            <i className="bi bi-door-closed fs-1 text-muted opacity-25 d-block mb-2"></i>
+                                            <p className="text-muted small mb-0">No units found matching your search.</p>
+                                            <button className="btn btn-link btn-sm mt-1" onClick={() => { setUnitSearch(''); setUnitStatusFilter(''); }}>Clear Filters</button>
+                                        </div>
+                                    );
+                                }
+
+                                return units.map((unit: any) => (
+                                    <div key={unit.id} className={colClass}>
+                                        <div
+                                            className="card border-0 shadow-sm rounded-4 h-100 feature-box p-0 cursor-pointer overflow-hidden transition-all hover:translate-y-[-4px]"
+                                            onClick={() => {
+                                                setSelectedUnit(unit);
+                                                setUnitImageIndex(0);
+                                                setCurrentView('UNIT_DETAIL');
+                                                if (trackAction) trackAction('UNIT_VIEW', { unitId: unit.id, propertyId: selectedProperty.id });
+                                            }}
+                                        >
+                                            <div className="bg-light position-relative" style={{ height: '240px' }}>
+                                                {unit.mainImage ? (
+                                                    <img src={unit.mainImage.url} alt={unit.unitCode} className="w-100 h-100 object-fit-cover" />
+                                                ) : (
+                                                    <div className="h-100 d-flex align-items-center justify-content-center opacity-25"><i className="bi bi-door-closed fs-1"></i></div>
                                                 )}
+                                                <div className="position-absolute top-0 end-0 m-2">
+                                                    {(() => {
+                                                        const statusNum = Number(unit.status);
+                                                        if (statusNum === 2) return <span className="badge bg-warning text-dark border-0 shadow-sm px-3 rounded-pill">Reserved</span>;
+                                                        if (statusNum === 3) return <span className="badge bg-secondary text-white border-0 shadow-sm px-3 rounded-pill">Maintenance</span>;
+                                                        if (statusNum === 4) return <span className="badge bg-danger text-white border-0 shadow-sm px-3 rounded-pill">Sold Out</span>;
+                                                        return <span className="badge bg-success text-white border-0 shadow-sm px-3 rounded-pill">Available</span>;
+                                                    })()}
+                                                </div>
+                                            </div>
+                                            <div className="p-3">
+                                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                                     <h6 className="fw-bold mb-0 text-truncate" style={{ color: theme.primaryColor }}>{unit.name || `${unit.unitCode}`}</h6>
+                                                    {widget.configuration.builder?.showPrice !== false && (
+                                                        <span className="fw-bold extra-small text-primary" style={{ color: theme.primaryColor }}>
+                                                            {getFormattedPrice(unit)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="d-flex gap-2 mb-3">
+                                                    <span className="extra-small text-muted"><i className="bi bi-bed me-1"></i>{unit.realEstateDetails?.bedrooms || 0} Bed</span>
+                                                    <span className="extra-small text-muted"><i className="bi bi-arrows-fullscreen me-1"></i>{unit.sizeSqft || 0} sqft</span>
+                                                    <span className="extra-small text-muted"><i className="bi bi-bath me-1"></i>{unit.realEstateDetails?.bathrooms || 0} Bath</span>
+                                                </div>
+                                                <div className="d-flex gap-2">
+                                                    <button
+                                                        className="btn btn-outline-primary btn-sm flex-grow-1 rounded-4 extra-small fw-bold"
+                                                        style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
+                                                    >
+                                                        View Details
+                                                    </button>
+                                                    {(widget.configuration.bookingForm?.enabled || widget.configuration.builder?.enableBooking !== false) && Number(unit.status) === 1 && (
+                                                        <button
+                                                            className="btn btn-dark btn-sm flex-grow-1 rounded-4 extra-small fw-bold"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setBookingUnit(unit);
+                                                                setShowBookingModal(true);
+                                                                if (trackAction) trackAction('UNIT_BOOKING_START', { unitId: unit.id, propertyId: selectedProperty.id });
+                                                            }}
+                                                        >
+                                                            Reserve Now
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ));
+                            })()}
                         </div>
                     </div>
 
-                    {(widget.configuration.inquiryForm?.enabled || widget.configuration.builder?.showInquiry !== false) && (
-                        <div className="col-12 mt-5">
-                            <div className="glass-panel p-4 rounded-4 inquiry-form-container border-primary border-opacity-25" style={{ borderLeft: `4px solid ${theme.primaryColor}` }}>
-                                <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                    <i className="bi bi-chat-left-dots-fill me-2 text-primary" style={{ color: theme.primaryColor }}></i>
-                                    Direct Inquiry
-                                </h5>
-                                <FormRenderer
-                                    config={widget.configuration.inquiryForm}
+                    {(() => {
+                        const inquiryConfig = (widget.configuration?.inquiryForm?.useMarketingForm && widget.configuration?.inquiryForm?.marketingFormId)
+                            ? widget.configuration.inquiryForm
+                            : (widget.configuration.inquiryForm && widget.configuration.inquiryForm.enabled)
+                                ? widget.configuration.inquiryForm
+                                : (widget.configuration.builder?.showInquiry !== false ? {
+                                    enabled: true,
+                                    title: 'Property Inquiry',
+                                    description: 'Send us a message about this property and we will get back to you shortly.',
+                                    submitButtonLabel: 'Submit Inquiry',
+                                    fields: [
+                                        { id: 'f1', type: 'text', label: 'Full Name', required: true, placeholder: 'Your Name' },
+                                        { id: 'f2', type: 'email', label: 'Email Address', required: true, placeholder: 'email@example.com' },
+                                        { id: 'f3', type: 'phone', label: 'Phone Number', required: false, placeholder: '+1 234 567 890' },
+                                        { id: 'f4', type: 'textarea', label: 'Message', required: true, placeholder: 'I am interested in this property...' }
+                                    ]
+                                } : null);
+
+                        if (!inquiryConfig || !inquiryConfig.enabled) return null;
+
+                        return (
+                            <div className="col-12 mt-5">
+                                <div className="glass-panel p-4 rounded-4 inquiry-form-container border-primary border-opacity-25" style={{ borderLeft: `4px solid ${theme.primaryColor}` }}>
+                                    <h5 className="fw-bold mb-4 d-flex align-items-center">
+                                        <i className="bi bi-chat-left-dots-fill me-2 text-primary" style={{ color: theme.primaryColor }}></i>
+                                        Direct Inquiry
+                                    </h5>
+                                    <FormRenderer
+                                        config={inquiryConfig}
                                     primaryColor={theme.primaryColor}
                                     onSubmit={async (formData, configUsed) => {
                                         const leadPayload: any = {
@@ -469,7 +562,8 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                 />
                             </div>
                         </div>
-                    )}
+                    );
+                })()}
                 </div>
             </div>
 

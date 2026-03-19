@@ -14,8 +14,11 @@ import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 import { Property, Unit } from '@/types';
 import '@/components/modules/realestate/shared/shared.css';
 
-type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL';
+import ModernTheme from './themes/ModernTheme';
+import MinimalisticTheme from './themes/MinimalisticTheme';
+import TraditionalTheme from './themes/TraditionalTheme';
 
+type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL';
 
 interface StandaloneWebsitePageProps {
     slugOrDomain: string;
@@ -65,7 +68,6 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         loadWebsiteData();
     }, [loadWebsiteData]);
 
-    // Initialize Persistent Visitor Identity & Geo Context
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
@@ -112,6 +114,72 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     }, [website, leadIdentity, userContext.city]);
 
 
+    // Dynamic Google Font Loader
+    useEffect(() => {
+        if (!website?.configuration?.theme?.fontFamily) return;
+
+        const font = website.configuration.theme.fontFamily;
+        const fontId = `gfont-${font.replace(/\s+/g, '-').toLowerCase()}`;
+
+        if (!document.getElementById(fontId)) {
+            const link = document.createElement('link');
+            link.id = fontId;
+            link.rel = 'stylesheet';
+            link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}:wght@300;400;500;600;700;800;900&display=swap`;
+            document.head.appendChild(link);
+        }
+
+        // Add additional fonts for specific themes if needed
+        const traditionalFonts = ['Playfair Display', 'Lora'];
+        traditionalFonts.forEach(f => {
+            const tid = `gfont-${f.replace(/\s+/g, '-').toLowerCase()}`;
+            if (!document.getElementById(tid)) {
+                const link = document.createElement('link');
+                link.id = tid;
+                link.rel = 'stylesheet';
+                link.href = `https://fonts.googleapis.com/css2?family=${f.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
+                document.head.appendChild(link);
+            }
+        });
+    }, [website?.configuration?.theme?.fontFamily]);
+
+    // Dynamic Favicon Loader
+    useEffect(() => {
+        if (!website?.configuration?.builder?.faviconUrl) return;
+
+        const faviconUrl = website.configuration.builder.faviconUrl;
+        
+        try {
+            // Remove ALL existing favicon links to avoid browser confusion/race conditions
+            const existingLinks = document.querySelectorAll("link[rel*='icon']");
+            existingLinks.forEach(link => {
+                if (link.parentNode) link.parentNode.removeChild(link);
+            });
+
+            // Standard favicon
+            const icon = document.createElement('link');
+            icon.rel = 'icon';
+            icon.type = 'image/png'; // Defaulting to png, should be fine for most URL results
+            icon.href = faviconUrl;
+            document.head.appendChild(icon);
+
+            // Apple touch icon (for mobile/safari bookmarks)
+            const apple = document.createElement('link');
+            apple.rel = 'apple-touch-icon';
+            apple.href = faviconUrl;
+            document.head.appendChild(apple);
+
+            // Short-cut icon for older browsers
+            const shortcut = document.createElement('link');
+            shortcut.rel = 'shortcut icon';
+            shortcut.href = faviconUrl;
+            document.head.appendChild(shortcut);
+        } catch (err) {
+            console.warn('Dynamic favicon loading failed:', err);
+        }
+    }, [website?.configuration?.builder?.faviconUrl]);
+
+
     const identifyLead = (id: string, email?: string) => {
         const vid = localStorage.getItem('virpanix_visitor_id');
         const identity = { id, email, visitorId: vid || undefined };
@@ -148,16 +216,8 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                 pricing.pricingModel === 4 ? 'mo' :
                     pricing.pricingModel === 5 ? 'yr' : '';
 
-        // Get currency from tenant settings if available, otherwise fallback to country
-        const tenantSettings = website?.tenant?.settings || {};
-        const baseCurrency = tenantSettings.general?.currency;
-        const config = getCurrencyConfig(baseCurrency || website?.tenant?.country);
-        const symbol = config?.symbol || '$';
-
-        return `${symbol}${Number(pricing.price).toLocaleString('en-US')}${label ? `/${label}` : ''}`;
+        return `${currencySymbol}${Number(pricing.price).toLocaleString('en-US')}${label ? `/${label}` : ''}`;
     };
-
-
 
     const handleFilterResults = useCallback((results: Property[]) => {
         setData(results);
@@ -176,7 +236,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         </div>
     );
 
-    const theme = website?.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif' };
+    const theme = website?.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif', template: 'modern' };
     const builder = website?.configuration?.builder || {};
     const chatbotConfig = {
         ...(website?.tenant?.settings?.chatbotConfig || {}),
@@ -190,11 +250,6 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     };
 
     const renderView = () => {
-        const tenantSettings = website?.tenant?.settings || {};
-        const baseCurrency = tenantSettings.general?.currency;
-        const currencyConfig = getCurrencyConfig(baseCurrency || website?.tenant?.country);
-        const currencySymbol = currencyConfig?.symbol || '$';
-
         switch (currentView) {
             case 'LISTING':
                 return (builder.showHero !== false || (builder.modules && builder.modules.length > 0)) ? (
@@ -210,6 +265,10 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                             setCurrentView('PROPERTY_DETAIL');
                             trackAction('PROPERTY_VIEW', { propertyId: property.id });
                         }}
+                        onFilter={(filters) => {
+                            // Logic to filter data based on search component if needed
+                        }}
+                        currencySymbol={currencySymbol}
                     />
                 ) : (
                     <ListingView
@@ -225,6 +284,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                             setCurrentView('PROPERTY_DETAIL');
                         }}
                         colClass={builder.gridStrategy === 'list' ? 'col-12' : ''}
+                        currencySymbol={currencySymbol}
                     />
                 );
 
@@ -266,172 +326,33 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         currencySymbol={currencySymbol}
                     />
                 );
-
-
-
-
         }
     };
 
+    const currentTemplate = theme.template || 'modern';
+    const ThemeWrapper = currentTemplate === 'minimalistic' ? MinimalisticTheme :
+        currentTemplate === 'traditional' ? TraditionalTheme : ModernTheme;
+
+    const tenantSettings = website?.tenant?.settings || {};
+    const baseCurrency = tenantSettings.general?.currency;
+    const currencyConfig = getCurrencyConfig(baseCurrency || website?.tenant?.country);
+    const currencySymbol = currencyConfig?.symbol || '$';
+
     return (
-        <div className="standalone-website min-vh-100 bg-white selection-none" style={{ '--primary-color': theme.primaryColor, fontFamily: `'${theme.fontFamily}', sans-serif` } as any}>
-            {/* Real Estate Premium Header */}
-            {builder.showLogo !== false && (
-                <header className="py-3 bg-white backdrop-blur-md border-bottom sticky-top z-1050">
-                    <div className="container d-flex justify-content-between align-items-center">
-                        <div className="website-logo cursor-pointer" onClick={() => setCurrentView('LISTING')}>
-                            {builder.logoUrl ? (
-                                <img src={builder.logoUrl} alt={website?.name || "Brand Logo"} style={{ height: '65px', objectFit: 'contain' }} />
-                            ) : (
-                                <div className="fw-black h4 mb-0 text-primary tracking-tighter" style={{ color: theme.primaryColor }}>{website?.name?.toUpperCase()}</div>
-                            )}
-                        </div>
-                        <nav className="d-none d-md-flex align-items-center gap-4">
-                            {website.configuration?.menus?.header?.map((item: any) => (
-                                <button
-                                    key={item.id}
-                                    className="btn btn-link link-dark text-decoration-none fw-bold small p-0"
-                                    onClick={() => {
-                                        if (item.type === 'custom') {
-                                            window.open(item.url, item.target || '_self');
-                                        } else {
-                                            // Handle CMS page navigation - this would ideally routing to a /page/[slug]
-                                            console.log('Navigate to page:', item.pageSlug);
-                                        }
-                                    }}
-                                >
-                                    {item.label.toUpperCase()}
-                                </button>
-                            ))}
-                            {!website.configuration?.menus?.header?.length && (
-                                <>
-                                    <button className="btn btn-link link-dark text-decoration-none fw-bold small p-0" onClick={() => setCurrentView('LISTING')}>EXPLORE</button>
-                                    <button className="btn btn-link link-dark text-decoration-none fw-bold small p-0">ABOUT</button>
-                                </>
-                            )}
-                            {(website.configuration?.bookingForm?.enabled || website.configuration?.builder?.enableBooking) && (
-                                <button
-                                    className="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-bold small"
-                                    style={{ backgroundColor: theme.primaryColor, border: 'none' }}
-                                    onClick={() => setShowBookingModal(true)}
-                                >
-                                    RESERVE NOW
-                                </button>
-                            )}
-                        </nav>
-                        <button className="btn d-md-none border-0 p-0 text-dark" onClick={() => setShowMobileMenu(!showMobileMenu)}>
-                            <i className={`bi ${showMobileMenu ? 'bi-x' : 'bi-list'} fs-2`}></i>
-                        </button>
-                    </div>
-
-                    {/* Mobile Navigation Overlay */}
-                    {showMobileMenu && (
-                        <div className="mobile-nav-overlay d-md-none animate-fade-in bg-white position-fixed top-0 start-0 w-100 vh-100 z-1040 p-5 mt-5">
-                            <div className="d-flex flex-column gap-4 text-center mt-4">
-                                {website.configuration?.menus?.header?.map((item: any) => (
-                                    <button
-                                        key={item.id}
-                                        className="btn btn-link link-dark text-decoration-none fw-bold h4 p-0"
-                                        onClick={() => {
-                                            setShowMobileMenu(false);
-                                            if (item.type === 'custom') {
-                                                window.open(item.url, item.target || '_self');
-                                            }
-                                        }}
-                                    >
-                                        {item.label.toUpperCase()}
-                                    </button>
-                                ))}
-                                {!website.configuration?.menus?.header?.length && (
-                                    <>
-                                        <button
-                                            className="btn btn-link link-dark text-decoration-none fw-bold h4 p-0"
-                                            onClick={() => { setCurrentView('LISTING'); setShowMobileMenu(false); }}
-                                        >
-                                            EXPLORE
-                                        </button>
-                                        <button className="btn btn-link link-dark text-decoration-none fw-bold h4 p-0">ABOUT</button>
-                                    </>
-                                )}
-                                {(website.configuration?.bookingForm?.enabled || website.configuration?.builder?.enableBooking) && (
-                                    <button
-                                        className="btn btn-primary rounded-pill px-4 py-3 shadow-lg fw-bold h5 mt-4"
-                                        style={{ backgroundColor: theme.primaryColor, border: 'none' }}
-                                        onClick={() => { setShowBookingModal(true); setShowMobileMenu(false); }}
-                                    >
-                                        RESERVE NOW
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </header>
-            )}
-
-            <main className="animate-fade-in">
+        <>
+            <ThemeWrapper
+                website={website}
+                theme={theme}
+                builder={builder}
+                setCurrentView={setCurrentView}
+                setShowBookingModal={setShowBookingModal}
+                showMobileMenu={showMobileMenu}
+                setShowMobileMenu={setShowMobileMenu}
+                trackAction={trackAction}
+                currencySymbol={currencySymbol}
+            >
                 {renderView()}
-            </main>
-
-            {/* Premium Smart Footer */}
-            {builder.showFooter !== false && (
-                <footer className="py-5 mt-auto position-relative border-top" style={{
-                    backgroundColor: website.configuration?.footer?.backgroundColor || '#212529',
-                    color: website.configuration?.footer?.textColor || '#ffffff'
-                }}>
-                    <div className="container">
-                        <div className="row g-5">
-                            <div className="col-md-4">
-                                <h5 className="fw-bold mb-4">{website.name}</h5>
-                                <p className="small opacity-75">
-                                    {builder.footerText || website.configuration?.footer?.footerText || 'A next-generation real estate experience powered by Antigravity OS.'}
-                                </p>
-                            </div>
-                            <div className="col-md-3">
-                                <h6 className="fw-bold mb-3 small opacity-50">RESOURCES</h6>
-                                <ul className="list-group list-group-flush bg-transparent gap-2">
-                                    {website.configuration?.menus?.footer?.map((item: any) => (
-                                        <li key={item.id} className="list-group-item bg-transparent border-0 p-0">
-                                            <a
-                                                href={item.url || '#'}
-                                                target={item.target || '_self'}
-                                                className="extra-small text-inherit text-decoration-none opacity-75 hover-opacity-100 transition-all"
-                                            >
-                                                {item.label}
-                                            </a>
-                                        </li>
-                                    ))}
-                                    {!website.configuration?.menus?.footer?.length && (
-                                        <>
-                                            <li className="list-group-item bg-transparent border-0 p-0 extra-small opacity-50">Privacy Policy</li>
-                                            <li className="list-group-item bg-transparent border-0 p-0 extra-small opacity-50">Terms of Service</li>
-                                        </>
-                                    )}
-                                </ul>
-                            </div>
-                            <div className="col-md-5 text-md-end">
-                                <div className="d-flex gap-4 justify-content-md-end mb-4">
-                                    {Object.entries(website.configuration?.footer?.socials || {}).map(([key, value]) => {
-                                        if (!value) return null;
-                                        const icons: any = {
-                                            facebook: 'bi-facebook',
-                                            instagram: 'bi-instagram',
-                                            twitter: 'bi-twitter-x',
-                                            linkedin: 'bi-linkedin',
-                                            youtube: 'bi-youtube'
-                                        };
-                                        return (
-                                            <a key={key} href={value as string} target="_blank" rel="noopener noreferrer" className="text-inherit opacity-50 hover-opacity-100 transition-all">
-                                                <i className={`bi ${icons[key]} fs-5`}></i>
-                                            </a>
-                                        );
-                                    })}
-                                </div>
-                                <p className="extra-small opacity-50 mb-0">© {new Date().getFullYear()} {website.name}. All rights reserved.</p>
-                            </div>
-                        </div>
-                    </div>
-                </footer>
-            )}
+            </ThemeWrapper>
 
             {/* Intelligent Concierge - Exactly matching Widget implementation */}
             {website.configuration?.chatbot?.enabled && (
@@ -494,7 +415,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                 crossSellEnabled={chatbotConfig.crossSellEnabled}
                                 recommendationLogic={chatbotConfig.recommendationLogic}
                                 budgetRanges={chatbotConfig.budgetRanges}
-                                currencySymbol={getCurrencyConfig(website?.tenant?.settings?.general?.currency || website?.tenant?.country)?.symbol || '$'}
+                                currencySymbol={currencySymbol}
                                 onCreateLead={async (contact, name) => {
                                     try {
                                         const leadPayload: any = {
@@ -552,6 +473,6 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                     trackAction={trackAction}
                 />
             )}
-        </div>
+        </>
     );
 }

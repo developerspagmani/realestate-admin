@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import PublicFontInter from '@/components/common/PublicFontInter';
 
 interface RealEstateOwner {
     firstName: string;
@@ -21,7 +22,9 @@ interface RealEstateOwner {
     confirmPassword: string;
 }
 
-export default function RealEstateRegisterPage() {
+function RealEstateRegisterContent() {
+    const searchParams = useSearchParams();
+    const partnerId = searchParams.get('partnerId') || searchParams.get('ref');
     const [formData, setFormData] = useState<RealEstateOwner>({
         firstName: '',
         lastName: '',
@@ -122,9 +125,12 @@ export default function RealEstateRegisterPage() {
 
         try {
             const { authService } = await import('@/app/services/api');
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { confirmPassword, ...registrationData } = formData;
-            const response = await authService.register({ ...registrationData, type: 1 });
+            const response = await authService.register({ 
+                ...registrationData, 
+                type: 1,
+                referrerId: partnerId 
+            });
 
             if (response.success) {
                 setSuccess(true);
@@ -140,6 +146,7 @@ export default function RealEstateRegisterPage() {
 
     return (
         <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light py-5">
+            <PublicFontInter />
             <div className="container" style={{ maxWidth: '850px' }}>
                 <div className="card shadow-lg border-0 rounded-4 overflow-hidden animate-fade-in">
                     <div className="row g-0">
@@ -379,5 +386,16 @@ export default function RealEstateRegisterPage() {
             </div>
         </div>
 
+    );
+}
+export default function RealEstateRegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+                <div className="spinner-border text-dark"></div>
+            </div>
+        }>
+            <RealEstateRegisterContent />
+        </Suspense>
     );
 }

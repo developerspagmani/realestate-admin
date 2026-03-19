@@ -8,6 +8,7 @@ import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
 import PopupRenderer from '@/components/modules/realestate/website/PopupRenderer';
+import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 import '@/components/modules/realestate/shared/shared.css';
 
 interface StandaloneContextType {
@@ -21,6 +22,7 @@ interface StandaloneContextType {
     slugOrDomain: string;
     loading: boolean;
     updateFilters: (filters: any) => Promise<void>;
+    currencySymbol: string;
 }
 
 const StandaloneContext = createContext<StandaloneContextType | null>(null);
@@ -57,6 +59,12 @@ export default function StandaloneProvider({
     const theme = website.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif' };
     const builder = website.configuration?.builder || {};
     const menus = website.configuration?.menus || { header: [], footer: [] };
+
+    // Calculate currency symbol
+    const tenantSettings = website?.tenant?.settings || {};
+    const baseCurrency = tenantSettings.general?.currency;
+    const currencyConfig = getCurrencyConfig(baseCurrency || website?.tenant?.country);
+    const currencySymbol = currencyConfig?.symbol || '$';
 
     // Fetch properties with filters
     const updateFilters = async (newFilters: any) => {
@@ -126,13 +134,31 @@ export default function StandaloneProvider({
         // A. Favicon Injection
         const faviconUrl = website.configuration?.builder?.faviconUrl;
         if (faviconUrl) {
-            let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
-            if (!link) {
-                link = document.createElement('link');
+            try {
+                // Clear existing favicon links to prevent flicker/conflicts
+                const existing = document.querySelectorAll("link[rel*='icon']");
+                existing.forEach(el => el.remove());
+
+                // Inject standard icon
+                const link = document.createElement('link');
                 link.rel = 'icon';
-                document.getElementsByTagName('head')[0].appendChild(link);
+                link.href = faviconUrl;
+                document.head.appendChild(link);
+
+                // Inject shortcut icon for legacy browsers
+                const shortcut = document.createElement('link');
+                shortcut.rel = 'shortcut icon';
+                shortcut.href = faviconUrl;
+                document.head.appendChild(shortcut);
+                
+                // Inject apple touch icon for mobile bookmarks
+                const apple = document.createElement('link');
+                apple.rel = 'apple-touch-icon';
+                apple.href = faviconUrl;
+                document.head.appendChild(apple);
+            } catch (err) {
+                console.warn('Favicon injection failed:', err);
             }
-            link.href = faviconUrl;
         }
 
         // B. Google Font Injection
@@ -258,7 +284,8 @@ export default function StandaloneProvider({
             trackAction,
             slugOrDomain,
             loading,
-            updateFilters
+            updateFilters,
+            currencySymbol
         }}>
             <div
                 className="standalone-website min-vh-100 bg-white d-flex flex-column"
@@ -537,8 +564,13 @@ export default function StandaloneProvider({
                                             const leadPayload: any = {
                                                 name: name || 'Website Chat Inquiry',
                                                 source: 'website_chatbot',
-                                                notes: 'Automated entry via Standalone Portal Chatbot'
+                                                notes: `Automated entry via Standalone Portal Chatbot`
                                             };
+
+                                            // Attach Marketing Form and Segment info if available
+                                            if (website.configuration?.inquiryForm?.useMarketingForm && website.configuration?.inquiryForm?.marketingFormId) {
+                                                leadPayload.formId = website.configuration?.inquiryForm?.marketingFormId;
+                                            }
 
                                             // Parse contact string (Email vs Phone) - consistent with Website logic
                                             if (contact && contact.includes('@')) {
@@ -600,23 +632,33 @@ export default function StandaloneProvider({
                                 </div>
                                 <div className="modal-body p-4">
                                     <FormRenderer
-                                        config={website.configuration?.inquiryForm || {
-                                            enabled: true, title: 'Send an Inquiry', description: '', submitButtonLabel: 'Send Inquiry', fields: [
-                                                { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Your full name', required: true },
-                                                { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true },
-                                                { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+1 (555) 000-0000', required: false },
-                                                { id: 'budget', label: 'Expected Budget', type: 'text', placeholder: 'e.g. $500,000', required: false },
-                                                { id: 'message', label: 'Message', type: 'textarea', placeholder: 'Tell us what you are looking for...', required: false },
-                                            ]
-                                        }}
+                                        config={(website.configuration?.inquiryForm?.useMarketingForm && website.configuration?.inquiryForm?.marketingFormId) 
+                                            ? website.configuration.inquiryForm 
+                                            : (website.configuration?.inquiryForm && website.configuration?.inquiryForm.enabled)
+                                                ? website.configuration.inquiryForm
+                                                : {
+                                                    enabled: true, title: 'Send an Inquiry', description: '', submitButtonLabel: 'Send Inquiry', fields: [
+                                                        { id: 'name', label: 'Full Name', type: 'text', placeholder: 'Your full name', required: true },
+                                                        { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com', required: true },
+                                                        { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+1 (555) 000-0000', required: false },
+                                                        { id: 'budget', label: 'Expected Budget', type: 'text', placeholder: 'e.g. $500,000', required: false },
+                                                        { id: 'message', label: 'Message', type: 'textarea', placeholder: 'Tell us what you are looking for...', required: false },
+                                                    ]
+                                                }}
                                         primaryColor={theme.primaryColor}
                                         onSubmit={async (fd, config) => {
                                             try {
-                                                const res = await websiteService.createPublicLead(website.id, {
+                                                const leadPayload: any = {
                                                     ...fd,
-                                                    source: 'website_inquiry',
-                                                    notes: `Popup inquiry from ${website.name} portal.`
-                                                });
+                                                    source: 1, // Public site
+                                                    notes: `Portal inquiry from ${website.name}.`
+                                                };
+
+                                                if (config.useMarketingForm && config.marketingFormId) {
+                                                    leadPayload.formId = config.marketingFormId;
+                                                }
+
+                                                const res = await websiteService.createPublicLead(website.id, leadPayload);
                                                 if (res.success) {
                                                     const lead = res.data;
                                                     identifyLead(lead.id, lead.email);

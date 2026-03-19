@@ -21,6 +21,9 @@ interface ListingViewProps {
     identifyLead?: (id: string, email?: string) => void;
     noContainer?: boolean;
     showHeader?: boolean;
+    setShowChat?: (show: boolean) => void;
+    isChatbotEnabled?: boolean;
+    currencySymbol?: string;
 }
 
 const ListingView: React.FC<ListingViewProps> = ({
@@ -34,7 +37,10 @@ const ListingView: React.FC<ListingViewProps> = ({
     trackAction,
     colClass: propColClass,
     noContainer = false,
-    showHeader = true
+    showHeader = true,
+    setShowChat = () => {},
+    isChatbotEnabled = false,
+    currencySymbol
 }) => {
     const [showPopup, setShowPopup] = React.useState(false);
     const [popupImageUrl, setPopupImageUrl] = React.useState('');
@@ -50,6 +56,7 @@ const ListingView: React.FC<ListingViewProps> = ({
                     'col-md-6 col-lg-3');
 
     const getSymbol = (_propertyCountry?: string) => {
+        if (currencySymbol) return currencySymbol;
         // Priority: 1) Tenant's explicit currency setting, 2) Tenant's country, 3) Property country (last resort)
         // We intentionally do NOT use propertyCountry as the primary source — it caused issues
         // when a property in Germany showed €, even though the tenant had configured AED/INR/etc.
@@ -69,6 +76,21 @@ const ListingView: React.FC<ListingViewProps> = ({
                             <h2 className="fw-bold mb-3" style={{ color: theme.primaryColor }}>Discover Premium Properties</h2>
                             <p className="small mb-0 text-dark">Exclusive listings curated for your needs</p>
                         </div>
+                        {isChatbotEnabled && (
+                            <button
+                                onClick={() => setShowChat(true)}
+                                className="btn btn-dark d-flex align-items-center gap-2 rounded-pill px-4 py-2 border-0 shadow-sm transition-all hover:scale-105"
+                                style={{ backgroundColor: theme.primaryColor, color: '#fff' }}
+                            >
+                                <span className="position-relative d-flex align-items-center gap-2">
+                                    <i className="bi bi-robot fs-5"></i>
+                                    <span className="fw-bold small">Chat with AI Expert</span>
+                                    <span className="position-absolute top-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle animate-pulse">
+                                        <span className="visually-hidden">Online</span>
+                                    </span>
+                                </span>
+                            </button>
+                        )}
                     </div>
                 )}
 

@@ -13,7 +13,8 @@ export default function WidgetPreview({ formData, tenantType, deviceMode: extern
     const deviceMode = externalDeviceMode || internalDeviceMode;
     const setDeviceMode = (mode: any) => externalDeviceMode ? null : setInternalDeviceMode(mode);
     const config = formData.configuration || {};
-    const theme = config.theme || { primaryColor: '#6366f1', borderRadius: '8px', fontFamily: 'Inter, sans-serif' };
+    const theme = config.theme || { primaryColor: '#6366f1', borderRadius: '8px', fontFamily: 'Inter, sans-serif', template: 'modern' };
+    const currentTemplate = theme.template || 'modern';
     const builder = config.builder || {};
     const display = config.display || { columns: 1 };
     const settings = config.settings || { layout: 'grid' };
@@ -74,30 +75,37 @@ export default function WidgetPreview({ formData, tenantType, deviceMode: extern
             <div
                 className={`widget-mockup-frame widget-container shadow-lg bg-white overflow-hidden border border-light-subtle rounded-4 mx-auto`}
                 style={{
-                    fontFamily: theme.fontFamily,
+                    fontFamily: currentTemplate === 'traditional' ? `'Playfair Display', serif` : (theme.fontFamily || 'Inter, sans-serif'),
                     minHeight: '600px',
                     width: getFrameWidth(),
                     transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     // Inject dynamic variables for preview CSS to pick up
-                    '--primary-color': theme.primaryColor,
+                    '--primary-color': theme.primaryColor || (currentTemplate === 'traditional' ? '#1a3a5f' : '#6366f1'),
                     '--primary-hover': primaryHover,
-                    '--primary-ghost': primaryGhost
+                    '--primary-ghost': primaryGhost,
+                    borderRadius: currentTemplate === 'minimalistic' ? '0 !important' : '1.5rem !important'
                 } as any}
             >
                 {/* Mock Header */}
                 {(isPageBuilder || builder.showLogo) && (
-                    <div className="preview-mock-header p-3 border-bottom d-flex justify-content-between align-items-center bg-white sticky-top">
+                    <div 
+                        className={`preview-mock-header p-3 border-bottom d-flex justify-content-between align-items-center bg-white sticky-top ${currentTemplate === 'modern' ? 'backdrop-blur-md' : ''}`}
+                        style={{
+                            borderBottom: currentTemplate === 'traditional' ? `3px double ${theme.primaryColor || '#d4af37'}` : undefined,
+                            borderRadius: currentTemplate === 'minimalistic' ? '0' : undefined
+                        }}
+                    >
                         {builder.logoUrl ? (
-                            <img src={builder.logoUrl} alt="Logo" style={{ height: '30px', objectFit: 'contain' }} />
+                            <img src={builder.logoUrl} alt="Logo" style={{ height: currentTemplate === 'modern' ? '30px' : '20px', objectFit: 'contain' }} />
                         ) : (
                             <div
-                                className="mock-logo rounded-2 flex-shrink-0"
-                                style={{ width: '32px', height: '32px', backgroundColor: theme.primaryColor }}
+                                className={`${currentTemplate === 'minimalistic' ? 'rounded-0' : 'rounded-2'} flex-shrink-0`}
+                                style={{ width: '32px', height: '32px', backgroundColor: theme.primaryColor || (currentTemplate === 'traditional' ? '#1a3a5f' : '#6366f1') }}
                             ></div>
                         )}
                         <div className="mock-nav d-flex gap-2">
-                            <div className="mock-dot bg-light-subtle" style={{ width: '40px', height: '8px', borderRadius: '4px' }}></div>
-                            <div className="mock-dot bg-light-subtle" style={{ width: '40px', height: '8px', borderRadius: '4px' }}></div>
+                            <div className={`mock-dot bg-light-subtle ${currentTemplate === 'minimalistic' ? 'rounded-0' : ''}`} style={{ width: '40px', height: '8px', borderRadius: currentTemplate === 'minimalistic' ? '0' : '4px' }}></div>
+                            <div className={`mock-dot bg-light-subtle ${currentTemplate === 'minimalistic' ? 'rounded-0' : ''}`} style={{ width: '40px', height: '8px', borderRadius: currentTemplate === 'minimalistic' ? '0' : '4px' }}></div>
                         </div>
                     </div>
                 )}

@@ -7,7 +7,7 @@ import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailVie
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 
 export default function UnitDetailClient({ unitSlug }: { unitSlug: string }) {
-    const { website, properties, theme, trackAction, identifyLead, slugOrDomain } = useStandalone();
+    const { website, properties, theme, trackAction, identifyLead, slugOrDomain, currencySymbol } = useStandalone();
     const router = useRouter();
 
     // Find the unit and its parent property in the pre-loaded list by ID or Slug
@@ -27,14 +27,10 @@ export default function UnitDetailClient({ unitSlug }: { unitSlug: string }) {
 
     if (!unit || !property) return <div className="p-5 text-center">Unit information not found.</div>;
 
-    const country = website?.tenant?.country || 'USA';
-    const currencyConfig = getCurrencyConfig(country);
-    const currencySymbol = currencyConfig?.symbol || '$';
-
     const getFormattedPrice = (u: any) => {
         if (!u.unitPricing?.length) return 'Price on Inquiry';
         const pricing = u.unitPricing[0];
-        return `${currencySymbol}${Number(pricing.price).toLocaleString('en-US')}`;
+        return `${currencySymbol || '$'}${Number(pricing.price).toLocaleString('en-US')}`;
     };
 
     return (

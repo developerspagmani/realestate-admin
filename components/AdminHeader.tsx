@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
-import { tenantService, userService, getAuthToken, dashboardService, leadService, paymentService } from '@/app/services/api';
+import { userService, getAuthToken, dashboardService, leadService, paymentService } from '@/app/services/api';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import Loader from '@/components/common/Loader';
@@ -15,11 +15,11 @@ interface AdminHeaderProps {
 }
 
 export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
-    const { user, logout, isAdmin, isOwner, isAgent } = useAuthContext();
+    const { user, logout, isAdmin, isOwner, isAgent, isPartner } = useAuthContext();
     const {
         tenantType, setTenantType,
-        activeTenantId, setActiveTenantId,
-        activeOwnerId, setActiveOwnerId,
+        activeTenantId,
+        activeOwnerId,
         setActiveOwnerAndTenant,
         activeTenant
     } = useManagementContext();
@@ -391,15 +391,12 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         setNotifications(notifications.map(n => ({ ...n, unread: false })));
     };
 
-    const deleteNotification = (id: number) => {
-        setNotifications(notifications.filter(n => n.id !== id));
-    };
 
     if (!user) return null;
 
-    const roleLabel = isAdmin ? 'System Administrator' : isOwner ? 'Property Owner' : isAgent ? 'Sales Agent' : 'Standard User';
-    const settingsPath = isAdmin ? '/realestate-admin/settings' : isOwner ? '/realestate-owner-admin/settings' : isAgent ? '/realestate-agent/profile' : '/user/settings';
-    const profilePath = isAgent ? '/realestate-agent/profile' : '/user/profile';
+    const roleLabel = isAdmin ? 'System Administrator' : isOwner ? 'Property Owner' : isAgent ? 'Sales Agent' : isPartner ? 'Partner' : 'Standard User';
+    const settingsPath = isAdmin ? '/realestate-admin/settings' : isOwner ? '/realestate-owner-admin/settings' : isAgent ? '/realestate-agent/profile' : isPartner ? '/partner-dashboard/profile' : '/user/settings';
+    const profilePath = isAgent ? '/realestate-agent/profile' : isPartner ? '/partner-dashboard/profile' : '/user/profile';
 
     return (
         <header className="admin-header bg-white border-bottom sticky-top shadow-sm">
@@ -415,14 +412,25 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
                 {/* Left Side: Search & Welcome */}
                 <div className="d-flex align-items-center gap-4 flex-grow-1">
-                    <div className="search-bar position-relative d-none d-md-block" style={{ maxWidth: '300px', width: '100%' }}>
-                        <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                        <input
-                            type="text"
-                            className="form-control bg-light border-0 ps-5 py-2 rounded-3 fs-14"
-                            placeholder="Search everything..."
-                        />
-                    </div>
+                    {isPartner ? (
+                        <Link href="/partner-dashboard" className="navbar-brand d-flex align-items-center gap-2 text-decoration-none">
+                            <div className="bg-dark text-white rounded-3 d-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
+                                <i className="bi bi-person-hearts small"></i>
+                            </div>
+                            <span className="fw-900 letter-spacing-tight text-dark m-0 d-none d-sm-block">
+                                PARTNER HUB<span className="text-danger">.</span>
+                            </span>
+                        </Link>
+                    ) : (
+                        <div className="search-bar position-relative d-none d-md-block" style={{ maxWidth: '300px', width: '100%' }}>
+                            <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                            <input
+                                type="text"
+                                className="form-control bg-light border-0 ps-5 py-2 rounded-3 fs-14"
+                                placeholder="Search everything..."
+                            />
+                        </div>
+                    )}
 
                     {/* Searchable Company Selector for Admins */}
                     {isAdmin && !pathname.includes('/realestate-owner-admin') && (
@@ -631,68 +639,70 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                             )}
                         </div>
 
-                        <div className="position-relative" ref={notifRef}>
-                            <button
-                                className={`btn btn-icon rounded-3 ${isNotifOpen ? 'btn-primary text-white shadow-sm' : 'btn-light-soft text-muted'}`}
-                                title="Notifications"
-                                onClick={() => {
-                                    setIsNotifOpen(!isNotifOpen);
-                                    setIsSupportOpen(false);
-                                }}
-                            >
-                                <i className="bi bi-bell text-muted"></i>
-                                {unreadCount > 0 && (
-                                    <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-                                        <span className="visually-hidden">New alerts</span>
-                                    </span>
-                                )}
-                            </button>
+                        {!isPartner && (
+                            <div className="position-relative" ref={notifRef}>
+                                <button
+                                    className={`btn btn-icon rounded-3 ${isNotifOpen ? 'btn-primary text-white shadow-sm' : 'btn-light-soft text-muted'}`}
+                                    title="Notifications"
+                                    onClick={() => {
+                                        setIsNotifOpen(!isNotifOpen);
+                                        setIsSupportOpen(false);
+                                    }}
+                                >
+                                    <i className="bi bi-bell text-muted"></i>
+                                    {unreadCount > 0 && (
+                                        <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                            <span className="visually-hidden">New alerts</span>
+                                        </span>
+                                    )}
+                                </button>
 
-                            {isNotifOpen && (
-                                <div className="dropdown-menu show border-0 shadow-lg mt-2 p-0 rounded-4 overflow-hidden animate-fade-in" style={{ width: '320px', position: 'absolute', right: 0, zIndex: 1050 }}>
-                                    <div className="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <h6 className="fw-bold mb-0">Notifications</h6>
-                                            {notifLoading && <Loader size="sm" message="" />}
-                                        </div>
-                                        {unreadCount > 0 && (
-                                            <button className="btn btn-link btn-sm p-0 extra-small text-decoration-none fw-bold" onClick={markAllRead}>
-                                                Mark all read
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div className="notification-list overflow-auto" style={{ maxHeight: '400px' }}>
-                                        {notifications.length > 0 ? (
-                                            notifications.map(n => (
-                                                <div key={n.id} className={`p-3 border-bottom d-flex gap-3 transition-all hover-bg-light cursor-pointer position-relative ${n.unread ? 'bg-primary-subtle bg-opacity-10' : ''}`}>
-                                                    <div className={`notification-icon rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${n.type === 'lead' ? 'bg-info-soft text-info' : n.type === 'booking' ? 'bg-success-soft text-success' : n.type === 'payment' ? 'bg-warning-soft text-warning' : 'bg-primary-soft text-primary'}`} style={{ width: '36px', height: '36px' }}>
-                                                        <i className={`bi ${n.type === 'lead' ? 'bi-person-plus' : n.type === 'booking' ? 'bi-calendar-check' : n.type === 'payment' ? 'bi-currency-dollar' : 'bi-info-circle'}`}></i>
-                                                    </div>
-                                                    <div className="flex-grow-1 overflow-hidden">
-                                                        <div className="d-flex justify-content-between align-items-start mb-1">
-                                                            <div className={`fw-bold fs-14 text-dark text-truncate ${n.unread ? '' : 'opacity-75'}`}>{n.title}</div>
-                                                            <div className="extra-small text-muted flex-shrink-0 ms-2">{n.time}</div>
-                                                        </div>
-                                                        <div className="extra-small text-muted text-wrap line-clamp-2">{n.message}</div>
-                                                    </div>
-                                                    {n.unread && <div className="position-absolute top-50 end-0 translate-middle-y me-2"><div className="bg-primary rounded-circle" style={{ width: '6px', height: '6px' }}></div></div>}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="p-5 text-center text-muted">
-                                                <i className="bi bi-bell-slash fs-2 opacity-25 mb-2 d-block"></i>
-                                                <div className="small">No notifications yet</div>
+                                {isNotifOpen && (
+                                    <div className="dropdown-menu show border-0 shadow-lg mt-2 p-0 rounded-4 overflow-hidden animate-fade-in" style={{ width: '320px', position: 'absolute', right: 0, zIndex: 1050 }}>
+                                        <div className="p-3 bg-white border-bottom d-flex justify-content-between align-items-center">
+                                            <div className="d-flex align-items-center gap-2">
+                                                <h6 className="fw-bold mb-0">Notifications</h6>
+                                                {notifLoading && <Loader size="sm" message="" />}
                                             </div>
-                                        )}
+                                            {unreadCount > 0 && (
+                                                <button className="btn btn-link btn-sm p-0 extra-small text-decoration-none fw-bold" onClick={markAllRead}>
+                                                    Mark all read
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="notification-list overflow-auto" style={{ maxHeight: '400px' }}>
+                                            {notifications.length > 0 ? (
+                                                notifications.map(n => (
+                                                    <div key={n.id} className={`p-3 border-bottom d-flex gap-3 transition-all hover-bg-light cursor-pointer position-relative ${n.unread ? 'bg-primary-subtle bg-opacity-10' : ''}`}>
+                                                        <div className={`notification-icon rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${n.type === 'lead' ? 'bg-info-soft text-info' : n.type === 'booking' ? 'bg-success-soft text-success' : n.type === 'payment' ? 'bg-warning-soft text-warning' : 'bg-primary-soft text-primary'}`} style={{ width: '36px', height: '36px' }}>
+                                                            <i className={`bi ${n.type === 'lead' ? 'bi-person-plus' : n.type === 'booking' ? 'bi-calendar-check' : n.type === 'payment' ? 'bi-currency-dollar' : 'bi-info-circle'}`}></i>
+                                                        </div>
+                                                        <div className="flex-grow-1 overflow-hidden">
+                                                            <div className="d-flex justify-content-between align-items-start mb-1">
+                                                                <div className={`fw-bold fs-14 text-dark text-truncate ${n.unread ? '' : 'opacity-75'}`}>{n.title}</div>
+                                                                <div className="extra-small text-muted flex-shrink-0 ms-2">{n.time}</div>
+                                                            </div>
+                                                            <div className="extra-small text-muted text-wrap line-clamp-2">{n.message}</div>
+                                                        </div>
+                                                        {n.unread && <div className="position-absolute top-50 end-0 translate-middle-y me-2"><div className="bg-primary rounded-circle" style={{ width: '6px', height: '6px' }}></div></div>}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-5 text-center text-muted">
+                                                    <i className="bi bi-bell-slash fs-2 opacity-25 mb-2 d-block"></i>
+                                                    <div className="small">No notifications yet</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="p-2 bg-light text-center">
+                                            <button className="btn btn-link btn-sm extra-small text-decoration-none fw-bold text-muted">
+                                                View all notifications
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="p-2 bg-light text-center">
-                                        <button className="btn btn-link btn-sm extra-small text-decoration-none fw-bold text-muted">
-                                            View all notifications
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
+                        )}
 
                         {isAgent && attentionCount > 0 && (
                             <Link href="/realestate-agent/attention" className="btn btn-icon rounded-3 btn-light-soft text-danger border border-danger border-opacity-25 shadow-sm nav-attention-btn position-relative" title={`${attentionCount} items need your attention`}>

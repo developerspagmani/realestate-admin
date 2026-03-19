@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Metadata } from 'next';
+import PublicFontInter from '@/components/common/PublicFontInter';
 
 export const metadata: Metadata = {
     title: 'Legal Documents | Virpanix',
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 export default function LegalPage() {
     return (
         <div className="min-vh-100 bg-white text-dark py-5">
+            <PublicFontInter />
             <div className="container" style={{ maxWidth: '800px' }}>
                 <div className="text-center mb-5">
                     <h1 className="fw-bold display-4 mb-3">Legal Center</h1>

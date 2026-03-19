@@ -52,18 +52,49 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
         }
     };
 
-    const handleFormSubmit = async (formData: any) => {
+    const handleFormSubmit = async (formData: any, configUsed?: any) => {
         if (!activePopup || isSubmitting) return;
 
         setIsSubmitting(true);
         try {
             const visitorId = localStorage.getItem('virpanix_visitor_id');
-            const res = await websiteService.createPublicLead(websiteId, {
-                ...formData,
+            const leadPayload: any = {
                 visitorId,
                 source: 'website_popup',
                 notes: `Captured via Popup: ${activePopup.name}`
-            });
+            };
+
+            // Intelligent Mapping (Similar to PageBuilder)
+            if (configUsed && configUsed.fields) {
+                configUsed.fields.forEach((field: any) => {
+                    const val = formData[field.id];
+                    if (!val) return;
+
+                    const label = (field.label || '').toLowerCase();
+                    const fid = (field.id || '').toLowerCase();
+                    const type = (field.type || '').toLowerCase();
+
+                    if (label.includes('name') || fid.includes('name')) {
+                        leadPayload.name = val;
+                    } else if (type === 'email' || label.includes('email') || fid.includes('email')) {
+                        leadPayload.email = val;
+                    } else if (type === 'phone' || type === 'tel' || label.includes('phone') || label.includes('contact') || fid.includes('phone')) {
+                        leadPayload.phone = val;
+                    } else if (label.includes('budget') || label.includes('price') || fid.includes('budget')) {
+                        const cleanedBudget = String(val).replace(/[^\d.]/g, '');
+                        leadPayload.budget = Number(cleanedBudget) || 0;
+                    } else if (label.includes('company') || fid.includes('company')) {
+                        leadPayload.company = val;
+                    } else {
+                        leadPayload.notes += `\n${field.label}: ${val}`;
+                    }
+                });
+            } else {
+                // Fallback for simple/legacy forms that spread formData directly
+                Object.assign(leadPayload, formData);
+            }
+
+            const res = await websiteService.createPublicLead(websiteId, leadPayload);
 
             if (trackAction) {
                 trackAction('POPUP_SUBMIT', {

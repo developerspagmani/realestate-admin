@@ -373,7 +373,7 @@ export default function CampaignManager({ mode = 'admin' }: CampaignManagerProps
                                                             <td>
                                                                 <span className={`badge rounded-4 extra-small px-3 ${campaign.status === 4 ? 'bg-success bg-opacity-10 text-success' :
                                                                     campaign.status === 1 ? 'bg-warning bg-opacity-10 text-warning' :
-                                                                        'bg-primary bg-opacity-10 text-primary'
+                                                                        'bg-primary bg-opacity-10 text-white'
                                                                     }`}>
                                                                     {campaign.status === 4 ? 'Sent' : campaign.status === 1 ? 'Draft' : 'Scheduled'}
                                                                 </span>

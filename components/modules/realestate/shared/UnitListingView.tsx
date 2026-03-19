@@ -9,6 +9,7 @@ interface UnitListingViewProps {
     widget?: any;
     onSelectUnit: (unit: any) => void;
     trackAction?: (type: string, metadata?: any) => void;
+    currencySymbol?: string;
 }
 
 const UnitListingView: React.FC<UnitListingViewProps> = ({
@@ -16,9 +17,11 @@ const UnitListingView: React.FC<UnitListingViewProps> = ({
     theme,
     widget,
     onSelectUnit,
-    trackAction
+    trackAction,
+    currencySymbol
 }) => {
     const getSymbol = (_propertyCountry?: string) => {
+        if (currencySymbol) return currencySymbol;
         const baseCurrency = widget?.tenant?.settings?.general?.currency;
         const tenantCountry = widget?.tenant?.country;
         const input = baseCurrency || tenantCountry || _propertyCountry || 'USA';

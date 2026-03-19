@@ -172,6 +172,29 @@ export default function WidgetForm({
                                         <div className="col-12">
                                             <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Branding & Layout</h6>
                                         </div>
+                                        <div className="col-md-12 mb-3">
+                                            <label className="form-label small fw-bold text-primary">Widget UI Template</label>
+                                            <div className="row g-3">
+                                                {[
+                                                    { id: 'modern', name: 'Modern Premium', icon: 'bi-grid-1x2-fill', desc: 'Glassmorphism & bold UI' },
+                                                    { id: 'minimalistic', name: 'Minimalist Clean', icon: 'bi-square', desc: 'Clean lines, sharp corners' },
+                                                    { id: 'traditional', name: 'Classic Traditional', icon: 'bi-palette', desc: 'Serif fonts & elegant borders' }
+                                                ].map(tpl => (
+                                                    <div key={tpl.id} className="col-md-4">
+                                                        <div
+                                                            className={`p-3 rounded-4 border-2 transition-all cursor-pointer h-100 ${formData.configuration?.theme?.template === tpl.id || (!formData.configuration?.theme?.template && tpl.id === 'modern') ? 'border-primary bg-danger bg-opacity-10' : 'border-light-subtle hover-bg-light'}`}
+                                                            onClick={() => toggleNestedConfig('theme', 'template', tpl.id)}
+                                                        >
+                                                            <div className="d-flex align-items-center gap-2 mb-2">
+                                                                <i className={`bi ${tpl.icon} ${formData.configuration?.theme?.template === tpl.id || (!formData.configuration?.theme?.template && tpl.id === 'modern') ? 'text-primary' : 'text-muted'}`}></i>
+                                                                <span className={`fw-bold small ${formData.configuration?.theme?.template === tpl.id || (!formData.configuration?.theme?.template && tpl.id === 'modern') ? 'text-primary' : ''}`}>{tpl.name}</span>
+                                                            </div>
+                                                            <p className="extra-small text-muted mb-0">{tpl.desc}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <div className="col-md-4">
                                             <label className="form-label small fw-bold">Primary Brand Color</label>
                                             <div className="d-flex gap-2 align-items-center p-2 border rounded-3 bg-white">

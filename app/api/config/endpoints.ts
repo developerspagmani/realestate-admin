@@ -530,6 +530,16 @@ export const taskEndpoints = {
 
 
 
+// Partner endpoints
+export const partnerEndpoints = {
+  getProfile: () => '/partners/profile',
+  adminList: (params?: Record<string, any>) =>
+    params ? `/partners/admin/list?${buildQueryString(params)}` : '/partners/admin/list',
+  adminUpdate: (id: string) => `/partners/admin/${id}`,
+  register: () => '/partners/signup',
+  addClient: () => '/partners/add-client',
+};
+
 // Popup endpoints
 export const popupEndpoints = {
   getAll: (params?: Record<string, any>) =>
@@ -538,6 +548,7 @@ export const popupEndpoints = {
   create: () => '/popups',
   update: (id: string, tenantId?: string) => `/popups/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
   delete: (id: string, tenantId?: string) => `/popups/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  getSubmissions: (id: string, tenantId?: string) => `/popups/${id}/submissions${tenantId ? `?tenantId=${tenantId}` : ''}`,
   getPublic: (websiteId: string) => `/popups/public/${websiteId}`,
 };
 

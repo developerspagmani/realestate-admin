@@ -36,6 +36,12 @@ export const popupService = {
         });
     },
 
+    getSubmissions: async (token: string, id: string, tenantId?: string) => {
+        return await makeApiCall(popupEndpoints.getSubmissions(id, tenantId), {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
     getPublicPopups: async (websiteId: string) => {
         return await makeApiCall(popupEndpoints.getPublic(websiteId));
     },

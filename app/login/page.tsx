@@ -3,8 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import Loader from '@/components/common/Loader';
 import Link from 'next/link';
+import PublicFontInter from '@/components/common/PublicFontInter';
 
 function LoginContent() {
   const [formData, setFormData] = useState({
@@ -14,6 +14,7 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginTypePartner, setLoginTypePartner] = useState(false);
   const { login, isAuthenticated, error: authError, getRedirectPath } = useAuthContext();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -201,7 +202,8 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center justify-content-center bg-light p-4">
+    <div className="login-portal-wrapper min-vh-100 d-flex align-items-center justify-content-center bg-light p-4">
+      <PublicFontInter />
       <div className="container" style={{ maxWidth: '900px' }}>
         <div className="card shadow-lg border-0 rounded-4 overflow-hidden animate-fade-in">
           <div className="row g-0">
@@ -241,15 +243,31 @@ function LoginContent() {
               )}
 
               <div className="d-flex justify-content-between align-items-start mb-4">
-                <div>
-                  <h2 className="fw-extrabold text-dark mb-1">Sign In</h2>
-                  <p className="text-muted small">Enter your credentials to manage your portfolio</p>
+                <div className="w-100">
+                  <div className="d-flex align-items-center bg-light p-1 rounded-4 mb-5" style={{ width: 'fit-content' }}>
+                    <button
+                      type="button"
+                      className={`btn btn-sm px-4 py-2 rounded-4 fw-bold transition-all border-0 ${!loginTypePartner ? 'bg-white shadow-sm text-dark' : 'text-muted'}`}
+                      onClick={() => setLoginTypePartner(false)}
+                    >
+                      <i className="bi bi-person-workspace me-2"></i> Property Owner
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-sm px-4 py-2 rounded-4 fw-bold transition-all border-0 ${loginTypePartner ? 'bg-white shadow-sm text-dark' : 'text-muted'}`}
+                      onClick={() => setLoginTypePartner(true)}
+                    >
+                      <i className="bi bi-person-hearts me-2"></i> Partner
+                    </button>
+                  </div>
+                  <h2 className="fw-900 text-dark mb-1">{loginTypePartner ? 'Partner Sign In' : 'Property Owner Sign In'}</h2>
+                  <p className="text-muted small mb-0">{loginTypePartner ? 'Access your partner metrics and referral dashboard' : 'Enter your credentials to manage your portfolio'}</p>
                 </div>
                 <button
                   type="button"
                   onClick={runVoiceAuth}
-                  className="btn btn-dark rounded-circle p-2 d-flex align-items-center justify-content-center shadow-lg hvr-red-pulse"
-                  style={{ width: '50px', height: '50px' }}
+                  className="btn btn-dark rounded-circle p-2 d-flex align-items-center justify-content-center shadow-lg hvr-red-pulse mb-4"
+                  style={{ width: '50px', height: '50px', flexShrink: 0 }}
                   title="Voice Login"
                 >
                   <i className="bi bi-mic-fill fs-4 text-red"></i>
@@ -323,7 +341,11 @@ function LoginContent() {
 
               <div className="text-center mt-5 pt-3 border-top">
                 <p className="extra-small text-muted mb-0">
-                  Don't have a account? <Link href="/register" className="text-dark fw-bold text-decoration-none">Register Portfolio</Link>
+                  {loginTypePartner ? (
+                    <>Interested in joining? <Link href="/signup/partner" className="text-dark fw-bold text-decoration-none">Become a Partner</Link></>
+                  ) : (
+                    <>Don't have an account? <Link href="/register" className="text-dark fw-bold text-decoration-none">Register Portfolio</Link></>
+                  )}
                 </p>
               </div>
             </div>
@@ -331,7 +353,8 @@ function LoginContent() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
+        .login-portal-wrapper { font-family: 'Inter', sans-serif; }
         .fw-extrabold { font-weight: 800; }
         .extra-small { font-size: 0.72rem; }
         .small-caps { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 800; color: #94a3b8; }
@@ -373,7 +396,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center bg-light">Loading Portal...</div>}>
+    <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center bg-light" style={{ fontFamily: "'Inter', sans-serif" }}><PublicFontInter />Loading Portal...</div>}>
       <LoginContent />
     </Suspense>
   );

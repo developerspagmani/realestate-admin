@@ -159,27 +159,30 @@ export default function MenuBuilder({ label, items = [], onChange, cmsPages }: M
                     <div className="row g-2 align-items-end">
                         <div className="col-12 mb-2">
                             <div className="btn-group w-100" role="group">
-                                <input
-                                    type="radio"
-                                    className="btn-check"
-                                    name={`type-${label}`}
-                                    id={`page-${label}`}
-                                    autoComplete="off"
-                                    checked={newItemType === 'page'}
-                                    onChange={() => setNewItemType('page')}
-                                />
-                                <label className="btn btn-primary btn-sm" htmlFor={`page-${label}`}>CMS Page</label>
+                                <div className="d-flex gap-3">
+                                    <input
+                                        type="radio"
+                                        className="btn-check"
+                                        name={`type-${label}`}
+                                        id={`page-${label}`}
+                                        autoComplete="off"
+                                        checked={newItemType === 'page'}
+                                        onChange={() => setNewItemType('page')}
+                                    />
+                                    <label className="btn btn-primary btn-sm" htmlFor={`page-${label}`}>CMS Page</label>
 
-                                <input
-                                    type="radio"
-                                    className="btn-check"
-                                    name={`type-${label}`}
-                                    id={`custom-${label}`}
-                                    autoComplete="off"
-                                    checked={newItemType === 'custom'}
-                                    onChange={() => setNewItemType('custom')}
-                                />
-                                <label className="btn btn-outline-primary btn-sm" htmlFor={`custom-${label}`}>Custom Link</label>
+                                    <input
+                                        type="radio"
+                                        className="btn-check"
+                                        name={`type-${label}`}
+                                        id={`custom-${label}`}
+                                        autoComplete="off"
+                                        checked={newItemType === 'custom'}
+                                        onChange={() => setNewItemType('custom')}
+                                    />
+                                    <label className="btn btn-outline-primary btn-sm" htmlFor={`custom-${label}`}>Custom Link</label>
+
+                                </div>
                             </div>
                         </div>
 

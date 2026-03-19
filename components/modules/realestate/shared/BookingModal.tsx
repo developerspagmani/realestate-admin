@@ -30,7 +30,11 @@ const BookingModal: React.FC<BookingModalProps> = ({
     const bookingForm = widget?.configuration?.bookingForm;
     const builderBookingEnabled = widget?.configuration?.builder?.enableBooking;
 
-    const bookingConfig = (bookingForm && bookingForm.enabled) ? bookingForm : (builderBookingEnabled || show ? {
+    const bookingConfig = (bookingForm?.useMarketingForm && bookingForm?.marketingFormId) 
+        ? bookingForm 
+        : (bookingForm && bookingForm.enabled) 
+            ? bookingForm 
+            : (builderBookingEnabled || show ? {
         enabled: true,
         title: 'Reservation Request',
         submitLabel: 'Confirm Reservation',
@@ -59,12 +63,26 @@ const BookingModal: React.FC<BookingModalProps> = ({
         (configUsed.fields || []).forEach((field: any) => {
             const val = formData[field.id];
             if (!val) return;
-            if (field.type === 'email' && !leadPayload.email) leadPayload.email = val;
-            else if (field.type === 'phone' && !leadPayload.phone) leadPayload.phone = val;
-            else if ((field.type === 'text' || field.id === 'f1') && !leadPayload.name) leadPayload.name = val;
-            else if (field.id === 'f2' && !leadPayload.email) leadPayload.email = val;
-            else if (field.type === 'date' || field.type === 'datetime-local') {
+
+            const label = (field.label || '').toLowerCase();
+            const fid = (field.id || '').toLowerCase();
+            const type = (field.type || '').toLowerCase();
+
+            if (label.includes('name') || fid.includes('name')) {
+                leadPayload.name = val;
+            } else if (type === 'email' || label.includes('email') || fid.includes('email')) {
+                leadPayload.email = val;
+            } else if (type === 'phone' || type === 'tel' || label.includes('phone') || label.includes('contact') || fid.includes('phone')) {
+                leadPayload.phone = val;
+            } else if (label.includes('budget') || label.includes('price') || fid.includes('budget')) {
+                const cleanedBudget = String(val).replace(/[^\d.]/g, '');
+                leadPayload.budget = Number(cleanedBudget) || 0;
+            } else if (label.includes('company') || fid.includes('company')) {
+                leadPayload.company = val;
+            } else if (type === 'date' || type === 'datetime-local') {
                 if (!leadPayload.startAt) leadPayload.startAt = val;
+            } else {
+                leadPayload.notes += `\n${field.label}: ${val}`;
             }
         });
 

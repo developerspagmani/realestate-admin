@@ -8,9 +8,10 @@ interface PopupCardProps {
     onEdit: (popup: WebsitePopup) => void;
     onDelete: (id: string) => void;
     onToggleStatus: (popup: WebsitePopup) => void;
+    onViewSubmissions: (popup: WebsitePopup) => void;
 }
 
-export default function PopupCard({ popup, websiteName, onEdit, onDelete, onToggleStatus }: PopupCardProps) {
+export default function PopupCard({ popup, websiteName, onEdit, onDelete, onToggleStatus, onViewSubmissions }: PopupCardProps) {
     const getTypeBadge = (type: string) => {
         switch (type) {
             case 'modal': return <span className="badge bg-primary-soft text-primary px-2 py-1 rounded-pill">Modal</span>;
@@ -70,12 +71,24 @@ export default function PopupCard({ popup, websiteName, onEdit, onDelete, onTogg
                     )}
                 </div>
 
-                <div className="d-flex gap-2">
+                <div className="d-flex flex-wrap gap-2">
                     <button
                         className="btn btn-light border btn-sm rounded-pill flex-grow-1 fw-bold"
                         onClick={() => onEdit(popup)}
                     >
                         <i className="bi bi-pencil me-1"></i> Edit
+                    </button>
+                    <button
+                        className="btn btn-primary-soft text-primary border-0 btn-sm rounded-pill flex-grow-1 fw-bold"
+                        onClick={() => {
+                            if (typeof onViewSubmissions === 'function') {
+                                onViewSubmissions(popup);
+                            } else {
+                                console.error('onViewSubmissions is not a function in PopupCard', { onViewSubmissions });
+                            }
+                        }}
+                    >
+                        <i className="bi bi-people me-1"></i> Audience
                     </button>
                     <button
                         className="btn btn-outline-danger btn-sm rounded-pill px-3"

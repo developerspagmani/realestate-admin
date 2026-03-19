@@ -11,7 +11,7 @@ type ViewType = 'PROPERTY_DETAIL';
 
 
 export default function PropertyDetailClient({ propertySlug, initialProperty }: { propertySlug: string, initialProperty?: any }) {
-    const { website, properties, theme, trackAction, identifyLead, slugOrDomain } = useStandalone();
+    const { website, properties, theme, trackAction, identifyLead, slugOrDomain, currencySymbol } = useStandalone();
     const router = useRouter();
 
     // Find the property in the pre-loaded list by ID or Slug, or use the initial data from server
@@ -47,14 +47,10 @@ export default function PropertyDetailClient({ propertySlug, initialProperty }: 
 
     if (!property) return <div className="p-5 text-center">Property not found.</div>;
 
-    const country = property?.country || website?.tenant?.country || 'USA';
-    const currencyConfig = getCurrencyConfig(country);
-    const currencySymbol = currencyConfig?.symbol || '$';
-
     const getFormattedPrice = (unit: any) => {
         if (!unit.unitPricing?.length) return 'Price on Inquiry';
         const pricing = unit.unitPricing[0];
-        return `${currencySymbol}${Number(pricing.price).toLocaleString('en-US')}`;
+        return `${currencySymbol || '$'}${Number(pricing.price).toLocaleString('en-US')}`;
     };
 
 

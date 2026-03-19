@@ -27,7 +27,8 @@ const INITIAL_FORM_DATA = {
         theme: {
             primaryColor: '#6366f1',
             borderRadius: '8px',
-            fontFamily: 'Inter, sans-serif'
+            fontFamily: 'Inter, sans-serif',
+            template: 'modern'
         },
         seo: {
             title: '',
@@ -80,20 +81,16 @@ const INITIAL_FORM_DATA = {
             }
         },
         inquiryForm: {
-            enabled: false,
-            useMarketingForm: false,
+            enabled: true,
+            useMarketingForm: true,
             marketingFormId: '',
             title: 'Inquiry Form',
             description: 'Please fill out the form below to get in touch with us.',
-            fields: [
-                { id: 'f1', type: 'text', label: 'Full Name', placeholder: 'Enter your name', required: true },
-                { id: 'f2', type: 'email', label: 'Email Address', placeholder: 'Enter your email', required: true },
-                { id: 'f3', type: 'textarea', label: 'Message', placeholder: 'How can we help you?', required: true }
-            ]
+            fields: []
         },
         bookingForm: {
-            enabled: false,
-            useMarketingForm: false,
+            enabled: true,
+            useMarketingForm: true,
             marketingFormId: ''
         },
         menus: {

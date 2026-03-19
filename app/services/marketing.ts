@@ -272,4 +272,20 @@ export const marketingService = {
             body: JSON.stringify(data),
         });
     },
+    
+    getEmailSettings: async (token: string, params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        return await makeApiCall(`/marketing/settings/email${query}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
+
+    saveEmailSettings: async (token: string, config: any, params?: any) => {
+        const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+        return await makeApiCall(`/marketing/settings/email${query}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(config),
+        });
+    },
 };

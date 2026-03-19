@@ -5,6 +5,8 @@ import { WebsitePopup, Website, MarketingForm } from '@/types';
 import { popupService, getAuthToken } from '@/app/services/api';
 import { useAuthContext } from '@/app/contexts/AuthContext';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
+import Toast from '@/components/common/Toast';
+import MediaSelector from '@/components/shared/MediaSelector';
 
 interface PopupFormProps {
     popup: WebsitePopup | null;
@@ -58,6 +60,8 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
     const [submitting, setSubmitting] = useState(false);
     const [activeTab, setActiveTab] = useState<'basic' | 'design' | 'behavior'>('basic');
     const [designSubTab, setDesignSubTab] = useState<'layout' | 'fields' | 'buttons'>('layout');
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'info' });
+    const [showMediaSelector, setShowMediaSelector] = useState(false);
 
     useEffect(() => {
         if (popup) {
@@ -66,6 +70,11 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
             setFormData(prev => ({ ...prev, websiteId: websites[0].id }));
         }
     }, [popup, websites]);
+
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+        setToast({ show: true, message, type });
+    };
+
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -81,6 +90,17 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
+    };
+
+    const handleMediaSelect = (selectedMedia: any) => {
+        setFormData(prev => ({
+            ...prev,
+            content: {
+                ...prev.content,
+                imageUrl: selectedMedia.url
+            }
+        }));
+        setShowMediaSelector(false);
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -103,11 +123,11 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
             if (response.success) {
                 onSuccess();
             } else {
-                alert(response.message || 'Failed to save popup');
+                showToast(response.message || 'Failed to save popup', 'error');
             }
         } catch (error) {
             console.error('Failed to save popup:', error);
-            alert('Error saving popup');
+            showToast('Error saving popup', 'error');
         } finally {
             setSubmitting(false);
         }
@@ -148,16 +168,16 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
                 >
                     {imageUrl && (
                         <div className={`${isSplit ? 'col-6' : 'w-100'} preview-image`} style={{ height: isSplit ? '100%' : 'auto' }}>
-                            <img 
-                                src={imageUrl} 
-                                alt="" 
-                                className="w-100" 
-                                style={{ 
+                            <img
+                                src={imageUrl}
+                                alt=""
+                                className="w-100"
+                                style={{
                                     height: isSplit ? '100%' : (formData.content?.height === 'small' ? '120px' : formData.content?.height === 'medium' ? '180px' : formData.content?.height === 'large' ? '250px' : '150px'),
                                     maxHeight: isSplit ? 'none' : '100%',
                                     objectFit: 'cover',
                                     minHeight: isSplit ? (formData.content?.height === 'small' ? '300px' : formData.content?.height === 'medium' ? '450px' : formData.content?.height === 'large' ? '600px' : '300px') : '0'
-                                }} 
+                                }}
                             />
                         </div>
                     )}
@@ -438,15 +458,41 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
                                                     />
                                                 </div>
                                                 <div className="col-12">
-                                                    <label className="form-label fw-bold small">Image URL (Optional)</label>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control rounded-3"
-                                                        name="content.imageUrl"
-                                                        value={formData.content?.imageUrl}
-                                                        onChange={handleChange}
-                                                        placeholder="https://example.com/image.jpg"
-                                                    />
+                                                    <label className="form-label fw-bold small text-primary">Popup Visual Image</label>
+                                                    {formData.content?.imageUrl ? (
+                                                        <div 
+                                                            className="position-relative cursor-pointer border rounded-4 bg-white d-flex align-items-center p-3 shadow-sm hover-bg-light transition-all hvr-grow"
+                                                            onClick={() => setShowMediaSelector(true)}
+                                                        >
+                                                            <div className="bg-light p-1 rounded-3 border me-3 flex-shrink-0" style={{ width: '80px', height: '60px' }}>
+                                                                <img src={formData.content.imageUrl} alt="Popup" className="w-100 h-100 rounded-2" style={{ objectFit: 'cover' }} />
+                                                            </div>
+                                                            <div className="flex-grow-1 overflow-hidden">
+                                                                <div className="fw-bold small text-truncate text-dark">{formData.content.imageUrl.split('/').pop()?.substring(0, 30)}</div>
+                                                                <div className="extra-small text-muted">Click to change popup image</div>
+                                                            </div>
+                                                            <div className="ms-auto d-flex gap-2 pe-1">
+                                                                <button type="button" className="btn btn-white btn-sm rounded-circle shadow-sm border p-0 d-flex align-items-center justify-content-center" style={{ width: 32, height: 32 }} onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setFormData(prev => ({ ...prev, content: { ...prev.content, imageUrl: '' } }));
+                                                                }}>
+                                                                    <i className="bi bi-trash text-danger"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div 
+                                                            className="border-2 rounded-4 p-4 text-center cursor-pointer hover-bg-light-subtle transition-all bg-light border-dashed text-primary d-flex flex-column align-items-center justify-content-center"
+                                                            onClick={() => setShowMediaSelector(true)}
+                                                            style={{ borderStyle: 'dashed', borderColor: '#dee2e6', minHeight: '120px' }}
+                                                        >
+                                                            <div className="bg-white rounded-circle shadow-sm p-3 mb-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                                                                <i className="bi bi-cloud-arrow-up fs-3 text-primary opacity-50"></i>
+                                                            </div>
+                                                            <div className="fw-bold small">Pick Section Image</div>
+                                                            <p className="extra-small text-muted mb-0 mt-1">Recommended for high engagement (800x600px)</p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="col-md-6">
                                                     <label className="form-label fw-bold small">Popup Width</label>
@@ -795,6 +841,13 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
                     </div>
                 </div>
 
+                <Toast
+                    show={toast.show}
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ ...toast, show: false })}
+                />
+
                 <style jsx>{`
                     .nav-link {
                         background: none;
@@ -836,6 +889,12 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
                         to { opacity: 1; transform: translateY(0); }
                     }
                 `}</style>
+                <MediaSelector
+                    show={showMediaSelector}
+                    onClose={() => setShowMediaSelector(false)}
+                    onSelect={handleMediaSelect}
+                    title="Choose Popup Image"
+                />
             </div>
         </div>
     );

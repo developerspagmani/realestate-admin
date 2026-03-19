@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import FormBuilder from '../widgets/FormBuilder';
 import WidgetPreview from '../widgets/WidgetPreview';
 import MediaSelector from '@/components/shared/MediaSelector';
 import MenuBuilder from './MenuBuilder';
@@ -39,6 +38,7 @@ export default function WebsiteForm({
     const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
     const [showMediaSelector, setShowMediaSelector] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+    const [isBuilding, setIsBuilding] = useState(false);
     const [mediaTarget, setMediaTarget] = useState<'logoUrl' | 'heroBgUrl' | 'faviconUrl' | null>(null);
     const [modularMediaIndex, setModularMediaIndex] = useState<number | null>(null);
     const [modularSlideIndex, setModularSlideIndex] = useState<number | null>(null);
@@ -76,6 +76,85 @@ export default function WebsiteForm({
             }
         };
         toggleNestedConfig('builder', 'modules', [...currentModules, newModule]);
+    };
+
+    const buildDefaultSite = () => {
+        setIsBuilding(true);
+        setTimeout(() => {
+            const timestamp = Date.now();
+            const defaultModules = [
+                {
+                    id: `mod-hero-${timestamp}`,
+                    type: 'hero-slider',
+                    data: {
+                        title: 'Welcome to Your Dream Destination',
+                        description: 'Experience pure luxury and modern architecture in every detail.',
+                        slides: [
+                            { title: 'Sophisticated Living', subtitle: 'Where nature meets urban elegance', imageUrl: 'https://images.unsplash.com/photo-1600585154340-be1199f7d009' },
+                            { title: 'Modern Minimalist', subtitle: 'Defining the future of residential design', imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750' }
+                        ],
+                        bgColor: '#ffffff',
+                        textColor: '#1a1a1a'
+                    }
+                },
+                {
+                    id: `mod-search-${timestamp + 1}`,
+                    type: 'search',
+                    data: {
+                        title: 'Find Your Next Investment',
+                        description: 'Filter through our exclusive collection of premium properties.',
+                        bgColor: '#f8f9fa'
+                    }
+                },
+                {
+                    id: `mod-text-image-${timestamp + 2}`,
+                    type: 'text-image',
+                    data: {
+                        title: 'Our Architecture Philosophy',
+                        description: 'We believe that space should tell a story. From the selection of sustainable materials to the optimization of natural lighting, every corner is crafted with intent.',
+                        imageUrl: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d',
+                        bgColor: '#ffffff',
+                        layout: 'split'
+                    }
+                },
+                {
+                    id: `mod-full-text-${timestamp + 3}`,
+                    type: 'typography',
+                    data: {
+                        title: 'Crafting excellence in every square foot since 1995.',
+                        description: 'Our legacy is built on trust, innovation, and an unwavering commitment to quality.',
+                        bgColor: '#1a1a1a',
+                        textColor: '#ffffff',
+                        textAlign: 'center'
+                    }
+                },
+                {
+                    id: `mod-gallery-${timestamp + 4}`,
+                    type: 'gallery',
+                    data: {
+                        title: 'Experience The Ambiance',
+                        layout: 'slider',
+                        items: [
+                            { title: 'The Grand Lobby', imageUrl: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b' },
+                            { title: 'The Terrace Lounge', imageUrl: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115' },
+                            { title: 'Master Bedroom', imageUrl: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0' }
+                        ],
+                        bgColor: '#ffffff'
+                    }
+                },
+                {
+                    id: `mod-form-${timestamp + 5}`,
+                    type: 'inquiry',
+                    data: {
+                        title: 'Connect With Our Experts',
+                        description: 'Register your interest today and receive a personalized consultation.',
+                        bgColor: '#f8f9fa'
+                    }
+                }
+            ];
+            toggleNestedConfig('builder', 'modules', defaultModules);
+            setIsBuilding(false);
+        }, 1500); // 1.5s delay for effect
     };
 
     const updateModule = (index: number, data: any) => {
@@ -138,10 +217,18 @@ export default function WebsiteForm({
             } else if (modularMediaIndex !== null) {
                 const modules = [...(formData.configuration.builder?.modules || [])];
                 if (modularSlideIndex !== null) {
-                    const slides = [...(modules[modularMediaIndex].data.slides || [])];
-                    if (slides[modularSlideIndex]) {
-                        slides[modularSlideIndex].imageUrl = selectedMedia.url;
-                        modules[modularMediaIndex].data.slides = slides;
+                    if (modularSlideIndex === -1) {
+                        // Gallery items push
+                        const items = [...(modules[modularMediaIndex].data?.items || [])];
+                        items.push(selectedMedia.url);
+                        modules[modularMediaIndex].data = { ...modules[modularMediaIndex].data, items };
+                    } else {
+                        // Hero slider update
+                        const slides = [...(modules[modularMediaIndex].data.slides || [])];
+                        if (slides[modularSlideIndex]) {
+                            slides[modularSlideIndex].imageUrl = selectedMedia.url;
+                            modules[modularMediaIndex].data.slides = slides;
+                        }
                     }
                 } else {
                     modules[modularMediaIndex].data.imageUrl = selectedMedia.url;
@@ -319,34 +406,50 @@ export default function WebsiteForm({
                                                 />
                                             </div>
                                             <div className="col-md-12">
-                                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                                    <label className="form-label small fw-bold mb-0">Custom Favicon (.ico, .png)</label>
-                                                    {formData.configuration.builder?.faviconUrl && (
-                                                        <div className="bg-white p-1 rounded-2 border shadow-sm">
-                                                            <img src={formData.configuration.builder.faviconUrl} alt="Favicon Preview" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="input-group shadow-sm">
-                                                    <input
-                                                        type="text"
-                                                        className="form-control rounded-start-3 border-light-subtle"
-                                                        placeholder="Select from media or enter URL"
-                                                        value={formData.configuration.builder?.faviconUrl || ''}
-                                                        onChange={(e) => toggleNestedConfig('builder', 'faviconUrl', e.target.value)}
-                                                    />
-                                                    <button 
-                                                        type="button" 
-                                                        className="btn btn-outline-primary rounded-end-3 px-3 d-flex align-items-center gap-2" 
+                                                <label className="form-label small fw-bold">Custom Favicon (.ico, .png)</label>
+                                                {formData.configuration.builder?.faviconUrl ? (
+                                                    <div
+                                                        className="position-relative group cursor-pointer border rounded-4 bg-light d-flex align-items-center p-3 shadow-sm hover-bg-white transition-all overflow-hidden border-light-subtle"
                                                         onClick={() => { setMediaTarget('faviconUrl' as any); setShowMediaSelector(true); }}
                                                     >
-                                                        <i className="bi bi-image"></i>
-                                                        <span className="small fw-bold">Select</span>
-                                                    </button>
-                                                </div>
-                                                <div className="extra-small text-muted mt-2">
+                                                        <div className="bg-white p-2 rounded-3 border shadow-sm me-3 flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '56px', height: '56px' }}>
+                                                            <img src={formData.configuration.builder.faviconUrl} alt="Favicon" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                                                        </div>
+                                                        <div className="flex-grow-1">
+                                                            <div className="fw-bold small text-dark mb-0 d-flex align-items-center gap-2">
+                                                                Portal Brand Icon
+                                                                <span className="badge bg-success-subtle text-success extra-small fw-bold">Active</span>
+                                                            </div>
+                                                            <div className="extra-small text-muted">Click icon to change or update from library.</div>
+                                                        </div>
+                                                        <div className="ms-auto d-flex gap-2 pe-1">
+                                                            <button
+                                                                type="button"
+                                                                className="btn btn-white btn-sm rounded-circle shadow-sm border p-0 d-flex align-items-center justify-content-center"
+                                                                style={{ width: '30px', height: '30px' }}
+                                                                onClick={(e) => { e.stopPropagation(); toggleNestedConfig('builder', 'faviconUrl', ''); }}
+                                                                title="Remove favicon"
+                                                            >
+                                                                <i className="bi bi-trash text-danger" style={{ fontSize: '14px' }}></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div
+                                                        className="border-2 rounded-4 p-4 text-center cursor-pointer hover-bg-light transition-all d-flex flex-column align-items-center justify-content-center bg-light"
+                                                        onClick={() => { setMediaTarget('faviconUrl' as any); setShowMediaSelector(true); }}
+                                                        style={{ borderStyle: 'dashed', borderColor: '#dee2e6' }}
+                                                    >
+                                                        <div className="bg-white rounded-circle shadow-sm p-3 mb-2 d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px' }}>
+                                                            <i className="bi bi-bookmark-star fs-3 text-primary opacity-50"></i>
+                                                        </div>
+                                                        <div className="fw-bold small text-primary">Upload Project Favicon</div>
+                                                        <div className="extra-small text-muted mt-1">Recommended size: 32x32px or 64x64px.</div>
+                                                    </div>
+                                                )}
+                                                <div className="extra-small text-muted mt-2 ps-1">
                                                     <i className="bi bi-info-circle me-1"></i>
-                                                    Recommended size: 32x32 or 64x64 pixels. This icon will appear in browser tabs.
+                                                    This icon will appear in browser tabs and mobile bookmark cards.
                                                 </div>
                                             </div>
                                         </div>
@@ -523,7 +626,30 @@ export default function WebsiteForm({
                                     {activeTab === 'style' && (
                                         <div className="row g-4 animate-fade-in">
                                             <div className="col-12">
-                                                <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Visual System</h6>
+                                                <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Visual System & Templates</h6>
+                                            </div>
+                                            <div className="col-md-12 mb-3">
+                                                <label className="form-label small fw-bold text-primary">Website UI Template</label>
+                                                <div className="row g-3">
+                                                    {[
+                                                        { id: 'modern', name: 'Modern Premium', icon: 'bi-grid-1x2-fill', desc: 'Vibrant colors, glassmorphism & bold UI' },
+                                                        { id: 'minimalistic', name: 'Minimalist Clean', icon: 'bi-square', desc: 'Lots of white space, clean lines & dark mode' },
+                                                        { id: 'traditional', name: 'Classic Traditional', icon: 'bi-palette', desc: 'Serif fonts, elegant borders & navy accents' }
+                                                    ].map(tpl => (
+                                                        <div key={tpl.id} className="col-md-4">
+                                                            <div
+                                                                className={`p-3 rounded-4 border-2 transition-all cursor-pointer h-100 ${formData.configuration?.theme?.template === tpl.id ? 'border-primary bg-danger bg-opacity-10' : 'border-light-subtle hover-bg-light'}`}
+                                                                onClick={() => toggleNestedConfig('theme', 'template', tpl.id)}
+                                                            >
+                                                                <div className="d-flex align-items-center gap-2 mb-2">
+                                                                    <i className={`bi ${tpl.icon} ${formData.configuration?.theme?.template === tpl.id ? 'text-primary' : 'text-muted'}`}></i>
+                                                                    <span className={`fw-bold small ${formData.configuration?.theme?.template === tpl.id ? 'text-primary' : ''}`}>{tpl.name}</span>
+                                                                </div>
+                                                                <p className="extra-small text-muted mb-0">{tpl.desc}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                             <div className="col-md-6">
                                                 <label className="form-label small fw-bold">Primary Brand Color</label>
@@ -716,30 +842,57 @@ export default function WebsiteForm({
 
                                             <div className="col-12 mt-5">
                                                 <div className="d-flex justify-content-between align-items-center mb-3">
-                                                    <h6 className="fw-bold text-secondary text-uppercase extra-small mb-0">Modular Page Sections</h6>
-                                                    <div className="dropdown">
-                                                        <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                            <i className="bi bi-plus-lg me-1"></i> Add Section
-                                                        </button>
-                                                        <ul className="dropdown-menu dropdown-menu-end shadow-lg rounded-4 border-0 p-2">
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('hero-slider')}><i className="bi bi-images me-2 text-primary"></i> Hero Slider</button></li>
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('search')}><i className="bi bi-search me-2 text-primary"></i> Search Filters</button></li>
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('text-image')}><i className="bi bi-layout-split me-2 text-primary"></i> Text & Image</button></li>
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('image-text')}><i className="bi bi-layout-split me-2 text-primary"></i> Image & Text</button></li>
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('property-slider')}><i className="bi bi-collection-play me-2 text-primary"></i> Properties Slider</button></li>
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('full-width-image')}><i className="bi bi-image-fill me-2 text-primary"></i> Full Width Image</button></li>
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('typography')}><i className="bi bi-type me-2 text-primary"></i> Heading & Text</button></li>
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('LISTING')}><i className="bi bi-grid-3x3-gap me-2 text-primary"></i> Full Property Listing</button></li>
-                                                            <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('inquiry')}><i className="bi bi-envelope-at me-2 text-primary"></i> Inquiry Form</button></li>
-                                                        </ul>
+                                                    <div>
+                                                        <h6 className="fw-bold text-secondary text-uppercase extra-small mb-0">Modular Page Sections</h6>
+                                                    </div>
+                                                    <div className="d-flex gap-2">
+                                                        <div className="dropdown">
+                                                            <button className="btn btn-primary btn-sm rounded-pill px-3 fw-bold shadow-sm dropdown-toggle text-white border-0" type="button" data-bs-toggle="dropdown">
+                                                                <i className="bi bi-plus-lg me-1"></i> Add Section
+                                                            </button>
+                                                            <ul className="dropdown-menu dropdown-menu-end shadow-lg rounded-4 border-0 p-2">
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('hero-slider')}><i className="bi bi-images me-2 text-primary"></i> Hero Slider</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('gallery')}><i className="bi bi-grid-3x3 me-2 text-primary"></i> Image Gallery</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('search')}><i className="bi bi-search me-2 text-primary"></i> Search Filters</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('text-image')}><i className="bi bi-layout-split me-2 text-primary"></i> Text & Image</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('image-text')}><i className="bi bi-layout-split me-2 text-primary"></i> Image & Text</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('property-slider')}><i className="bi bi-collection-play me-2 text-primary"></i> Properties Slider</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('full-width-image')}><i className="bi bi-image-fill me-2 text-primary"></i> Full Width Image</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('typography')}><i className="bi bi-type me-2 text-primary"></i> Full Width Text</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('LISTING')}><i className="bi bi-grid-3x3-gap me-2 text-primary"></i> Full Property Listing</button></li>
+                                                                <li><button type="button" className="dropdown-item rounded-3 small py-2" onClick={() => addModule('inquiry')}><i className="bi bi-envelope-at me-2 text-primary"></i> Inquiry Form</button></li>
+                                                            </ul>
+                                                        </div>
                                                     </div>
                                                 </div>
 
                                                 <div className="modular-builder-list">
                                                     {(formData.configuration.builder?.modules || []).length === 0 ? (
-                                                        <div className="text-center py-5 border-2 border-dashed rounded-4 bg-light bg-opacity-50">
-                                                            <i className="bi bi-layers text-muted display-6 opacity-25"></i>
-                                                            <p className="text-muted small mt-2">No custom sections added. Start building your page!</p>
+                                                        <div className="text-center py-5 border-2 border-dashed rounded-4 bg-light bg-opacity-50 d-flex flex-column align-items-center justify-content-center">
+                                                            <div className="mb-3 p-4 bg-white rounded-circle shadow-sm border">
+                                                                <i className="bi bi-layers text-primary display-6 opacity-50"></i>
+                                                            </div>
+                                                            <h6 className="fw-bold mb-2">Build Your Dream Website</h6>
+                                                            <p className="text-muted small mb-4 px-4 text-center" style={{ maxWidth: '350px' }}>
+                                                                Design a stunning project portal in minutes. Start from scratch or use our high-conversion template.
+                                                            </p>
+                                                            <button 
+                                                                type="button" 
+                                                                className="btn btn-success rounded-pill px-4 fw-bold shadow-lg hvr-grow d-flex align-items-center gap-2"
+                                                                onClick={buildDefaultSite}
+                                                                disabled={isBuilding}
+                                                            >
+                                                                {isBuilding ? (
+                                                                    <>
+                                                                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                                        Building Portal...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <i className="bi bi-magic"></i> Build It (Quick Template)
+                                                                    </>
+                                                                )}
+                                                            </button>
                                                         </div>
                                                     ) : (
                                                         <div className="d-flex flex-column gap-3">
@@ -749,13 +902,14 @@ export default function WebsiteForm({
                                                                         <div className="d-flex align-items-center gap-3">
                                                                             <div className="bg-primary bg-opacity-10 text-white p-2 rounded-3">
                                                                                 <i className={`bi ${module.type === 'hero-slider' ? 'bi-images' :
-                                                                                    module.type === 'search' ? 'bi-search' :
-                                                                                        module.type === 'text-image' || module.type === 'image-text' ? 'bi-layout-split' :
-                                                                                            module.type === 'property-slider' ? 'bi-collection-play' :
-                                                                                                module.type === 'full-width-image' ? 'bi-image-fill' :
-                                                                                                    module.type === 'LISTING' ? 'bi-grid-3x3-gap' :
-                                                                                                        module.type === 'inquiry' ? 'bi-envelope-at' :
-                                                                                                            'bi-type'
+                                                                                    module.type === 'gallery' ? 'bi-grid-3x3' :
+                                                                                        module.type === 'search' ? 'bi-search' :
+                                                                                            module.type === 'text-image' || module.type === 'image-text' ? 'bi-layout-split' :
+                                                                                                module.type === 'property-slider' ? 'bi-collection-play' :
+                                                                                                    module.type === 'full-width-image' ? 'bi-image-fill' :
+                                                                                                        module.type === 'LISTING' ? 'bi-grid-3x3-gap' :
+                                                                                                            module.type === 'inquiry' ? 'bi-envelope-at' :
+                                                                                                                'bi-type'
                                                                                     }`}></i>
                                                                             </div>
                                                                             <div>
@@ -803,22 +957,43 @@ export default function WebsiteForm({
                                                                                                         }} />
                                                                                                     </div>
                                                                                                     <div className="col-12">
-                                                                                                        <label className="form-label extra-small fw-bold text-muted">Slide Image URL</label>
-                                                                                                        <div className="input-group input-group-sm shadow-sm">
-                                                                                                            <input type="text" className="form-control rounded-start-3" placeholder="https://..." value={slide.imageUrl} onChange={(e) => {
-                                                                                                                const slides = [...(module.data.slides || [])];
-                                                                                                                slides[sIdx].imageUrl = e.target.value;
-                                                                                                                updateModule(index, { ...module.data, slides });
-                                                                                                            }} />
-                                                                                                            <button type="button" className="btn btn-outline-secondary rounded-end-3" onClick={() => {
-                                                                                                                setMediaTarget(null);
-                                                                                                                setModularMediaIndex(index);
-                                                                                                                setModularSlideIndex(sIdx);
-                                                                                                                setShowMediaSelector(true);
-                                                                                                            }}>
-                                                                                                                <i className="bi bi-image"></i>
+                                                                                                        <label className="form-label extra-small fw-bold text-muted">Slide Background Image</label>
+                                                                                                        {slide.imageUrl ? (
+                                                                                                            <div className="position-relative cursor-pointer border rounded-4 bg-white d-flex align-items-center p-2 shadow-sm hover-bg-light transition-all"
+                                                                                                                onClick={() => {
+                                                                                                                    setMediaTarget(null);
+                                                                                                                    setModularMediaIndex(index);
+                                                                                                                    setModularSlideIndex(sIdx);
+                                                                                                                    setShowMediaSelector(true);
+                                                                                                                }}>
+                                                                                                                <div className="bg-light p-1 rounded-3 border me-3 flex-shrink-0" style={{ width: '64px', height: '48px' }}>
+                                                                                                                    <img src={slide.imageUrl} alt="Slide" className="w-100 h-100 rounded-2" style={{ objectFit: 'cover' }} />
+                                                                                                                </div>
+                                                                                                                <div className="flex-grow-1 overflow-hidden">
+                                                                                                                    <div className="extra-small fw-bold text-nowrap text-truncate">{slide.imageUrl.split('/').pop()}</div>
+                                                                                                                    <div className="extra-small text-muted">Click to change slide image</div>
+                                                                                                                </div>
+                                                                                                                <button type="button" className="btn btn-sm btn-white rounded-circle shadow-sm border p-0 ms-2" style={{ width: 28, height: 28 }} onClick={(e) => {
+                                                                                                                    e.stopPropagation();
+                                                                                                                    const slides = [...(module.data.slides || [])];
+                                                                                                                    slides[sIdx].imageUrl = '';
+                                                                                                                    updateModule(index, { ...module.data, slides });
+                                                                                                                }}>
+                                                                                                                    <i className="bi bi-trash text-danger extra-small"></i>
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                        ) : (
+                                                                                                            <button type="button" className="btn btn-light btn-sm w-100 rounded-3 border-dashed py-3 d-flex flex-column align-items-center gap-1"
+                                                                                                                onClick={() => {
+                                                                                                                    setMediaTarget(null);
+                                                                                                                    setModularMediaIndex(index);
+                                                                                                                    setModularSlideIndex(sIdx);
+                                                                                                                    setShowMediaSelector(true);
+                                                                                                                }}>
+                                                                                                                <i className="bi bi-image text-primary opacity-50 fs-5"></i>
+                                                                                                                <span className="extra-small fw-bold text-primary">Choose Slide Image</span>
                                                                                                             </button>
-                                                                                                        </div>
+                                                                                                        )}
                                                                                                     </div>
                                                                                                 </div>
                                                                                             </div>
@@ -833,14 +1008,89 @@ export default function WebsiteForm({
                                                                                 </div>
                                                                             )}
 
+                                                                            {module.type === 'gallery' && (
+                                                                                <div className="col-12 animate-fade-in">
+                                                                                    <div className="row g-3">
+                                                                                        <div className="col-md-12">
+                                                                                            <label className="form-label extra-small fw-bold">Gallery Display Mode</label>
+                                                                                            <div className="d-flex gap-2">
+                                                                                                <button type="button" className={`btn btn-sm rounded-pill px-3 flex-grow-1 ${module.data?.layout === 'swiper' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => updateModule(index, { ...module.data, layout: 'swiper' })}>
+                                                                                                    <i className="bi bi-collection-play me-2"></i> Swiper Slider
+                                                                                                </button>
+                                                                                                <button type="button" className={`btn btn-sm rounded-pill px-3 flex-grow-1 ${module.data?.layout === 'grid' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => updateModule(index, { ...module.data, layout: 'grid' })}>
+                                                                                                    <i className="bi bi-grid-3x3 me-2"></i> Responsive Grid
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {module.data?.layout === 'grid' && (
+                                                                                            <div className="col-md-12">
+                                                                                                <div className="row g-2">
+                                                                                                    <div className="col-6">
+                                                                                                        <label className="form-label extra-small fw-bold">Grid Columns</label>
+                                                                                                        <select className="form-select form-select-sm rounded-3" value={module.data?.columns || 3} onChange={(e) => updateModule(index, { ...module.data, columns: parseInt(e.target.value) })}>
+                                                                                                            {[2, 3, 4, 6].map(c => <option key={c} value={c}>{c} Columns</option>)}
+                                                                                                        </select>
+                                                                                                    </div>
+                                                                                                    <div className="col-6">
+                                                                                                        <label className="form-label extra-small fw-bold">Gap Spacing</label>
+                                                                                                        <select className="form-select form-select-sm rounded-3" value={module.data?.gap || 'g-3'} onChange={(e) => updateModule(index, { ...module.data, gap: e.target.value })}>
+                                                                                                            <option value="g-0">No Gap</option>
+                                                                                                            <option value="g-2">Tight</option>
+                                                                                                            <option value="g-4">Wide</option>
+                                                                                                        </select>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        )}
+
+                                                                                        <div className="col-12 mt-2">
+                                                                                            <label className="form-label extra-small fw-bold text-muted">Gallery Items ({(module.data?.items || []).length})</label>
+                                                                                            <div className="row g-2">
+                                                                                                {(module.data?.items || []).map((img: string, iIdx: number) => (
+                                                                                                    <div key={iIdx} className="col-3 col-md-2 position-relative group animate-fade-in">
+                                                                                                        <div className="ratio ratio-1x1 border rounded-3 bg-white overflow-hidden shadow-sm">
+                                                                                                            <img src={img} className="object-fit-cover" alt="Gallery" />
+                                                                                                            <div className="position-absolute top-0 end-0 p-1 opacity-0 group-hover-opacity-100 transition-all">
+                                                                                                                <button type="button" className="btn btn-danger btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style={{ width: 22, height: 22 }} onClick={() => {
+                                                                                                                    const items = [...(module.data.items || [])];
+                                                                                                                    items.splice(iIdx, 1);
+                                                                                                                    updateModule(index, { ...module.data, items });
+                                                                                                                }}>
+                                                                                                                    <i className="bi bi-x small"></i>
+                                                                                                                </button>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                ))}
+                                                                                                <div className="col-3 col-md-2">
+                                                                                                    <div className="ratio ratio-1x1 border border-dashed rounded-3 bg-light d-flex flex-column align-items-center justify-content-center cursor-pointer hover-bg-light-subtle transition-all text-primary"
+                                                                                                        onClick={() => {
+                                                                                                            setMediaTarget(null);
+                                                                                                            setModularMediaIndex(index);
+                                                                                                            setModularSlideIndex(-1); // Special flag for array push
+                                                                                                            setShowMediaSelector(true);
+                                                                                                        }}>
+                                                                                                        <div className="d-flex flex-column align-items-center">
+                                                                                                            <i className="bi bi-plus-lg"></i>
+                                                                                                            <span style={{ fontSize: '8px' }}>ADD</span>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )}
+
                                                                             {module.type === 'search' && (
                                                                                 <div className="col-12 text-center py-3">
-                                                                                    <div className="p-4 bg-primary bg-opacity-10 border border-primary border-dashed rounded-4">
-                                                                                        <i className="bi bi-search h3 text-primary d-block mb-3"></i>
-                                                                                        <h6 className="fw-bold">Dynamic Search Section</h6>
-                                                                                        <p className="extra-small text-muted mb-4 px-3">Enables real-time property filtering on your landing page.</p>
+                                                                                    <div className="p-4 bg-primary bg-opacity-50 border border-primary border-dashed rounded-4">
+                                                                                        <i className="bi bi-search h3 text-white d-block mb-3"></i>
+                                                                                        <h6 className="fw-bold text-white">Dynamic Search Section</h6>
+                                                                                        <p className="extra-small text-white mb-4 px-3">Enables real-time property filtering on your landing page.</p>
                                                                                         <div className="text-start">
-                                                                                            <label className="form-label extra-small fw-bold">Section Heading (Optional)</label>
+                                                                                            <label className="form-label extra-small fw-bold text-white">Section Heading (Optional)</label>
                                                                                             <input
                                                                                                 type="text"
                                                                                                 className="form-control form-control-sm rounded-3 shadow-sm"
@@ -877,22 +1127,39 @@ export default function WebsiteForm({
                                                                             )}
                                                                             {(module.type === 'text-image' || module.type === 'image-text' || module.type === 'full-width-image') && (
                                                                                 <div className="col-12">
-                                                                                    <label className="form-label extra-small fw-bold">Image URL</label>
-                                                                                    <div className="input-group input-group-sm">
-                                                                                        <input
-                                                                                            type="text"
-                                                                                            className="form-control rounded-start-3"
-                                                                                            value={module.data?.imageUrl || ''}
-                                                                                            onChange={(e) => updateModule(index, { ...module.data, imageUrl: e.target.value })}
-                                                                                        />
-                                                                                        <button type="button" className="btn btn-outline-secondary rounded-end-3" onClick={() => {
-                                                                                            setMediaTarget(null);
-                                                                                            setModularMediaIndex(index);
-                                                                                            setShowMediaSelector(true);
-                                                                                        }}>
-                                                                                            <i className="bi bi-image"></i>
-                                                                                        </button>
-                                                                                    </div>
+                                                                                    <label className="form-label extra-small fw-bold">Section Content Image</label>
+                                                                                    {module.data?.imageUrl ? (
+                                                                                        <div className="position-relative cursor-pointer border rounded-4 bg-white d-flex align-items-center p-3 shadow-sm hover-bg-light transition-all"
+                                                                                            onClick={() => {
+                                                                                                setMediaTarget(null);
+                                                                                                setModularMediaIndex(index);
+                                                                                                setShowMediaSelector(true);
+                                                                                            }}>
+                                                                                            <div className="bg-light p-1 rounded-3 border me-3 flex-shrink-0" style={{ width: '80px', height: '60px' }}>
+                                                                                                <img src={module.data.imageUrl} alt="Section" className="w-100 h-100 rounded-2" style={{ objectFit: 'cover' }} />
+                                                                                            </div>
+                                                                                            <div className="flex-grow-1 overflow-hidden">
+                                                                                                <div className="fw-bold small">{module.data.imageUrl.split('/').pop()?.substring(0, 30)}</div>
+                                                                                                <div className="extra-small text-muted">Section Visual Asset</div>
+                                                                                            </div>
+                                                                                            <button type="button" className="btn btn-white btn-sm rounded-circle shadow-sm border" style={{ width: 32, height: 32 }} onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                updateModule(index, { ...module.data, imageUrl: '' });
+                                                                                            }}>
+                                                                                                <i className="bi bi-trash text-danger"></i>
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <div className="border-2 rounded-4 p-4 text-center cursor-pointer hover-bg-light transition-all bg-white border-dashed text-primary d-flex flex-column align-items-center"
+                                                                                            onClick={() => {
+                                                                                                setMediaTarget(null);
+                                                                                                setModularMediaIndex(index);
+                                                                                                setShowMediaSelector(true);
+                                                                                            }}>
+                                                                                            <i className="bi bi-cloud-arrow-up fs-3 opacity-50 mb-1"></i>
+                                                                                            <div className="fw-bold small">Pick Section Image</div>
+                                                                                        </div>
+                                                                                    )}
                                                                                 </div>
                                                                             )}
                                                                             {module.type === 'typography' && (
@@ -949,6 +1216,27 @@ export default function WebsiteForm({
                                                                     </div>
                                                                 </div>
                                                             ))}
+                                                            
+                                                            <div className="mt-4 pt-4 border-top text-center">
+                                                                <button 
+                                                                    type="button" 
+                                                                    className="btn btn-outline-success rounded-pill px-4 fw-bold shadow-sm hvr-grow d-inline-flex align-items-center gap-2"
+                                                                    onClick={buildDefaultSite}
+                                                                    disabled={isBuilding}
+                                                                >
+                                                                    {isBuilding ? (
+                                                                        <>
+                                                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                                            Re-Building From Template...
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <i className="bi bi-magic"></i> Reset & Build From Quick Template
+                                                                        </>
+                                                                    )}
+                                                                </button>
+                                                                <div className="extra-small text-muted mt-2 px-4">Caution: This will replace your current section layout with the premium default template.</div>
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -1059,7 +1347,7 @@ export default function WebsiteForm({
                                                     {formData.configuration.chatbot?.enabled && (
                                                         <div className="mt-4 border-top pt-4 animate-fade-up">
                                                             <div className="row g-4">
-                                                                <div className="col-md-6">
+                                                                <div className="col-md-4">
                                                                     <label className="form-label fw-bold extra-small text-uppercase text-muted">Welcome Title</label>
                                                                     <input
                                                                         type="text"
@@ -1069,7 +1357,7 @@ export default function WebsiteForm({
                                                                         placeholder="e.g. Looking for a new home?"
                                                                     />
                                                                 </div>
-                                                                <div className="col-md-6">
+                                                                <div className="col-md-4">
                                                                     <label className="form-label fw-bold extra-small text-uppercase text-muted">Welcome Subtext</label>
                                                                     <input
                                                                         type="text"
@@ -1079,36 +1367,7 @@ export default function WebsiteForm({
                                                                         placeholder="e.g. Find your dream home in seconds."
                                                                     />
                                                                 </div>
-                                                                <div className="col-md-6">
-                                                                    <label className="form-label fw-bold extra-small text-uppercase text-muted">Bot Theme Color</label>
-                                                                    <div className="d-flex gap-2">
-                                                                        <div
-                                                                            className="rounded-circle shadow-sm border overflow-hidden"
-                                                                            style={{
-                                                                                width: '40px',
-                                                                                height: '40px',
-                                                                                backgroundColor: formData.configuration.chatbot?.primaryColor || '#6366f1',
-                                                                                position: 'relative'
-                                                                            }}
-                                                                        >
-                                                                            <input
-                                                                                type="color"
-                                                                                className="position-absolute top-50 start-50 translate-middle border-0 p-0"
-                                                                                style={{ width: '150%', height: '150%', cursor: 'pointer' }}
-                                                                                value={formData.configuration.chatbot?.primaryColor || '#6366f1'}
-                                                                                onChange={(e) => toggleNestedConfig('chatbot', 'primaryColor', e.target.value)}
-                                                                            />
-                                                                        </div>
-                                                                        <input
-                                                                            type="text"
-                                                                            className="form-control rounded-4 shadow-sm border-0 font-monospace"
-                                                                            value={formData.configuration.chatbot?.primaryColor || '#6366f1'}
-                                                                            onChange={(e) => toggleNestedConfig('chatbot', 'primaryColor', e.target.value)}
-                                                                            placeholder="#6366f1"
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="col-md-6">
+                                                                <div className="col-md-4">
                                                                     <label className="form-label fw-bold extra-small text-uppercase text-muted">Lead Strategy</label>
                                                                     <select
                                                                         className="form-select rounded-4 shadow-sm border-0"
@@ -1123,7 +1382,7 @@ export default function WebsiteForm({
                                                                 <div className="col-12 mt-3">
                                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                                         <label className="form-label fw-bold extra-small text-uppercase text-muted mb-0">Custom Budget Ranges</label>
-                                                                        <button 
+                                                                        <button
                                                                             type="button"
                                                                             className="btn btn-link btn-sm text-primary text-decoration-none p-0 extra-small fw-bold"
                                                                             onClick={() => {
@@ -1150,9 +1409,9 @@ export default function WebsiteForm({
                                                                                 <div className="row g-2 align-items-center">
                                                                                     <div className="col-md-5">
                                                                                         <label className="extra-small fw-bold text-muted mb-1">Label</label>
-                                                                                        <input 
-                                                                                            type="text" 
-                                                                                            className="form-control form-control-sm rounded-3 shadow-sm" 
+                                                                                        <input
+                                                                                            type="text"
+                                                                                            className="form-control form-control-sm rounded-3 shadow-sm"
                                                                                             value={range.label}
                                                                                             onChange={(e) => {
                                                                                                 const ranges = [...(formData.configuration.chatbot.budgetRanges || [])];
@@ -1163,9 +1422,9 @@ export default function WebsiteForm({
                                                                                     </div>
                                                                                     <div className="col-md-3">
                                                                                         <label className="extra-small fw-bold text-muted mb-1">Min</label>
-                                                                                        <input 
-                                                                                            type="number" 
-                                                                                            className="form-control form-control-sm rounded-3 shadow-sm" 
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            className="form-control form-control-sm rounded-3 shadow-sm"
                                                                                             value={range.min}
                                                                                             onChange={(e) => {
                                                                                                 const ranges = [...(formData.configuration.chatbot.budgetRanges || [])];
@@ -1176,9 +1435,9 @@ export default function WebsiteForm({
                                                                                     </div>
                                                                                     <div className="col-md-3">
                                                                                         <label className="extra-small fw-bold text-muted mb-1">Max</label>
-                                                                                        <input 
-                                                                                            type="number" 
-                                                                                            className="form-control form-control-sm rounded-3 shadow-sm" 
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            className="form-control form-control-sm rounded-3 shadow-sm"
                                                                                             value={range.max}
                                                                                             onChange={(e) => {
                                                                                                 const ranges = [...(formData.configuration.chatbot.budgetRanges || [])];
@@ -1188,7 +1447,7 @@ export default function WebsiteForm({
                                                                                         />
                                                                                     </div>
                                                                                     <div className="col-md-1 d-flex align-items-end justify-content-center">
-                                                                                        <button 
+                                                                                        <button
                                                                                             type="button"
                                                                                             className="btn btn-sm btn-outline-danger border-0 rounded-circle"
                                                                                             onClick={() => {
@@ -1237,129 +1496,81 @@ export default function WebsiteForm({
                                                 </div>
                                             </div>
 
-                                            <div className="col-12 mt-4">
-                                                <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Capture Sync</h6>
+                                            <div className="col-6 mt-4">
+                                                <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Capture Sync (Marketing Hub)</h6>
                                                 <div className="card bg-light border-0 rounded-4 p-4">
-                                                    <label className="form-label small fw-bold mb-3">Form Strategy</label>
-                                                    <div className="d-flex gap-3 mb-4">
-                                                        <div
-                                                            className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center ${!formData.configuration.inquiryForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'}`}
-                                                            onClick={() => toggleNestedConfig('inquiryForm', 'useMarketingForm', false)}
-                                                        >
-                                                            <i className="bi bi-tools d-block mb-1"></i>
-                                                            <div className="fw-bold extra-small">Custom Form Builder</div>
-                                                        </div>
-                                                        <div
-                                                            className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center position-relative ${formData.configuration.inquiryForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'} ${!hasModule('marketing_hub') ? 'opacity-50' : ''}`}
-                                                            onClick={() => hasModule('marketing_hub') && toggleNestedConfig('inquiryForm', 'useMarketingForm', true)}
-                                                        >
-                                                            {!hasModule('marketing_hub') && (
-                                                                <div className="position-absolute top-0 end-0 p-2">
-                                                                    <i className="bi bi-lock-fill text-warning"></i>
+                                                    <div className="animate-fade-in">
+                                                        {!hasModule('marketing_hub') ? (
+                                                            <div className="p-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 text-center">
+                                                                <i className="bi bi-gem display-6 text-warning mb-3 d-block"></i>
+                                                                <h6 className="fw-bold">Premium Marketing Integration</h6>
+                                                                <p className="extra-small text-muted mb-3">Syncing website leads directly into Marketing Hub is a premium feature. Upgrade to our Professional plan to unlock this.</p>
+                                                                <button type="button" className="btn btn-warning btn-sm fw-bold px-4 rounded-3 shadow-sm" onClick={() => router.push('/realestate-owner-admin/subscriptions')}>
+                                                                    View Upgrade Plans
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Inquiry Form </label>
+                                                                <select
+                                                                    className="form-select border-0 shadow-sm py-2 rounded-3"
+                                                                    value={formData.configuration.inquiryForm?.marketingFormId || ''}
+                                                                    onChange={(e) => {
+                                                                        toggleNestedConfig('inquiryForm', 'marketingFormId', e.target.value);
+                                                                        toggleNestedConfig('inquiryForm', 'useMarketingForm', true);
+                                                                        toggleNestedConfig('inquiryForm', 'enabled', true);
+                                                                    }}
+                                                                >
+                                                                    <option value="">-- Choose a Marketing Form --</option>
+                                                                    {marketingForms.map(f => (
+                                                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                                <div className="p-3 bg-white mt-3 rounded-3 border border-info border-opacity-25 shadow-sm">
+                                                                    <p className="extra-small text-info mb-0 d-flex align-items-center">
+                                                                        <i className="bi bi-info-circle-fill me-2 fs-6"></i>
+                                                                        Website leads will be automatically routed to your Marketing CRM and target audiences.
+                                                                    </p>
                                                                 </div>
-                                                            )}
-                                                            <i className="bi bi-cloud-check d-block mb-1"></i>
-                                                            <div className="fw-bold extra-small">Marketing Hub Sync</div>
-                                                            {!hasModule('marketing_hub') && (
-                                                                <div className="extra-small text-danger italic mt-1" style={{ fontSize: '9px' }}>UPGRADE REQUIRED</div>
-                                                            )}
-                                                        </div>
+                                                            </>
+                                                        )}
                                                     </div>
-
-                                                    {formData.configuration.inquiryForm?.useMarketingForm ? (
-                                                        <div className="animate-fade-in">
-                                                            {!hasModule('marketing_hub') ? (
-                                                                <div className="p-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 text-center">
-                                                                    <i className="bi bi-gem display-6 text-warning mb-3 d-block"></i>
-                                                                    <h6 className="fw-bold">Premium Marketing Integration</h6>
-                                                                    <p className="extra-small text-muted mb-3">Syncing website leads directly into Marketing Hub is a premium feature. Upgrade to our Professional plan to unlock this.</p>
-                                                                    <button type="button" className="btn btn-warning btn-sm fw-bold px-4 rounded-3 shadow-sm" onClick={() => router.push('/realestate-owner-admin/subscriptions')}>
-                                                                        View Upgrade Plans
-                                                                    </button>
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Target Managed Form</label>
-                                                                    <select
-                                                                        className="form-select border-0 shadow-sm py-2 rounded-3"
-                                                                        value={formData.configuration.inquiryForm?.marketingFormId || ''}
-                                                                        onChange={(e) => toggleNestedConfig('inquiryForm', 'marketingFormId', e.target.value)}
-                                                                    >
-                                                                        <option value="">-- Choose a Marketing Form --</option>
-                                                                        {marketingForms.map(f => (
-                                                                            <option key={f.id} value={f.id}>{f.name}</option>
-                                                                        ))}
-                                                                    </select>
-                                                                    <div className="p-3 bg-white mt-3 rounded-3 border border-info border-opacity-25 shadow-sm">
-                                                                        <p className="extra-small text-info mb-0 d-flex align-items-center">
-                                                                            <i className="bi bi-info-circle-fill me-2 fs-6"></i>
-                                                                            Website leads will be automatically routed to your Marketing CRM and target audiences.
-                                                                        </p>
-                                                                    </div>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <FormBuilder
-                                                            config={formData.configuration.inquiryForm || { enabled: false, title: '', description: '', fields: [] }}
-                                                            onChange={(formConfig) => setFormData({
-                                                                ...formData,
-                                                                configuration: { ...formData.configuration, inquiryForm: formConfig }
-                                                            })}
-                                                        />
-                                                    )}
                                                 </div>
                                             </div>
 
-                                            <div className="col-12 mt-4">
-                                                <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Booking Engine Strategy</h6>
+                                            <div className="col-6 mt-4">
+                                                <h6 className="fw-bold mb-3 text-secondary text-uppercase extra-small">Booking Engine Strategy (Marketing Hub)</h6>
                                                 <div className="card bg-light border-0 rounded-4 p-4">
-                                                    <label className="form-label small fw-bold mb-3">Booking Form Source</label>
-                                                    <div className="d-flex gap-3 mb-4">
-                                                        <div
-                                                            className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center ${!formData.configuration.bookingForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'}`}
-                                                            onClick={() => toggleNestedConfig('bookingForm', 'useMarketingForm', false)}
-                                                        >
-                                                            <i className="bi bi-calendar-check d-block mb-1"></i>
-                                                            <div className="fw-bold extra-small">Standard Booking Engine</div>
-                                                        </div>
-                                                        <div
-                                                            className={`flex-grow-1 p-3 rounded-4 border-2 cursor-pointer transition-all text-center position-relative ${formData.configuration.bookingForm?.useMarketingForm ? 'border-primary bg-white shadow-sm' : 'border-dashed border-secondary-subtle text-muted opacity-75'} ${!hasModule('marketing_hub') ? 'opacity-50' : ''}`}
-                                                            onClick={() => hasModule('marketing_hub') && toggleNestedConfig('bookingForm', 'useMarketingForm', true)}
-                                                        >
-                                                            {!hasModule('marketing_hub') && (
-                                                                <div className="position-absolute top-0 end-0 p-2">
-                                                                    <i className="bi bi-lock-fill text-warning"></i>
-                                                                </div>
-                                                            )}
-                                                            <i className="bi bi-cloud-check d-block mb-1"></i>
-                                                            <div className="fw-bold extra-small">Marketing Hub Sync</div>
-                                                        </div>
+                                                    <div className="animate-fade-in">
+                                                        {hasModule('marketing_hub') ? (
+                                                            <>
+                                                                <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Booking Form</label>
+                                                                <select
+                                                                    className="form-select border-0 shadow-sm py-2 rounded-3"
+                                                                    value={formData.configuration.bookingForm?.marketingFormId || ''}
+                                                                    onChange={(e) => {
+                                                                        toggleNestedConfig('bookingForm', 'marketingFormId', e.target.value);
+                                                                        toggleNestedConfig('bookingForm', 'useMarketingForm', true);
+                                                                        toggleNestedConfig('bookingForm', 'enabled', true);
+                                                                    }}
+                                                                >
+                                                                    <option value="">-- Choose a Marketing Form --</option>
+                                                                    {marketingForms.map(f => (
+                                                                        <option key={f.id} value={f.id}>{f.name}</option>
+                                                                    ))}
+                                                                </select>
+                                                            </>
+                                                        ) : (
+                                                            <div className="p-4 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 text-center">
+                                                                <i className="bi bi-gem display-6 text-warning mb-3 d-block"></i>
+                                                                <h6 className="fw-bold">Premium Booking Integration</h6>
+                                                                <p className="extra-small text-muted mb-0">Marketing Hub is required for custom, high-converting booking workflows.</p>
+                                                                <button type="button" className="btn btn-warning btn-sm fw-bold px-4 rounded-3 shadow-sm mt-3" onClick={() => router.push('/realestate-owner-admin/subscriptions')}>
+                                                                    Upgrade to Connect
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
-
-                                                    {formData.configuration.bookingForm?.useMarketingForm && (
-                                                        <div className="animate-fade-in">
-                                                            {hasModule('marketing_hub') ? (
-                                                                <>
-                                                                    <label className="form-label extra-small fw-bold text-muted text-uppercase mb-2">Select Booking Form</label>
-                                                                    <select
-                                                                        className="form-select border-0 shadow-sm py-2 rounded-3"
-                                                                        value={formData.configuration.bookingForm?.marketingFormId || ''}
-                                                                        onChange={(e) => toggleNestedConfig('bookingForm', 'marketingFormId', e.target.value)}
-                                                                    >
-                                                                        <option value="">-- Choose a Marketing Form --</option>
-                                                                        {marketingForms.map(f => (
-                                                                            <option key={f.id} value={f.id}>{f.name}</option>
-                                                                        ))}
-                                                                    </select>
-                                                                </>
-                                                            ) : (
-                                                                <div className="p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 text-center">
-                                                                    <p className="extra-small text-muted mb-0">Marketing Hub required for custom booking forms.</p>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1395,7 +1606,7 @@ export default function WebsiteForm({
                                                 <div className="card border-0 shadow-sm rounded-4 h-100">
                                                     <div className="card-body p-3">
                                                         <div className="d-flex align-items-center gap-3 mb-3">
-                                                            <div className="bg-primary bg-opacity-10 p-2 rounded-3 text-primary">
+                                                            <div className="bg-primary bg-opacity-10 p-2 rounded-3 text-white">
                                                                 <i className="bi bi-diagram-3-fill"></i>
                                                             </div>
                                                             <h6 className="fw-bold mb-0">Sitemap XML</h6>

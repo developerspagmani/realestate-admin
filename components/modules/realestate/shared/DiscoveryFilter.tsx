@@ -54,7 +54,7 @@ const DiscoveryFilter: React.FC<DiscoveryFilterProps> = ({ onFilter, theme }) =>
                             <input
                                 type="text"
                                 className="form-control border-start-0 py-2 rounded-end-4"
-                                placeholder="Search neighborhood, city or property..."
+                                placeholder="Search by property, unit code, or city..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
