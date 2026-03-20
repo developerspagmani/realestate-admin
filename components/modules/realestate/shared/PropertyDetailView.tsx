@@ -136,6 +136,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                     onClick={() => {
                                         setBookingUnit(null);
                                         setShowBookingModal(true);
+                                        if (trackAction) trackAction('BOOKING_STEP_START', { propertyId: selectedProperty.id });
                                     }}
                                     style={{ backgroundColor: theme.primaryColor, border: 'none' }}
                                 >
@@ -222,17 +223,19 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                     rel="noopener noreferrer"
                                                     className="btn btn-outline-primary d-flex align-items-center gap-2 rounded-3 px-4 py-2 small fw-bold"
                                                     style={{ borderColor: theme.primaryColor, color: theme.primaryColor }}
+                                                    onClick={() => trackAction && trackAction('FLOOR_PLAN_VIEW', { propertyId: selectedProperty.id })}
                                                 >
                                                     <i className="bi bi-map-fill"></i>
                                                     View Floor Plan
                                                 </a>
                                             )}
-                                             {selectedProperty.brochure && (
+                                            {selectedProperty.brochure && (
                                                 <a
                                                     href={selectedProperty.brochure.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="btn btn-outline-dark d-flex align-items-center gap-2 rounded-3 px-4 py-2 small fw-bold"
+                                                    onClick={() => trackAction && trackAction('BROCHURE_DOWNLOAD', { propertyId: selectedProperty.id })}
                                                 >
                                                     <i className="bi bi-file-earmark-pdf-fill"></i>
                                                     Download Brochure
@@ -386,15 +389,15 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                     <span className="input-group-text bg-white border-end-0 rounded-start-4 ps-3">
                                         <i className="bi bi-search text-muted"></i>
                                     </span>
-                                    <input 
-                                        type="text" 
-                                        className="form-control border-start-0 rounded-end-0 py-2" 
+                                    <input
+                                        type="text"
+                                        className="form-control border-start-0 rounded-end-0 py-2"
                                         placeholder="Search unit name or code..."
                                         onChange={(e) => setUnitSearch(e.target.value)}
                                         value={unitSearch}
                                     />
-                                    <select 
-                                        className="form-select border-start-0 rounded-end-4 py-2" 
+                                    <select
+                                        className="form-select border-start-0 rounded-end-4 py-2"
                                         style={{ maxWidth: '140px' }}
                                         onChange={(e) => setUnitStatusFilter(e.target.value)}
                                         value={unitStatusFilter}
@@ -412,11 +415,11 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                         <div className="row g-3">
                             {(() => {
                                 let units = selectedProperty.units || [];
-                                
+
                                 if (unitSearch) {
                                     const s = unitSearch.toLowerCase();
-                                    units = units.filter((u: any) => 
-                                        (u.name || '').toLowerCase().includes(s) || 
+                                    units = units.filter((u: any) =>
+                                        (u.name || '').toLowerCase().includes(s) ||
                                         (u.unitCode || '').toLowerCase().includes(s)
                                     );
                                 }
@@ -464,7 +467,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                             </div>
                                             <div className="p-3">
                                                 <div className="d-flex justify-content-between align-items-center mb-1">
-                                                     <h6 className="fw-bold mb-0 text-truncate" style={{ color: theme.primaryColor }}>{unit.name || `${unit.unitCode}`}</h6>
+                                                    <h6 className="fw-bold mb-0 text-truncate" style={{ color: theme.primaryColor }}>{unit.name || `${unit.unitCode}`}</h6>
                                                     {widget.configuration.builder?.showPrice !== false && (
                                                         <span className="fw-bold extra-small text-primary" style={{ color: theme.primaryColor }}>
                                                             {getFormattedPrice(unit)}
@@ -534,36 +537,37 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                     </h5>
                                     <FormRenderer
                                         config={inquiryConfig}
-                                    primaryColor={theme.primaryColor}
-                                    onSubmit={async (formData, configUsed) => {
-                                        const leadPayload: any = {
-                                            source: 1,
-                                            propertyId: selectedProperty.id,
-                                            notes: `Property Inquiry for ${selectedProperty.title}\n${(configUsed.fields || []).map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
-                                        };
+                                        primaryColor={theme.primaryColor}
+                                        onInteraction={() => trackAction && trackAction('FORM_INIT', { type: 'property-inquiry', propertyId: selectedProperty.id })}
+                                        onSubmit={async (formData, configUsed) => {
+                                            const leadPayload: any = {
+                                                source: 1,
+                                                propertyId: selectedProperty.id,
+                                                notes: `Property Inquiry for ${selectedProperty.title}\n${(configUsed.fields || []).map((f: any) => `${f.label}: ${formData[f.id] || 'N/A'}`).join('\n')}`
+                                            };
 
-                                        (configUsed.fields || []).forEach((field: any) => {
-                                            const val = formData[field.id];
-                                            if (!val) return;
-                                            if (field.type === 'email' && !leadPayload.email) leadPayload.email = val;
-                                            else if (field.type === 'phone' && !leadPayload.phone) leadPayload.phone = val;
-                                            else if ((field.type === 'text' || field.id === 'f1') && !leadPayload.name) leadPayload.name = val;
-                                            else if (field.id === 'f2' && !leadPayload.email) leadPayload.email = val;
-                                        });
+                                            (configUsed.fields || []).forEach((field: any) => {
+                                                const val = formData[field.id];
+                                                if (!val) return;
+                                                if (field.type === 'email' && !leadPayload.email) leadPayload.email = val;
+                                                else if (field.type === 'phone' && !leadPayload.phone) leadPayload.phone = val;
+                                                else if ((field.type === 'text' || field.id === 'f1') && !leadPayload.name) leadPayload.name = val;
+                                                else if (field.id === 'f2' && !leadPayload.email) leadPayload.email = val;
+                                            });
 
-                                        if (!leadPayload.name) leadPayload.name = 'Property Interest';
-                                        const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
+                                            if (!leadPayload.name) leadPayload.name = 'Property Interest';
+                                            const res = await widgetService.createPublicLead(widgetId, leadPayload, !!widget.slug);
 
-                                        if (res.success && res.data?.id) {
-                                            const identity = { id: res.data.id, email: res.data.email };
-                                            if (identifyLead) identifyLead(identity.id, identity.email);
-                                        }
-                                    }}
-                                />
+                                            if (res.success && res.data?.id) {
+                                                const identity = { id: res.data.id, email: res.data.email };
+                                                if (identifyLead) identifyLead(identity.id, identity.email);
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    );
-                })()}
+                        );
+                    })()}
                 </div>
             </div>
 

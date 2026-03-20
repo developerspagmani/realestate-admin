@@ -992,7 +992,7 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
                         <Loader message="Fetching your leads..." />
                     </div>
                 ) : viewMode === 'qualification' ? (
-                    <LeadQualificationHub 
+                    <LeadQualificationHub
                         leads={filteredLeads}
                         loading={isLoading}
                         onViewInsights={setSelectedLeadForInsights}
@@ -1029,7 +1029,7 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
                                     {paginatedLeads.length === 0 ? (
                                         <tr><td colSpan={11} className="text-center py-5 text-muted">No leads found</td></tr>
                                     ) : paginatedLeads.map(lead => (
-                                        <tr key={lead.id} className={`${isStale(lead) ? 'bg-stale' : ''} ${selectedLeads.includes(lead.id) ? 'bg-primary bg-opacity-10' : ''}`}>
+                                        <tr key={lead.id} className={`${isStale(lead) ? 'bg-stale' : ''} ${selectedLeads.includes(lead.id) ? 'bg-dark bg-opacity-10' : ''}`}>
                                             <td className="px-4 py-3">
                                                 <div className="form-check mb-0">
                                                     <input
@@ -1048,14 +1048,14 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
                                                     <div className="cursor-pointer d-flex align-items-center gap-2" onClick={() => setSelectedLeadForInsights(lead)}>
                                                         <div>
                                                             <div className="fw-bold text-dark d-flex align-items-center gap-2">
-                                                                 {lead.name}
-                                                                 {isStale(lead) && (
-                                                                     <span className="badge bg-danger rounded-4 extra-small-badge" title="No activity for 3+ days">REQUIRES ATTENTION</span>
-                                                                 )}
-                                                                 {lead.lossData?.revivalStatus === 2 && (
-                                                                     <span className="badge bg-success rounded-4 extra-small-badge pulse-revival" title="Ready for Smart Revival">REVIVAL CANDIDATE</span>
-                                                                 )}
-                                                                 <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
+                                                                {lead.name}
+                                                                {isStale(lead) && (
+                                                                    <span className="badge bg-danger rounded-4 extra-small-badge" title="No activity for 3+ days">REQUIRES ATTENTION</span>
+                                                                )}
+                                                                {lead.lossData?.revivalStatus === 2 && (
+                                                                    <span className="badge bg-success rounded-4 extra-small-badge pulse-revival" title="Ready for Smart Revival">REVIVAL CANDIDATE</span>
+                                                                )}
+                                                                <i className="bi bi-magic text-primary pulse-ai" title="View AI Matches" style={{ fontSize: '0.8rem' }}></i>
                                                             </div>
                                                             <div className="small text-muted">{lead.company || 'No Company'}</div>
                                                         </div>

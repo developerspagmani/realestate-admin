@@ -156,9 +156,11 @@ export default function ChatbotWidget({
     const handleLeadSubmit = async (formData: { name: string, contact: string }) => {
         if (!formData.contact) return;
         setIsSubmittingLead(true);
+        if (trackAction) trackAction('CHAT_START_CONVERSATION', { name: formData.name });
         try {
             // Simplified call to onCreateLead - we'll update the signature in the parent
             await (onCreateLead as any)(formData.contact, formData.name);
+            if (trackAction) trackAction('LEAD_SUBMITTED', { method: 'chatbot', contact: formData.contact });
             setStep('HI');
             addMessage('bot', `Thank you ${formData.name}! We've saved your contact information safely. 🔒`);
             setTimeout(() => {
@@ -453,7 +455,10 @@ export default function ChatbotWidget({
                         <button
                             className="btn btn-primary rounded-4 px-4 mt-2 shadow-sm fw-bold small"
                             style={{ backgroundColor: theme.primaryColor, border: 'none' }}
-                            onClick={() => setStep('LEAD_CAPTURE')}
+                            onClick={() => {
+                                setStep('LEAD_CAPTURE');
+                                if (trackAction) trackAction('CHAT_INIT');
+                            }}
                         >
                             Start Search
                         </button>

@@ -207,6 +207,13 @@ export default function StandaloneProvider({
         }
     }, [website]);
 
+    // E. Initial Site Tracking
+    useEffect(() => {
+        if (website?.id) {
+            trackAction('WEBSITE_VIEW', { name: website.name });
+        }
+    }, [website?.id]);
+
     // Footer Snippet Injection (Client-side effect for scripts)
     useEffect(() => {
         const footerSnippet = website.configuration?.seo?.footerSnippet;
@@ -238,24 +245,31 @@ export default function StandaloneProvider({
 
     const trackAction = async (type: string, metadata: any = {}, identityOverride?: { id?: string, email?: string }) => {
         const identity = identityOverride || leadIdentity;
-        if (!identity) {
-            if (process.env.NODE_ENV === 'development') {
-                console.log(`[Tracking Skipped] Anonymous interaction: ${type}`, metadata);
-            }
-            return;
+        
+        // Ensure we have a consistent Visitor ID for anonymous tracking
+        let visitorId = localStorage.getItem('v_id');
+        if (!visitorId) {
+            visitorId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
+                ? crypto.randomUUID() 
+                : `v_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`;
+            localStorage.setItem('v_id', visitorId);
         }
 
         try {
             await marketingService.trackInteraction({
-                leadId: identity.id,
-                email: identity.email,
+                leadId: identity?.id,
+                email: identity?.email,
+                visitorId: visitorId,
+                tenantId: website.tenantId, // backend needs this to associate anonymous lead
                 type,
                 metadata: { websiteId: website.id, ...metadata }
             });
         } catch (err: any) {
             console.error('Tracking failed:', err);
-            // If the lead was deleted from the system, clear our local identity
-            if (err.message === 'Lead not found') {
+            // If the lead was deleted from the system (404), clear our local identity
+            // Wait, our backend now returns 404 if it can't lead/visitor-identify.
+            // But if it's 404 with an identity.id, it means that ID is dead.
+            if (identity?.id && (err.status === 404 || err.message?.includes('Lead not found'))) {
                 setLeadIdentity(null);
                 localStorage.removeItem(`website_lead_${website.id}`);
             }

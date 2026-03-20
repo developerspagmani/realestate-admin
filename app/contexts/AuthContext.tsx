@@ -32,11 +32,11 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  login: (credentials: { email?: string; phone?: string; password: string; tenantId?: string }) => Promise<boolean>;
+  login: (credentials: { email?: string; phone?: string; password: string; tenantId?: string }) => Promise<User | null>;
   logout: () => void;
   checkAuth: () => boolean;
   clearError: () => void;
-  getRedirectPath: () => string;
+  getRedirectPath: (user?: User | null) => string;
   // Role helpers
   isAdmin: boolean;
   isOwner: boolean;
@@ -132,6 +132,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(authReducer, initialState);
   const router = useRouter();
 
+  const logout = useCallback(() => {
+    // Clear all auth data from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+      localStorage.removeItem('activeModules');
+      localStorage.removeItem('lastActivity');
+      localStorage.removeItem('mgmt_tenant_id');
+      localStorage.removeItem('mgmt_owner_id');
+      localStorage.removeItem('mgmt_tenant_type');
+      removeAuthToken();
+
+      // Clear cookies comprehensively
+      const cookieKeys = ['auth-token', 'user-role', 'user-id', 'tenant-id'];
+      const hostname = window.location.hostname;
+      const domains = [hostname, `.${hostname}`];
+
+      cookieKeys.forEach(key => {
+        // Clear for each common domain and path combination
+        document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+        domains.forEach(domain => {
+          document.cookie = `${key}=; path=/; domain=${domain}; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+        });
+      });
+    }
+
+    dispatch({ type: 'LOGOUT' });
+    router.push('/login');
+  }, [router, dispatch]);
+
+
   const fetchModules = async (token: string) => {
     try {
       const { moduleService } = await import('@/app/services/api');
@@ -145,9 +175,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Initialize auth state from localStorage on mount
+  // Initialize auth state from localStorage on mount and sync with server
   useEffect(() => {
-    const initialize = () => {
+    const initialize = async () => {
       if (typeof window !== 'undefined') {
         const storedUser = localStorage.getItem('user');
         const storedToken = getAuthToken();
@@ -175,7 +205,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               }
             }
 
-            const user = JSON.parse(storedUser);
+            // Initial load from local storage for fast state
+            let user = JSON.parse(storedUser);
             const storedModules = localStorage.getItem('activeModules');
             dispatch({
               type: 'INITIALIZE',
@@ -185,9 +216,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 activeModules: storedModules ? JSON.parse(storedModules) : []
               }
             });
-            // Update last activity since we just "started" a fresh observation
+
+            // Update last activity
             localStorage.setItem('lastActivity', Date.now().toString());
-            // Re-fetch to ensure fresh data and verify with backend
+
+            // SYNC FACT: Re-fetch user profile to ensure role is up to date (e.g. if upgraded to Agent)
+            try {
+              const response = await authService.getMe(storedToken);
+              if (response.success && response.data?.user) {
+                const freshUser = response.data.user;
+                // Update local storage and state if something changed (like role 1 -> 4)
+                if (freshUser.role !== user.role) {
+                  localStorage.setItem('user', JSON.stringify(freshUser));
+                  dispatch({
+                    type: 'LOGIN_SUCCESS',
+                    payload: { user: freshUser, token: storedToken }
+                  });
+                }
+              }
+            } catch (_e) {
+              // Silently fail sync, original state remains
+            }
+
+            // Re-fetch modules
             fetchModules(storedToken);
             return;
           } catch (error) {
@@ -201,9 +252,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     initialize();
-  }, []);
+  }, [logout]);
 
-  const login = async (credentials: { email?: string; phone?: string; password: string; tenantId?: string }): Promise<boolean> => {
+  const login = async (credentials: { email?: string; phone?: string; password: string; tenantId?: string }): Promise<User | null> => {
     dispatch({ type: 'LOGIN_START' });
 
     try {
@@ -240,14 +291,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Fetch and store modules after login
         fetchModules(token);
 
-        return true;
+        return user;
       } else {
         const errorMessage = response.message || 'Invalid email or password';
         dispatch({
           type: 'LOGIN_FAILURE',
           payload: errorMessage
         });
-        return false;
+        return null;
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -255,38 +306,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         type: 'LOGIN_FAILURE',
         payload: errorMessage
       });
-      return false;
+      return null;
     }
   };
 
-  const logout = useCallback(() => {
-    // Clear all auth data from localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('user');
-      localStorage.removeItem('activeModules');
-      localStorage.removeItem('lastActivity');
-      localStorage.removeItem('mgmt_tenant_id');
-      localStorage.removeItem('mgmt_owner_id');
-      localStorage.removeItem('mgmt_tenant_type');
-      removeAuthToken();
-
-      // Clear cookies comprehensively
-      const cookieKeys = ['auth-token', 'user-role', 'user-id', 'tenant-id'];
-      const hostname = window.location.hostname;
-      const domains = [hostname, `.${hostname}`];
-
-      cookieKeys.forEach(key => {
-        // Clear for each common domain and path combination
-        document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-        domains.forEach(domain => {
-          document.cookie = `${key}=; path=/; domain=${domain}; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-        });
-      });
-    }
-
-    dispatch({ type: 'LOGOUT' });
-    router.push('/login');
-  }, [router]);
 
   // Advanced Idle management effect
   useEffect(() => {
@@ -384,10 +407,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'CLEAR_ERROR' });
   };
 
-  const getRedirectPath = (): string => {
-    if (!state.user) return '/login';
+  const getRedirectPath = (user?: User | null): string => {
+    const targetUser = user || state.user;
+    if (!targetUser) return '/login';
 
-    switch (state.user.role) {
+    // Ensure we handle role as a number for the switch, even if it comes in as a string
+    const role = Number(targetUser.role);
+
+    switch (role) {
       case 2: // Admin
         return '/realestate-admin/dashboard';
       case 3: // Owner
@@ -409,13 +436,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     checkAuth,
     clearError,
     getRedirectPath,
-    // Role helpers - matching API schema: 1=user, 2=admin, 3=owner
-    isAdmin: state.user?.role === 2,    // Admin (role 2)
-    isOwner: state.user?.role === 3,    // Owner (role 3)
-    isUser: state.user?.role === 1,     // Regular User (role 1)
-    isAgent: state.user?.role === 4,    // Agent (role 4)
-    isPartner: state.user?.role === 5,  // Partner (role 5)
-    hasRole: (role: number) => state.user?.role === role,
+    // Role helpers - matching API schema: 1=user, 2=admin, 3=owner, 4=agent, 5=partner
+    isAdmin: Number(state.user?.role) === 2,    // Admin (role 2)
+    isOwner: Number(state.user?.role) === 3,    // Owner (role 3)
+    isUser: Number(state.user?.role) === 1,     // Regular User (role 1)
+    isAgent: Number(state.user?.role) === 4,    // Agent (role 4)
+    isPartner: Number(state.user?.role) === 5,  // Partner (role 5)
+    hasRole: (role: number) => Number(state.user?.role) === role,
     // Tenant helper
     tenantId: state.user?.tenantId,
     // Module helper

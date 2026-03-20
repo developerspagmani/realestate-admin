@@ -49,9 +49,12 @@ export default function PropertyDetailClient({ propertySlug, initialProperty }: 
     React.useEffect(() => {
         if (property?.id) {
             trackPropertyView(property.id);
-            trackAction('PROPERTY_VIEW', { propertyId: property.id });
+            trackAction('PROPERTY_VIEW', { 
+                propertyId: property.id,
+                propertyTitle: property.title 
+            });
         }
-    }, [property?.id, trackAction]);
+    }, [property?.id, property?.title, trackAction]);
 
     if (!property) return <div className="p-5 text-center">Property not found.</div>;
 

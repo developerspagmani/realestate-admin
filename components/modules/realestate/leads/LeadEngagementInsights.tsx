@@ -83,14 +83,21 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
         switch (type) {
             case 'EMAIL_OPEN': return 'bi-envelope-open text-primary';
             case 'EMAIL_CLICK': return 'bi-cursor text-info';
-            case 'PROPERTY_VIEW': return 'bi-eye text-success';
-            case 'UNIT_VIEW': return 'bi-door-closed text-success';
-            case 'FORM_SUBMIT': return 'bi-file-earmark-check text-warning';
+            case 'PROPERTY_VIEW': return 'bi-building text-primary';
+            case 'UNIT_VIEW': return 'bi-building text-primary';
+            case 'WIDGET_VIEW': return 'bi-grid-3x3-gap text-primary';
+            case 'FORM_SUBMIT': return 'bi-file-earmark-check-fill text-success';
+            case 'FORM_INIT': return 'bi-pencil-square text-warning';
+            case 'LEAD_SUBMITTED': return 'bi-person-check-fill text-success';
             case 'POPUP_SUBMIT': return 'bi-megaphone-fill text-warning';
             case 'POPUP_VIEW': return 'bi-eye-fill text-info';
             case 'CHAT_INIT': return 'bi-chat-dots text-secondary';
+            case 'CHAT_START_CONVERSATION': return 'bi-chat-heart-fill text-danger';
             case 'BOOKING_REQUEST': return 'bi-calendar-check text-danger';
+            case 'BOOKING_STEP_START': return 'bi-calendar-plus text-warning';
             case 'UNIT_BOOKING_START': return 'bi-calendar-plus text-danger';
+            case 'BROCHURE_DOWNLOAD': return 'bi-file-pdf text-danger';
+            case 'FLOOR_PLAN_VIEW': return 'bi-map text-info';
             default: return 'bi-activity text-muted';
         }
     };
@@ -172,18 +179,30 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                                         </div>
                                                         <div className="flex-grow-1 bg-white p-2 rounded-3 border-light shadow-xs">
                                                             <div className="d-flex justify-content-between align-items-start">
-                                                                <div className="fw-bold small text-dark">
-                                                                    {item.type === 'POPUP_SUBMIT' ? 'POPUP SUBMITTED' :
-                                                                        item.type === 'POPUP_VIEW' ? 'POPUP VIEWED' :
-                                                                            (item.type === 'FORM_SUBMIT' && item.metadata?.popupId) ? 'POPUP SUBMITTED' :
-                                                                                item.type.replace(/_/g, ' ')}
+                                                                <div className="extra-small text-muted d-flex align-items-center gap-2">
+                                                                    {item.type === 'PROPERTY_VIEW' ? 'VIEWED PROPERTY' :
+                                                                        item.type === 'UNIT_VIEW' ? 'VIEWED UNIT' :
+                                                                            item.type === 'WIDGET_VIEW' ? 'WIDGET VIEWED' :
+                                                                                item.type === 'WEBSITE_VIEW' ? 'WEBSITE ACCESSED' :
+                                                                                    item.type === 'POPUP_SUBMIT' ? 'POPUP SUBMITTED' :
+                                                                                        item.type === 'POPUP_VIEW' ? 'POPUP VIEWED' :
+                                                                                            item.type === 'FORM_INIT' ? 'STARTED INQUIRY FORM' :
+                                                                                                item.type === 'FORM_SUBMIT' ? 'SUBMITTED INQUIRY' :
+                                                                                                    item.type === 'CHAT_INIT' ? 'OPENED CHAT' :
+                                                                                                        item.type === 'CHAT_START_CONVERSATION' ? 'STARTED CHAT CONVERSATION' :
+                                                                                                            item.type === 'BOOKING_STEP_START' ? 'CLICKED RESERVE' :
+                                                                                                                item.type === 'BROCHURE_DOWNLOAD' ? 'DOWNLOADED BROCHURE' :
+                                                                                                                    item.type === 'FLOOR_PLAN_VIEW' ? 'VIEWED FLOOR PLAN' :
+                                                                                                                        item.type.replace(/_/g, ' ')}
+                                                                    {item.scoreWeight > 0 && <span className="badge bg-success bg-opacity-10 text-success rounded-pill px-2" style={{ fontSize: '9px' }}>+{item.scoreWeight}</span>}
                                                                 </div>
-                                                                <div className="badge bg-success-soft text-success border-0 extra-small">+{item.scoreWeight}</div>
                                                             </div>
                                                             <div className="text-muted" style={{ fontSize: '0.65rem' }}>{new Date(item.occurredAt).toLocaleString()}</div>
-                                                            {item.metadata?.propertyTitle && (
+                                                            {(item.metadata?.propertyTitle || item.metadata?.propertyId) && (
                                                                 <div className="mt-2 p-2 bg-light rounded-2 border extra-small text-dark fw-medium">
-                                                                    <i className="bi bi-house-heart me-1 text-primary"></i> {item.metadata.propertyTitle}
+                                                                    <i className="bi bi-house-heart me-1 text-primary"></i> 
+                                                                    {item.metadata.propertyTitle || `Property #${item.metadata.propertyId?.substring(0,8)}`}
+                                                                    {item.metadata?.unitCode && <span className="text-muted ms-2">• Unit: {item.metadata.unitCode}</span>}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -298,15 +317,38 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                     </div>
 
                                     <div className="card border-0 bg-dark text-white rounded-4 p-4 shadow-lg mb-4">
-                                        <h6 className="text-white extra-small text-uppercase mb-3">Predicted Intent</h6>
-                                        <div className="d-flex align-items-center gap-3">
-                                            <div className="bg-white bg-opacity-10 rounded-circle p-2">
-                                                <i className="bi bi-lightning-charge-fill text-warning fs-4"></i>
-                                            </div>
-                                            <div>
-                                                <div className="fw-bold">Ready to Purchase</div>
-                                                <p className="extra-small opacity-75 mb-0">High sequence of property views and form submissions detected.</p>
-                                            </div>
+                                        <h6 className="text-white extra-small text-uppercase mb-3">Predicted Intent Markers</h6>
+                                        <div className="d-flex flex-column gap-3">
+                                            {interactions.some(i => i.type === 'BOOKING_STEP_START' || i.type === 'UNIT_BOOKING_START') && (
+                                                <div className="d-flex align-items-center gap-3 animate-fade-in">
+                                                    <div className="bg-danger bg-opacity-20 rounded-circle p-2"><i className="bi bi-calendar-check text-danger"></i></div>
+                                                    <div><div className="extra-small fw-bold">Intent: High Purchase Probability</div><div className="extra-small text-muted opacity-75">Started reservation process.</div></div>
+                                                </div>
+                                            )}
+                                            {interactions.some(i => i.type === 'CHAT_START_CONVERSATION') && (
+                                                <div className="d-flex align-items-center gap-3 animate-fade-in">
+                                                    <div className="bg-primary bg-opacity-20 rounded-circle p-2"><i className="bi bi-chat-heart text-primary"></i></div>
+                                                    <div><div className="extra-small fw-bold">Engagement: Conversational Interest</div><div className="extra-small text-muted opacity-75">Interacted with Virpa AI chatbot.</div></div>
+                                                </div>
+                                            )}
+                                            {interactions.some(i => i.type === 'BROCHURE_DOWNLOAD') && (
+                                                <div className="d-flex align-items-center gap-3 animate-fade-in">
+                                                    <div className="bg-warning bg-opacity-20 rounded-circle p-2"><i className="bi bi-file-pdf text-warning"></i></div>
+                                                    <div><div className="extra-small fw-bold">Research: Deep Analysis</div><div className="extra-small text-muted opacity-75">Downloaded property brochure.</div></div>
+                                                </div>
+                                            )}
+                                            {interactions.filter(i => i.type === 'PROPERTY_VIEW').length > 5 && (
+                                                <div className="d-flex align-items-center gap-3 animate-fade-in">
+                                                    <div className="bg-info bg-opacity-20 rounded-circle p-2"><i className="bi bi-eye text-info"></i></div>
+                                                    <div><div className="extra-small fw-bold">Discovery: Frequent Navigator</div><div className="extra-small text-muted opacity-75">Viewed 5+ property pages.</div></div>
+                                                </div>
+                                            )}
+                                            {!interactions.some(i => ['BOOKING_STEP_START', 'CHAT_START_CONVERSATION', 'FORM_SUBMIT', 'BROCHURE_DOWNLOAD'].includes(i.type)) && (
+                                                <div className="d-flex align-items-center gap-3 opacity-50">
+                                                    <div className="bg-light rounded-circle p-2"><i className="bi bi-lightning text-muted"></i></div>
+                                                    <div><div className="extra-small fw-bold">Status: Passive Research</div><div className="extra-small text-muted">Lead is browsing without high-intent actions yet.</div></div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -314,7 +356,7 @@ export default function LeadEngagementInsights({ leadId, leadName, leadScore, on
                                         <h6 className="fw-bold extra-small mb-3">Session Breakdown</h6>
                                         <div className="d-flex flex-column gap-2">
                                             {[
-                                                { label: 'Property Views', count: interactions.filter(i => i.type === 'PROPERTY_VIEW').length, color: 'text-success' },
+                                                { label: 'Property Views', count: interactions.filter(i => ['PROPERTY_VIEW', 'UNIT_VIEW', 'WIDGET_VIEW'].includes(i.type)).length, color: 'text-primary' },
                                                 { label: 'Form Inquiries', count: interactions.filter(i => i.type === 'FORM_SUBMIT').length, color: 'text-warning' },
                                                 { label: 'AI Chat Matches', count: interactions.filter(i => i.type === 'CHAT_INIT').length, color: 'text-info' },
                                                 { label: 'Email Interactions', count: interactions.filter(i => i.type.startsWith('EMAIL')).length, color: 'text-primary' },

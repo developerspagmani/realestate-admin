@@ -12,17 +12,19 @@ interface FormRendererProps {
         marketingFormId?: string;
     };
     onSubmit: (formData: any, configUsed: any) => Promise<void>;
+    onInteraction?: () => void;
     primaryColor: string;
 }
 
 import { widgetService } from '@/app/services/api';
 
-export default function FormRenderer({ config, onSubmit, primaryColor }: FormRendererProps) {
+export default function FormRenderer({ config, onSubmit, onInteraction, primaryColor }: FormRendererProps) {
     const [formData, setFormData] = useState<any>({});
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [fetching, setFetching] = useState(false);
     const [localConfig, setLocalConfig] = useState<any>(config || { enabled: false, title: '', description: '', fields: [] });
+    const [hasInteracted, setHasInteracted] = useState(false);
 
     React.useEffect(() => {
         if (!config) return;
@@ -77,6 +79,11 @@ export default function FormRenderer({ config, onSubmit, primaryColor }: FormRen
 
     const handleInputChange = (fieldId: string, value: any) => {
         setFormData((prev: any) => ({ ...prev, [fieldId]: value }));
+        
+        if (!hasInteracted && onInteraction) {
+            onInteraction();
+            setHasInteracted(true);
+        }
     };
 
     if (submitted) {

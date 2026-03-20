@@ -75,6 +75,7 @@ export default function PublicWidgetPage() {
                 leadId: identity?.id,
                 email: identity?.email,
                 visitorId,
+                tenantId: widget?.tenantId,
                 type,
                 metadata: {
                     widgetId,
@@ -83,10 +84,15 @@ export default function PublicWidgetPage() {
                     ...metadata
                 }
             });
-        } catch (err) {
+        } catch (err: any) {
             console.error('Tracking failed:', err);
+            // If the lead was deleted from the system (404), clear our local identity
+            if (identity?.id && (err.status === 404 || err.message?.includes('Lead not found'))) {
+                setLeadIdentity(null);
+                localStorage.removeItem(`widget_lead_${widgetId}`);
+            }
         }
-    }, [leadIdentity, widgetId]);
+    }, [leadIdentity, widgetId, widget?.tenantId]);
 
     const handleChatFilters = useCallback((filteredResults: any[]) => {
         setFilteredData(filteredResults);
@@ -188,7 +194,10 @@ export default function PublicWidgetPage() {
     useEffect(() => {
         if (selectedProperty && currentView === 'PROPERTY_DETAIL') {
             trackPropertyView(selectedProperty.id);
-            trackAction('PROPERTY_VIEW', { propertyId: selectedProperty.id });
+            trackAction('PROPERTY_VIEW', { 
+                propertyId: selectedProperty.id,
+                propertyTitle: selectedProperty.title
+            });
         }
     }, [selectedProperty, currentView, trackAction]);
 

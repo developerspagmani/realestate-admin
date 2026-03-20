@@ -59,10 +59,10 @@ function LoginContent() {
         ? { email: formData.username, password: formData.password }
         : { phone: formData.username, password: formData.password };
 
-      const success = await login(loginPayload);
+      const user = await login(loginPayload);
 
-      if (success) {
-        const redirectPath = getRedirectPath();
+      if (user) {
+        const redirectPath = getRedirectPath(user);
         router.push(redirectPath);
       } else {
         setLocalLoading(false);
@@ -178,9 +178,9 @@ function LoginContent() {
         ? { email: username, password }
         : { phone: username, password };
 
-      const success = await login(loginPayload);
-      if (success) {
-        router.push(getRedirectPath());
+      const user = await login(loginPayload);
+      if (user) {
+        router.push(getRedirectPath(user));
       } else {
         setIsVoiceActive(false);
         setLocalLoading(false);
