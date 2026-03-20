@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useStandalone } from '../../StandaloneProvider';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
+import { trackPropertyView } from '@/app/hooks/useIntelligentPopup';
 
 
 type ViewType = 'PROPERTY_DETAIL';
@@ -30,7 +31,7 @@ export default function PropertyDetailClient({ propertySlug, initialProperty }: 
             try {
                 setFullPropertyLoading(true);
                 // Use relative path or env-aware URL
-                const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
+                const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001/api'
                 const res = await fetch(`${BACKEND_URL}/public/properties/${property.id || propertySlug}`);
                 const result = await res.json();
                 if (result.success && result.data) {
@@ -44,6 +45,13 @@ export default function PropertyDetailClient({ propertySlug, initialProperty }: 
         };
         fetchFullDetails();
     }, [propertySlug, property?.id, property?.metadata?.interactiveSvg]);
+    // Auto-track property view for the matching engine
+    React.useEffect(() => {
+        if (property?.id) {
+            trackPropertyView(property.id);
+            trackAction('PROPERTY_VIEW', { propertyId: property.id });
+        }
+    }, [property?.id, trackAction]);
 
     if (!property) return <div className="p-5 text-center">Property not found.</div>;
 

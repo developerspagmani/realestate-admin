@@ -45,9 +45,9 @@ export default function EmailConfiguration({ mode = 'admin' }: EmailConfiguratio
             setLoading(true);
             const token = getAuthToken();
             if (!token) return;
-            
+
             const targetTenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            const res = await marketingService.getEmailSettings(token, { 
+            const res = await marketingService.getEmailSettings(token, {
                 tenantId: targetTenantId || undefined,
                 industryType: mode === 'admin' ? tenantType : undefined,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
@@ -81,7 +81,7 @@ export default function EmailConfiguration({ mode = 'admin' }: EmailConfiguratio
             }
 
             const targetTenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
-            const res = await marketingService.saveEmailSettings(token, config, { 
+            const res = await marketingService.saveEmailSettings(token, config, {
                 tenantId: targetTenantId || undefined,
                 industryType: mode === 'admin' ? tenantType : undefined,
                 ...(mode === 'admin' && activeOwnerId && { ownerId: activeOwnerId })
@@ -105,7 +105,7 @@ export default function EmailConfiguration({ mode = 'admin' }: EmailConfiguratio
     return (
         <MainLayout activePage="email-config">
             <div className="container-fluid py-4 animate__animated animate__fadeIn">
-                <Toast 
+                <Toast
                     show={toast.show}
                     message={toast.message}
                     type={toast.type}
@@ -157,7 +157,7 @@ export default function EmailConfiguration({ mode = 'admin' }: EmailConfiguratio
                                     </div>
                                     <div className="mb-4">
                                         <label className="form-label fw-semibold text-dark">Default Currency Symbol</label>
-                                        <select 
+                                        <select
                                             className="form-select border-light-soft bg-light shadow-none"
                                             value={config.currencySymbol}
                                             onChange={(e) => setConfig({ ...config, currencySymbol: e.target.value })}
@@ -180,19 +180,19 @@ export default function EmailConfiguration({ mode = 'admin' }: EmailConfiguratio
                                     <div className="row g-3">
                                         <div className="col-md-6 mb-3">
                                             <label className="form-label small fw-medium">Facebook URL</label>
-                                            <input type="text" className="form-control form-control-sm bg-light" value={config.facebookUrl} onChange={(e) => setConfig({...config, facebookUrl: e.target.value})} placeholder="https://facebook.com/..." />
+                                            <input type="text" className="form-control form-control-sm bg-light" value={config.facebookUrl} onChange={(e) => setConfig({ ...config, facebookUrl: e.target.value })} placeholder="https://facebook.com/..." />
                                         </div>
                                         <div className="col-md-6 mb-3">
                                             <label className="form-label small fw-medium">Twitter (X) URL</label>
-                                            <input type="text" className="form-control form-control-sm bg-light" value={config.twitterUrl} onChange={(e) => setConfig({...config, twitterUrl: e.target.value})} placeholder="https://x.com/..." />
+                                            <input type="text" className="form-control form-control-sm bg-light" value={config.twitterUrl} onChange={(e) => setConfig({ ...config, twitterUrl: e.target.value })} placeholder="https://x.com/..." />
                                         </div>
                                         <div className="col-md-6 mb-3">
                                             <label className="form-label small fw-medium">Instagram URL</label>
-                                            <input type="text" className="form-control form-control-sm bg-light" value={config.instagramUrl} onChange={(e) => setConfig({...config, instagramUrl: e.target.value})} placeholder="https://instagram.com/..." />
+                                            <input type="text" className="form-control form-control-sm bg-light" value={config.instagramUrl} onChange={(e) => setConfig({ ...config, instagramUrl: e.target.value })} placeholder="https://instagram.com/..." />
                                         </div>
                                         <div className="col-md-6 mb-3">
                                             <label className="form-label small fw-medium">LinkedIn URL</label>
-                                            <input type="text" className="form-control form-control-sm bg-light" value={config.linkedinUrl} onChange={(e) => setConfig({...config, linkedinUrl: e.target.value})} placeholder="https://linkedin.com/in/..." />
+                                            <input type="text" className="form-control form-control-sm bg-light" value={config.linkedinUrl} onChange={(e) => setConfig({ ...config, linkedinUrl: e.target.value })} placeholder="https://linkedin.com/in/..." />
                                         </div>
                                     </div>
                                     <div className="mb-4 mt-2">
@@ -210,29 +210,29 @@ export default function EmailConfiguration({ mode = 'admin' }: EmailConfiguratio
                                 {/* Features Section */}
                                 <div className="mb-2">
                                     <h6 className="fw-bold text-uppercase small text-primary mb-3">Visibility & Automation</h6>
-                                    <div className="form-check form-switch mb-3">
+                                    <div className="form-check form-switch mb-3 d-flex gap-2 align-items-center">
                                         <input className="form-check-input custom-switch" type="checkbox" id="showFooter" checked={config.showFooter} onChange={(e) => setConfig({ ...config, showFooter: e.target.checked })} />
                                         <label className="form-check-label fw-medium" htmlFor="showFooter">Enable Premium Footer</label>
                                     </div>
-                                    <div className="form-check form-switch mb-3">
+                                    <div className="form-check form-switch mb-3 d-flex gap-2 align-items-center">
                                         <input className="form-check-input custom-switch" type="checkbox" id="showUnsubscribe" checked={config.showUnsubscribe} onChange={(e) => setConfig({ ...config, showUnsubscribe: e.target.checked })} />
                                         <label className="form-check-label fw-medium" htmlFor="showUnsubscribe">Include Unsubscribe Link</label>
                                     </div>
                                     {config.showUnsubscribe && (
-                                        <div className="ms-4 mb-3 animate__animated animate__fadeIn">
+                                        <div className="mb-4 animate__animated animate__fadeIn">
                                             <div className="row g-2">
                                                 <div className="col-6">
                                                     <label className="form-label small mb-1">Link Text</label>
-                                                    <input type="text" className="form-control form-control-sm bg-light" value={config.unsubscribeText} onChange={(e) => setConfig({...config, unsubscribeText: e.target.value})} />
+                                                    <input type="text" className="form-control form-control-sm bg-light" value={config.unsubscribeText} onChange={(e) => setConfig({ ...config, unsubscribeText: e.target.value })} />
                                                 </div>
                                                 <div className="col-6">
                                                     <label className="form-label small mb-1">Custom Redirect URL (Optional)</label>
-                                                    <input type="text" className="form-control form-control-sm bg-light" value={config.unsubscribeUrl} onChange={(e) => setConfig({...config, unsubscribeUrl: e.target.value})} placeholder="https://..." />
+                                                    <input type="text" className="form-control form-control-sm bg-light" value={config.unsubscribeUrl} onChange={(e) => setConfig({ ...config, unsubscribeUrl: e.target.value })} placeholder="https://..." />
                                                 </div>
                                             </div>
                                         </div>
                                     )}
-                                    <div className="form-check form-switch mb-3">
+                                    <div className="form-check form-switch mb-3 d-flex gap-2 align-items-center">
                                         <input className="form-check-input custom-switch" type="checkbox" id="enableAi" checked={config.enableAiRecommendations} onChange={(e) => setConfig({ ...config, enableAiRecommendations: e.target.checked })} />
                                         <label className="form-check-label fw-medium" htmlFor="enableAi">AI Property Recommendations</label>
                                     </div>
@@ -289,7 +289,7 @@ export default function EmailConfiguration({ mode = 'admin' }: EmailConfiguratio
                                             <p className="text-muted" style={{ fontSize: '10px', marginBottom: '8px' }}>
                                                 {config.footerText || "You're receiving this because you signed up for property alerts."}
                                             </p>
-                                            
+
                                             <div className="d-flex justify-content-center gap-3 mb-3">
                                                 {config.facebookUrl && <i className="bi bi-facebook" style={{ color: config.emailSkinColor }}></i>}
                                                 {config.twitterUrl && <i className="bi bi-twitter-x" style={{ color: config.emailSkinColor }}></i>}

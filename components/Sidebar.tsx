@@ -113,6 +113,17 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Operations',
           items: [
             { href: `${adminPrefix}/dashboard`, label: 'Dashboard', icon: 'bi-grid-1x2-fill', active: activePage === 'dashboard' },
+            {
+              href: `${adminPrefix}/leads`,
+              label: labels.leads,
+              icon: 'bi-funnel-fill',
+              active: activePage === 'leads' || activePage === 'leads-qualification',
+              children: [
+                { href: `${adminPrefix}/leads`, label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
+                { href: `${adminPrefix}/leads/qualification`, label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
+              ]
+            },
+            { href: `${adminPrefix}/bookings`, label: labels.bookings, icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
           ]
         },
         {
@@ -136,7 +147,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               children: [
                 { href: `${adminPrefix}/websites`, label: 'Website Hub', icon: 'bi-globe', active: activePage === 'websites' },
                 { href: `${adminPrefix}/cms`, label: 'CMS', icon: 'bi-file-earmark-richtext-fill', active: activePage === 'cms' },
-                { href: `${adminPrefix}/websites/popups`, label: 'Popup Notifications', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
+                { href: `${adminPrefix}/websites/popups`, label: 'Website Promotions', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
                 { href: `${adminPrefix}/widgets`, label: 'Public Widgets', icon: 'bi-bounding-box', active: activePage === 'widgets' },
               ]
             },
@@ -150,6 +161,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                 { href: `${adminPrefix}/social/analytics`, label: 'Analytics', icon: 'bi-graph-up', active: activePage === 'social-analytics' },
                 { href: `${adminPrefix}/social/campaigns`, label: 'Campaigns', icon: 'bi-megaphone', active: activePage === 'social-campaigns' },
                 { href: `${adminPrefix}/social/scheduled`, label: 'Scheduled', icon: 'bi-calendar-event', active: activePage === 'social-schedule' },
+                { href: `${adminPrefix}/social/automation`, label: 'Sales Automation', icon: 'bi-robot', active: activePage === 'social-automation' },
               ]
             },
             { href: `${adminPrefix}/social/whatsapp`, label: 'WhatsApp', icon: 'bi-whatsapp', active: activePage === 'social-whatsapp' },
@@ -175,17 +187,6 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
         {
           title: 'Sales',
           items: [
-            {
-              href: `${adminPrefix}/leads`,
-              label: labels.leads,
-              icon: 'bi-funnel-fill',
-              active: activePage === 'leads' || activePage === 'leads-qualification',
-              children: [
-                { href: `${adminPrefix}/leads`, label: 'Lead Pipeline', icon: 'bi-kanban', active: activePage === 'leads' },
-                { href: `${adminPrefix}/leads/qualification`, label: 'Qualification Hub', icon: 'bi-lightning-charge-fill', active: activePage === 'leads-qualification' }
-              ]
-            },
-            { href: `${adminPrefix}/bookings`, label: labels.bookings, icon: 'bi-calendar2-check-fill', active: activePage === 'bookings' },
             { href: isOwner ? '/realestate-owner-admin/analytics' : '/realestate-admin/dashboard', label: 'Sales Intelligence', icon: 'bi-graph-up-arrow', active: activePage === 'analytics' },
             { href: `${adminPrefix}/agents`, label: 'Sales Agents', icon: 'bi-people-fill', active: activePage === 'agents' },
           ]

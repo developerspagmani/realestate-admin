@@ -667,7 +667,9 @@ export interface WebsitePopup {
     height?: 'auto' | 'small' | 'medium' | 'large';
     thankYouTitle?: string;
     thankYouBody?: string;
+    isIntelligentEnabled?: boolean;
   };
+  targetWidgetIds?: string[];
   isActive: boolean;
   tenantId?: string;
   createdAt: string;

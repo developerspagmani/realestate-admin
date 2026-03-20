@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { popupService, getAuthToken, websiteService, marketingService } from '@/app/services/api';
+import { popupService, getAuthToken, websiteService, marketingService, widgetService } from '@/app/services/api';
 import Loader from '@/components/common/Loader';
-import { WebsitePopup, Website, MarketingForm } from '@/types';
+import { WebsitePopup, Website, MarketingForm, Widget } from '@/types';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
@@ -20,6 +20,7 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
     const { activeTenantId, activeOwnerId } = useManagementContext();
     const [popups, setPopups] = useState<WebsitePopup[]>([]);
     const [websites, setWebsites] = useState<Website[]>([]);
+    const [widgets, setWidgets] = useState<Widget[]>([]);
     const [marketingForms, setMarketingForms] = useState<MarketingForm[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -48,6 +49,7 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
         if (isAuthenticated) {
             loadPopups();
             loadWebsites();
+            loadWidgets();
             loadMarketingForms();
         }
     }, [isAuthenticated, activeTenantId, activeOwnerId]);
@@ -85,6 +87,22 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
             }
         } catch (error) {
             console.error('Failed to load websites:', error);
+        }
+    };
+
+    const loadWidgets = async () => {
+        try {
+            const token = getAuthToken();
+            if (!token) return;
+            const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
+            const response = await widgetService.getWidgets(token, {
+                ...(tenantId && { tenantId }),
+            });
+            if (response.success) {
+                setWidgets(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to load widgets:', error);
         }
     };
 
@@ -158,8 +176,10 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
             const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
             const response = await popupService.getSubmissions(token, popupId, tenantId);
             if (response.success) {
-                setSubmissions(response.data);
-                setMetrics(response.metrics);
+                // Robust extraction: data might be flattened or in a named property like interactions
+                const data = response.data?.submissions || response.data?.interactions || (Array.isArray(response.data) ? response.data : (response.data?.list || response.submissions || []));
+                setSubmissions(Array.isArray(data) ? data : []);
+                setMetrics(response.metrics || response.data?.metrics);
                 setCurrentPage(1); // Reset to page 1 on new load
             }
         } catch (error) {
@@ -274,6 +294,7 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                         <PopupForm
                             popup={editingPopup}
                             websites={websites}
+                            widgets={widgets}
                             marketingForms={marketingForms}
                             onClose={() => {
                                 setShowForm(false);
@@ -380,7 +401,10 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                                                             </div>
                                                             <div>
                                                                 <div className="fw-bold">{sub.lead?.name || 'Anonymous'}</div>
-                                                                <small className="text-muted opacity-75">{sub.lead?.source === 5 ? 'Website Visitor' : (sub.lead?.source === 7 ? 'Chatbot Lead' : 'Direct Lead')}</small>
+                                                                <small className="text-muted opacity-75">
+                                                                    {sub.lead?.source === 5 || sub.lead?.source === 'website' || sub.lead?.source === 'website_popup' ? 'Website Visitor' : 
+                                                                     (sub.lead?.source === 7 || sub.lead?.source === 'website_chatbot' ? 'Chatbot Lead' : 'Direct Lead')}
+                                                                </small>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -395,9 +419,13 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                                                             {sub.lead?.status === 1 ? 'Active' : 'Unconfirmed'}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3 small text-muted">
-                                                        <div className="fw-bold">{new Date(sub.occurredAt).toLocaleDateString()}</div>
-                                                        <div className="extra-small opacity-75">{new Date(sub.occurredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                    <td className="px-4 py-3">
+                                                        <div className="fw-bold">
+                                                            {sub.occurredAt ? new Date(sub.occurredAt).toLocaleDateString() : 'N/A'}
+                                                        </div>
+                                                        {sub.occurredAt && (
+                                                            <small className="text-muted opacity-75">{new Date(sub.occurredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                                        )}
                                                     </td>
                                                     <td className="py-3 text-end px-4">
                                                         <a href={`/leads/${sub.lead?.id}`} className="btn btn-sm btn-white border rounded-pill px-3 shadow-sm hvr-grow" target="_blank" rel="noopener noreferrer">

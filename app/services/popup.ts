@@ -42,7 +42,7 @@ export const popupService = {
         });
     },
 
-    getPublicPopups: async (websiteId: string) => {
-        return await makeApiCall(popupEndpoints.getPublic(websiteId));
+    getPublicPopups: async (websiteId?: string, widgetId?: string) => {
+        return await makeApiCall(popupEndpoints.getPublic(websiteId, widgetId));
     },
 };

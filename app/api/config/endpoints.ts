@@ -549,7 +549,10 @@ export const popupEndpoints = {
   update: (id: string, tenantId?: string) => `/popups/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
   delete: (id: string, tenantId?: string) => `/popups/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
   getSubmissions: (id: string, tenantId?: string) => `/popups/${id}/submissions${tenantId ? `?tenantId=${tenantId}` : ''}`,
-  getPublic: (websiteId: string) => `/popups/public/${websiteId}`,
+  getPublic: (websiteId?: string, widgetId?: string) => {
+    if (widgetId) return `/popups/public/widget/${widgetId}`;
+    return `/popups/public/${websiteId || 'all'}`;
+  },
 };
 
 // PropIntel AI endpoints

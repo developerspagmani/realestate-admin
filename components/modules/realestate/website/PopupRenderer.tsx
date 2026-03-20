@@ -2,22 +2,28 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { WebsitePopup, Property } from '@/types';
-import { popupService, websiteService } from '@/app/services/api';
+import { popupService, websiteService, widgetService } from '@/app/services/api';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
+import { useIntelligentPopup } from '@/app/hooks/useIntelligentPopup';
 
 interface PopupRendererProps {
-    websiteId: string;
+    websiteId?: string;
+    widgetId?: string;
     theme?: any;
     properties?: Property[];
     trackAction?: (type: string, metadata?: any) => Promise<void>;
+    onIdentify?: (id: string, email?: string) => void;
 }
 
-export default function PopupRenderer({ websiteId, theme, properties, trackAction }: PopupRendererProps) {
+export default function PopupRenderer({ websiteId, widgetId, theme, properties, trackAction, onIdentify }: PopupRendererProps) {
     const [activePopup, setActivePopup] = useState<WebsitePopup | null>(null);
     const [isVisible, setIsVisible] = useState(false);
     const [allPopups, setAllPopups] = useState<WebsitePopup[]>([]);
     const [submitted, setSubmitted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Intelligent Matching Hook
+    const { matchedProperty } = useIntelligentPopup(properties);
 
     const primaryColor = theme?.primaryColor || '#0d6efd';
 
@@ -61,6 +67,7 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
             const leadPayload: any = {
                 visitorId,
                 source: 'website_popup',
+                popupId: activePopup.id,
                 notes: `Captured via Popup: ${activePopup.name}`
             };
 
@@ -94,18 +101,27 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
                 Object.assign(leadPayload, formData);
             }
 
-            const res = await websiteService.createPublicLead(websiteId, leadPayload);
-
-            if (trackAction) {
-                trackAction('POPUP_SUBMIT', {
-                    popupId: activePopup.id,
-                    popupName: activePopup.name,
-                    marketingFormId: activePopup.content?.marketingFormId
-                });
-            }
+            const res = await widgetService.createPublicLead(
+                (websiteId || widgetId) as string,
+                leadPayload,
+                !!websiteId
+            );
 
             if (res.success) {
                 setSubmitted(true);
+
+                // Identify the lead so subsequent tracks (like POPUP_SUBMIT) have an ID
+                if ((res.data?.id || res.id) && onIdentify) {
+                    onIdentify(res.data?.id || res.id, leadPayload.email);
+                }
+
+                if (trackAction) {
+                    trackAction('POPUP_SUBMIT', {
+                        popupId: activePopup.id,
+                        popupName: activePopup.name,
+                        marketingFormId: activePopup.content?.marketingFormId
+                    });
+                }
 
                 // Handle After Submit Actions
                 const { afterSubmitAction, downloadUrl, redirectUrl } = activePopup.content || {};
@@ -128,7 +144,8 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
                 if (afterSubmitAction !== 'redirect') {
                     setTimeout(() => {
                         handleClose();
-                    }, 4500);
+                        setSubmitted(false);
+                    }, 3000);
                 }
             }
         } catch (error) {
@@ -141,9 +158,10 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
 
     // Load Popups
     useEffect(() => {
+        if (!websiteId && !widgetId) return;
         const fetchPopups = async () => {
             try {
-                const res = await popupService.getPublicPopups(websiteId);
+                const res = await popupService.getPublicPopups(websiteId, widgetId);
                 if (res.success && res.data) {
                     setAllPopups(res.data);
                 }
@@ -152,7 +170,7 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
             }
         };
         fetchPopups();
-    }, [websiteId]);
+    }, [websiteId, widgetId]);
 
     // Setup Triggers
     useEffect(() => {
@@ -228,18 +246,33 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
             layout, textAlign, emailEnabled, mobileEnabled,
             inputBorderColor, inputBorderRadius, inputBackgroundColor,
             buttonBorderRadius, buttonBorderColor, buttonBorderWidth,
-            thankYouTitle, thankYouBody
+            thankYouTitle, thankYouBody, isIntelligentEnabled
         } = activePopup.content || {};
-        const isSplit = layout === 'split' && activePopup.type !== 'banner' && imageUrl;
+
+        // If Intelligent Mode is ON and we have a match, customize the content
+        let displayTitle = title;
+        let displayBody = body;
+        let displayImage = imageUrl;
+
+        if (isIntelligentEnabled && matchedProperty) {
+            console.log('PopupRenderer - Intelligent Match ACTIVE: Customizing content for:', matchedProperty.name);
+            displayTitle = `Interested in ${matchedProperty.title}?`;
+            displayBody = matchedProperty.description || `We have Great offers for ${matchedProperty.title}. Drop your contact to get details.`;
+            displayImage = matchedProperty.photos?.[0] || matchedProperty.mainImage?.url || imageUrl;
+        } else if (isIntelligentEnabled && !matchedProperty) {
+            console.log('PopupRenderer - Intelligent Mode enabled but NO property matched yet.');
+        }
+
+        const isSplit = layout === 'split' && activePopup.type !== 'banner' && displayImage;
         const alignClass = textAlign === 'left' ? 'text-start' : textAlign === 'right' ? 'text-end' : 'text-center';
 
         return (
             <div className={`popup-inner-wrapper ${isSplit ? 'd-flex flex-column flex-md-row' : ''}`} style={{ backgroundColor: backgroundColor || '#ffffff', color: textColor || '#000000' }}>
-                {imageUrl && (
+                {displayImage && (
                     <div className={`popup-image ${isSplit ? 'col-md-6 order-md-1' : 'mb-3'}`} style={{ minHeight: isSplit ? (activePopup.content?.height === 'small' ? '300px' : activePopup.content?.height === 'medium' ? '450px' : activePopup.content?.height === 'large' ? '600px' : '300px') : 'auto' }}>
                         <img
-                            src={imageUrl}
-                            alt={title}
+                            src={displayImage}
+                            alt={displayTitle}
                             className={`w-100 ${isSplit ? 'h-100' : 'rounded-3 shadow-sm'}`}
                             style={{
                                 objectFit: 'cover',
@@ -250,8 +283,8 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
                 )}
 
                 <div className={`p-4 p-md-5 d-flex flex-column justify-content-center ${alignClass} ${isSplit ? 'col-md-6 order-md-2' : ''}`}>
-                    <h3 className="fw-bold mb-2" style={{ color: 'inherit' }}>{title}</h3>
-                    <p className="opacity-75 mb-4" style={{ color: 'inherit' }}>{body}</p>
+                    <h3 className="fw-bold mb-2" style={{ color: 'inherit' }}>{displayTitle}</h3>
+                    <p className="opacity-75 mb-4" style={{ color: 'inherit' }}>{displayBody}</p>
 
                     {marketingFormId ? (
                         <div className="popup-form">
@@ -348,7 +381,11 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
                                         onClick={(e) => {
                                             if (ctaUrl === '#' || !ctaUrl) e.preventDefault();
                                             // Track interaction
-                                            websiteService.createPublicLead(websiteId, { source: 'popup_cta', notes: `Clicked CTA: ${ctaText} on Popup: ${activePopup.name}` });
+                                            widgetService.createPublicLead(
+                                                (websiteId || widgetId) as string,
+                                                { source: 'popup_cta', notes: `Clicked CTA: ${ctaText} on Popup: ${activePopup.name}` },
+                                                !!websiteId
+                                            );
 
                                             if (trackAction) {
                                                 trackAction('POPUP_CLICK', {
@@ -469,37 +506,40 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
     };
 
     // Determine if any popup should show a floating trigger
-    const triggerPopup = activePopup || allPopups.find(p => p.content?.showFloatingTrigger);
+    // If we have a matched property, prioritize popups that have Intelligent matching enabled
+    const intelligentPopup = matchedProperty ? allPopups.find(p => p.content?.isIntelligentEnabled) : null;
+    const triggerPopup = activePopup || intelligentPopup || allPopups.find(p => p.content?.showFloatingTrigger) || allPopups[0];
 
     return (
         <>
             {renderPopup()}
 
-            {/* Floating "View Again" Trigger - show if no popup is visible, and we have a target popup with trigger enabled */}
-            {!isVisible && triggerPopup && triggerPopup.content?.showFloatingTrigger && (
+            {/* Website Promotions Sticky Icon (Bottom Left) */}
+            {!isVisible && triggerPopup && (
                 <div
-                    className="popup-reopen-trigger shadow-lg d-flex align-items-center justify-content-center"
+                    className={`popup-reopen-trigger shadow-lg d-flex align-items-center justify-content-center animate-bounce-in ${matchedProperty && triggerPopup.content?.isIntelligentEnabled ? 'magic-glitter' : ''}`}
                     style={{
                         position: 'fixed',
                         bottom: '24px',
                         left: '24px',
                         width: '56px',
                         height: '56px',
-                        backgroundColor: theme.primaryColor,
+                        backgroundColor: matchedProperty && triggerPopup.content?.isIntelligentEnabled ? '#8e44ad' : primaryColor,
                         color: '#ffffff',
-                        borderRadius: '50%',
+                        borderRadius: '50%', // Modern squircle shape
                         cursor: 'pointer',
                         zIndex: 9998,
-                        transition: 'transform 0.3s ease'
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 8px 30px rgba(255, 71, 87, 0.4)'
                     }}
                     onClick={() => {
                         setActivePopup(triggerPopup);
                         setIsVisible(true);
                     }}
-                    title="View Offer"
+                    title="Website Promotions"
                 >
-                    <i className="bi bi-megaphone fs-4"></i>
-                    <div className="trigger-pulse"></div>
+                    <i className={`bi ${matchedProperty && triggerPopup.content?.isIntelligentEnabled ? 'bi-magic' : 'bi-megaphone-fill'} fs-4 text-white`}></i>
+                    <div className="trigger-pulse" style={{ backgroundColor: matchedProperty && triggerPopup.content?.isIntelligentEnabled ? '#8e44ad' : primaryColor }}></div>
                 </div>
             )}
 
@@ -551,15 +591,51 @@ export default function PopupRenderer({ websiteId, theme, properties, trackActio
                     width: 100%;
                     height: 100%;
                     border-radius: 50%;
-                    background: inherit;
-                    opacity: 0.6;
-                    animation: pulse-ring 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
                     z-index: -1;
+                    animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
                 }
-
                 @keyframes pulse-ring {
                     0% { transform: scale(0.95); opacity: 0.6; }
                     100% { transform: scale(1.6); opacity: 0; }
+                }
+
+                .animate-bounce-in {
+                    animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+                }
+                @keyframes bounceIn {
+                    from { transform: scale(0); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+
+                .magic-glitter {
+                    background: linear-gradient(135deg, #8e44ad, #c0392b, #2980b9) !important;
+                    background-size: 200% 200% !important;
+                    animation: gradientShift 3s ease infinite, magicGlow 2s ease-in-out infinite alternate !important;
+                }
+
+                .magic-glitter::after {
+                    content: '✨';
+                    position: absolute;
+                    top: -5px;
+                    right: -5px;
+                    font-size: 14px;
+                    animation: sparkle 1.5s infinite;
+                }
+
+                @keyframes gradientShift {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+
+                @keyframes magicGlow {
+                    from { box-shadow: 0 0 10px #8e44ad, 0 0 20px #c0392b; }
+                    to { box-shadow: 0 0 20px #8e44ad, 0 0 40px #2980b9; }
+                }
+
+                @keyframes sparkle {
+                    0%, 100% { transform: scale(1) rotate(0); opacity: 1; }
+                    50% { transform: scale(1.5) rotate(45deg); opacity: 0.5; }
                 }
             `}} />
         </>

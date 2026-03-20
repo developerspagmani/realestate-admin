@@ -108,8 +108,8 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                 <div className="card-body p-4 bg-primary text-white">
                     <div className="d-flex justify-content-between align-items-center">
                         <div>
-                            <h4 className="fw-bold mb-1 text-white"><i className="bi bi-robot me-2"></i> Vipranix V-Mail Engine</h4>
-                            <p className="mb-0 text-white">Neural property matching that connects the right buyer to the right home automatically.</p>
+                            <h4 className="fw-bold mb-1 text-white"><i className="bi bi-robot me-2"></i> Smart Email Hub</h4>
+                            <p className="mb-0 text-white">Automated property alerts that intelligently match the right buyer to their dream home.</p>
                         </div>
                         <div className="form-check form-switch fs-4">
                             <input
@@ -133,7 +133,7 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                             className={`nav-link border-0 py-3 px-4 fw-bold ${activeTab === 'grouping' ? 'active text-primary border-bottom border-primary border-3' : 'text-muted'}`}
                             onClick={() => setActiveTab('grouping')}
                         >
-                            Lead Grouping
+                            Audience Segments
                         </button>
                         <button
                             className={`nav-link border-0 py-3 px-4 fw-bold ${activeTab === 'analytics' ? 'active text-primary border-bottom border-primary border-3' : 'text-muted'}`}
@@ -159,7 +159,7 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
 
                             <div className="row mb-4">
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label small fw-bold text-muted">SENDING FREQUENCY</label>
+                                    <label className="form-label small fw-bold text-muted">SENDING CYCLE</label>
                                     <select className="form-select border-0 bg-light rounded-3" value={config.frequency} onChange={e => setConfig({ ...config, frequency: e.target.value })}>
                                         <option>Daily</option>
                                         <option>Every 2 Days</option>
@@ -168,12 +168,12 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                                     </select>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label small fw-bold text-muted">BUDGET VARIANCE (UP-SELL)</label>
+                                    <label className="form-label small fw-bold text-muted">PRICE FLEXIBILITY (UPWARDS)</label>
                                     <div className="input-group">
                                         <input type="number" className="form-control border-0 bg-light rounded-start-3" value={config.budgetVariance} onChange={e => setConfig({ ...config, budgetVariance: parseInt(e.target.value) })} />
                                         <span className="input-group-text border-0 bg-light rounded-end-3">%</span>
                                     </div>
-                                    <small className="text-muted extra-small">Range above lead budget for premium properties.</small>
+                                    <small className="text-muted extra-small">Includes properties slightly above the lead's budget.</small>
                                 </div>
                             </div>
 
@@ -182,15 +182,15 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                                 <div className="card bg-light border-0 rounded-4 p-3">
                                     <div className="form-check form-check-inline mb-3 w-100">
                                         <input className="form-check-input" type="checkbox" checked={config.includeUpsell} onChange={e => setConfig({ ...config, includeUpsell: e.target.checked })} />
-                                        <label className="form-check-label small">Include <b>Up-Sell</b> properties (Highest Quality)</label>
+                                        <label className="form-check-label small">Suggest <b>Premium</b> properties (Highest Quality)</label>
                                     </div>
                                     <div className="form-check form-check-inline mb-3 w-100">
                                         <input className="form-check-input" type="checkbox" checked={config.includeCrossSell} onChange={e => setConfig({ ...config, includeCrossSell: e.target.checked })} />
-                                        <label className="form-check-label small">Include <b>Cross-Sell</b> properties (Different Categories)</label>
+                                        <label className="form-check-label small">Suggest <b>Alternative</b> categories (Cross-Category)</label>
                                     </div>
                                     <div className="form-check form-check-inline mb-0 w-100">
                                         <input className="form-check-input" type="checkbox" checked={config.aiPersonalization} onChange={e => setConfig({ ...config, aiPersonalization: e.target.checked })} />
-                                        <label className="form-check-label small">Use <b>AI Content Studio</b> for personalized greetings</label>
+                                        <label className="form-check-label small">Use <b>AI Writing Assistant</b> for unique personalized greetings</label>
                                     </div>
                                 </div>
                             </div>
@@ -210,19 +210,19 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                             <div className="d-flex flex-column gap-4">
                                 <div className="d-flex gap-3">
                                     <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '24px', height: '24px', fontSize: '12px' }}>1</div>
-                                    <p className="extra-small mb-0 text-white">V-Mail analyzes **lead V-Scores** and active search history.</p>
+                                    <p className="extra-small mb-0 text-white">Our system analyzes the lead's search behavior and interests.</p>
                                 </div>
                                 <div className="d-flex gap-3">
                                     <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '24px', height: '24px', fontSize: '12px' }}>2</div>
-                                    <p className="extra-small mb-0 text-white">Automated query finds 2 matches, 1 upsell, and 1 cross-sell property.</p>
+                                    <p className="extra-small mb-0 text-white">Automatic logic picks the best matches, including 1 premium suggestion.</p>
                                 </div>
                                 <div className="d-flex gap-3">
                                     <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '24px', height: '24px', fontSize: '12px' }}>3</div>
-                                    <p className="extra-small mb-0 text-white">AI writes a personalized intro based on lead history.</p>
+                                    <p className="extra-small mb-0 text-white">AI drafts a polite intro based on what the lead was looking for.</p>
                                 </div>
                                 <div className="d-flex gap-3">
                                     <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '24px', height: '24px', fontSize: '12px' }}>4</div>
-                                    <p className="extra-small mb-0 text-white">Email is sent with full **pixel tracking** for opens and clicks.</p>
+                                    <p className="extra-small mb-0 text-white">Emails are sent automatically, and we track if they are opened or clicked.</p>
                                 </div>
                             </div>
 
@@ -238,8 +238,8 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                         </div>
 
                         <div className="card border-0 shadow-sm rounded-4 p-4 bg-primary text-white mt-4">
-                            <h6 className="fw-bold mb-3 text-white"><i className="bi bi-play-circle me-2"></i> Engine Simulation (Test Run)</h6>
-                            <p className="extra-small opacity-75 mb-4">Validate your current property mix and content style by sending a sample to your own email.</p>
+                            <h6 className="fw-bold mb-3 text-white"><i className="bi bi-play-circle me-2"></i> Try it Out (Test Email)</h6>
+                            <p className="extra-small opacity-75 mb-4">Send a sample recommendation email to yourself to see exactly what your leads will receive.</p>
 
                             <div className="row g-2">
                                 <div className="col-md-7">
@@ -270,7 +270,7 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                                         disabled={testing}
                                     >
                                         {testing ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-send-fill me-2"></i>}
-                                        Run Simulation Match
+                                        Send Test Recommendation
                                     </button>
                                 </div>
                             </div>
@@ -295,7 +295,7 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
 
                                     <div className="mt-auto">
                                         <div className="d-flex justify-content-between mb-1">
-                                            <span className="extra-small fw-bold">INTEL-ENROLLMENT</span>
+                                            <span className="extra-small fw-bold">AUTOMATION REACH</span>
                                             <span className="extra-small fw-bold text-primary">{Math.round((seg.automated / seg.count) * 100) || 0}%</span>
                                         </div>
                                         <div className="progress rounded-pill" style={{ height: '6px' }}>
@@ -318,7 +318,7 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
 
                     <div className="card border-0 shadow-sm rounded-4 p-4 mt-4">
                         <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h6 className="fw-bold mb-0">Market Appetite Filter</h6>
+                            <h6 className="fw-bold mb-0">Audience Patterns</h6>
                             <Link
                                 href={leadsPath}
                                 className="btn btn-light btn-sm rounded-pill px-3 extra-small fw-bold"
@@ -331,9 +331,9 @@ export default function IntelligentEmailManager({ tenantId, leadsPath = '/reales
                                 <thead>
                                     <tr className="extra-small text-muted text-uppercase">
                                         <th>Budget Group</th>
-                                        <th>Lead Volume</th>
-                                        <th>Engine Coverage</th>
-                                        <th>Recommendation Health</th>
+                                        <th>Total Leads</th>
+                                        <th>Automation Coverage</th>
+                                        <th>Match Strength</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>

@@ -221,7 +221,7 @@ export default function SubscriptionSubTab({ showToast }: SubscriptionSubTabProp
                                             </a>
                                         )}
                                         {mod.slug === 'automation_engine' && (
-                                            <a href="/realestate-owner-admin/automation" className="extra-small text-primary text-decoration-none d-block mt-1">
+                                            <a href="/realestate-owner-admin/social/automation" className="extra-small text-primary text-decoration-none d-block mt-1">
                                                 Manage Automation <i className="bi bi-arrow-right small"></i>
                                             </a>
                                         )}

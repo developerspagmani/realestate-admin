@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { widgetService, marketingService } from '@/app/services/api';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
-import { Seats } from '@/types';
+import PopupRenderer from '@/components/modules/realestate/website/PopupRenderer';
+import { trackPropertyView } from '@/app/hooks/useIntelligentPopup';
 import '@/components/modules/realestate/shared/shared.css';
 
 // Import split components
@@ -61,7 +62,7 @@ export default function PublicWidgetPage() {
 
     const trackAction = useCallback(async (type: string, metadata: any = {}, identityOverride?: { id?: string, email?: string }) => {
         const identity = identityOverride || leadIdentity;
-        
+
         // Generate or get visitorId for anonymous tracking
         let visitorId = localStorage.getItem(`widget_v_id_${widgetId}`);
         if (!visitorId) {
@@ -151,20 +152,14 @@ export default function PublicWidgetPage() {
         if (!widgetId) return;
 
         try {
-            setLoading(true);
+            // Only show full loader if we don't have widget data yet
+            if (!widget) setLoading(true);
+
             const response = await widgetService.getPublicWidget(widgetId);
             if (response.success) {
                 setWidget(response.widget);
                 setData(response.data || []);
                 setFilteredData(response.data || []);
-
-                // Track initial page view for EVERYONE (now using visitorId inside trackAction)
-                if (response.widget) {
-                    trackAction('WIDGET_VIEW', {
-                        widgetName: response.widget.name,
-                        resultsCount: response.data?.length || 0
-                    });
-                }
             } else {
                 setError(response.message || 'Failed to load widget data.');
             }
@@ -173,11 +168,29 @@ export default function PublicWidgetPage() {
         } finally {
             setLoading(false);
         }
-    }, [widgetId, trackAction]);
+    }, [widgetId]);
+
+    // Separate tracking effect to avoid re-fetching data when identity changes
+    useEffect(() => {
+        if (widget) {
+            trackAction('WIDGET_VIEW', {
+                widgetName: widget.name,
+                resultsCount: data?.length || 0
+            });
+        }
+    }, [widget?.id, trackAction, data?.length]);
 
     useEffect(() => {
         loadWidgetData();
     }, [loadWidgetData]);
+
+    // Auto-track property views for the intelligent matching engine
+    useEffect(() => {
+        if (selectedProperty && currentView === 'PROPERTY_DETAIL') {
+            trackPropertyView(selectedProperty.id);
+            trackAction('PROPERTY_VIEW', { propertyId: selectedProperty.id });
+        }
+    }, [selectedProperty, currentView, trackAction]);
 
     useEffect(() => {
         const handleMessage = (e: MessageEvent) => {
@@ -196,7 +209,7 @@ export default function PublicWidgetPage() {
             // document.body.scrollHeight can sometimes stay large
             const mainElement = document.getElementById('widget-content-wrapper');
             if (mainElement) {
-                const height = mainElement.offsetHeight;
+                const height = mainElement.scrollHeight;
                 window.parent.postMessage({ type: 'cw-widget-resize', height }, '*');
             }
         };
@@ -276,9 +289,9 @@ export default function PublicWidgetPage() {
         const currencyConfig = getCurrencyConfig(baseCurrency || country);
         const currencySymbol = currencyConfig?.symbol || '$';
 
-        const isChatbotEnabled = widget?.configuration?.chatbot?.enabled === true || 
-                                widget?.configuration?.chatbot?.enabled === "true" || 
-                                widget?.configuration?.chatbot?.enabled === 1;
+        const isChatbotEnabled = widget?.configuration?.chatbot?.enabled === true ||
+            widget?.configuration?.chatbot?.enabled === "true" ||
+            widget?.configuration?.chatbot?.enabled === 1;
 
         const commonProps = {
             widget,
@@ -372,8 +385,8 @@ export default function PublicWidgetPage() {
 
 
     return (
-        <div id="widget-content-wrapper" className="public-widget bg-white overflow-hidden" style={{ '--primary-color': theme.primaryColor } as any}>
-            <main>
+        <div id="widget-content-wrapper" className="public-widget bg-white overflow-hidden" style={{ '--primary-color': theme.primaryColor, minHeight: '100vh', display: 'flex', flexDirection: 'column' } as any}>
+            <main className="flex-grow-1">
                 {renderContent()}
             </main>
 
@@ -501,6 +514,15 @@ export default function PublicWidgetPage() {
                     )}
                 </>
             )}
+
+            {/* Popup Integration */}
+            <PopupRenderer
+                widgetId={widgetId as string}
+                properties={data}
+                theme={theme}
+                trackAction={trackAction}
+                onIdentify={identifyLead}
+            />
         </div >
     );
 }

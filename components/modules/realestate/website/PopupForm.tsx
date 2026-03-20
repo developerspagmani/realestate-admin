@@ -11,6 +11,7 @@ import MediaSelector from '@/components/shared/MediaSelector';
 interface PopupFormProps {
     popup: WebsitePopup | null;
     websites: Website[];
+    widgets: any[]; // Changed to any[] to match Widget type if needed, or stick to Widget[] if imported
     marketingForms: MarketingForm[];
     onClose: () => void;
     onSuccess: () => void;
@@ -48,12 +49,14 @@ const INITIAL_POPUP_DATA: Partial<WebsitePopup> = {
         width: 'medium',
         height: 'auto',
         thankYouTitle: 'Success!',
-        thankYouBody: "Thank you for your interest. We'll be in touch soon."
+        thankYouBody: "Thank you for your interest. We'll be in touch soon.",
+        isIntelligentEnabled: false
     },
+    targetWidgetIds: [],
     isActive: true
 };
 
-export default function PopupForm({ popup, websites, marketingForms, onClose, onSuccess, mode }: PopupFormProps) {
+export default function PopupForm({ popup, websites, widgets, marketingForms, onClose, onSuccess, mode }: PopupFormProps) {
     const { user } = useAuthContext();
     const { activeTenantId } = useManagementContext();
     const [formData, setFormData] = useState<Partial<WebsitePopup>>(INITIAL_POPUP_DATA);
@@ -65,7 +68,11 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
 
     useEffect(() => {
         if (popup) {
-            setFormData(popup);
+            // Ensure targetWidgetIds is populated from content if not at top level
+            setFormData({
+                ...popup,
+                targetWidgetIds: popup.targetWidgetIds || (popup.content as any)?.targetWidgetIds || []
+            });
         } else if (websites.length > 0) {
             setFormData(prev => ({ ...prev, websiteId: websites[0].id }));
         }
@@ -101,6 +108,17 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
             }
         }));
         setShowMediaSelector(false);
+    };
+
+    const handleWidgetToggle = (widgetId: string) => {
+        setFormData(prev => {
+            const currentIds = prev.targetWidgetIds || [];
+            if (currentIds.includes(widgetId)) {
+                return { ...prev, targetWidgetIds: currentIds.filter(id => id !== widgetId) };
+            } else {
+                return { ...prev, targetWidgetIds: [...currentIds, widgetId] };
+            }
+        });
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {
@@ -339,13 +357,32 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
                                                 name="websiteId"
                                                 value={formData.websiteId}
                                                 onChange={handleChange}
-                                                required
                                             >
-                                                <option value="">Select a website...</option>
+                                                <option value="">Portal-wide (Apply to specific websites below)</option>
                                                 {websites.map(w => (
                                                     <option key={w.id} value={w.id}>{w.name}</option>
                                                 ))}
                                             </select>
+                                        </div>
+                                        <div className="col-12 mt-2">
+                                            <label className="form-label fw-bold small d-block">Target Public Widgets</label>
+                                            <p className="extra-small text-muted mb-3">Select which specific embeddable widgets should show this popup.</p>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {widgets.map((w: any) => {
+                                                    const isSelected = formData.targetWidgetIds?.includes(w.id);
+                                                    return (
+                                                        <div 
+                                                            key={w.id} 
+                                                            className={`badge cursor-pointer px-3 py-2 rounded-pill border transition-all ${isSelected ? 'bg-primary border-primary text-white' : 'bg-light border-secondary-subtle text-dark'}`}
+                                                            onClick={() => handleWidgetToggle(w.id)}
+                                                        >
+                                                            <i className={`bi ${isSelected ? 'bi-check-circle-fill' : 'bi-plus-circle'} me-2`}></i>
+                                                            {w.name}
+                                                        </div>
+                                                    );
+                                                })}
+                                                {widgets.length === 0 && <span className="text-muted small">No widgets available.</span>}
+                                            </div>
                                         </div>
                                         <div className="col-12">
                                             <label className="form-label fw-bold small">Popup Title (Public)</label>
@@ -434,6 +471,38 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
                                                                 <i className={`bi bi-text-${align === 'center' ? 'center' : align}`}></i>
                                                             </button>
                                                         ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="col-12 mt-2">
+                                                    <div className="card border-0 bg-info bg-opacity-10 rounded-4 p-4 shadow-sm border border-info border-opacity-25">
+                                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                                            <div className="d-flex align-items-center">
+                                                                <div className="bg-info bg-opacity-10 text-info rounded-circle p-2 me-3">
+                                                                    <i className="bi bi-magic fs-4"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 className="fw-bold mb-0 text-info">Magic Intelligent Mode</h6>
+                                                                    <p className="extra-small text-muted mb-0">Persona-based property matching for visitors.</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="form-check form-switch px-4">
+                                                                <input
+                                                                    className="form-check-input"
+                                                                    type="checkbox"
+                                                                    style={{ width: '2.5em', height: '1.25em' }}
+                                                                    checked={formData.content?.isIntelligentEnabled || false}
+                                                                    onChange={(e) => handleChange({ target: { name: 'content.isIntelligentEnabled', value: e.target.checked } } as any)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="ps-5">
+                                                            <ul className="extra-small text-muted mb-0 ps-3">
+                                                                <li>Overwrites popup content with property the user just viewed.</li>
+                                                                <li>Adds a "Magic Glitter" pulse effect to the promotion icon.</li>
+                                                                <li>Automatically falls back to default popup if no matches found.</li>
+                                                            </ul>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -798,17 +867,14 @@ export default function PopupForm({ popup, websites, marketingForms, onClose, on
                                         </div>
                                         {(formData.trigger === 'scroll' || formData.trigger === 'delay') && (
                                             <div className="col-md-6">
-                                                <label className="form-label fw-bold small">
-                                                    {formData.trigger === 'scroll' ? 'Scroll Percentage (0-100)' : 'Delay in Seconds'}
-                                                </label>
+                                                <label className="form-label fw-bold small">{formData.trigger === 'scroll' ? 'Scroll %' : 'Delay (sec)'}</label>
                                                 <input
                                                     type="number"
                                                     className="form-control rounded-3"
                                                     name="triggerValue"
                                                     value={formData.triggerValue}
                                                     onChange={handleChange}
-                                                    min="0"
-                                                    max={formData.trigger === 'scroll' ? "100" : undefined}
+                                                    placeholder={formData.trigger === 'scroll' ? '50' : '5'}
                                                 />
                                             </div>
                                         )}

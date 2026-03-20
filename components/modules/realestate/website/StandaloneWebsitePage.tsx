@@ -9,6 +9,7 @@ import PropertyDetailView from '@/components/modules/realestate/shared/PropertyD
 import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailView';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
 import PopupRenderer from '@/components/modules/realestate/website/PopupRenderer';
+import { trackPropertyView } from '@/app/hooks/useIntelligentPopup';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 
 import { Property, Unit } from '@/types';
@@ -25,7 +26,7 @@ interface StandaloneWebsitePageProps {
 }
 
 export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsitePageProps) {
-    const [website, setWebsite] = useState<any>(null); // Keeping any for now as Website type is complex/missing
+    const [website, setWebsite] = useState<any>(null);
     const [data, setData] = useState<Property[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -71,14 +72,12 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        // 1. Get or Generate Global Visitor ID
         let vid = localStorage.getItem('virpanix_visitor_id');
         if (!vid) {
             vid = window.crypto?.randomUUID?.() || Math.random().toString(36).substring(2, 15);
             localStorage.setItem('virpanix_visitor_id', vid);
         }
 
-        // 2. Fetch User Geo Context (IP-based, lightweight)
         if (!userContext.city) {
             fetch('https://ipapi.co/json/')
                 .then(res => res.json())
@@ -90,12 +89,10 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                     });
                 })
                 .catch(() => {
-                    // Fallback to basic TZ based guessing if IP geo fails
                     setUserContext({ city: Intl.DateTimeFormat().resolvedOptions().timeZone.split('/')[1] });
                 });
         }
 
-        // 3. Restore site-specific lead identity
         if (website && !leadIdentity) {
             const saved = localStorage.getItem(`website_lead_${website.id}`);
             if (saved) {
@@ -113,14 +110,10 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         }
     }, [website, leadIdentity, userContext.city]);
 
-
-    // Dynamic Google Font Loader
     useEffect(() => {
         if (!website?.configuration?.theme?.fontFamily) return;
-
         const font = website.configuration.theme.fontFamily;
         const fontId = `gfont-${font.replace(/\s+/g, '-').toLowerCase()}`;
-
         if (!document.getElementById(fontId)) {
             const link = document.createElement('link');
             link.id = fontId;
@@ -128,57 +121,15 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
             link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}:wght@300;400;500;600;700;800;900&display=swap`;
             document.head.appendChild(link);
         }
-
-        // Add additional fonts for specific themes if needed
-        const traditionalFonts = ['Playfair Display', 'Lora'];
-        traditionalFonts.forEach(f => {
-            const tid = `gfont-${f.replace(/\s+/g, '-').toLowerCase()}`;
-            if (!document.getElementById(tid)) {
-                const link = document.createElement('link');
-                link.id = tid;
-                link.rel = 'stylesheet';
-                link.href = `https://fonts.googleapis.com/css2?family=${f.replace(/\s+/g, '+')}:wght@400;700&display=swap`;
-                document.head.appendChild(link);
-            }
-        });
     }, [website?.configuration?.theme?.fontFamily]);
 
-    // Dynamic Favicon Loader
+    // Auto-track property views for the matching engine
     useEffect(() => {
-        if (!website?.configuration?.builder?.faviconUrl) return;
-
-        const faviconUrl = website.configuration.builder.faviconUrl;
-        
-        try {
-            // Remove ALL existing favicon links to avoid browser confusion/race conditions
-            const existingLinks = document.querySelectorAll("link[rel*='icon']");
-            existingLinks.forEach(link => {
-                if (link.parentNode) link.parentNode.removeChild(link);
-            });
-
-            // Standard favicon
-            const icon = document.createElement('link');
-            icon.rel = 'icon';
-            icon.type = 'image/png'; // Defaulting to png, should be fine for most URL results
-            icon.href = faviconUrl;
-            document.head.appendChild(icon);
-
-            // Apple touch icon (for mobile/safari bookmarks)
-            const apple = document.createElement('link');
-            apple.rel = 'apple-touch-icon';
-            apple.href = faviconUrl;
-            document.head.appendChild(apple);
-
-            // Short-cut icon for older browsers
-            const shortcut = document.createElement('link');
-            shortcut.rel = 'shortcut icon';
-            shortcut.href = faviconUrl;
-            document.head.appendChild(shortcut);
-        } catch (err) {
-            console.warn('Dynamic favicon loading failed:', err);
+        if (selectedProperty && currentView === 'PROPERTY_DETAIL') {
+            trackPropertyView(selectedProperty.id);
+            trackAction('PROPERTY_VIEW', { propertyId: selectedProperty.id });
         }
-    }, [website?.configuration?.builder?.faviconUrl]);
-
+    }, [selectedProperty, currentView]);
 
     const identifyLead = (id: string, email?: string) => {
         const vid = localStorage.getItem('virpanix_visitor_id');
@@ -193,7 +144,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
             await marketingService.trackInteraction({
                 leadId: leadIdentity.id,
                 email: leadIdentity.email,
-                visitorId: leadIdentity.visitorId, // Critical for Identity Resolution
+                visitorId: leadIdentity.visitorId,
                 type,
                 metadata: {
                     websiteId: website.id,
@@ -208,6 +159,11 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         }
     };
 
+    const tenantSettings = website?.tenant?.settings || {};
+    const baseCurrency = tenantSettings.general?.currency;
+    const currencyConfig = getCurrencyConfig(baseCurrency || website?.tenant?.country);
+    const currencySymbol = currencyConfig?.symbol || '$';
+
     const getFormattedPrice = (unit: Unit) => {
         if (!unit.unitPricing?.length) return 'Price on Inquiry';
         const pricing = unit.unitPricing[0];
@@ -215,12 +171,11 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
             pricing.pricingModel === 3 ? 'day' :
                 pricing.pricingModel === 4 ? 'mo' :
                     pricing.pricingModel === 5 ? 'yr' : '';
-
         return `${currencySymbol}${Number(pricing.price).toLocaleString('en-US')}${label ? `/${label}` : ''}`;
     };
 
     const handleFilterResults = useCallback((results: Property[]) => {
-        setData(results);
+        setFilteredData(results);
     }, []);
 
     if (loading && !website) return null;
@@ -242,7 +197,6 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         ...(website?.tenant?.settings?.chatbotConfig || {}),
         ...(data?.[0]?.metadata?.chatbotConfig || {}),
         ...(website?.configuration?.chatbot || {}),
-        // Handle specific renames/fallbacks
         welcomeMessage: website?.configuration?.chatbot?.welcomeMessage ||
             website?.configuration?.chatbot?.welcomeTitle ||
             data?.[0]?.metadata?.chatbotConfig?.welcomeMessage ||
@@ -261,13 +215,12 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         widgetId={website.id}
                         onSelectProperty={(property) => {
                             setSelectedProperty(property);
+                            trackPropertyView(property.id);
                             setPropertyImageIndex(0);
                             setCurrentView('PROPERTY_DETAIL');
                             trackAction('PROPERTY_VIEW', { propertyId: property.id });
                         }}
-                        onFilter={(filters) => {
-                            // Logic to filter data based on search component if needed
-                        }}
+                        onFilter={(filters) => {}}
                         currencySymbol={currencySymbol}
                     />
                 ) : (
@@ -280,6 +233,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         onReset={() => { setFilteredData(data); setIsFiltered(false); }}
                         onSelectProperty={(property) => {
                             setSelectedProperty(property);
+                            trackPropertyView(property.id);
                             setPropertyImageIndex(0);
                             setCurrentView('PROPERTY_DETAIL');
                         }}
@@ -326,17 +280,14 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         currencySymbol={currencySymbol}
                     />
                 );
+            default:
+                return null;
         }
     };
 
     const currentTemplate = theme.template || 'modern';
     const ThemeWrapper = currentTemplate === 'minimalistic' ? MinimalisticTheme :
         currentTemplate === 'traditional' ? TraditionalTheme : ModernTheme;
-
-    const tenantSettings = website?.tenant?.settings || {};
-    const baseCurrency = tenantSettings.general?.currency;
-    const currencyConfig = getCurrencyConfig(baseCurrency || website?.tenant?.country);
-    const currencySymbol = currencyConfig?.symbol || '$';
 
     return (
         <>
@@ -354,7 +305,6 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                 {renderView()}
             </ThemeWrapper>
 
-            {/* Intelligent Concierge - Exactly matching Widget implementation */}
             {website.configuration?.chatbot?.enabled && (
                 <>
                     <button
@@ -401,12 +351,12 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                 trackAction={trackAction}
                                 onSelectProperty={(prop) => {
                                     setSelectedProperty(prop);
+                                    trackPropertyView(prop.id);
                                     setCurrentView('PROPERTY_DETAIL');
                                     setShowChat(false);
                                     setChatExpanded(false);
                                     window.scrollTo(0, 0);
                                 }}
-                                // Global AI Settings Injection
                                 customWelcomeTitle={chatbotConfig.welcomeMessage}
                                 customWelcomeSubtext={chatbotConfig.welcomeSubtext}
                                 leadCaptureMode={chatbotConfig.leadCaptureMode}
@@ -422,23 +372,13 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                             name: name || 'Website Chat Inquiry',
                                             source: 'website_chatbot'
                                         };
-
                                         if (contact && contact.includes('@')) {
                                             leadPayload.email = contact;
                                         } else if (contact) {
                                             leadPayload.phone = contact;
                                         }
-
-                                        // Inject Visitor ID for stitching
                                         const vid = localStorage.getItem('virpanix_visitor_id');
                                         if (vid) leadPayload.visitorId = vid;
-
-                                        if (contact && contact.includes('|')) {
-                                            const [e, p] = contact.split('|').map(s => s.trim());
-                                            if (e && e.includes('@')) leadPayload.email = e;
-                                            if (p) leadPayload.phone = p;
-                                        }
-
                                         const res = await websiteService.createPublicLead(website?.id || '', leadPayload);
                                         const leadId = res.success ? (res.data?.id || res.id) : null;
                                         if (leadId) identifyLead(leadId, leadPayload.email);
@@ -464,13 +404,13 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                 identifyLead={identifyLead}
             />
 
-            {/* Conversion Popups Engine */}
             {website?.id && (
                 <PopupRenderer
                     websiteId={website.id}
                     theme={theme}
                     properties={data}
                     trackAction={trackAction}
+                    onIdentify={identifyLead}
                 />
             )}
         </>
