@@ -14,6 +14,7 @@ import DashboardRecentProperties from '@/components/modules/realestate/dashboard
 import DashboardUpcomingTasks from '@/components/modules/realestate/dashboard/DashboardUpcomingTasks';
 import DashboardTopUnits, { DashboardUnit } from '@/components/modules/realestate/dashboard/DashboardTopUnits';
 import DashboardCharts, { ChartData } from '@/components/modules/realestate/dashboard/DashboardCharts';
+import LeadSourceChart from '@/components/modules/realestate/dashboard/LeadSourceChart';
 import Toast from '@/components/common/Toast';
 
 interface DashboardManagerProps {
@@ -51,6 +52,7 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
     const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
     const [topUnits, setTopUnits] = useState<DashboardUnit[]>([]);
     const [historicalData, setHistoricalData] = useState<ChartData[]>([]);
+    const [leadSourceStats, setLeadSourceStats] = useState<{ source: string; count: number }[]>([]);
     const [periodLabel, setPeriodLabel] = useState('Last 6 Months');
     const [chartParams, setChartParams] = useState<Record<string, string | number | undefined>>({ period: 'last6months' });
     const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
@@ -108,6 +110,7 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                 setUpcomingTasks(response.data.upcomingTasks || []);
                 setTopUnits(response.data.topWorkspaces || []);
                 setHistoricalData(response.data.historicalData || []);
+                setLeadSourceStats(response.data.leadSourceStats || []);
                 setPeriodLabel(response.data.periodLabel || 'Report');
             }
         } catch (error) {
@@ -171,33 +174,41 @@ export default function DashboardManager({ mode }: DashboardManagerProps) {
                 />
 
                 <div className="row g-4 mt-2">
-                    {/* Recent Bookings */}
-                    <div className="col-lg-8">
-                        <DashboardRecentBookings bookings={recentBookings} loading={loading} />
+
+                </div>
+
+                <div className="row g-4 mt-2">
+                    {/* Lead Conversion Sources */}
+                    <div className="col-lg-6">
+                        <LeadSourceChart data={leadSourceStats} loading={loading} />
                     </div>
 
-                    {/* Top Units */}
-                    <div className="col-lg-4">
-                        <DashboardTopUnits units={topUnits} loading={loading} totalBookings={stats.totalBookings} />
+                    {/* Recent Bookings */}
+                    <div className="col-lg-6">
+                        <DashboardRecentBookings bookings={recentBookings} loading={loading} />
                     </div>
                 </div>
 
                 <div className="row g-4 mt-2">
                     {/* Recent Leads */}
-                    <div className="col-lg-8">
+                    <div className="col-lg-6">
                         <DashboardRecentLeads leads={recentLeads} loading={loading} />
                     </div>
 
                     {/* Upcoming Tasks */}
-                    <div className="col-lg-4">
+                    <div className="col-lg-6">
                         <DashboardUpcomingTasks tasks={upcomingTasks} loading={loading} />
                     </div>
                 </div>
 
                 <div className="row g-4 mt-2 mb-5">
                     {/* Recent Properties */}
-                    <div className="col-12">
+                    <div className="col-lg-6">
                         <DashboardRecentProperties properties={recentProperties} loading={loading} />
+                    </div>
+                    {/* Top Units */}
+                    <div className="col-lg-6">
+                        <DashboardTopUnits units={topUnits} loading={loading} totalBookings={stats.totalBookings} />
                     </div>
                 </div>
             </div>

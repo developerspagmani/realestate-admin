@@ -75,12 +75,6 @@ export default function StandaloneProvider({
             const params = new URLSearchParams();
             params.append('tenantId', website.tenantId);
 
-            // If website is restricted to specific properties, ensure search stays within them
-            const allowedIds = website.propertyIds || (website.propertyId ? [website.propertyId] : []);
-            if (allowedIds.length > 0) {
-                params.append('propertyIds', allowedIds.join(','));
-            }
-
             Object.entries(newFilters).forEach(([key, value]) => {
                 if (value) params.append(key, String(value));
             });
@@ -708,6 +702,7 @@ export default function StandaloneProvider({
                         theme={theme}
                         properties={properties}
                         trackAction={trackAction}
+                        onIdentify={identifyLead}
                     />
                 )}
             </div>

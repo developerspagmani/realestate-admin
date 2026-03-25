@@ -174,6 +174,38 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
         return `${currencySymbol}${Number(pricing.price).toLocaleString('en-US')}${label ? `/${label}` : ''}`;
     };
 
+    const handleFilter = useCallback((filters: any) => {
+        let results = [...data];
+        
+        if (filters.search) {
+            const s = filters.search.toLowerCase();
+            results = results.filter(p => 
+                p.title?.toLowerCase().includes(s) || 
+                p.city?.toLowerCase().includes(s) ||
+                p.units?.some(u => u.unitCode?.toLowerCase().includes(s))
+            );
+        }
+        
+        if (filters.listingType) {
+            results = results.filter(p => p.listingType === filters.listingType);
+        }
+        
+        if (filters.propertyType) {
+            results = results.filter(p => p.propertyType === Number(filters.propertyType));
+        }
+
+        if (filters.minPrice) {
+            results = results.filter(p => Number(p.price) >= Number(filters.minPrice));
+        }
+
+        if (filters.maxPrice) {
+            results = results.filter(p => Number(p.price) <= Number(filters.maxPrice));
+        }
+
+        setFilteredData(results);
+        setIsFiltered(true);
+    }, [data]);
+
     const handleFilterResults = useCallback((results: Property[]) => {
         setFilteredData(results);
     }, []);
@@ -220,7 +252,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                             setCurrentView('PROPERTY_DETAIL');
                             trackAction('PROPERTY_VIEW', { propertyId: property.id });
                         }}
-                        onFilter={(filters) => {}}
+                        onFilter={handleFilter}
                         currencySymbol={currencySymbol}
                     />
                 ) : (
@@ -231,6 +263,7 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                         widget={website}
                         widgetId={website?.id}
                         onReset={() => { setFilteredData(data); setIsFiltered(false); }}
+                        onFilter={handleFilter}
                         onSelectProperty={(property) => {
                             setSelectedProperty(property);
                             trackPropertyView(property.id);

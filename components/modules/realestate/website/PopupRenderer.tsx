@@ -267,9 +267,13 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
         const alignClass = textAlign === 'left' ? 'text-start' : textAlign === 'right' ? 'text-end' : 'text-center';
 
         return (
-            <div className={`popup-inner-wrapper ${isSplit ? 'd-flex flex-column flex-md-row' : ''}`} style={{ backgroundColor: backgroundColor || '#ffffff', color: textColor || '#000000' }}>
+            <div className={`popup-inner-wrapper w-100 ${isSplit ? 'd-flex flex-column flex-md-row align-items-stretch' : ''}`} style={{ backgroundColor: backgroundColor || '#ffffff', color: textColor || '#000000' }}>
                 {displayImage && (
-                    <div className={`popup-image ${isSplit ? 'col-md-6 order-md-1' : 'mb-3'}`} style={{ minHeight: isSplit ? (activePopup.content?.height === 'small' ? '300px' : activePopup.content?.height === 'medium' ? '450px' : activePopup.content?.height === 'large' ? '600px' : '300px') : 'auto' }}>
+                    <div className={`popup-image ${isSplit ? 'col-md-6 order-md-1' : 'mb-3'}`} style={{ 
+                        flex: isSplit ? '0 0 50%' : 'none',
+                        maxWidth: isSplit ? '50%' : '100%',
+                        minHeight: isSplit ? (activePopup.content?.height === 'small' ? '300px' : activePopup.content?.height === 'medium' ? '450px' : activePopup.content?.height === 'large' ? '600px' : '300px') : 'auto' 
+                    }}>
                         <img
                             src={displayImage}
                             alt={displayTitle}
@@ -282,7 +286,10 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
                     </div>
                 )}
 
-                <div className={`p-4 p-md-5 d-flex flex-column justify-content-center ${alignClass} ${isSplit ? 'col-md-6 order-md-2' : ''}`}>
+                <div className={`p-4 p-md-5 d-flex flex-column justify-content-center ${alignClass} ${isSplit ? 'col-md-6 order-md-2' : ''}`} style={{ 
+                    flex: isSplit ? '0 0 50%' : 'none',
+                    maxWidth: isSplit ? '50%' : '100%'
+                }}>
                     <h3 className="fw-bold mb-2" style={{ color: 'inherit' }}>{displayTitle}</h3>
                     <p className="opacity-75 mb-4" style={{ color: 'inherit' }}>{displayBody}</p>
 

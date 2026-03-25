@@ -49,8 +49,8 @@ export interface Workspace extends BaseListing {
 
 // Property Workspace (new functionality)
 export interface Property extends BaseListing {
-  propertyType: 'residential' | 'commercial' | 'industrial' | 'mixed_use';
-  listingType: 'sale' | 'rent' | 'lease';
+  propertyType?: number;
+  listingType?: string;
   price: number;
   priceType: 'fixed' | 'per_month' | 'per_year' | 'per_sqft';
   addressLine2?: string;
@@ -89,6 +89,9 @@ export interface Property extends BaseListing {
   categoryId?: string;
   videoUrl?: string;
   displayPrice?: boolean;
+  units?: Unit[];
+  workspace3D?: any;
+  propertyAmenities?: any[];
 }
 
 export interface Unit {
