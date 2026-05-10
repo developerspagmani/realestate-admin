@@ -18,6 +18,7 @@ import '@/components/modules/realestate/shared/shared.css';
 import ModernTheme from './themes/ModernTheme';
 import MinimalisticTheme from './themes/MinimalisticTheme';
 import TraditionalTheme from './themes/TraditionalTheme';
+import CookieConsent from './CookieConsent';
 
 type ViewType = 'LISTING' | 'PROPERTY_DETAIL' | 'UNIT_DETAIL';
 
@@ -444,6 +445,13 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                     properties={data}
                     trackAction={trackAction}
                     onIdentify={identifyLead}
+                />
+            )}
+
+            {(website?.tenant?.settings?.privacy?.cookieNotice ?? true) && (
+                <CookieConsent
+                    privacyLink={website?.tenant?.settings?.privacy?.privacyLink}
+                    termsLink={website?.tenant?.settings?.privacy?.termsLink}
                 />
             )}
         </>

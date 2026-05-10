@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import AgentDashboard from "./dashboard/page";
 
 export default function AgentRoot() {
-  redirect('/realestate-agent/dashboard');
+  return <AgentDashboard />
 }

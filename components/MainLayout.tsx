@@ -7,7 +7,6 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import Link from 'next/link';
 import '@/app/realestate-admin/modern-admin.css';
 import Footer from '@/components/common/footer';
-import CookieConsent from '@/components/common/CookieConsent';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 interface MainLayoutProps {
@@ -114,12 +113,7 @@ export default function MainLayout({ children, activePage, hideSidebar = false, 
           <Footer />
         </main>
 
-        {showCookieBanner && (
-          <CookieConsent
-            privacyLink={privacyLink}
-            termsLink={termsLink}
-          />
-        )}
+
 
         <style jsx>{`
         .z-index-1000 { z-index: 1000; }

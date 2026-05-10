@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { widgetService, marketingService } from '@/app/services/api';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
 import PopupRenderer from '@/components/modules/realestate/popups/PopupRenderer';
+import CookieConsent from '@/components/modules/realestate/widgets/CookieConsent';
 import { trackPropertyView } from '@/app/hooks/useIntelligentPopup';
 import '@/components/modules/realestate/shared/shared.css';
 
@@ -532,6 +533,13 @@ export default function PublicWidgetPage() {
                 trackAction={trackAction}
                 onIdentify={identifyLead}
             />
+
+            {(widget?.tenant?.settings?.privacy?.cookieNotice ?? true) && (
+                <CookieConsent
+                    privacyLink={widget?.tenant?.settings?.privacy?.privacyLink}
+                    termsLink={widget?.tenant?.settings?.privacy?.termsLink}
+                />
+            )}
         </div >
     );
 }
