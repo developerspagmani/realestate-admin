@@ -16,7 +16,8 @@ export default function ModernFlowTemplate(props: BaseTemplateProps) {
         isPreview,
         customContact,
         selectedImages,
-        toggles = { showPrice: true, showAmenities: true, showQRCode: true, showStats: true }
+        toggles = { showPrice: true, showAmenities: true, showQRCode: true, showStats: true },
+        bgColor
     } = props;
 
     const pageWidth = '210mm';
@@ -42,7 +43,7 @@ export default function ModernFlowTemplate(props: BaseTemplateProps) {
     return (
         <div style={{
             width: pageWidth,
-            background: '#ffffff',
+            background: bgColor || '#ffffff',
             color: textColor,
             fontFamily: fontStyle,
             margin: '0 auto',

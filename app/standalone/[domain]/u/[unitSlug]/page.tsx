@@ -1,12 +1,12 @@
 import { Metadata } from 'next';
 import UnitDetailClient from './UnitDetailClient';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
+const BACKEND_URL = process.env.BACKEND_URL;
 
 async function getUnitData(idOrSlug: string) {
     if (!idOrSlug) return null;
     try {
-        const url = `${BACKEND_URL}/public/units/${idOrSlug}`;
+        const url = `${BACKEND_URL}/api/public/units/${idOrSlug}`;
         const res = await fetch(url, {
             next: { revalidate: 1 }
         });

@@ -27,6 +27,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
     const [design, setDesign] = useState<'modern' | 'luxury' | 'classic' | 'elegant_landscape' | 'premium_landscape' | 'artistic'>('modern');
     const [accentColor, setAccentColor] = useState('#6366f1');
     const [textColor, setTextColor] = useState('#333333');
+    const [bgColor, setBgColor] = useState('#ffffff');
     const [currency, setCurrency] = useState('$');
     const [aiTagline, setAiTagline] = useState<string>('');
     const [aiDescription, setAiDescription] = useState<string>('');
@@ -225,6 +226,49 @@ export default function BrochureManager({ property, properties = [], mode, compa
                             </select>
                         </div>
 
+                        <div className="mb-4 d-flex gap-3 bg-light p-3 rounded-4 border border-opacity-10">
+                            <div className="flex-fill">
+                                <label className="form-label fw-bold small text-muted text-uppercase mb-2" style={{ fontSize: '10px' }}>Signature</label>
+                                <div className="d-flex flex-wrap gap-2">
+                                    {[
+                                        { name: 'Indigo', color: '#6366f1' },
+                                        { name: 'Gold', color: '#d4af37' },
+                                        { name: 'Rose', color: '#e11d48' },
+                                        { name: 'Emerald', color: '#10b981' }
+                                    ].map(p => (
+                                        <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${accentColor === p.color ? 'border-primary' : 'border-light'}`} onClick={() => setAccentColor(p.color)} title={p.name} style={{ width: '24px', height: '24px', background: p.color }} />
+                                    ))}
+                                    <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: '24px', height: '24px' }} />
+                                </div>
+                            </div>
+                            <div className="flex-fill">
+                                <label className="form-label fw-bold small text-muted text-uppercase mb-2" style={{ fontSize: '10px' }}>Text</label>
+                                <div className="d-flex flex-wrap gap-2">
+                                    {[
+                                        { name: 'Dark', color: '#333333' },
+                                        { name: 'White', color: '#ffffff' },
+                                        { name: 'Muted', color: '#666666' }
+                                    ].map(p => (
+                                        <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${textColor === p.color ? 'border-primary' : 'border-light'}`} onClick={() => setTextColor(p.color)} title={p.name} style={{ width: '24px', height: '24px', background: p.color }} />
+                                    ))}
+                                    <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={textColor} onChange={(e) => setTextColor(e.target.value)} style={{ width: '24px', height: '24px' }} />
+                                </div>
+                            </div>
+                            <div className="flex-fill">
+                                <label className="form-label fw-bold small text-muted text-uppercase mb-2" style={{ fontSize: '10px' }}>Bg Color</label>
+                                <div className="d-flex flex-wrap gap-2">
+                                    {[
+                                        { name: 'Dark', color: '#0a0a0a' },
+                                        { name: 'White', color: '#ffffff' },
+                                        { name: 'Light', color: '#f8fafc' }
+                                    ].map(p => (
+                                        <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${bgColor === p.color ? 'border-primary' : 'border-light'}`} onClick={() => setBgColor(p.color)} title={p.name} style={{ width: '24px', height: '24px', background: p.color }} />
+                                    ))}
+                                    <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={bgColor} onChange={(e) => setBgColor(e.target.value)} style={{ width: '24px', height: '24px' }} />
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="mb-4">
                             <label className="form-label fw-bold small">Template Style</label>
                             <div className="d-flex flex-column gap-2">
@@ -243,45 +287,6 @@ export default function BrochureManager({ property, properties = [], mode, compa
                                         </div>
                                     </label>
                                 ))}
-                            </div>
-                        </div>
-
-                        <div className="mb-4 d-flex gap-4">
-                            <div className="flex-fill">
-                                <label className="form-label fw-bold small">Signature Color</label>
-                                <div className="d-flex flex-wrap gap-2 mb-3">
-                                    {[
-                                        { name: 'Indigo', color: '#6366f1' },
-                                        { name: 'Gold', color: '#d4af37' },
-                                        { name: 'Rose', color: '#e11d48' },
-                                        { name: 'Emerald', color: '#10b981' },
-                                        { name: 'Slate', color: '#334155' }
-                                    ].map(p => (
-                                        <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${accentColor === p.color ? 'border-primary' : 'border-transparent'}`} onClick={() => setAccentColor(p.color)} title={p.name} style={{ width: '28px', height: '28px', background: p.color }} />
-                                    ))}
-                                    <br />
-                                    <div className='d-flex align-items-center gap-2'>
-                                        <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} style={{ width: '38px', height: '38px' }} />
-                                        <span className='text-muted small'>Custom</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex-fill">
-                                <label className="form-label fw-bold small">Text Color</label>
-                                <div className="d-flex flex-wrap gap-2 mb-3">
-                                    {[
-                                        { name: 'Dark', color: '#333333' },
-                                        { name: 'White', color: '#ffffff' },
-                                        { name: 'Muted', color: '#666666' }
-                                    ].map(p => (
-                                        <button key={p.color} className={`btn btn-sm p-0 rounded-circle border-2 ${textColor === p.color ? 'border-primary' : 'border-transparent'}`} onClick={() => setTextColor(p.color)} title={p.name} style={{ width: '28px', height: '28px', background: p.color, border: p.color === '#ffffff' ? '1px solid #ddd !important' : '' }} />
-                                    ))}
-                                    <br />
-                                    <div className='d-flex align-items-center gap-2'>
-                                        <input type="color" className="form-control form-control-color border-0 p-0 rounded-circle" value={textColor} onChange={(e) => setTextColor(e.target.value)} style={{ width: '38px', height: '38px' }} />
-                                        <span className='text-muted small'>Custom</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
@@ -527,6 +532,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
                                     customContact={customContact}
                                     selectedImages={selectedImages}
                                     toggles={toggles}
+                                    bgColor={bgColor}
                                 />
                             </div>
                         </div>
@@ -557,6 +563,7 @@ export default function BrochureManager({ property, properties = [], mode, compa
                     customContact={customContact}
                     selectedImages={selectedImages}
                     toggles={toggles}
+                    bgColor={bgColor}
                 />
             </div>
         </div>

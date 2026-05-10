@@ -52,11 +52,16 @@ export default function PopupCard({ popup, websiteName, onEdit, onDelete, onTogg
                     </div>
                 </div>
 
-                <div className="d-flex gap-2 mb-3">
+                <div className="d-flex flex-wrap gap-2 mb-3">
                     {getTypeBadge(popup.type)}
                     <span className="badge bg-light text-dark px-2 py-1 rounded-pill border">
                         <i className="bi bi-lightning-charge me-1"></i> {getTriggerInfo(popup.trigger, popup.triggerValue)}
                     </span>
+                    {popup.content?.isIntelligentEnabled && (
+                        <span className="badge magic-glitter-badge px-2 py-1 rounded-pill border-0 text-white">
+                            <i className="bi bi-magic me-1"></i> Intelligent Match
+                        </span>
+                    )}
                 </div>
 
                 <div className="bg-light p-3 rounded-3 mb-4">
@@ -103,10 +108,17 @@ export default function PopupCard({ popup, websiteName, onEdit, onDelete, onTogg
                 .hover-translate-y:hover {
                     transform: translateY(-5px);
                 }
-                .bg-primary-soft { background-color: rgba(13, 110, 253, 0.1); }
-                .bg-info-soft { background-color: rgba(13, 202, 240, 0.1); }
-                .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
-                .bg-secondary-soft { background-color: rgba(108, 117, 125, 0.1); }
+                .magic-glitter-badge {
+                    background: linear-gradient(135deg, #8e44ad, #c0392b, #2980b9);
+                    background-size: 200% 200%;
+                    animation: gradientShift 3s ease infinite;
+                    box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3);
+                }
+                @keyframes gradientShift {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
             `}</style>
         </div>
     );

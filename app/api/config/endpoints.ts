@@ -185,8 +185,7 @@ export const adminEndpoints = {
     params ? `/users?${buildQueryString(params)}` : '/users',
   updateUserStatus: (id: string) => `/users/${id}`,
   getPropertyOwners: (params?: Record<string, any>) => {
-    const allParams = { ...params, role: '3' };
-    return `/users?${buildQueryString(allParams)}`;
+    return `/users?${buildQueryString(params || {})}`;
   },
   getProperties: (params?: Record<string, any>) =>
     params ? `/realestate-admin/properties?${buildQueryString(params)}` : '/realestate-admin/properties',
@@ -262,6 +261,10 @@ export const leadEndpoints = {
     `/leads/${id}/lost${tenantId ? `?tenantId=${tenantId}` : ''}`,
   delete: (id: string, tenantId?: string) =>
     `/leads/${id}${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  permanentDelete: (id: string, tenantId?: string) =>
+    `/leads/${id}/permanent${tenantId ? `?tenantId=${tenantId}` : ''}`,
+  restore: (id: string, tenantId?: string) =>
+    `/leads/${id}/restore${tenantId ? `?tenantId=${tenantId}` : ''}`,
 };
 
 // Payment endpoints
@@ -398,6 +401,8 @@ export const moduleEndpoints = {
   getMy: () => '/modules/my',
   getAll: () => '/modules/all',
   create: () => '/modules',
+  update: (id: string) => `/modules/${id}`,
+  delete: (id: string) => `/modules/${id}`,
   getTenantModules: (tenantId: string) => `/modules/tenant/${tenantId}`,
   toggle: () => '/modules/toggle',
 };

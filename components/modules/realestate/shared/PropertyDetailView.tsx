@@ -153,7 +153,7 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                 <i className="bi bi-info-circle me-2 text-primary" style={{ color: theme.primaryColor }}></i>
                                 Property Description
                             </h5>
-                            <p className="text-muted lh-lg mb-4 small" >{selectedProperty.description}</p>
+                            <div className="text-dark lh-lg mb-4 small description-content" dangerouslySetInnerHTML={{ __html: selectedProperty.description || '' }} />
 
                             <hr className="opacity-10 my-4" />
 
@@ -175,26 +175,66 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 <span className="fw-bold small">{selectedProperty.parkingSpaces || 0} Spaces</span>
                                             </div>
                                         </div>
-                                        <div className="d-flex align-items-center gap-3">
-                                            <div className="bg-light p-2 rounded-3 text-primary"><i className="bi bi-droplet-fill"></i></div>
-                                            <div>
-                                                <span className="d-block extra-small text-muted">Bedrooms</span>
-                                                <span className="fw-bold small">{selectedProperty.bedrooms || 0} Beds</span>
-                                            </div>
-                                        </div>
-                                        <div className="d-flex align-items-center gap-3">
-                                            <div className="bg-light p-2 rounded-3 text-primary"><i className="bi bi-water text-primary"></i></div>
-                                            <div>
-                                                <span className="d-block extra-small text-muted">Bathrooms</span>
-                                                <span className="fw-bold small">{selectedProperty.bathrooms || 0} Baths</span>
-                                            </div>
-                                        </div>
+                                        {selectedProperty.propertyType === 1 && (
+                                            <>
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="bg-light p-2 rounded-3 text-primary" style={{ color: theme.primaryColor }}><i className="bi bi-droplet-fill"></i></div>
+                                                    <div>
+                                                        <span className="d-block extra-small text-muted">Bedrooms</span>
+                                                        <span className="fw-bold small">{selectedProperty.bedrooms || 0} Beds</span>
+                                                    </div>
+                                                </div>
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="bg-light p-2 rounded-3 text-primary" style={{ color: theme.primaryColor }}><i className="bi bi-water text-primary"></i></div>
+                                                    <div>
+                                                        <span className="d-block extra-small text-muted">Bathrooms</span>
+                                                        <span className="fw-bold small">{selectedProperty.bathrooms || 0} Baths</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                        {selectedProperty.propertyType === 2 && (
+                                            <>
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="bg-light p-2 rounded-3 text-primary" style={{ color: theme.primaryColor }}><i className="bi bi-box-seam"></i></div>
+                                                    <div>
+                                                        <span className="d-block extra-small text-muted">Pantry</span>
+                                                        <span className="fw-bold small">{selectedProperty.pantryType || 'N/A'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="bg-light p-2 rounded-3 text-primary" style={{ color: theme.primaryColor }}><i className="bi bi-door-closed"></i></div>
+                                                    <div>
+                                                        <span className="d-block extra-small text-muted">Washroom</span>
+                                                        <span className="fw-bold small">{selectedProperty.washroomType || 'N/A'}</span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                         {selectedProperty.lotSize && (
                                             <div className="d-flex align-items-center gap-3">
-                                                <div className="bg-light p-2 rounded-3 text-primary"><i className="bi bi-aspect-ratio text-primary"></i></div>
+                                                <div className="bg-light p-2 rounded-3 text-primary" style={{ color: theme.primaryColor }}><i className="bi bi-aspect-ratio text-primary"></i></div>
                                                 <div>
                                                     <span className="d-block extra-small text-muted">Lot Size</span>
                                                     <span className="fw-bold small">{selectedProperty.lotSize?.toLocaleString('en-US')} sqft</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {selectedProperty.camCharges > 0 && (
+                                            <div className="d-flex align-items-center gap-3">
+                                                <div className="bg-light p-2 rounded-3 text-primary" style={{ color: theme.primaryColor }}><i className="bi bi-cash-stack"></i></div>
+                                                <div>
+                                                    <span className="d-block extra-small text-muted">CAM Charges</span>
+                                                    <span className="fw-bold small">{currencySymbol}{selectedProperty.camCharges?.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {(selectedProperty.listingType?.toLowerCase() === 'rent' || selectedProperty.listingType?.toLowerCase() === 'lease') && selectedProperty.leaseTenure > 0 && (
+                                            <div className="d-flex align-items-center gap-3">
+                                                <div className="bg-light p-2 rounded-3 text-primary" style={{ color: theme.primaryColor }}><i className="bi bi-calendar-check"></i></div>
+                                                <div>
+                                                    <span className="d-block extra-small text-muted">Lease Tenure</span>
+                                                    <span className="fw-bold small">{selectedProperty.leaseTenure} Years</span>
                                                 </div>
                                             </div>
                                         )}
@@ -208,6 +248,25 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                                                 <i className={`bi ${pa.amenity.icon || 'bi-check-circle'} me-2 text-primary`} style={{ color: theme.primaryColor }}></i>
                                                 {pa.amenity.name}
                                             </span>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="col-12 mt-4">
+                                    <h6 className="fw-bold small mb-3">Features & Specifications</h6>
+                                    <div className="d-flex flex-wrap gap-2">
+                                        {selectedProperty.vaastuCompliant && <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fw-bold rounded-pill"><i className="bi bi-compass me-2"></i>Vaastu Compliant</span>}
+                                        {selectedProperty.allInclusivePrice && <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fw-bold rounded-pill">All-inclusive Price</span>}
+                                        {selectedProperty.priceNegotiable && <span className="badge bg-info-subtle text-info border border-info-subtle px-3 py-2 fw-bold rounded-pill">Negotiable</span>}
+                                        {selectedProperty.reservedParking && <span className="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 fw-bold rounded-pill"><i className="bi bi-p-circle me-2"></i>Reserved Parking</span>}
+                                        {selectedProperty.facing && <span className="badge bg-light text-dark border px-3 py-2 fw-medium rounded-pill">Facing: {selectedProperty.facing}</span>}
+                                        {selectedProperty.flooring && <span className="badge bg-light text-dark border px-3 py-2 fw-medium rounded-pill">Flooring: {selectedProperty.flooring}</span>}
+                                        {selectedProperty.furnishing && <span className="badge bg-light text-dark border px-3 py-2 fw-medium rounded-pill">{selectedProperty.furnishing}</span>}
+                                        {(selectedProperty.extraRooms || []).map((room: string) => (
+                                            <span key={room} className="badge bg-light text-dark border px-3 py-2 fw-medium rounded-pill">{room}</span>
+                                        ))}
+                                        {(selectedProperty.propertyFeatures || []).map((feature: string) => (
+                                            <span key={feature} className="badge bg-light text-dark border px-3 py-2 fw-medium rounded-pill">{feature}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -378,6 +437,10 @@ const PropertyDetailView: React.FC<PropertyDetailViewProps> = ({
                         .glass-panel {
                             position: relative;
                             z-index: 2;
+                        }
+
+                        .description-content :global(*) {
+                            color: #333 !important;
                         }
                     `}</style>
 

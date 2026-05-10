@@ -4,7 +4,6 @@ import { ReactNode } from 'react';
 import ReduxProvider from '@/components/ReduxProvider';
 import { AuthProvider } from '@/app/contexts/AuthContext';
 import { ManagementProvider } from '@/app/contexts/ManagementContext';
-import { LoadingProvider } from '@/app/contexts/LoadingContext';
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
@@ -35,9 +34,7 @@ export default function ClientProviders({ children }: ClientProvidersProps) {
         <ReduxProvider>
             <AuthProvider>
                 <ManagementProvider>
-                    <LoadingProvider>
-                        {children}
-                    </LoadingProvider>
+                    {children}
                 </ManagementProvider>
             </AuthProvider>
         </ReduxProvider>

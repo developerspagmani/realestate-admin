@@ -8,7 +8,7 @@ import ListingView from '@/components/modules/realestate/shared/ListingView';
 import PropertyDetailView from '@/components/modules/realestate/shared/PropertyDetailView';
 import UnitDetailView from '@/components/modules/realestate/shared/UnitDetailView';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
-import PopupRenderer from '@/components/modules/realestate/website/PopupRenderer';
+import PopupRenderer from '@/components/modules/realestate/popups/PopupRenderer';
 import { trackPropertyView } from '@/app/hooks/useIntelligentPopup';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 
@@ -176,20 +176,20 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
 
     const handleFilter = useCallback((filters: any) => {
         let results = [...data];
-        
+
         if (filters.search) {
             const s = filters.search.toLowerCase();
-            results = results.filter(p => 
-                p.title?.toLowerCase().includes(s) || 
+            results = results.filter(p =>
+                p.title?.toLowerCase().includes(s) ||
                 p.city?.toLowerCase().includes(s) ||
                 p.units?.some(u => u.unitCode?.toLowerCase().includes(s))
             );
         }
-        
+
         if (filters.listingType) {
             results = results.filter(p => p.listingType === filters.listingType);
         }
-        
+
         if (filters.propertyType) {
             results = results.filter(p => p.propertyType === Number(filters.propertyType));
         }

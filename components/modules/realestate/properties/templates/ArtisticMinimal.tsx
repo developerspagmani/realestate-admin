@@ -9,7 +9,8 @@ export default function ArtisticMinimalTemplate(props: BaseTemplateProps) {
         allMedia = [],
         aiTagline,
         aiDescription,
-        selectedImages
+        selectedImages,
+        bgColor
     } = props;
 
     const pageWidth = '210mm';
@@ -30,7 +31,7 @@ export default function ArtisticMinimalTemplate(props: BaseTemplateProps) {
     return (
         <div style={{ 
             width: pageWidth, 
-            background: '#fdfdfd', 
+            background: bgColor || '#fdfdfd', 
             color: textColor, 
             padding: '60px', 
             boxSizing: 'border-box',

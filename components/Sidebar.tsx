@@ -147,7 +147,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               children: [
                 { href: `${adminPrefix}/websites`, label: 'Website Hub', icon: 'bi-globe', active: activePage === 'websites' },
                 { href: `${adminPrefix}/cms`, label: 'CMS', icon: 'bi-file-earmark-richtext-fill', active: activePage === 'cms' },
-                { href: `${adminPrefix}/websites/popups`, label: 'Website Promotions', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
+                { href: `${adminPrefix}/popups`, label: 'Popups & Banners', icon: 'bi-megaphone-fill', active: activePage === 'popups' },
                 { href: `${adminPrefix}/widgets`, label: 'Public Widgets', icon: 'bi-bounding-box', active: activePage === 'widgets' },
               ]
             },
@@ -185,9 +185,10 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           ]
         },
         {
-          title: 'Sales',
+          title: 'Sales & Intelligence',
           items: [
-            { href: isOwner ? '/realestate-owner-admin/analytics' : '/realestate-admin/dashboard', label: 'Sales Intelligence', icon: 'bi-graph-up-arrow', active: activePage === 'analytics' },
+            { href: isOwner ? '/realestate-owner-admin/analytics' : '/realestate-admin/dashboard', label: 'Sales Analytics', icon: 'bi-graph-up-arrow', active: activePage === 'analytics' },
+            { href: `${adminPrefix}/analytics/prop-intel`, label: 'PropIntel™ AI', icon: 'bi-robot', active: activePage === 'prop-intel' },
             { href: `${adminPrefix}/agents`, label: 'Sales Agents', icon: 'bi-people-fill', active: activePage === 'agents' },
           ]
         },
@@ -196,6 +197,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           items: [
             { href: `${adminPrefix}/subscriptions`, label: 'Subscriptions', icon: 'bi-credit-card-2-front-fill', active: activePage === 'subscriptions' },
             ...(isAdmin ? [
+              { href: '/realestate-admin/tenants', label: 'Tenants & Workspaces', icon: 'bi-buildings', active: activePage === 'tenants' },
               { href: '/realestate-admin/owners', label: 'Property Owners', icon: 'bi-person-vcard-fill', active: activePage === 'owners' },
               { href: '/realestate-admin/users', label: 'System Users', icon: 'bi-people-fill', active: activePage === 'users' },
               { href: '/realestate-admin/partners', label: 'Partner Management', icon: 'bi-person-hearts', active: activePage === 'partners' },

@@ -705,7 +705,7 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                         )}
 
                         {isAgent && attentionCount > 0 && (
-                            <Link href="/realestate-agent/attention" className="btn btn-icon rounded-3 btn-light-soft text-danger border border-danger border-opacity-25 shadow-sm nav-attention-btn position-relative" title={`${attentionCount} items need your attention`}>
+                            <Link href="/realestate-agent/attention" className="btn btn-icon rounded-3 bg-red-soft text-danger border border-danger border-opacity-25 shadow-sm nav-attention-btn position-relative" title={`${attentionCount} items need your attention`}>
                                 <i className="bi bi-exclamation-triangle-fill text-danger fs-5 animate-pulse"></i>
                                 <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm" style={{ fontSize: '10px' }}>
                                     {attentionCount}

@@ -149,7 +149,7 @@ export default function LeadQualificationHub({ leads, loading, onViewInsights }:
             <div className="row g-4">
                 {/* SQL Column */}
                 <div className="col-lg-6">
-                    <div className="p-4 rounded-4" style={{ backgroundColor: 'rgba(255, 71, 87, 0.03)', border: '1px solid rgba(255, 71, 87, 0.1)' }}>
+                    <div className="p-4 rounded-4 bg-danger-soft border border-danger border-opacity-10">
                         <div className="d-flex justify-content-between align-items-center mb-4">
                             <div>
                                 <h5 className="fw-bold text-dark mb-0">Sales Qualified (SQL)</h5>
@@ -173,7 +173,7 @@ export default function LeadQualificationHub({ leads, loading, onViewInsights }:
 
                 {/* MQL Column */}
                 <div className="col-lg-6">
-                    <div className="p-4 rounded-4" style={{ backgroundColor: 'rgba(46, 213, 115, 0.03)', border: '1px solid rgba(46, 213, 115, 0.1)' }}>
+                    <div className="p-4 rounded-4 bg-success-soft border border-success border-opacity-10">
                         <div className="d-flex justify-content-between align-items-center mb-4">
                             <div>
                                 <h5 className="fw-bold text-dark mb-0">Marketing Qualified (MQL)</h5>

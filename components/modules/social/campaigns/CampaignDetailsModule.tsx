@@ -406,17 +406,26 @@ function CampaignDetailContent() {
                                         {comments.map((comment, idx) => (
                                             <div key={comment.id || idx} className="p-3 bg-light rounded-4">
                                                 <div className="d-flex gap-3">
-                                                    <img 
-                                                        src={comment.user?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user?.name || 'User')}&background=0D6EFD&color=fff`} 
-                                                        alt={comment.user?.name}
-                                                        className="rounded-circle"
-                                                        style={{ width: '40px', height: '40px', objectFit: 'cover' }}
-                                                    />
+                                                    <div className="position-relative">
+                                                        <img 
+                                                            src={comment.user?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.user?.name || 'User')}&background=${comment.platform === 'INSTAGRAM' ? 'E1306C' : '0D6EFD'}&color=fff`} 
+                                                            alt={comment.user?.name}
+                                                            className="rounded-circle border"
+                                                            style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                                        />
+                                                        <div className="position-absolute bottom-0 end-0 bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" style={{ width: '18px', height: '18px', marginRight: '-2px', marginBottom: '-2px' }}>
+                                                            <i className={`bi bi-${comment.platform?.toLowerCase() || 'facebook'} text-${comment.platform === 'INSTAGRAM' ? 'danger' : 'primary'}`} style={{ fontSize: '10px' }}></i>
+                                                        </div>
+                                                    </div>
                                                     <div className="flex-grow-1">
                                                         <div className="d-flex justify-content-between align-items-start mb-1">
                                                             <div>
-                                                                <span className="fw-bold text-dark small me-2">{comment.user?.name || 'Facebook User'}</span>
-                                                                <span className="text-muted smaller" style={{ fontSize: '0.7rem' }}>ID: {comment.user?.id || 'N/A'}</span>
+                                                                <span className="fw-bold text-dark small me-2">
+                                                                    {comment.user?.name || (comment.platform === 'INSTAGRAM' ? 'Instagram User' : 'Facebook User')}
+                                                                </span>
+                                                                <span className="badge rounded-pill bg-white text-muted border smaller fw-normal" style={{ fontSize: '0.65rem' }}>
+                                                                    {comment.platform === 'INSTAGRAM' ? 'IG' : 'FB'}
+                                                                </span>
                                                             </div>
                                                             <span className="text-muted smaller" style={{ fontSize: '0.7rem' }}>
                                                                 {new Date(comment.createdAt).toLocaleDateString()}

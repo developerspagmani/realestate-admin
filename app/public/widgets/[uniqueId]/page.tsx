@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { widgetService, marketingService } from '@/app/services/api';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
-import PopupRenderer from '@/components/modules/realestate/website/PopupRenderer';
+import PopupRenderer from '@/components/modules/realestate/popups/PopupRenderer';
 import { trackPropertyView } from '@/app/hooks/useIntelligentPopup';
 import '@/components/modules/realestate/shared/shared.css';
 
@@ -194,7 +194,7 @@ export default function PublicWidgetPage() {
     useEffect(() => {
         if (selectedProperty && currentView === 'PROPERTY_DETAIL') {
             trackPropertyView(selectedProperty.id);
-            trackAction('PROPERTY_VIEW', { 
+            trackAction('PROPERTY_VIEW', {
                 propertyId: selectedProperty.id,
                 propertyTitle: selectedProperty.title
             });

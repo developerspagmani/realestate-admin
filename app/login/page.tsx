@@ -33,10 +33,11 @@ function LoginContent() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const redirectPath = getRedirectPath();
+      const callbackUrl = searchParams.get('callbackUrl');
+      const redirectPath = callbackUrl || getRedirectPath();
       router.push(redirectPath);
     }
-  }, [isAuthenticated, router, getRedirectPath]);
+  }, [isAuthenticated, router, getRedirectPath, searchParams]);
 
   if (isAuthenticated) {
     return null;
@@ -62,7 +63,8 @@ function LoginContent() {
       const user = await login(loginPayload);
 
       if (user) {
-        const redirectPath = getRedirectPath(user);
+        const callbackUrl = searchParams.get('callbackUrl');
+        const redirectPath = callbackUrl || getRedirectPath(user);
         router.push(redirectPath);
       } else {
         setLocalLoading(false);
@@ -180,7 +182,9 @@ function LoginContent() {
 
       const user = await login(loginPayload);
       if (user) {
-        router.push(getRedirectPath(user));
+        const callbackUrl = searchParams.get('callbackUrl');
+        const redirectPath = callbackUrl || getRedirectPath(user);
+        router.push(redirectPath);
       } else {
         setIsVoiceActive(false);
         setLocalLoading(false);
@@ -260,7 +264,7 @@ function LoginContent() {
                       <i className="bi bi-person-hearts me-2"></i> Partner
                     </button>
                   </div>
-                  <h2 className="fw-900 text-dark mb-1">{loginTypePartner ? 'Partner Sign In' : 'Property Owner Sign In'}</h2>
+                  <h2 className="fw-900 text-dark mb-1">{loginTypePartner ? 'Partner Sign In' : 'Sign In'}</h2>
                   <p className="text-muted small mb-0">{loginTypePartner ? 'Access your partner metrics and referral dashboard' : 'Enter your credentials to manage your portfolio'}</p>
                 </div>
                 <button

@@ -135,8 +135,13 @@ export function ManagementProvider({ children }: { children: ReactNode }) {
         if (ownerId) localStorage.setItem('mgmt_owner_id', ownerId);
         else localStorage.removeItem('mgmt_owner_id');
 
-        if (tenantId) localStorage.setItem('mgmt_tenant_id', tenantId);
-        else localStorage.removeItem('mgmt_tenant_id');
+        if (tenantId) {
+            localStorage.setItem('mgmt_tenant_id', tenantId);
+            document.cookie = `tenant-id=${tenantId}; path=/; max-age=86400; SameSite=Lax`;
+        } else {
+            localStorage.removeItem('mgmt_tenant_id');
+            document.cookie = 'tenant-id=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+        }
     };
 
     const refreshTenant = async () => {

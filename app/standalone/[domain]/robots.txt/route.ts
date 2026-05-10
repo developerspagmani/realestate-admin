@@ -1,4 +1,4 @@
-const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
+const BACKEND_URL = process.env.BACKEND_URL;
 
 async function getWebsiteFullData(slugOrDomain: string) {
     try {

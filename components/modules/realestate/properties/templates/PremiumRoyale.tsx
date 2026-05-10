@@ -12,7 +12,8 @@ export default function PremiumRoyaleTemplate(props: BaseTemplateProps) {
         aiDescription,
         customContact,
         selectedImages,
-        toggles = { showPrice: true, showAmenities: true, showQRCode: true, showStats: true }
+        toggles = { showPrice: true, showAmenities: true, showQRCode: true, showStats: true },
+        bgColor
     } = props;
 
     const pageWidth = '297mm';
@@ -33,7 +34,7 @@ export default function PremiumRoyaleTemplate(props: BaseTemplateProps) {
     return (
         <div style={{ 
             width: pageWidth, 
-            background: '#050505', 
+            background: bgColor || '#050505', 
             color: textColor, 
             boxSizing: 'border-box',
             textAlign: 'left'
@@ -48,7 +49,7 @@ export default function PremiumRoyaleTemplate(props: BaseTemplateProps) {
                         alt="Background"
                     />
                 </div>
-                <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 35% 50%, transparent 0%, #050505 85%)' }}></div>
+                <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 35% 50%, transparent 0%, ${bgColor || '#050505'} 85%)` }}></div>
 
                 <div style={{ position: 'relative', zIndex: 1, padding: '100px 80px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '55%' }}>
                     <div style={{ width: '120px', height: '2px', background: accentColor, marginBottom: '40px', boxShadow: `0 0 20px ${getAlphaColor(accentColor, '66')}` }}></div>
@@ -80,7 +81,7 @@ export default function PremiumRoyaleTemplate(props: BaseTemplateProps) {
             </div>
 
             {/* PAGE 2: ANALYTICS - IMMERSIVE DATA */}
-            <div className="brochure-page" style={{ height: pageHeight, width: pageWidth, display: 'flex', background: '#000000', overflow: 'hidden' }}>
+            <div className="brochure-page" style={{ height: pageHeight, width: pageWidth, display: 'flex', background: bgColor || '#000000', overflow: 'hidden' }}>
                 <div style={{ width: '45%', padding: '100px 80px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
                     <h2 style={{ fontSize: '48px', fontWeight: 900, color: accentColor, marginBottom: '50px', letterSpacing: '-2px' }}>DATA POINTS</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginBottom: '60px' }}>
@@ -107,7 +108,7 @@ export default function PremiumRoyaleTemplate(props: BaseTemplateProps) {
                     </p>
                 </div>
                 
-                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', background: '#050505', borderLeft: `1px solid ${getAlphaColor(textColor, '0D')}` }}>
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', background: bgColor || '#050505', borderLeft: `1px solid ${getAlphaColor(textColor, '0D')}` }}>
                     <div style={{ overflow: 'hidden' }}>
                         <img src={selectedImages?.bg1 || getMediaUrl(property.gallery?.[0] as any) || undefined} crossOrigin="anonymous" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
@@ -124,7 +125,7 @@ export default function PremiumRoyaleTemplate(props: BaseTemplateProps) {
                         justifyContent: 'center', 
                         alignItems: 'center', 
                         textAlign: 'center',
-                        background: '#000000'
+                        background: bgColor || '#000000'
                     }}>
                         {toggles.showQRCode && (
                             <div style={{ 

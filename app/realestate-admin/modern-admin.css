@@ -14,8 +14,8 @@
     --p-warning: #f59e0b;
     --p-danger: #ef4444;
     --p-info: #000000;
-    --p-brand: #db0b0b;
-    --p-brand-soft: rgba(219, 11, 11, 0.1);
+    --p-brand: #e60026;
+    --p-brand-soft: rgba(230, 0, 38, 0.08);
 
     /* Surface Colors */
     --p-bg: #f8fafc;
@@ -308,6 +308,23 @@ h6 {
     background: rgba(239, 68, 68, 0.1);
     color: var(--p-danger);
 }
+
+/* Base Soft Color Utilities */
+.bg-primary-soft { background-color: rgba(0, 0, 0, 0.05) !important; color: var(--p-primary) !important; }
+.bg-success-soft { background-color: rgba(16, 185, 129, 0.1) !important; color: var(--p-success) !important; }
+.bg-danger-soft { background-color: rgba(239, 68, 68, 0.1) !important; color: var(--p-danger) !important; }
+.bg-warning-soft { background-color: rgba(245, 158, 11, 0.1) !important; color: var(--p-warning) !important; }
+.bg-info-soft { background-color: rgba(0, 0, 0, 0.05) !important; color: var(--p-primary) !important; }
+.bg-brand-soft { background-color: var(--p-brand-soft) !important; color: var(--p-brand) !important; }
+.bg-purple-soft { background-color: rgba(139, 92, 246, 0.1) !important; color: #8b5cf6 !important; }
+.bg-magic-soft {
+    background: linear-gradient(135deg, rgba(142, 68, 173, 0.1), rgba(41, 128, 185, 0.1)) !important;
+    color: #8e44ad !important;
+    border: 1px solid rgba(142, 68, 173, 0.2) !important;
+}
+
+/* Special Soft Red Utility (Alias for Brand) */
+.bg-red-soft { background-color: var(--p-brand-soft) !important; color: var(--p-brand) !important; }
 
 /* Form Elements (Sleek) */
 .form-control,

@@ -1,12 +1,12 @@
 'use client';
 
-import PopupManager from '@/components/modules/realestate/website/PopupManager';
+import PopupManager from '@/components/modules/realestate/popups/PopupManager';
 import ModuleGuard from '@/components/common/ModuleGuard';
 
-export default function OwnerPopupsPage() {
+export default function AdminPopupsPage() {
     return (
         <ModuleGuard moduleSlug="website_cms">
-            <PopupManager mode="owner" />
+            <PopupManager mode="admin" />
         </ModuleGuard>
     );
 }

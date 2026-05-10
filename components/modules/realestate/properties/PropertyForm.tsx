@@ -64,6 +64,40 @@ export default function PropertyForm({
         categoryId: '',
         videoUrl: '',
         displayPrice: true,
+        locality: '',
+        subLocality: '',
+        apartmentSociety: '',
+        houseNo: '',
+        carpetArea: 0,
+        builtUpArea: 0,
+        superBuiltUpArea: 0,
+        balconies: 0,
+        totalFloors: 0,
+        floorNo: 0,
+        availabilityStatus: '',
+        ownership: '',
+        pricePerSqft: 0,
+        allInclusivePrice: false,
+        taxExcl: false,
+        priceNegotiable: false,
+        furnishing: '',
+        facing: '',
+        flooring: '',
+        roadWidth: 0,
+        extraRooms: [],
+        propertyFeatures: [],
+        overlooking: [],
+        powerBackup: '',
+        reservedParking: false,
+        pantryType: '',
+        washroomType: '',
+        ceilingHeight: 0,
+        entranceWidth: 0,
+        frontage: 0,
+        camCharges: 0,
+        lockInPeriod: 0,
+        leaseTenure: 0,
+        vaastuCompliant: false,
     });
 
     const [showMediaModal, setShowMediaModal] = useState(false);
@@ -104,6 +138,40 @@ export default function PropertyForm({
                 categoryId: initialData.categoryId || '',
                 videoUrl: initialData.videoUrl || '',
                 displayPrice: initialData.displayPrice !== undefined ? initialData.displayPrice : true,
+                locality: initialData.locality || '',
+                subLocality: initialData.subLocality || '',
+                apartmentSociety: initialData.apartmentSociety || '',
+                houseNo: initialData.houseNo || '',
+                carpetArea: initialData.carpetArea || 0,
+                builtUpArea: initialData.builtUpArea || 0,
+                superBuiltUpArea: initialData.superBuiltUpArea || 0,
+                balconies: initialData.balconies || 0,
+                totalFloors: initialData.totalFloors || 0,
+                floorNo: initialData.floorNo || 0,
+                availabilityStatus: initialData.availabilityStatus || '',
+                ownership: initialData.ownership || '',
+                pricePerSqft: initialData.pricePerSqft || 0,
+                allInclusivePrice: initialData.allInclusivePrice || false,
+                taxExcl: initialData.taxExcl || false,
+                priceNegotiable: initialData.priceNegotiable || false,
+                furnishing: initialData.furnishing || '',
+                facing: initialData.facing || '',
+                flooring: initialData.flooring || '',
+                roadWidth: initialData.roadWidth || 0,
+                extraRooms: initialData.extraRooms || [],
+                propertyFeatures: initialData.propertyFeatures || [],
+                overlooking: initialData.overlooking || [],
+                powerBackup: initialData.powerBackup || '',
+                reservedParking: initialData.reservedParking || false,
+                pantryType: initialData.pantryType || '',
+                washroomType: initialData.washroomType || '',
+                ceilingHeight: initialData.ceilingHeight || 0,
+                entranceWidth: initialData.entranceWidth || 0,
+                frontage: initialData.frontage || 0,
+                camCharges: initialData.camCharges || 0,
+                lockInPeriod: initialData.lockInPeriod || 0,
+                leaseTenure: initialData.leaseTenure || 0,
+                vaastuCompliant: initialData.vaastuCompliant || false,
             });
         }
     }, [initialData]);
@@ -219,6 +287,7 @@ export default function PropertyForm({
         });
     };
 
+
     const handleMediaSelect = (selection: MediaItem | MediaItem[]) => {
         if (mediaModalType === 'main') {
             setFormData({ ...formData, mainImageId: (selection as MediaItem).id });
@@ -300,7 +369,7 @@ export default function PropertyForm({
 
             {/* ── CARD 1: Basic Information ─────────────────────────────── */}
             <div className="card border-0 shadow-sm rounded-4 mb-4">
-                <div className="card-header bg-transparent border-bottom px-4 py-3">
+                <div className="card-header bg-transparent border-bottom px-4 py-3 d-flex justify-content-between align-items-center">
                     <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
                         <span className="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: 28, height: 28 }}>1</span>
                         Basic Information
@@ -320,11 +389,11 @@ export default function PropertyForm({
                                     const newName = e.target.value;
                                     const newSlug = newName.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
                                     const currentSlugFromName = (formData.name || '').toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
-                                    setFormData({
-                                        ...formData,
+                                    setFormData(prev => ({
+                                        ...prev,
                                         name: newName,
-                                        slug: (!formData.slug || formData.slug === currentSlugFromName) ? newSlug : formData.slug
-                                    });
+                                        slug: (!prev.slug || prev.slug === currentSlugFromName) ? newSlug : prev.slug
+                                    }));
                                 }}
                                 placeholder="e.g. Sunset Heights Business Center"
                                 required
@@ -336,7 +405,7 @@ export default function PropertyForm({
                                 type="text"
                                 className="form-control bg-light border-0"
                                 value={formData.slug || ''}
-                                onChange={e => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/ /g, '-') })}
+                                onChange={e => setFormData(prev => ({ ...prev, slug: e.target.value.toLowerCase().replace(/ /g, '-') }))}
                                 placeholder="e.g. sunset-heights"
                             />
                         </div>
@@ -346,14 +415,14 @@ export default function PropertyForm({
                             </label>
                             <RichTextEditor
                                 value={formData.description || ''}
-                                onChange={val => setFormData({ ...formData, description: val })}
+                                onChange={val => setFormData(prev => ({ ...prev, description: val }))}
                                 placeholder="Describe the property's unique features, location highlights, and value proposition..."
                                 className="border-0 shadow-sm"
                             />
                         </div>
                         <div className="col-md-4">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Property Type</label>
-                            <select className="form-select bg-light border-0" value={formData.propertyType} onChange={e => setFormData({ ...formData, propertyType: e.target.value as any })}>
+                            <select className="form-select bg-light border-0" value={formData.propertyType} onChange={e => setFormData(prev => ({ ...prev, propertyType: e.target.value as any }))}>
                                 <option value="residential">Residential</option>
                                 <option value="commercial">Commercial</option>
                                 <option value="industrial">Industrial</option>
@@ -365,13 +434,13 @@ export default function PropertyForm({
                             <SearchableSelect
                                 options={categories.filter(c => c.status === 1).map(c => ({ id: c.id, name: c.name }))}
                                 value={formData.categoryId || ''}
-                                onChange={val => setFormData({ ...formData, categoryId: val })}
+                                onChange={val => setFormData(prev => ({ ...prev, categoryId: val }))}
                                 placeholder="Select Category..."
                             />
                         </div>
                         <div className="col-md-4">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Status</label>
-                            <select className="form-select bg-light border-0" value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value as any })}>
+                            <select className="form-select bg-light border-0" value={formData.status} onChange={e => setFormData(prev => ({ ...prev, status: e.target.value as any }))}>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                                 <option value="maintenance">Maintenance</option>
@@ -379,7 +448,7 @@ export default function PropertyForm({
                         </div>
                         <div className="col-md-4">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Listing Type</label>
-                            <select className="form-select bg-light border-0" value={formData.listingType || 'rent'} onChange={e => setFormData({ ...formData, listingType: e.target.value as any })}>
+                            <select className="form-select bg-light border-0" value={formData.listingType || 'rent'} onChange={e => setFormData(prev => ({ ...prev, listingType: e.target.value as any }))}>
                                 <option value="rent">Rent</option>
                                 <option value="sale">Sale</option>
                                 <option value="lease">Lease</option>
@@ -393,7 +462,7 @@ export default function PropertyForm({
                                 type="url"
                                 className="form-control bg-light border-0"
                                 value={formData.videoUrl || ''}
-                                onChange={e => setFormData({ ...formData, videoUrl: e.target.value })}
+                                onChange={e => setFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
                                 placeholder="https://www.youtube.com/watch?v=..."
                             />
                             <div className="form-text">Optional: Add a YouTube video tour or walkthrough</div>
@@ -424,7 +493,7 @@ export default function PropertyForm({
                                         role="switch"
                                         id="displayPriceToggle"
                                         checked={formData.displayPrice !== false}
-                                        onChange={e => setFormData({ ...formData, displayPrice: e.target.checked })}
+                                        onChange={e => setFormData(prev => ({ ...prev, displayPrice: e.target.checked }))}
                                     />
                                     <label className="form-check-label small text-muted" htmlFor="displayPriceToggle">Show price</label>
                                 </div>
@@ -433,37 +502,316 @@ export default function PropertyForm({
                                 type="number"
                                 className="form-control bg-light border-0"
                                 value={formData.price || ''}
-                                onChange={e => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                                onChange={e => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                                 placeholder={`${currencySymbol}0.00`}
                             />
                         </div>
                         <div className="col-md-4">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Area (Sqft / Sqm)</label>
-                            <input type="number" className="form-control bg-light border-0" value={formData.area || ''} onChange={e => setFormData({ ...formData, area: parseFloat(e.target.value) || 0 })} placeholder="e.g. 1200" />
+                            <input type="number" className="form-control bg-light border-0" value={formData.area || ''} onChange={e => setFormData(prev => ({ ...prev, area: parseFloat(e.target.value) || 0 }))} placeholder="e.g. 1200" />
                         </div>
                         <div className="col-md-4">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Lot Size (Sqft)</label>
-                            <input type="number" className="form-control bg-light border-0" value={formData.lotSize || ''} onChange={e => setFormData({ ...formData, lotSize: parseInt(e.target.value) || 0 })} placeholder="e.g. 5000" />
+                            <input type="number" className="form-control bg-light border-0" value={formData.lotSize || ''} onChange={e => setFormData(prev => ({ ...prev, lotSize: parseInt(e.target.value) || 0 }))} placeholder="e.g. 5000" />
+                        </div>
+
+                        {/* Area Sub-details */}
+                        <div className="col-md-4">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Carpet Area (Sqft)</label>
+                            <input type="number" className="form-control bg-light border-0" value={formData.carpetArea || ''} onChange={e => setFormData(prev => ({ ...prev, carpetArea: parseInt(e.target.value) || 0 }))} placeholder="e.g. 1000" />
+                        </div>
+                        <div className="col-md-4">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Built-up Area (Sqft)</label>
+                            <input type="number" className="form-control bg-light border-0" value={formData.builtUpArea || ''} onChange={e => setFormData({ ...formData, builtUpArea: parseInt(e.target.value) || 0 })} placeholder="e.g. 1100" />
                         </div>
                         <div className="col-md-3">
-                            <label className="form-label fw-semibold small text-uppercase text-muted">Bedrooms</label>
-                            <input type="number" className="form-control bg-light border-0" value={formData.bedrooms || ''} onChange={e => setFormData({ ...formData, bedrooms: parseInt(e.target.value) || 0 })} placeholder="0" min="0" />
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Super Built-up Area (Sqft)</label>
+                            <input type="number" className="form-control bg-light border-0" value={formData.superBuiltUpArea || ''} onChange={e => setFormData({ ...formData, superBuiltUpArea: parseInt(e.target.value) || 0 })} placeholder="e.g. 1300" />
                         </div>
-                        <div className="col-md-3">
-                            <label className="form-label fw-semibold small text-uppercase text-muted">Bathrooms</label>
-                            <input type="number" className="form-control bg-light border-0" value={formData.bathrooms || ''} onChange={e => setFormData({ ...formData, bathrooms: parseInt(e.target.value) || 0 })} placeholder="0" min="0" />
-                        </div>
+
+                        {/* ── RESIDENTIAL ONLY ── */}
+                        {formData.propertyType === 'residential' && (
+                            <>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Bedrooms</label>
+                                    <input type="number" className="form-control bg-light border-0" value={formData.bedrooms || ''} onChange={e => setFormData(prev => ({ ...prev, bedrooms: parseInt(e.target.value) || 0 }))} placeholder="0" min="0" />
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Bathrooms</label>
+                                    <input type="number" className="form-control bg-light border-0" value={formData.bathrooms || ''} onChange={e => setFormData(prev => ({ ...prev, bathrooms: parseInt(e.target.value) || 0 }))} placeholder="0" min="0" />
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Balconies</label>
+                                    <input type="number" className="form-control bg-light border-0" value={formData.balconies || ''} onChange={e => setFormData(prev => ({ ...prev, balconies: parseInt(e.target.value) || 0 }))} placeholder="0" min="0" />
+                                </div>
+                            </>
+                        )}
+
+                        {/* ── COMMERCIAL ONLY ── */}
+                        {formData.propertyType === 'commercial' && (
+                            <>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Pantry Type</label>
+                                    <select className="form-select bg-light border-0" value={formData.pantryType || ''} onChange={e => setFormData(prev => ({ ...prev, pantryType: e.target.value }))}>
+                                        <option value="">Select Pantry</option>
+                                        <option value="Private">Private</option>
+                                        <option value="Shared">Shared</option>
+                                        <option value="None">None</option>
+                                    </select>
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Washroom Type</label>
+                                    <select className="form-select bg-light border-0" value={formData.washroomType || ''} onChange={e => setFormData(prev => ({ ...prev, washroomType: e.target.value }))}>
+                                        <option value="">Select Washroom</option>
+                                        <option value="Private">Private</option>
+                                        <option value="Shared">Shared</option>
+                                        <option value="None">None</option>
+                                    </select>
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">CAM Charges ({currencySymbol})</label>
+                                    <input type="number" className="form-control bg-light border-0" value={formData.camCharges || ''} onChange={e => setFormData(prev => ({ ...prev, camCharges: parseFloat(e.target.value) || 0 }))} placeholder="Monthly CAM" />
+                                </div>
+                            </>
+                        )}
+
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Parking Spaces</label>
-                            <input type="number" className="form-control bg-light border-0" value={formData.parkingSpaces || ''} onChange={e => setFormData({ ...formData, parkingSpaces: parseInt(e.target.value) || 0 })} placeholder="0" min="0" />
+                            <input type="number" className="form-control bg-light border-0" value={formData.parkingSpaces || ''} onChange={e => setFormData(prev => ({ ...prev, parkingSpaces: parseInt(e.target.value) || 0 }))} placeholder="0" min="0" />
+                        </div>
+
+                        {/* Floor Details */}
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Total Floors</label>
+                            <input type="number" className="form-control bg-light border-0" value={formData.totalFloors || ''} onChange={e => setFormData(prev => ({ ...prev, totalFloors: parseInt(e.target.value) || 0 }))} placeholder="e.g. 10" min="0" />
+                        </div>
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Property on Floor</label>
+                            <input type="number" className="form-control bg-light border-0" value={formData.floorNo || ''} onChange={e => setFormData(prev => ({ ...prev, floorNo: parseInt(e.target.value) || 0 }))} placeholder="e.g. 4" min="0" />
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Year Built</label>
-                            <input type="number" className="form-control bg-light border-0" value={formData.yearBuilt || ''} onChange={e => setFormData({ ...formData, yearBuilt: e.target.value ? parseInt(e.target.value) : undefined })} placeholder="e.g. 2020" />
+                            <input type="number" className="form-control bg-light border-0" value={formData.yearBuilt || ''} onChange={e => setFormData(prev => ({ ...prev, yearBuilt: e.target.value ? parseInt(e.target.value) : undefined }))} placeholder="e.g. 2020" />
+                        </div>
+
+                        {/* Pricing Sub-details */}
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Price per Sqft</label>
+                            <input type="number" className="form-control bg-light border-0" value={formData.pricePerSqft || ''} onChange={e => setFormData(prev => ({ ...prev, pricePerSqft: parseFloat(e.target.value) || 0 }))} placeholder="e.g. 5000" />
                         </div>
                         <div className="col-md-6">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Neighborhood</label>
-                            <input type="text" className="form-control bg-light border-0" value={formData.neighborhood || ''} onChange={e => setFormData({ ...formData, neighborhood: e.target.value })} placeholder="e.g. Downtown" />
+                            <input type="text" className="form-control bg-light border-0" value={formData.neighborhood || ''} onChange={e => setFormData(prev => ({ ...prev, neighborhood: e.target.value }))} placeholder="e.g. Downtown" />
+                        </div>
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Availability Status</label>
+                            <select className="form-select bg-light border-0" value={formData.availabilityStatus || ''} onChange={e => setFormData(prev => ({ ...prev, availabilityStatus: e.target.value }))}>
+                                <option value="">Select Status</option>
+                                <option value="Ready to move">Ready to move</option>
+                                <option value="Under construction">Under construction</option>
+                            </select>
+                        </div>
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Ownership</label>
+                            <select className="form-select bg-light border-0" value={formData.ownership || ''} onChange={e => setFormData(prev => ({ ...prev, ownership: e.target.value }))}>
+                                <option value="">Select Ownership</option>
+                                <option value="Freehold">Freehold</option>
+                                <option value="Leasehold">Leasehold</option>
+                                <option value="Co-operative society">Co-operative society</option>
+                                <option value="Power of Attorney">Power of Attorney</option>
+                            </select>
+                        </div>
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Furnishing</label>
+                            <select className="form-select bg-light border-0" value={formData.furnishing || ''} onChange={e => setFormData(prev => ({ ...prev, furnishing: e.target.value }))}>
+                                <option value="">Select Furnishing</option>
+                                <option value="Furnished">Furnished</option>
+                                <option value="Semi-furnished">Semi-furnished</option>
+                                <option value="Un-furnished">Un-furnished</option>
+                            </select>
+                        </div>
+                        {/* ── LEASE SPECIFIC ── */}
+                        {(formData.listingType === 'rent' || formData.listingType === 'lease') && (
+                            <>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Lock-in Period (Months)</label>
+                                    <input type="number" className="form-control bg-light border-0" value={formData.lockInPeriod || ''} onChange={e => setFormData({ ...formData, lockInPeriod: parseInt(e.target.value) || 0 })} placeholder="e.g. 6" />
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Lease Tenure (Years)</label>
+                                    <input type="number" className="form-control bg-light border-0" value={formData.leaseTenure || ''} onChange={e => setFormData({ ...formData, leaseTenure: parseInt(e.target.value) || 0 })} placeholder="e.g. 3" />
+                                </div>
+                            </>
+                        )}
+                        {/* ── COMMERCIAL EXTRAS ── */}
+                        {formData.propertyType === 'commercial' && (
+                            <>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Ceiling Height (Ft)</label>
+                                    <input type="number" className="form-control bg-light border-0" value={formData.ceilingHeight || ''} onChange={e => setFormData({ ...formData, ceilingHeight: parseFloat(e.target.value) || 0 })} placeholder="e.g. 12" />
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label fw-semibold small text-uppercase text-muted">Entrance Width (Ft)</label>
+                                    <input type="number" className="form-control bg-light border-0" value={formData.entranceWidth || ''} onChange={e => setFormData({ ...formData, entranceWidth: parseFloat(e.target.value) || 0 })} placeholder="e.g. 10" />
+                                </div>
+                            </>
+                        )}
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Property Facing</label>
+                            <select className="form-select bg-light border-0" value={formData.facing || ''} onChange={e => setFormData({ ...formData, facing: e.target.value })}>
+                                <option value="">Select Facing</option>
+                                <option value="North">North</option>
+                                <option value="South">South</option>
+                                <option value="East">East</option>
+                                <option value="West">West</option>
+                                <option value="North-East">North-East</option>
+                                <option value="North-West">North-West</option>
+                                <option value="South-East">South-East</option>
+                                <option value="South-West">South-West</option>
+                            </select>
+                        </div>
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Type of Flooring</label>
+                            <select className="form-select bg-light border-0" value={formData.flooring || ''} onChange={e => setFormData({ ...formData, flooring: e.target.value })}>
+                                <option value="">Select Flooring</option>
+                                <option value="Marble">Marble</option>
+                                <option value="Tiles">Tiles</option>
+                                <option value="Wooden">Wooden</option>
+                                <option value="Vinyl">Vinyl</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div className="col-md-3">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Power Back up</label>
+                            <select className="form-select bg-light border-0" value={formData.powerBackup || ''} onChange={e => setFormData({ ...formData, powerBackup: e.target.value })}>
+                                <option value="">Select Power Backup</option>
+                                <option value="None">None</option>
+                                <option value="Partial">Partial</option>
+                                <option value="Full">Full</option>
+                            </select>
+                        </div>
+                        <div className="col-md-6">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Width of Facing Road (Feet)</label>
+                            <input type="number" className="form-control bg-light border-0" value={formData.roadWidth || ''} onChange={e => setFormData({ ...formData, roadWidth: parseFloat(e.target.value) || 0 })} placeholder="e.g. 30" />
+                        </div>
+
+                        {/* ── ADDITIONAL PRICING & OPTIONS ── */}
+                        <div className="col-12 mt-3 pt-3 border-top d-flex flex-wrap gap-4">
+                            <div className="form-check">
+                                <input className="form-check-input" type="checkbox" id="allInclusive" checked={formData.allInclusivePrice || false} onChange={e => setFormData({ ...formData, allInclusivePrice: e.target.checked })} />
+                                <label className="form-check-label small fw-medium" htmlFor="allInclusive">All-inclusive Price</label>
+                            </div>
+                            <div className="form-check">
+                                <input className="form-check-input" type="checkbox" id="taxExcl" checked={formData.taxExcl || false} onChange={e => setFormData({ ...formData, taxExcl: e.target.checked })} />
+                                <label className="form-check-label small fw-medium" htmlFor="taxExcl">Tax & Govt. charges excluded</label>
+                            </div>
+                            <div className="form-check">
+                                <input className="form-check-input" type="checkbox" id="priceNegotiable" checked={formData.priceNegotiable || false} onChange={e => setFormData({ ...formData, priceNegotiable: e.target.checked })} />
+                                <label className="form-check-label small fw-medium" htmlFor="priceNegotiable">Price Negotiable</label>
+                            </div>
+                            <div className="form-check">
+                                <input className="form-check-input" type="checkbox" id="reservedParking" checked={formData.reservedParking || false} onChange={e => setFormData({ ...formData, reservedParking: e.target.checked })} />
+                                <label className="form-check-label small fw-medium" htmlFor="reservedParking">Reserved Parking</label>
+                            </div>
+                            <div className="form-check">
+                                <input className="form-check-input" type="checkbox" id="vaastuCompliant" checked={formData.vaastuCompliant || false} onChange={e => setFormData({ ...formData, vaastuCompliant: e.target.checked })} />
+                                <label className="form-check-label small fw-medium" htmlFor="vaastuCompliant">Vaastu Compliant</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── CARD: Advanced Property Features ─────────────────────── */}
+            <div className="card border-0 shadow-sm rounded-4 mb-4">
+                <div className="card-header bg-transparent border-bottom px-4 py-3">
+                    <h6 className="mb-0 fw-bold d-flex align-items-center gap-2">
+                        Advanced Property Features
+                    </h6>
+                </div>
+                <div className="card-body p-4">
+                    <div className="mb-4">
+                        <label className="form-label fw-semibold small text-uppercase text-muted mb-3 d-block">Other Rooms</label>
+                        <div className="d-flex flex-wrap gap-2">
+                            {['Pooja Room', 'Study Room', 'Servant Room', 'Store Room'].map(room => {
+                                const selected = (formData.extraRooms || []).includes(room);
+                                return (
+                                    <button
+                                        key={room}
+                                        type="button"
+                                        className={`btn btn-sm rounded-pill px-3 py-2 border ${selected ? 'btn-primary border-primary shadow-sm' : 'btn-light text-muted bg-white'}`}
+                                        onClick={() => {
+                                            setFormData(prev => {
+                                                const current = prev.extraRooms || [];
+                                                return {
+                                                    ...prev,
+                                                    extraRooms: selected ? current.filter(r => r !== room) : [...current, room]
+                                                };
+                                            });
+                                        }}
+                                    >
+                                        <i className={`bi ${selected ? 'bi-check-lg' : 'bi-plus-lg'} me-1`}></i> {room}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="form-label fw-semibold small text-uppercase text-muted mb-3 d-block">Property Specialities</label>
+                        <div className="d-flex flex-wrap gap-2">
+                            {[
+                                'Corner Property', 'Vaastu Compliant', 'Recently Renovated', 'Private Garden', 
+                                'High Ceiling Height', 'False Ceiling Lighting', 'Piped-gas', 
+                                'Centrally Air Conditioned', 'Separate entry for servant room'
+                            ].map(feature => {
+                                const selected = (formData.propertyFeatures || []).includes(feature);
+                                return (
+                                    <button
+                                        key={feature}
+                                        type="button"
+                                        className={`btn btn-sm rounded-pill px-3 py-2 border ${selected ? 'btn-primary border-primary shadow-sm' : 'btn-light text-muted bg-white'}`}
+                                        onClick={() => {
+                                            setFormData(prev => {
+                                                const current = prev.propertyFeatures || [];
+                                                return {
+                                                    ...prev,
+                                                    propertyFeatures: selected ? current.filter(f => f !== feature) : [...current, feature]
+                                                };
+                                            });
+                                        }}
+                                    >
+                                        <i className={`bi ${selected ? 'bi-check-lg' : 'bi-plus-lg'} me-1`}></i> {feature}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mb-0">
+                        <label className="form-label fw-semibold small text-uppercase text-muted mb-3 d-block">Overlooking</label>
+                        <div className="d-flex flex-wrap gap-2">
+                            {['Pool', 'Park', 'Club', 'Main Road', 'Others'].map(item => {
+                                const selected = (formData.overlooking || []).includes(item);
+                                return (
+                                    <button
+                                        key={item}
+                                        type="button"
+                                        className={`btn btn-sm rounded-pill px-3 py-2 border ${selected ? 'btn-primary border-primary shadow-sm' : 'btn-light text-muted bg-white'}`}
+                                        onClick={() => {
+                                            setFormData(prev => {
+                                                const current = prev.overlooking || [];
+                                                return {
+                                                    ...prev,
+                                                    overlooking: selected ? current.filter(i => i !== item) : [...current, item]
+                                                };
+                                            });
+                                        }}
+                                    >
+                                        <i className={`bi ${selected ? 'bi-check-lg' : 'bi-plus-lg'} me-1`}></i> {item}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -664,35 +1012,47 @@ export default function PropertyForm({
                             <label className="form-label fw-semibold small text-uppercase text-muted">
                                 Street Address <span className="text-danger">*</span>
                             </label>
-                            <input type="text" className="form-control bg-light border-0" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="123 Business Way" required />
+                            <input type="text" className="form-control bg-light border-0" value={formData.address} onChange={e => setFormData(prev => ({ ...prev, address: e.target.value }))} placeholder="123 Business Way" required />
                         </div>
                         <div className="col-md-6">
-                            <label className="form-label fw-semibold small text-uppercase text-muted">Address Line 2</label>
-                            <input type="text" className="form-control bg-light border-0" value={formData.addressLine2 || ''} onChange={e => setFormData({ ...formData, addressLine2: e.target.value })} placeholder="Suite, Floor, Unit, etc." />
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Address Line 2 (Sub Locality)</label>
+                            <input type="text" className="form-control bg-light border-0" value={formData.addressLine2 || ''} onChange={e => setFormData(prev => ({ ...prev, addressLine2: e.target.value }))} placeholder="Suite, Floor, Unit, etc." />
+                        </div>
+                        <div className="col-md-4">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Apartment / Society</label>
+                            <input type="text" className="form-control bg-light border-0" value={formData.apartmentSociety || ''} onChange={e => setFormData(prev => ({ ...prev, apartmentSociety: e.target.value }))} placeholder="e.g. RR Amman Nagar" />
+                        </div>
+                        <div className="col-md-4">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">House No. (Optional)</label>
+                            <input type="text" className="form-control bg-light border-0" value={formData.houseNo || ''} onChange={e => setFormData(prev => ({ ...prev, houseNo: e.target.value }))} placeholder="e.g. 15-A" />
+                        </div>
+                        <div className="col-md-4">
+                            <label className="form-label fw-semibold small text-uppercase text-muted">Locality</label>
+                            <input type="text" className="form-control bg-light border-0" value={formData.locality || ''} onChange={e => setFormData(prev => ({ ...prev, locality: e.target.value }))} placeholder="e.g. Ganeshapuram" />
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">
                                 Zip / Postal Code <span className="text-danger">*</span>
                             </label>
-                            <input type="text" className="form-control bg-light border-0" value={formData.zipCode} onChange={e => setFormData({ ...formData, zipCode: e.target.value })} placeholder="90210" required />
+                            <input type="text" className="form-control bg-light border-0" value={formData.zipCode} onChange={e => setFormData(prev => ({ ...prev, zipCode: e.target.value }))} placeholder="90210" required />
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">
                                 City <span className="text-danger">*</span>
                             </label>
-                            <input type="text" className="form-control bg-light border-0" value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} placeholder="e.g. Mumbai" required />
+                            <input type="text" className="form-control bg-light border-0" value={formData.city} onChange={e => setFormData(prev => ({ ...prev, city: e.target.value }))} placeholder="e.g. Mumbai" required />
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">
                                 State <span className="text-danger">*</span>
                             </label>
-                            <input type="text" className="form-control bg-light border-0" value={formData.state} onChange={e => setFormData({ ...formData, state: e.target.value })} placeholder="e.g. Maharashtra" required />
+                            <input type="text" className="form-control bg-light border-0" value={formData.state} onChange={e => setFormData(prev => ({ ...prev, state: e.target.value }))} placeholder="e.g. Maharashtra" required />
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-semibold small text-uppercase text-muted">Country</label>
                             <CountrySelect
                                 value={formData.country || ''}
-                                onChange={val => setFormData({ ...formData, country: val })}
+                                onChange={val => setFormData(prev => ({ ...prev, country: val }))}
                             />
                         </div>
 
@@ -713,18 +1073,18 @@ export default function PropertyForm({
                             <div className="row g-3 mb-3">
                                 <div className="col-md-6">
                                     <label className="form-label fw-semibold small text-uppercase text-muted">Latitude</label>
-                                    <input type="number" className="form-control bg-light border-0" value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: parseFloat(e.target.value) })} step="0.000001" />
+                                    <input type="number" className="form-control bg-light border-0" value={formData.latitude} onChange={e => setFormData(prev => ({ ...prev, latitude: parseFloat(e.target.value) || 0 }))} step="0.000001" />
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label fw-semibold small text-uppercase text-muted">Longitude</label>
-                                    <input type="number" className="form-control bg-light border-0" value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: parseFloat(e.target.value) })} step="0.000001" />
+                                    <input type="number" className="form-control bg-light border-0" value={formData.longitude} onChange={e => setFormData(prev => ({ ...prev, longitude: parseFloat(e.target.value) || 0 }))} step="0.000001" />
                                 </div>
                             </div>
                             <div className="rounded-4 overflow-hidden border shadow-sm" style={{ height: 320 }}>
                                 <MapView
                                     latitude={formData.latitude || 0}
                                     longitude={formData.longitude || 0}
-                                    onChange={(lat: number, lng: number) => setFormData({ ...formData, latitude: lat, longitude: lng })}
+                                    onChange={(lat: number, lng: number) => setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }))}
                                 />
                             </div>
                             <div className="form-text mt-2">

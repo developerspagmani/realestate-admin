@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useManagementContext } from '@/app/contexts/ManagementContext';
 import { connectedAccountsApi } from '@/lib/api/social';
 import MainLayout from '@/components/MainLayout';
 import StatCard from '@/components/StatCard';
@@ -43,6 +44,7 @@ export default function AccountsModule() {
 function AccountsContent() {
     const router = useRouter();
     const pathname = usePathname();
+    const { activeTenantId } = useManagementContext();
     const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<AccountStats>({ total: 0, active: 0, inactive: 0 });
@@ -66,7 +68,7 @@ function AccountsContent() {
         const initFB = () => {
             if ((window as any).FB) {
                 (window as any).FB.init({
-                    appId: process.env.NEXT_PUBLIC_META_APP_ID,
+                    appId: process.env.NEXT_PUBLIC_META_APP_ID || '1507448464050690',
                     cookie: true,
                     xfbml: true,
                     version: 'v18.0'
@@ -118,20 +120,22 @@ function AccountsContent() {
     useEffect(() => {
         loadAccounts();
         loadMetaSDK();
-    }, [loadAccounts, loadMetaSDK]);
+    }, [loadAccounts, loadMetaSDK, activeTenantId]);
 
     const handleConnect = async (platform: string) => {
         let redirectUri = `${window.location.origin}${basePath}/auth/${platform.toLowerCase()}/callback`;
 
         if (platform === 'FACEBOOK' || platform === 'INSTAGRAM') {
-            redirectUri = `${window.location.origin}${basePath}/auth/meta/callback`;
+            // Use backend ngrok as a bridge for Meta redirects to avoid localhost blocking
+            redirectUri = `${process.env.NEXT_PUBLIC_META_NGROK_URL || 'https://24fe-121-200-48-113.ngrok-free.app'}/api/social/accounts/meta/callback`;
+            
             const isLocal = typeof window !== 'undefined' &&
                 (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
             const fbSDK = (window as any).FB;
 
-            // If we have the SDK and are on a secure context (or localhost), try the SDK first (Popup flow)
-            if (fbSDK && (isSecure || isLocal)) {
+            // If we have the SDK and are on a secure context, try the SDK first (Popup flow)
+            if (fbSDK && isSecure) {
                 console.log('Using Facebook SDK Popup Login Flow');
                 fbSDK.login((response: any) => {
                     if (response.authResponse) {
@@ -171,10 +175,12 @@ function AccountsContent() {
                 });
             } else {
                 // FALLBACK: OAuth Redirect Flow (Works over HTTP)
-                const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID || '1163988435719406';
+                const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID || '1401962508316137';
                 const scope = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
+                const state = encodeURIComponent(`${window.location.origin}${basePath}/auth/meta/callback`);
+                
                 console.log('Using Fallback Redirect Flow due to Secure context or SDK missing');
-                window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+                window.location.href = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${metaAppId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
             }
 
         } else if (platform === 'GOOGLE') {

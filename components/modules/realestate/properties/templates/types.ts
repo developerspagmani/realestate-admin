@@ -37,4 +37,5 @@ export interface BaseTemplateProps {
     customContact?: CustomContact;
     selectedImages?: SelectedImages;
     toggles?: BrochureToggles;
+    bgColor?: string;
 }

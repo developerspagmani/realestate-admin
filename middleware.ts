@@ -6,9 +6,9 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 // Rate limiting configuration
 const RATE_LIMIT = {
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: process.env.NODE_ENV === 'development' ? 10000 : 100, // limit each IP to 100 requests per windowMs (10000 in dev)
-  authAttempts: 5, // max failed login attempts
-  lockoutDuration: 30 * 60 * 1000 // 30 minutes lockout
+  maxRequests: process.env.NODE_ENV === 'development' ? 10000 : 1500,
+  authAttempts: 10,
+  lockoutDuration: 30 * 60 * 1000
 };
 
 function getClientIP(request: NextRequest): string {
@@ -80,17 +80,32 @@ function sanitizePath(pathname: string): string {
 }
 
 export function middleware(request: NextRequest) {
-  const hostname = request.headers.get('host');
+  const host = request.headers.get('host') || '';
+  const hostname = host.split(':')[0]; // Always strip port for consistency
   const pathname = sanitizePath(request.nextUrl.pathname);
 
-  // PERF: Bypass middleware for public static routes to improve performance
-  if (pathname.startsWith('/legal') || pathname.startsWith('/public') || pathname.startsWith('/_next') || pathname.startsWith('/favicon.ico')) {
+  // PERF: Bypass middleware for public static routes and Next.js internal data/RSC requests
+  const isNextInternal = pathname.startsWith('/_next') ||
+    request.nextUrl.searchParams.has('_rsc') ||
+    request.headers.get('RSC') ||
+    request.headers.get('Next-Router-State-Tree') ||
+    request.headers.get('Next-Router-Prefetch');
+
+  if (pathname.startsWith('/legal') || pathname.startsWith('/public') || isNextInternal || pathname.startsWith('/favicon.ico')) {
     return NextResponse.next();
   }
 
   // Custom Domain Routing (Standalone Landing Pages)
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
-  const isCustomHost = hostname && hostname !== rootDomain && hostname !== 'localhost:3001' && !hostname.endsWith('.vercel.app') && hostname !== 'app.virpanix.com';
+  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'app-dev.virpanix.com').split(':')[0];
+  const appDomains = (process.env.APP_DOMAINS || '').split(',').map(d => d.trim().split(':')[0]).filter(Boolean);
+  const isAppHost = (h: string) =>
+    h === rootDomain ||
+    h === 'localhost' ||
+    h.endsWith('.vercel.app') ||
+    h.endsWith('.virpanix.com') ||
+    appDomains.includes(h);
+
+  const isCustomHost = hostname && !isAppHost(hostname);
 
   // PERF-F11 fix: Avoid rewriting public assets, api, or go links which are already global
   if (isCustomHost &&
@@ -114,20 +129,17 @@ export function middleware(request: NextRequest) {
 
   // Security headers
   const response = NextResponse.next();
-  response.headers.set('X-Content-Type-Options', 'nosniff');
 
-  // Allow iframes for public widgets
-  if (pathname.startsWith('/public/widgets')) {
-    response.headers.set('X-Frame-Options', 'ALLOWALL');
-  } else {
-    response.headers.set('X-Frame-Options', 'DENY');
+  // Set security headers only for HTML page requests to avoid breaking internal data streams
+  const isPageRequest = request.headers.get('accept')?.includes('text/html');
+  if (isPageRequest) {
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', pathname.startsWith('/public/widgets') ? 'ALLOWALL' : 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()');
+    response.headers.set('Content-Type', 'text/html; charset=utf-8');
   }
-
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-  // SEC-FIX: Allowed microphone=(self) so the Virpanix Voice Protocol can function.
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=()');
 
   // Rate limiting for all requests
   if (!checkRateLimit(clientIP)) {
@@ -252,7 +264,9 @@ export function middleware(request: NextRequest) {
 
     // Validate token exists and is properly formatted
     if (!token || !tokenResult.valid) {
-      const response = NextResponse.redirect(new URL('/login', request.url));
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search);
+      const response = NextResponse.redirect(loginUrl);
       response.cookies.delete('auth-token');
       response.cookies.delete('user-role');
       response.cookies.delete('user-id');
@@ -289,6 +303,8 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
 
+
+
     // Verify user session is still valid by checking recent activity for ALL protected routes
     const lastActivity = request.cookies.get('last-activity')?.value;
     const sessionTimeout = 30 * 60 * 1000; // 30 minutes
@@ -298,7 +314,9 @@ export function middleware(request: NextRequest) {
       const now = Date.now();
 
       if (now - activityTime > sessionTimeout) {
-        const timeoutResponse = NextResponse.redirect(new URL('/login?session=expired', request.url));
+        const timeoutUrl = new URL('/login?session=expired', request.url);
+        timeoutUrl.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search);
+        const timeoutResponse = NextResponse.redirect(timeoutUrl);
         timeoutResponse.cookies.delete('auth-token');
         timeoutResponse.cookies.delete('user-role');
         timeoutResponse.cookies.delete('user-id');

@@ -12,11 +12,6 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-/**
- * PERF-F01 fix: Root layout is now a Server Component.
- * Previously had 'use client' which made the entire app client-rendered,
- * losing all SSR, RSC, and SEO benefits of Next.js App Router.
- */
 export default function RootLayout({ children }: LayoutProps) {
   return (
     <html lang="en">

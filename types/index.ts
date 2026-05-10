@@ -49,7 +49,7 @@ export interface Workspace extends BaseListing {
 
 // Property Workspace (new functionality)
 export interface Property extends BaseListing {
-  propertyType?: number;
+  propertyType?: number | string;
   listingType?: string;
   price: number;
   priceType: 'fixed' | 'per_month' | 'per_year' | 'per_sqft';
@@ -92,6 +92,40 @@ export interface Property extends BaseListing {
   units?: Unit[];
   workspace3D?: any;
   propertyAmenities?: any[];
+  locality?: string;
+  subLocality?: string;
+  apartmentSociety?: string;
+  houseNo?: string;
+  carpetArea?: number;
+  builtUpArea?: number;
+  superBuiltUpArea?: number;
+  balconies?: number;
+  totalFloors?: number;
+  floorNo?: number;
+  availabilityStatus?: string;
+  ownership?: string;
+  pricePerSqft?: number;
+  allInclusivePrice?: boolean;
+  taxExcl?: boolean;
+  priceNegotiable?: boolean;
+  furnishing?: string;
+  facing?: string;
+  flooring?: string;
+  roadWidth?: number;
+  extraRooms?: string[];
+  propertyFeatures?: string[];
+  overlooking?: string[];
+  powerBackup?: string;
+  reservedParking?: boolean;
+  pantryType?: string;
+  washroomType?: string;
+  ceilingHeight?: number;
+  entranceWidth?: number;
+  frontage?: number;
+  camCharges?: number;
+  lockInPeriod?: number;
+  leaseTenure?: number;
+  vaastuCompliant?: boolean;
 }
 
 export interface Unit {

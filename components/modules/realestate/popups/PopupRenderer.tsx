@@ -181,21 +181,27 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
         allPopups.forEach(popup => {
             const triggerValue = parseInt(popup.triggerValue || '0');
 
-            switch (popup.trigger) {
+            switch (popup.trigger as string) {
                 case 'on_load':
                     const timer = setTimeout(() => showPopup(popup), 1000);
                     cleanupFunctions.push(() => clearTimeout(timer));
                     break;
 
                 case 'delay':
-                    const delayTimer = setTimeout(() => showPopup(popup), triggerValue * 1000);
+                case 'on_delay': {
+                    // triggerValue is in ms from the form (e.g. 3000)
+                    const delayMs = triggerValue > 100 ? triggerValue : triggerValue * 1000;
+                    const delayTimer = setTimeout(() => showPopup(popup), delayMs);
                     cleanupFunctions.push(() => clearTimeout(delayTimer));
                     break;
+                }
 
                 case 'scroll':
+                case 'on_scroll': {
                     const handleScroll = () => {
                         const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
                         const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                        if (height <= 0) return;
                         const scrolled = (winScroll / height) * 100;
                         if (scrolled >= triggerValue) {
                             showPopup(popup);
@@ -205,8 +211,10 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
                     window.addEventListener('scroll', handleScroll);
                     cleanupFunctions.push(() => window.removeEventListener('scroll', handleScroll));
                     break;
+                }
 
                 case 'exit_intent':
+                case 'on_exit_intent': {
                     const handleMouseLeave = (e: MouseEvent) => {
                         if (e.clientY <= 0) {
                             showPopup(popup);
@@ -216,6 +224,7 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
                     document.addEventListener('mouseleave', handleMouseLeave);
                     cleanupFunctions.push(() => document.removeEventListener('mouseleave', handleMouseLeave));
                     break;
+                }
             }
         });
 
@@ -224,6 +233,17 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
 
     // Move return guard inside the JSX to allow floating trigger even if !isVisible
     // if (!activePopup || !isVisible) return null;
+
+    const isBanner = activePopup?.type === 'banner';
+    const isModal = activePopup?.type === 'modal';
+    const isSlideIn = activePopup?.type === 'slide_in';
+
+    // Lifted logic for use in both sub-renderers
+    let displayImage = activePopup?.content?.imageUrl;
+    if (activePopup?.content?.isIntelligentEnabled && matchedProperty) {
+        displayImage = matchedProperty.photos?.[0] || matchedProperty.mainImage?.url || activePopup.content.imageUrl;
+    }
+    const isSplit = !!(activePopup?.content?.layout === 'split' && !isBanner && displayImage);
 
     const renderContent = () => {
         if (!activePopup) return null;
@@ -249,49 +269,89 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
             thankYouTitle, thankYouBody, isIntelligentEnabled
         } = activePopup.content || {};
 
-        // If Intelligent Mode is ON and we have a match, customize the content
+        // If Intelligent Mode is ON and we have a match, customize the text
         let displayTitle = title;
         let displayBody = body;
-        let displayImage = imageUrl;
 
         if (isIntelligentEnabled && matchedProperty) {
-            console.log('PopupRenderer - Intelligent Match ACTIVE: Customizing content for:', matchedProperty.name);
-            displayTitle = `Interested in ${matchedProperty.title}?`;
-            displayBody = matchedProperty.description || `We have Great offers for ${matchedProperty.title}. Drop your contact to get details.`;
-            displayImage = matchedProperty.photos?.[0] || matchedProperty.mainImage?.url || imageUrl;
-        } else if (isIntelligentEnabled && !matchedProperty) {
-            console.log('PopupRenderer - Intelligent Mode enabled but NO property matched yet.');
+            console.log('PopupRenderer - Intelligent Match ACTIVE');
+            displayTitle = matchedProperty.title || matchedProperty.name || title;
+            displayBody = matchedProperty.description || body || `We have great offers for this property. Drop your contact to get details.`;
         }
 
-        const isSplit = layout === 'split' && activePopup.type !== 'banner' && displayImage;
         const alignClass = textAlign === 'left' ? 'text-start' : textAlign === 'right' ? 'text-end' : 'text-center';
+        // Force center alignment for banners and specific modals to ensure a premium look
+        const finalAlignClass = (isBanner || isModal) ? 'text-center' : alignClass;
 
         return (
-            <div className={`popup-inner-wrapper w-100 ${isSplit ? 'd-flex flex-column flex-md-row align-items-stretch' : ''}`} style={{ backgroundColor: backgroundColor || '#ffffff', color: textColor || '#000000' }}>
+            <div className={`popup-inner-wrapper w-100 d-flex ${isSplit ? 'flex-row align-items-stretch' : 'flex-column'} ${isIntelligentEnabled && matchedProperty ? 'magic-card-glow' : ''}`} style={{ backgroundColor: backgroundColor || '#ffffff', color: textColor || '#000000', height: isSplit ? 'auto' : 'fit-content', minHeight: '100%' }}>
                 {displayImage && (
-                    <div className={`popup-image ${isSplit ? 'col-md-6 order-md-1' : 'mb-3'}`} style={{ 
-                        flex: isSplit ? '0 0 50%' : 'none',
+                    <div className={`popup-image ${isSplit ? 'col-md-6 order-md-1' : 'w-100'}`} style={{ 
+                        flex: isSplit ? '1 1 50%' : 'none',
                         maxWidth: isSplit ? '50%' : '100%',
-                        minHeight: isSplit ? (activePopup.content?.height === 'small' ? '300px' : activePopup.content?.height === 'medium' ? '450px' : activePopup.content?.height === 'large' ? '600px' : '300px') : 'auto' 
+                        overflow: 'hidden',
+                        height: isSplit ? 'auto' : 'fit-content',
+                        position: isSplit ? 'relative' : undefined,
+                        alignSelf: 'stretch'
                     }}>
                         <img
                             src={displayImage}
                             alt={displayTitle}
-                            className={`w-100 ${isSplit ? 'h-100' : 'rounded-3 shadow-sm'}`}
+                            className={`w-100 ${isSplit ? 'h-100' : ''}`}
                             style={{
                                 objectFit: 'cover',
-                                height: isSplit ? '100%' : (activePopup.content?.height === 'small' ? '120px' : activePopup.content?.height === 'medium' ? '180px' : activePopup.content?.height === 'large' ? '250px' : 'auto'),
+                                height: isSplit ? '100%' : 'auto',
+                                position: isSplit ? 'absolute' : 'relative',
+                                top: isSplit ? 0 : undefined,
+                                left: isSplit ? 0 : undefined,
+                                width: '100%',
+                                maxHeight: isSplit ? '100%' : '320px',
+                                minHeight: isSplit ? '300px' : '150px',
+                                transition: 'transform 8s ease-out'
+                            }}
+                            onLoad={(e) => {
+                                // Subtle Ken Burns effect
+                                (e.target as HTMLImageElement).style.transform = 'scale(1.1)';
                             }}
                         />
                     </div>
                 )}
-
-                <div className={`p-4 p-md-5 d-flex flex-column justify-content-center ${alignClass} ${isSplit ? 'col-md-6 order-md-2' : ''}`} style={{ 
+                {/* Banner uses a horizontal centered layout */}
+                {isBanner ? (
+                    <div className="d-flex flex-column align-items-center justify-content-center text-center gap-3 px-4 py-4 animate-content-in w-100" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                        <div className="w-100">
+                            <h3 className="fw-bold mb-2 ls-tight" style={{ color: 'inherit', fontSize: '1.5rem' }}>{displayTitle}</h3>
+                            <p className="opacity-85 mb-0" style={{ color: 'inherit', fontSize: '1.05rem' }}>{displayBody}</p>
+                        </div>
+                        {activePopup.content?.ctaText && (
+                            <button
+                                className="btn px-4 py-2 fw-bold shadow-sm flex-shrink-0"
+                                style={{
+                                    backgroundColor: activePopup.content?.buttonColor || primaryColor,
+                                    color: activePopup.content?.buttonTextColor || '#ffffff',
+                                    border: `${activePopup.content?.buttonBorderWidth || '0px'} solid ${activePopup.content?.buttonBorderColor || 'transparent'}`,
+                                    borderRadius: activePopup.content?.buttonBorderRadius || '30px',
+                                    whiteSpace: 'nowrap'
+                                }}
+                                onClick={() => {
+                                    if (activePopup.content?.ctaUrl && activePopup.content.ctaUrl !== '#') {
+                                        window.open(activePopup.content.ctaUrl, '_blank');
+                                    }
+                                    handleClose();
+                                }}
+                            >
+                                {activePopup.content.ctaText}
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                <div className={`p-4 p-md-5 d-flex flex-column justify-content-center animate-content-in ${finalAlignClass} ${isSplit ? 'col-md-6 order-md-2' : ''}`} style={{ 
                     flex: isSplit ? '0 0 50%' : 'none',
-                    maxWidth: isSplit ? '50%' : '100%'
+                    maxWidth: isSplit ? '50%' : '100%',
+                    height: 'auto'
                 }}>
-                    <h3 className="fw-bold mb-2" style={{ color: 'inherit' }}>{displayTitle}</h3>
-                    <p className="opacity-75 mb-4" style={{ color: 'inherit' }}>{displayBody}</p>
+                    <h3 className="fw-bold mb-3 ls-tight" style={{ color: 'inherit', fontSize: '1.75rem' }}>{displayTitle}</h3>
+                    <p className="opacity-75 mb-4 leading-relaxed" style={{ color: 'inherit' }}>{displayBody}</p>
 
                     {marketingFormId ? (
                         <div className="popup-form">
@@ -312,7 +372,7 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
                         <>
                             {(activePopup.content?.emailEnabled || activePopup.content?.mobileEnabled) ? (
                                 <form
-                                    className="d-flex flex-column gap-3 mb-2"
+                                    className="d-flex flex-column gap-4 mb-3"
                                     onSubmit={(e) => {
                                         e.preventDefault();
                                         const formData = new FormData(e.currentTarget);
@@ -376,9 +436,9 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
                                 </form>
                             ) : (
                                 ctaText && (
-                                    <a
-                                        href={ctaUrl || '#'}
-                                        className="btn w-100 py-3 fw-bold shadow-sm"
+                                    <button
+                                        type="submit"
+                                        className="btn w-100 py-3 fw-bold shadow-sm hvr-grow rounded-4"
                                         style={{
                                             backgroundColor: buttonColor || primaryColor,
                                             color: buttonTextColor || '#ffffff',
@@ -421,28 +481,97 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
                                         }}
                                     >
                                         {ctaText}
-                                    </a>
+                                    </button>
                                 )
                             )}
                         </>
                     )}
                 </div>
+                )}
             </div>
         );
     };
 
-    // Move isModal/isBanner outside so they are available for style tag
-    const isBanner = activePopup?.type === 'banner';
-    const isModal = activePopup?.type === 'modal';
-    const isSlideIn = activePopup?.type === 'slide_in';
+    // isBanner/isModal/isSlideIn already lifted above
 
     const renderPopup = () => {
         if (!activePopup || !isVisible) return null;
 
+        const containerStyle: any = {
+            zIndex: 10000,
+            backgroundColor: activePopup.content?.backgroundColor || '#ffffff',
+            color: activePopup.content?.textColor || '#000000',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            borderRadius: isBanner ? '0' : (isSlideIn ? '24px' : '32px'),
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0,0,0,0.1)',
+            transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+            border: isModal ? '1px solid rgba(255,255,255,0.1)' : 'none',
+            pointerEvents: 'auto',
+            display: 'flex'
+        };
+
+        const modalContent = (
+            <div
+                className={`popup-container-root ${activePopup.type} animate-popup-in shadow-2xl`}
+                style={{
+                    ...containerStyle,
+                    ...(isModal ? {
+                        position: 'relative',
+                        width: activePopup.content?.width === 'small' ? '400px' : activePopup.content?.width === 'large' ? '850px' : (isSplit ? '750px' : '520px'),
+                        maxWidth: '90vw',
+                        margin: 'auto',
+                        minHeight: isSplit ? '400px' : 'auto'
+                    } : isBanner ? {
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        maxHeight: '60vh'
+                    } : {
+                        position: 'fixed',
+                        bottom: '24px',
+                        right: '24px',
+                        width: isSplit ? '650px' : '360px',
+                        maxWidth: 'calc(100vw - 48px)',
+                        maxHeight: isSplit ? '650px' : '450px'
+                    })
+                }}
+            >
+                <button
+                    className="btn-re-close position-absolute top-0 end-0 m-3 m-md-4"
+                    style={{ 
+                        zIndex: 100, 
+                        cursor: 'pointer', 
+                        background: 'white',
+                        border: '1px solid rgba(0,0,0,0.1)',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#000000',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        transition: 'all 0.2s'
+                    }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleClose();
+                    }}
+                    aria-label="Close"
+                >
+                    <i className="bi bi-x-lg fs-6"></i>
+                </button>
+                <div className="position-relative w-100" style={{ display: 'flex', flexGrow: 1, minHeight: 'fit-content' }}>
+                    {renderContent()}
+                </div>
+            </div>
+        );
+
         return (
             <>
-                {/* Modal Overlay - Only blocks and dims if isModal */}
-                {isModal && (
+                {isModal ? (
                     <div
                         className="popup-modal-overlay"
                         style={{
@@ -456,58 +585,17 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
                             zIndex: 9999,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            overflowY: 'auto',
+                            padding: '40px 0'
                         }}
                         onClick={handleClose}
-                    />
-                )}
-
-                {/* Popup Container - Animation applied here to avoid containing block issues */}
-                <div
-                    className={`popup-container-root ${activePopup.type} animate-popup-in shadow-2xl`}
-                    style={{
-                        zIndex: 10000,
-                        backgroundColor: activePopup.content?.backgroundColor || '#ffffff',
-                        color: activePopup.content?.textColor || '#000000',
-                        position: 'fixed',
-                        overflow: 'hidden',
-                        borderRadius: isBanner ? '0' : (isSlideIn ? '20px' : '24px'),
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
-                        transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                        pointerEvents: 'auto',
-                        display: 'flex',
-                        height: 'auto',
-                        ...(isModal ? {
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: activePopup.content?.width === 'small' ? '400px' : activePopup.content?.width === 'large' ? '850px' : (activePopup.content?.layout === 'split' && activePopup.content?.imageUrl ? '750px' : '550px'),
-                            minHeight: activePopup.content?.height === 'small' ? '300px' : activePopup.content?.height === 'medium' ? '450px' : activePopup.content?.height === 'large' ? '600px' : 'auto',
-                            maxWidth: '95vw'
-                        } : isBanner ? {
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            transform: 'none'
-                        } : {
-                            bottom: '24px',
-                            right: '24px',
-                            width: '380px',
-                            maxWidth: 'calc(100vw - 48px)',
-                            transform: 'none'
-                        })
-                    }}
-                >
-                    <button
-                        className="btn-close position-absolute top-0 end-0 m-3"
-                        style={{ zIndex: 11, cursor: 'pointer', filter: activePopup.content?.textColor === '#ffffff' ? 'invert(1)' : 'none' }}
-                        onClick={handleClose}
-                        aria-label="Close"
-                    ></button>
-                    <div className="position-relative">
-                        {renderContent()}
+                    >
+                        {modalContent}
                     </div>
-                </div>
+                ) : (
+                    modalContent
+                )}
             </>
         );
     };
@@ -552,6 +640,14 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
 
             <style dangerouslySetInnerHTML={{
                 __html: `
+                .popup-container-root::-webkit-scrollbar {
+                    display: none;
+                }
+                .popup-container-root {
+                    -ms-overflow-style: none;  /* IE and Edge */
+                    scrollbar-width: none;  /* Firefox */
+                }
+
                 .animate-popup-in {
                     animation: popupEntry 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
                 }
@@ -559,32 +655,90 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
                 @keyframes popupEntry {
                     from { 
                         opacity: 0; 
-                        ${isBanner ? 'transform: translateY(-100%);' : isModal ? 'transform: translate(-50%, -40%);' : 'transform: translateY(40px);'} 
+                        ${isBanner ? 'transform: translateY(-100%);' : isModal ? 'transform: translateY(-20px) scale(0.95);' : 'transform: translateY(40px) scale(0.98);'} 
                     }
                     to { 
                         opacity: 1; 
-                        ${isBanner ? 'transform: translateY(0);' : isModal ? 'transform: translate(-50%, -50%);' : 'transform: translateY(0);'} 
+                        ${isBanner ? 'transform: translateY(0);' : isModal ? 'transform: translateY(0) scale(1);' : 'transform: translateY(0) scale(1);'} 
                     }
                 }
 
+                .animate-content-in {
+                    animation: contentUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+                }
+
+                @keyframes contentUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .magic-card-glow {
+                    position: relative;
+                }
+                .magic-card-glow::before {
+                    content: '';
+                    position: absolute;
+                    inset: -2px;
+                    background: linear-gradient(135deg, #8e44ad, #c0392b, #2980b9);
+                    z-index: -1;
+                    filter: blur(15px);
+                    opacity: 0.5;
+                    border-radius: inherit;
+                    animation: magicGlowPulse 4s infinite alternate;
+                }
+                @keyframes magicGlowPulse {
+                    from { opacity: 0.3; transform: scale(0.98); }
+                    to { opacity: 0.7; transform: scale(1.02); }
+                }
+
+                .btn-re-close:hover {
+                    background: rgba(255,255,255,0.2) !important;
+                    transform: rotate(90deg);
+                }
+
                 @media (max-width: 768px) {
+                    .popup-inner-wrapper.d-flex {
+                        flex-direction: column !important;
+                    }
+                    .popup-image.col-md-6, .col-md-6.order-md-2 {
+                        max-width: 100% !important;
+                        flex: none !important;
+                        width: 100% !important;
+                    }
+                    .popup-image img {
+                        height: 200px !important;
+                    }
+
                     .popup-container-root.slide_in {
+                        top: 0 !important;
                         bottom: 0 !important;
                         right: 0 !important;
                         left: 0 !important;
                         width: 100% !important;
                         max-width: 100% !important;
-                        border-radius: 24px 24px 0 0 !important;
+                        max-height: 100vh !important;
+                        border-radius: 0 !important;
+                    }
+
+                    .popup-container-root.modal {
+                        top: 0 !important;
+                        left: 0 !important;
+                        right: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        max-height: 100vh !important;
+                        border-radius: 0 !important;
+                        transform: none !important;
                     }
                     
                     @keyframes popupEntry {
                         from { 
                             opacity: 0; 
-                            ${isBanner ? 'transform: translateY(-100%);' : 'transform: translateY(100%);'} 
+                            ${isBanner ? 'transform: translateY(-100%);' : 'transform: translateY(30px) scale(0.98);'} 
                         }
                         to { 
                             opacity: 1; 
-                            transform: translateY(0); 
+                            transform: translateY(0) scale(1); 
                         }
                     }
                 }

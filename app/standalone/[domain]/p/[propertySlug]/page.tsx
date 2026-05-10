@@ -1,12 +1,12 @@
 import { Metadata } from 'next';
 import PropertyDetailClient from './PropertyDetailClient';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
+const BACKEND_URL = process.env.BACKEND_URL;
 
 async function getPropertyData(idOrSlug: string) {
     if (!idOrSlug) return null;
     try {
-        const url = `${BACKEND_URL}/public/properties/${idOrSlug}`;
+        const url = `${BACKEND_URL}/api/public/properties/${idOrSlug}`;
         console.log(`Fetching property data from: ${url}`);
         const res = await fetch(url, {
             next: { revalidate: 1 }

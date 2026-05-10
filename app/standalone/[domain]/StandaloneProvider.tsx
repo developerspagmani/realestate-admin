@@ -1,15 +1,32 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { websiteService, marketingService } from '@/app/services/api';
 import ChatbotWidget from '@/components/modules/realestate/widgets/ChatbotWidget';
 import BookingModal from '@/components/modules/realestate/shared/BookingModal';
 import FormRenderer from '@/components/modules/realestate/widgets/FormRenderer';
-import PopupRenderer from '@/components/modules/realestate/website/PopupRenderer';
+import PopupRenderer from '@/components/modules/realestate/popups/PopupRenderer';
 import { getCurrencyConfig } from '@/app/utils/currencyUtils';
 import '@/components/modules/realestate/shared/shared.css';
+
+/**
+ * NavigationTracker handles side effects that depend on dynamic Next.js hooks.
+ * Wrapping this in Suspense prevents the entire StandaloneProvider (and the page)
+ * from bailing out of SSR during hydration.
+ */
+function NavigationTracker({ onPathnameChange }: { onPathnameChange: () => void }) {
+    const pathname = usePathname();
+    
+    useEffect(() => {
+        if (onPathnameChange) {
+            onPathnameChange();
+        }
+    }, [pathname, onPathnameChange]);
+    
+    return null;
+}
 
 interface StandaloneContextType {
     website: any;
@@ -53,7 +70,6 @@ export default function StandaloneProvider({
     const [showBookingModal, setShowBookingModal] = useState(false);
     const [showInquiryModal, setShowInquiryModal] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
-    const pathname = usePathname();
     const router = useRouter();
 
     const theme = website.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif' };
@@ -144,7 +160,7 @@ export default function StandaloneProvider({
                 shortcut.rel = 'shortcut icon';
                 shortcut.href = faviconUrl;
                 document.head.appendChild(shortcut);
-                
+
                 // Inject apple touch icon for mobile bookmarks
                 const apple = document.createElement('link');
                 apple.rel = 'apple-touch-icon';
@@ -239,12 +255,12 @@ export default function StandaloneProvider({
 
     const trackAction = async (type: string, metadata: any = {}, identityOverride?: { id?: string, email?: string }) => {
         const identity = identityOverride || leadIdentity;
-        
+
         // Ensure we have a consistent Visitor ID for anonymous tracking
         let visitorId = localStorage.getItem('v_id');
         if (!visitorId) {
-            visitorId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
-                ? crypto.randomUUID() 
+            visitorId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+                ? crypto.randomUUID()
                 : `v_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`;
             localStorage.setItem('v_id', visitorId);
         }
@@ -274,12 +290,8 @@ export default function StandaloneProvider({
         setProperties(results);
     }, []);
 
-    // Close mobile menu on route change
-    useEffect(() => {
-        setShowMobileMenu(false);
-    }, [pathname]);
-
-    const isHome = pathname === `/standalone/${slugOrDomain}` || pathname === `/standalone/${slugOrDomain}/`;
+    // Navigation side-effects are now handled by NavigationTracker
+    // to ensure SSR compatibility
 
     return (
         <StandaloneContext.Provider value={{
@@ -295,6 +307,9 @@ export default function StandaloneProvider({
             updateFilters,
             currencySymbol
         }}>
+            <Suspense fallback={null}>
+                <NavigationTracker onPathnameChange={() => setShowMobileMenu(false)} />
+            </Suspense>
             <div
                 className="standalone-website min-vh-100 bg-white d-flex flex-column"
                 style={{
@@ -555,7 +570,7 @@ export default function StandaloneProvider({
                                 transition: 'all 0.3s ease'
                             }}>
                                 <ChatbotWidget
-                                    properties={properties}
+                                    properties={initialData}
                                     theme={theme}
                                     onClose={() => { setShowChat(false); setChatExpanded(false); }}
                                     onExpandToggle={(exp) => setChatExpanded(exp)}
@@ -640,8 +655,8 @@ export default function StandaloneProvider({
                                 </div>
                                 <div className="modal-body p-4">
                                     <FormRenderer
-                                        config={(website.configuration?.inquiryForm?.useMarketingForm && website.configuration?.inquiryForm?.marketingFormId) 
-                                            ? website.configuration.inquiryForm 
+                                        config={(website.configuration?.inquiryForm?.useMarketingForm && website.configuration?.inquiryForm?.marketingFormId)
+                                            ? website.configuration.inquiryForm
                                             : (website.configuration?.inquiryForm && website.configuration?.inquiryForm.enabled)
                                                 ? website.configuration.inquiryForm
                                                 : {
@@ -697,8 +712,8 @@ export default function StandaloneProvider({
 
                 {/* Conversion Popups Engine */}
                 {website?.id && (
-                    <PopupRenderer 
-                        websiteId={website.id} 
+                    <PopupRenderer
+                        websiteId={website.id}
                         theme={theme}
                         properties={properties}
                         trackAction={trackAction}

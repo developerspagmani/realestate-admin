@@ -16,7 +16,8 @@ export default function LuxuryPrestigeTemplate(props: BaseTemplateProps) {
         isPreview,
         customContact,
         selectedImages,
-        toggles = { showPrice: true, showAmenities: true, showQRCode: true, showStats: true }
+        toggles = { showPrice: true, showAmenities: true, showQRCode: true, showStats: true },
+        bgColor
     } = props;
 
     const pageWidth = '210mm';
@@ -37,7 +38,7 @@ export default function LuxuryPrestigeTemplate(props: BaseTemplateProps) {
     return (
         <div style={{
             width: pageWidth,
-            background: '#0a0a0a',
+            background: bgColor || '#0a0a0a',
             color: textColor,
             fontFamily: fontStyle,
             margin: '0 auto',

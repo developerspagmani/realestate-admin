@@ -151,6 +151,7 @@ export default function LeadsKanban({ leads, onStatusChange, onConvertToUser, on
                                                                 <ul className="dropdown-menu dropdown-menu-end shadow border-0 small">
                                                                     <li><button className="dropdown-item" onClick={() => onEdit(lead)}><i className="bi bi-pencil me-2"></i>Edit</button></li>
                                                                     <li><button className="dropdown-item" onClick={() => onViewInsights(lead)}><i className="bi bi-graph-up me-2"></i>Insights</button></li>
+                                                                    <li><button className="dropdown-item text-primary" onClick={() => (window as any).location.href = `/realestate-owner-admin/bookings?leadId=${lead.id}`}><i className="bi bi-calendar-plus me-2"></i>Schedule Visit</button></li>
                                                                     {lead.status === 'converted' && !lead.userId && (
                                                                         <>
                                                                             <li><hr className="dropdown-divider" /></li>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { bookingService, userService, unitService, propertyService, agentService, getAuthToken } from '@/app/services/api';
+import { bookingService, userService, unitService, propertyService, agentService, getAuthToken, leadService } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import { Booking, User, Unit, Property, Agent } from '@/types';
@@ -80,6 +80,7 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const urlUnitId = searchParams.get('unitId');
+    const urlLeadId = searchParams.get('leadId');
 
     useEffect(() => {
         setMounted(true);
@@ -195,8 +196,55 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
             router.push('/login');
             return;
         }
-        loadData();
-    }, [mounted, isAuthenticated, user, router, activeTenantId, activeOwnerId, tenantType, loadData]);
+
+        const initFromLead = async () => {
+            if (urlLeadId) {
+                const token = getAuthToken();
+                if (!token) return;
+                try {
+                    const res = await leadService.getLead(token, urlLeadId);
+                    if (res && res.success) {
+                        // Backend might return lead directly in data or nested as data.lead
+                        const lead = res.data?.lead || res.data || res;
+                        const leadId = lead.id || urlLeadId;
+                        
+                        const name = lead.name || lead.fullName || 'Prospect Lead';
+                        const email = lead.email || '';
+                        const phone = lead.phone || lead.mobile || lead.mobileNumber || '';
+
+                        // Add lead to the users list temporarily so it shows in the dropdown
+                        // But mark it so we don't send it as a userId to the backend
+                        setUsers(prev => {
+                            if (prev.some(u => u.id === leadId)) return prev;
+                            return [...prev, {
+                                id: leadId,
+                                name: name,
+                                email: email,
+                                phone: phone,
+                                isLead: true // Internal flag
+                            } as any];
+                        });
+                        
+                        setFormData(prev => ({
+                            ...prev,
+                            userId: '', // IMPORTANT: Clear this to avoid DB foreign key errors
+                            guestName: name === 'Prospect Lead' ? '' : name,
+                            guestEmail: email,
+                            guestPhone: phone,
+                            propertyId: lead.propertyId || '',
+                            unitId: lead.unitId || '',
+                            notes: lead.notes || ''
+                        }));
+                        setShowModal(true);
+                    }
+                } catch (error) {
+                    console.error('Failed to pre-fill lead data:', error);
+                }
+            }
+        };
+
+        loadData().then(initFromLead);
+    }, [mounted, isAuthenticated, user, router, activeTenantId, activeOwnerId, tenantType, loadData, urlLeadId]);
 
     const formatForInput = (dateStr: string) => {
         if (!dateStr) return '';
@@ -938,10 +986,12 @@ export default function BookingsManager({ mode }: BookingsManagerProps) {
                                                     if (val === 'new' || val === '') {
                                                         setFormData({ ...formData, userId: val === 'new' ? '' : val, guestName: '', guestEmail: '', guestPhone: '' });
                                                     } else {
-                                                        const selUser = users.find(u => u.id === val);
+                                                        const selUser = users.find(u => (u as any).id === val);
+                                                        // If it's a lead (not a real user account), we leave userId empty to avoid DB errors
+                                                        const isRealUser = (selUser as any)?.isLead !== true;
                                                         setFormData({
                                                             ...formData,
-                                                            userId: val,
+                                                            userId: isRealUser ? val : '', 
                                                             guestName: selUser?.name || '',
                                                             guestEmail: selUser?.email || '',
                                                             guestPhone: selUser?.phone || ''

@@ -6,6 +6,12 @@ export const leadService = {
             headers: { 'Authorization': `Bearer ${token}` },
         });
     },
+    
+    getLead: async (token: string, leadId: string) => {
+        return await makeApiCall(leadEndpoints.getById(leadId), {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+    },
 
     createLead: async (token: string, leadData: any) => {
         return await makeApiCall(leadEndpoints.create(), {

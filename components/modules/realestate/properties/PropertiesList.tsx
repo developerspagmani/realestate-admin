@@ -114,13 +114,15 @@ export default function PropertiesList({
                                                 </div>
                                                 <div>
                                                     <div className="fw-bold text-dark">{property.name}</div>
-                                                    <div className="text-muted small text-truncate" style={{ maxWidth: '250px' }}>{property.description}</div>
+                                                    <div className="text-muted small text-truncate" style={{ maxWidth: '250px' }}>
+                                                        {property.description?.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ')}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="py-3">
                                             <span className="badge bg-light text-primary text-capitalize px-3 py-2">
-                                                {property.propertyType?.replace('_', ' ') || 'Unknown'}
+                                                {String(property.propertyType || 'Unknown').replace('_', ' ')}
                                             </span>
                                         </td>
                                         <td className="py-3">

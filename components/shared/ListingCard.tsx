@@ -63,7 +63,7 @@ export default function ListingCard({ workspace, type, showOwner = false, compac
   const getPrimaryInfo = () => {
     if (isProperty && property) {
       return {
-        title: property.propertyType.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+        title: property.propertyType ? String(property.propertyType).replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : 'Property',
         subtitle: `${property.squareFootage.toLocaleString('en-US')} sq ft`,
         details: [
           property.bedrooms && `${property.bedrooms} bed`,
@@ -148,7 +148,7 @@ export default function ListingCard({ workspace, type, showOwner = false, compac
             <h5 className="text-primary mb-0">{getPriceDisplay()}</h5>
             {isProperty && property && (
               <div className="text-muted small">
-                {property.listingType.charAt(0).toUpperCase() + property.listingType.slice(1)}
+                {property.listingType ? (property.listingType.charAt(0).toUpperCase() + property.listingType.slice(1)) : 'Unknown'}
               </div>
             )}
           </div>

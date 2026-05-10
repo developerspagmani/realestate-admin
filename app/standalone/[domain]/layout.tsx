@@ -1,18 +1,24 @@
-import { Metadata } from 'next';
-import { websiteService } from '@/app/services/api';
+import React, { Suspense, lazy } from 'react';
 import StandaloneProvider from './StandaloneProvider';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
+const BACKEND_URL = process.env.BACKEND_URL;
 
 async function getWebsiteData(slugOrDomain: string) {
+    const fetchUrl = `${BACKEND_URL}/api/websites/public/${slugOrDomain}`;
+    console.log('DEBUG: Fetching website data from:', fetchUrl);
     try {
-        const res = await fetch(`${BACKEND_URL}/websites/public/${slugOrDomain}`, {
-            next: { revalidate: 1 } // Reduced for more immediate feedback
+        const res = await fetch(fetchUrl, {
+            cache: 'no-store'
         });
-        if (!res.ok) return null;
-        return res.json();
+        if (!res.ok) {
+            console.log('DEBUG: Fetch failed with status:', res.status);
+            return null;
+        }
+        const data = await res.json();
+        console.log('DEBUG: Fetch success, website found:', !!data?.website);
+        return data;
     } catch (err) {
-        console.error('Error fetching website data for layout:', err);
+        console.error('DEBUG: Network error fetching website data:', err);
         return null;
     }
 }
@@ -45,7 +51,9 @@ export default async function StandaloneLayout({
             initialData={data.data || []}
             slugOrDomain={resolvedParams.domain}
         >
-            {children}
+            <Suspense fallback={null}>
+                {children}
+            </Suspense>
         </StandaloneProvider>
     );
 }

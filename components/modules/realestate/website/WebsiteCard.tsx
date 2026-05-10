@@ -12,7 +12,9 @@ interface WebsiteCardProps {
 
 export default function WebsiteCard({ website, onEdit, onDelete, onGenerateQR }: WebsiteCardProps) {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const publicUrl = `${baseUrl}/go/${website.slug}`;
+    const publicUrl = website.customDomain 
+        ? `https://${website.customDomain}/go/${website.slug}` 
+        : `${baseUrl}/go/${website.slug}`;
     const customDomain = website.customDomain;
 
     const calculateSEOScore = () => {

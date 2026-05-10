@@ -1,4 +1,7 @@
 /* Real Estate Widget Premium Styles */
+.fw-black { font-weight: 900 !important; }
+.extra-small { font-size: 0.75rem !important; }
+
 
 .widget-container {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;

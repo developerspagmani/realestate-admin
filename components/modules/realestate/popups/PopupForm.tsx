@@ -126,17 +126,33 @@ export default function PopupForm({ popup, websites, widgets, marketingForms, on
         try {
             setSubmitting(true);
             const token = getAuthToken();
-            if (!token) return;
+            if (!token) {
+                console.error('[DEBUG] No auth token found!');
+                return;
+            }
 
             const tenantId = mode === 'admin' ? (activeTenantId || (user as any)?.tenantId) : (user as any)?.tenantId;
             const finalData = { ...formData, tenantId };
 
+            console.log('[DEBUG] Submitting Popup Data:', finalData);
+
+            if (!finalData.websiteId) {
+                showToast('Website selection is required to publish.', 'error');
+                console.warn('[DEBUG] Validation Failed: websiteId is missing');
+                setSubmitting(false);
+                return;
+            }
+
             let response;
-            if (popup) {
+            if (popup && popup.id) {
+                console.log('[DEBUG] Performing UPDATE for ID:', popup.id);
                 response = await popupService.updatePopup(token, popup.id, finalData, tenantId);
             } else {
+                console.log('[DEBUG] Performing CREATE');
                 response = await popupService.createPopup(token, finalData);
             }
+
+            console.log('[DEBUG] Server Response:', response);
 
             if (response.success) {
                 onSuccess();
@@ -160,11 +176,11 @@ export default function PopupForm({ popup, websites, widgets, marketingForms, on
         } = formData.content || {};
         const isBanner = formData.type === 'banner';
         const isSlideIn = formData.type === 'slide_in';
-        const isSplit = layout === 'split' && !isBanner;
         const alignClass = textAlign === 'left' ? 'text-start' : textAlign === 'right' ? 'text-end' : 'text-center';
+        const isSplit = !!(layout === 'split' && !isBanner && imageUrl);
 
         return (
-            <div className="preview-container h-100 d-flex flex-column align-items-center justify-content-center p-4 bg-light">
+            <div className="preview-container d-flex flex-column align-items-center p-4 pb-5 bg-light" style={{ minHeight: '100%' }}>
                 <div className="text-center mb-4">
                     <span className="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">
                         <i className="bi bi-eye me-2"></i>Live Dashboard Preview
@@ -172,29 +188,34 @@ export default function PopupForm({ popup, websites, widgets, marketingForms, on
                 </div>
 
                 <div
-                    className={`preview-box shadow-lg transition-all ${isSplit ? 'd-flex' : 'block'}`}
+                    className={`preview-box shadow-lg transition-all d-flex ${isSplit ? 'flex-row align-items-stretch' : 'flex-column'}`}
                     style={{
                         backgroundColor: backgroundColor || '#ffffff',
                         color: textColor || '#000000',
                         borderRadius: isBanner ? '0' : (isSlideIn ? '16px' : '24px'),
                         overflow: 'hidden',
-                        maxWidth: formData.content?.width === 'small' ? '350px' : formData.content?.width === 'large' ? '800px' : '500px',
+                        maxWidth: formData.content?.width === 'small' ? '350px' : formData.content?.width === 'large' ? '800px' : (isSplit && isSlideIn ? '550px' : '500px'),
                         minHeight: formData.content?.height === 'small' ? '300px' : formData.content?.height === 'medium' ? '450px' : formData.content?.height === 'large' ? '600px' : 'auto',
                         border: '1px solid rgba(0,0,0,0.05)',
-                        width: '100%'
+                        width: '100%',
+                        position: 'relative'
                     }}
                 >
                     {imageUrl && (
-                        <div className={`${isSplit ? 'col-6' : 'w-100'} preview-image`} style={{ height: isSplit ? '100%' : 'auto' }}>
+                        <div className={`${isSplit ? 'col-6' : 'w-100'} preview-image`} style={{ height: isSplit ? 'auto' : 'fit-content', position: isSplit ? 'relative' : undefined }}>
                             <img
                                 src={imageUrl}
                                 alt=""
                                 className="w-100"
                                 style={{
                                     height: isSplit ? '100%' : (formData.content?.height === 'small' ? '120px' : formData.content?.height === 'medium' ? '180px' : formData.content?.height === 'large' ? '250px' : '150px'),
-                                    maxHeight: isSplit ? 'none' : '100%',
+                                    position: isSplit ? 'absolute' : 'relative',
+                                    top: isSplit ? 0 : undefined,
+                                    left: isSplit ? 0 : undefined,
+                                    width: '100%',
+                                    maxHeight: isSplit ? '100%' : '100%',
                                     objectFit: 'cover',
-                                    minHeight: isSplit ? (formData.content?.height === 'small' ? '300px' : formData.content?.height === 'medium' ? '450px' : formData.content?.height === 'large' ? '600px' : '300px') : '0'
+                                    minHeight: isSplit ? '100%' : '0'
                                 }}
                             />
                         </div>
@@ -269,8 +290,8 @@ export default function PopupForm({ popup, websites, widgets, marketingForms, on
     };
 
     return (
-        <div className="bg-white h-100">
-            <div className="h-100 d-flex flex-column">
+        <div className="bg-white" style={{ height: '100vh', overflow: 'hidden' }}>
+            <div className="d-flex flex-column" style={{ height: '100%' }}>
                 {/* Visual Header */}
                 <div className="container-fluid py-3 border-bottom shadow-sm bg-white">
                     <div className="d-flex align-items-center justify-content-between px-md-4">
@@ -307,11 +328,11 @@ export default function PopupForm({ popup, websites, widgets, marketingForms, on
                     </div>
                 </div>
 
-                <div className="flex-grow-1 overflow-hidden">
-                    <div className="row g-0 h-100">
+                <div className="flex-grow-1" style={{ overflow: 'hidden', minHeight: 0 }}>
+                    <div className="row g-0" style={{ height: '100%' }}>
                         {/* Editor Side */}
-                        <div className="col-lg-7 h-100 d-flex flex-column border-end shadow-sm bg-white">
-                            <div className="d-flex border-bottom bg-light px-md-5 overflow-auto">
+                        <div className="col-lg-7 d-flex flex-column border-end shadow-sm bg-white position-relative" style={{ height: '100%' }}>
+                            <div className="d-flex border-bottom bg-light px-md-5" style={{ zIndex: 10, position: 'sticky', top: 0 }}>
                                 <button
                                     type="button"
                                     className={`btn btn-link nav-link px-3 py-3 border-bottom border-3 ${activeTab === 'basic' ? 'border-primary text-primary fw-bold' : 'border-transparent text-muted text-decoration-none'}`}
@@ -475,15 +496,16 @@ export default function PopupForm({ popup, websites, widgets, marketingForms, on
                                                 </div>
 
                                                 <div className="col-12 mt-2">
-                                                    <div className="card border-0 bg-info bg-opacity-10 rounded-4 p-4 shadow-sm border border-info border-opacity-25">
-                                                        <div className="d-flex align-items-center justify-content-between mb-2">
+                                                    <div className="card border-0 bg-magic-soft rounded-4 p-4 shadow-sm border border-primary border-opacity-10 position-relative overflow-hidden">
+                                                        <div className="magic-shine"></div>
+                                                        <div className="d-flex align-items-center justify-content-between mb-2 position-relative" style={{ zIndex: 1 }}>
                                                             <div className="d-flex align-items-center">
-                                                                <div className="bg-info bg-opacity-10 text-info rounded-circle p-2 me-3">
-                                                                    <i className="bi bi-magic fs-4"></i>
+                                                                <div className="bg-white bg-opacity-50 text-primary rounded-circle p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style={{ width: '48px', height: '48px' }}>
+                                                                    <i className="bi bi-stars fs-3"></i>
                                                                 </div>
                                                                 <div>
-                                                                    <h6 className="fw-bold mb-0 text-info">Magic Intelligent Mode</h6>
-                                                                    <p className="extra-small text-muted mb-0">Persona-based property matching for visitors.</p>
+                                                                    <h6 className="fw-bold mb-0 text-dark">Magic Intelligent Mode</h6>
+                                                                    <p className="extra-small text-muted mb-0">Persona-based automation for every visitor.</p>
                                                                 </div>
                                                             </div>
                                                             <div className="form-check form-switch px-4">
@@ -901,7 +923,7 @@ export default function PopupForm({ popup, websites, widgets, marketingForms, on
                         </div>
 
                         {/* Preview Side */}
-                        <div className="col-lg-5 bg-light d-none d-lg-block border-start h-100 shadow-inner">
+                        <div className="col-lg-5 bg-light d-none d-lg-block border-start shadow-inner" style={{ height: '100%', overflowY: 'auto' }}>
                             {renderPreview()}
                         </div>
                     </div>
@@ -954,6 +976,24 @@ export default function PopupForm({ popup, websites, widgets, marketingForms, on
                         from { opacity: 0; transform: translateY(5px); }
                         to { opacity: 1; transform: translateY(0); }
                     }
+                    .magic-shine {
+                        position: absolute;
+                        top: 0;
+                        left: -100%;
+                        width: 50%;
+                        height: 100%;
+                        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+                        transform: skewX(-25deg);
+                        animation: shine 4s infinite;
+                        z-index: 0;
+                    }
+                    @keyframes shine {
+                        0% { left: -100%; }
+                        20% { left: 150%; }
+                        100% { left: 150%; }
+                    }
+                    .hvr-grow { transition: transform 0.2s; }
+                    .hvr-grow:hover { transform: scale(1.02); }
                 `}</style>
                 <MediaSelector
                     show={showMediaSelector}

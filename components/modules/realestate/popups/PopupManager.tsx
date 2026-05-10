@@ -8,8 +8,8 @@ import { WebsitePopup, Website, MarketingForm, Widget } from '@/types';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
-import PopupForm from '@/components/modules/realestate/website/PopupForm';
-import PopupCard from '@/components/modules/realestate/website/PopupCard';
+import PopupForm from '@/components/modules/realestate/popups/PopupForm';
+import PopupCard from '@/components/modules/realestate/popups/PopupCard';
 
 interface PopupManagerProps {
     mode?: 'admin' | 'owner';
@@ -402,8 +402,8 @@ export default function PopupManager({ mode = 'admin' }: PopupManagerProps) {
                                                             <div>
                                                                 <div className="fw-bold">{sub.lead?.name || 'Anonymous'}</div>
                                                                 <small className="text-muted opacity-75">
-                                                                    {sub.lead?.source === 5 || sub.lead?.source === 'website' || sub.lead?.source === 'website_popup' ? 'Website Visitor' : 
-                                                                     (sub.lead?.source === 7 || sub.lead?.source === 'website_chatbot' ? 'Chatbot Lead' : 'Direct Lead')}
+                                                                    {sub.lead?.source === 5 || sub.lead?.source === 'website' || sub.lead?.source === 'website_popup' ? 'Website Visitor' :
+                                                                        (sub.lead?.source === 7 || sub.lead?.source === 'website_chatbot' ? 'Chatbot Lead' : 'Direct Lead')}
                                                                 </small>
                                                             </div>
                                                         </div>

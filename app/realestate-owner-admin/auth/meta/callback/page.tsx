@@ -39,8 +39,14 @@ function MetaCallbackContent() {
             }
 
             // Construct redirectUri (must match what was used in the initial redirect)
-            // Use window.location.origin + window.location.pathname and strip any trailing slash to ensure consistency
-            const redirectUri = `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}`;
+            // For local development, we use the ngrok URL as a bridge
+            const isLocal = typeof window !== 'undefined' && 
+                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+            const ngrokUrl = process.env.NEXT_PUBLIC_META_NGROK_URL;
+            
+            const redirectUri = (isLocal && ngrokUrl)
+                ? `${ngrokUrl.replace(/\/$/, '')}/api/social/accounts/meta/callback`
+                : `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}`;
 
             // Exchange code for tokens
             const response = await connectedAccountsApi.exchangeMetaCode(code, redirectUri);

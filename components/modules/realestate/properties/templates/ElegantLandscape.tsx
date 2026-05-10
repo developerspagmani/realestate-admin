@@ -16,7 +16,8 @@ export default function ElegantLandscapeTemplate(props: BaseTemplateProps) {
         isPreview,
         customContact,
         selectedImages,
-        toggles = { showPrice: true, showAmenities: true, showQRCode: true, showStats: true }
+        toggles = { showPrice: true, showAmenities: true, showQRCode: true, showStats: true },
+        bgColor
     } = props;
 
     const pageWidth = '297mm';
@@ -37,7 +38,7 @@ export default function ElegantLandscapeTemplate(props: BaseTemplateProps) {
     return (
         <div style={{
             width: pageWidth,
-            background: '#ffffff',
+            background: bgColor || '#ffffff',
             color: textColor,
             fontFamily: fontStyle,
             margin: '0 auto',
@@ -55,7 +56,7 @@ export default function ElegantLandscapeTemplate(props: BaseTemplateProps) {
                     />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.7) 85%, rgba(255,255,255,1))' }}></div>
                 </div>
-                <div style={{ width: '40%', height: '100%', padding: '80px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#ffffff' }}>
+                <div style={{ width: '40%', height: '100%', padding: '80px 60px', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: bgColor || '#ffffff' }}>
                     <div style={{ fontSize: '12px', fontWeight: 800, letterSpacing: '8px', color: accentColor, marginBottom: '30px', textTransform: 'uppercase' }}>PREMIUM HORIZON</div>
                     <h1 style={{ fontSize: '64px', fontWeight: 900, textTransform: 'uppercase', margin: 0, lineHeight: 0.85, letterSpacing: '-3px', color: textColor }}>{property.name || property.title}</h1>
                     <p style={{ margin: '40px 0', fontSize: '20px', lineHeight: '1.7', color: getAlphaColor(textColor, '99'), fontWeight: 300 }}>{aiTagline || 'Experience a new level of sophisticated living.'}</p>

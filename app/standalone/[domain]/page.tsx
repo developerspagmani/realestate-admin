@@ -1,12 +1,14 @@
 import { Metadata } from 'next';
 import HomePageClient from './HomePageClient';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'https://realestate-api-seven.vercel.app/api';
+const BACKEND_URL = process.env.BACKEND_URL;
 
 async function getWebsiteData(slugOrDomain: string) {
     if (!slugOrDomain) return null;
     try {
-        const res = await fetch(`${BACKEND_URL}/websites/public/${slugOrDomain}`, {
+        const url = `${BACKEND_URL}/api/websites/public/${slugOrDomain}`;
+        console.log(`Fetching website data from: ${url}`);
+        const res = await fetch(url, {
             next: { revalidate: 1 }
         });
         if (!res.ok) return null;

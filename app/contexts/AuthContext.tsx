@@ -132,7 +132,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(authReducer, initialState);
   const router = useRouter();
 
-  const logout = useCallback(() => {
+  const logout = useCallback((callbackUrl?: string) => {
     // Clear all auth data from localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user');
@@ -158,7 +158,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     dispatch({ type: 'LOGOUT' });
-    router.push('/login');
+    if (callbackUrl) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+    } else {
+      router.push('/login');
+    }
   }, [router, dispatch]);
 
 
@@ -187,7 +191,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // Check for idle timeout before initializing
         if (lastActivity && now - parseInt(lastActivity) > IDLE_TIMEOUT) {
           console.warn('Session expired due to inactivity.');
-          logout();
+          logout(window.location.pathname + window.location.search);
           return;
         }
 
@@ -200,7 +204,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               const tokenExp = payload.exp * 1000;
               if (tokenExp < now) {
                 console.warn('Authentication token expired.');
-                logout();
+                logout(window.location.pathname + window.location.search);
                 return;
               }
             }
@@ -325,7 +329,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const timeSinceActivity = now - parseInt(lastActivity);
         if (timeSinceActivity >= IDLE_TIMEOUT) {
           console.warn('Logging out due to inactivity');
-          logout();
+          logout(window.location.pathname + window.location.search);
         } else {
           // Schedule next check for the remaining time
           const remainingTime = IDLE_TIMEOUT - timeSinceActivity;

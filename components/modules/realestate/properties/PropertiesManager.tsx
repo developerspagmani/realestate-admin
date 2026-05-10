@@ -53,6 +53,40 @@ interface RawProperty {
     categoryId?: string;
     videoUrl?: string;
     displayPrice?: boolean;
+    locality?: string;
+    subLocality?: string;
+    apartmentSociety?: string;
+    houseNo?: string;
+    carpetArea?: number;
+    builtUpArea?: number;
+    superBuiltUpArea?: number;
+    balconies?: number;
+    totalFloors?: number;
+    floorNo?: number;
+    availabilityStatus?: string;
+    ownership?: string;
+    pricePerSqft?: number;
+    allInclusivePrice?: boolean;
+    taxExcl?: boolean;
+    priceNegotiable?: boolean;
+    furnishing?: string;
+    facing?: string;
+    flooring?: string;
+    roadWidth?: number;
+    extraRooms?: string[];
+    propertyFeatures?: string[];
+    overlooking?: string[];
+    powerBackup?: string;
+    reservedParking?: boolean;
+    pantryType?: string;
+    washroomType?: string;
+    ceilingHeight?: number;
+    entranceWidth?: number;
+    frontage?: number;
+    camCharges?: number;
+    lockInPeriod?: number;
+    leaseTenure?: number;
+    vaastuCompliant?: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -166,6 +200,40 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
                     displayPrice: p.displayPrice !== undefined ? p.displayPrice : true,
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt,
+                    locality: p.locality || '',
+                    subLocality: p.subLocality || '',
+                    apartmentSociety: p.apartmentSociety || '',
+                    houseNo: p.houseNo || '',
+                    carpetArea: p.carpetArea || 0,
+                    builtUpArea: p.builtUpArea || 0,
+                    superBuiltUpArea: p.superBuiltUpArea || 0,
+                    balconies: p.balconies || 0,
+                    totalFloors: p.totalFloors || 0,
+                    floorNo: p.floorNo || 0,
+                    availabilityStatus: p.availabilityStatus || '',
+                    ownership: p.ownership || '',
+                    pricePerSqft: p.pricePerSqft || 0,
+                    allInclusivePrice: p.allInclusivePrice || false,
+                    taxExcl: p.taxExcl || false,
+                    priceNegotiable: p.priceNegotiable || false,
+                    furnishing: p.furnishing || '',
+                    facing: p.facing || '',
+                    flooring: p.flooring || '',
+                    roadWidth: p.roadWidth || 0,
+                    extraRooms: p.extraRooms || [],
+                    propertyFeatures: p.propertyFeatures || [],
+                    overlooking: p.overlooking || [],
+                    powerBackup: p.powerBackup || '',
+                    reservedParking: p.reservedParking || false,
+                    pantryType: p.pantryType || '',
+                    washroomType: p.washroomType || '',
+                    ceilingHeight: p.ceilingHeight || 0,
+                    entranceWidth: p.entranceWidth || 0,
+                    frontage: p.frontage || 0,
+                    camCharges: p.camCharges || 0,
+                    lockInPeriod: p.lockInPeriod || 0,
+                    leaseTenure: p.leaseTenure || 0,
+                    vaastuCompliant: p.vaastuCompliant || false,
                     // Missing fields from Property interface
                     priceType: 'fixed',
                     squareFootage: p.area || p.sizeSqft || 0,
@@ -302,6 +370,40 @@ export default function PropertiesManager({ mode }: PropertiesManagerProps) {
             videoUrl: data.videoUrl || undefined,
             displayPrice: data.displayPrice,
             price: data.price,
+            locality: data.locality,
+            subLocality: data.subLocality,
+            apartmentSociety: data.apartmentSociety,
+            houseNo: data.houseNo,
+            carpetArea: data.carpetArea,
+            builtUpArea: data.builtUpArea,
+            superBuiltUpArea: data.superBuiltUpArea,
+            balconies: data.balconies,
+            totalFloors: data.totalFloors,
+            floorNo: data.floorNo,
+            availabilityStatus: data.availabilityStatus,
+            ownership: data.ownership,
+            pricePerSqft: data.pricePerSqft,
+            allInclusivePrice: data.allInclusivePrice,
+            taxExcl: data.taxExcl,
+            priceNegotiable: data.priceNegotiable,
+            furnishing: data.furnishing,
+            facing: data.facing,
+            flooring: data.flooring,
+            roadWidth: data.roadWidth,
+            extraRooms: data.extraRooms,
+            propertyFeatures: data.propertyFeatures,
+            overlooking: data.overlooking,
+            powerBackup: data.powerBackup,
+            reservedParking: data.reservedParking,
+            pantryType: data.pantryType,
+            washroomType: data.washroomType,
+            ceilingHeight: data.ceilingHeight,
+            entranceWidth: data.entranceWidth,
+            frontage: data.frontage,
+            camCharges: data.camCharges,
+            lockInPeriod: data.lockInPeriod,
+            leaseTenure: data.leaseTenure,
+            vaastuCompliant: data.vaastuCompliant,
         };
 
         if (propertyId) {

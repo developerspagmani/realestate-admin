@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthContext } from '@/app/contexts/AuthContext';
-import { leadService, agentService, marketingService, getAuthToken } from '@/app/services/api';
+import { leadService, agentService, marketingService, propertyService, unitService, getAuthToken } from '@/app/services/api';
 import { useManagementContext } from '@/app/contexts/ManagementContext';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
@@ -35,6 +35,10 @@ export interface Lead {
     lastContacted: string | null;
     tags?: string[];
     userId?: string;
+    propertyId?: string;
+    unitId?: string;
+    property?: { id: string; title?: string; name?: string };
+    unit?: { id: string; unitCode?: string };
     enrollments?: Array<{ workflow: { name: string } }>;
     lossData?: {
         primaryReason: string;
@@ -73,8 +77,13 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
         notes: '',
         assignedTo: '',
         priority: 2,
-        agentId: ''
+        agentId: '',
+        propertyId: '',
+        unitId: ''
     });
+    const [properties, setProperties] = useState<any[]>([]);
+    const [units, setUnits] = useState<any[]>([]);
+    const [loadingUnits, setLoadingUnits] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterSource, setFilterSource] = useState<string>('all');
@@ -241,6 +250,51 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
         }
     };
 
+    const loadProperties = async () => {
+        const token = getAuthToken();
+        if (!token) return;
+        try {
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const res = await propertyService.getProperties(token, { tenantId: tenantId || undefined });
+            if (res.success) {
+                const rawProps = res.data.properties || res.data || [];
+                setProperties(rawProps);
+            }
+        } catch (error) {
+            console.error('Failed to load properties', error);
+        }
+    };
+
+    const loadUnits = async (propertyId: string) => {
+        if (!propertyId) {
+            setUnits([]);
+            return;
+        }
+        setLoadingUnits(true);
+        const token = getAuthToken();
+        if (!token) return;
+        try {
+            const tenantId = mode === 'admin' ? activeTenantId : (user as any)?.tenantId;
+            const res = await unitService.getUnits(token, { propertyId, tenantId: tenantId || undefined });
+            if (res.success) {
+                const rawUnits = res.data.units || res.data || [];
+                setUnits(rawUnits);
+            }
+        } catch (error) {
+            console.error('Failed to load units', error);
+        } finally {
+            setLoadingUnits(false);
+        }
+    };
+
+    useEffect(() => {
+        if (formData.propertyId) {
+            loadUnits(formData.propertyId);
+        } else {
+            setUnits([]);
+        }
+    }, [formData.propertyId]);
+
     useEffect(() => {
         if (!mounted) return;
         if (!isAuthenticated || !user) {
@@ -249,6 +303,7 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
         }
         loadLeads();
         loadAgents();
+        loadProperties();
 
         // Implement Option 1: Polling every 30 seconds
         const pollInterval = setInterval(() => {
@@ -344,6 +399,8 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
                 notes: formData.notes,
                 priority: formData.priority || 2,
                 agentId: formData.agentId || undefined,
+                propertyId: formData.propertyId || undefined,
+                unitId: formData.unitId || undefined,
                 lossData: formData.lossData
             };
 
@@ -719,7 +776,7 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
 
     const resetForm = () => {
         setFormData({
-            name: '', email: '', phone: '', company: '', source: 'website', status: 'new', budget: 0, requirements: '', notes: '', assignedTo: '', agentId: ''
+            name: '', email: '', phone: '', company: '', source: 'website', status: 'new', budget: 0, requirements: '', notes: '', assignedTo: '', agentId: '', propertyId: '', unitId: ''
         });
         setEditingLead(null);
         setShowModal(false);
@@ -1136,6 +1193,7 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
                                                         <li><h6 className="dropdown-header small text-uppercase">Change Status</h6></li>
                                                         <li><button className="dropdown-item" onClick={() => handleStatusChange(lead.id, 'contacted')}>Mark as Contacted</button></li>
                                                         <li><button className="dropdown-item" onClick={() => handleStatusChange(lead.id, 'qualified')}>Mark as Qualified</button></li>
+                                                        <li><button className="dropdown-item text-primary" onClick={() => window.location.href = `/realestate-owner-admin/bookings?leadId=${lead.id}`}><i className="bi bi-calendar-plus me-2"></i>Schedule Visit</button></li>
                                                         <li><button className="dropdown-item text-success" onClick={() => handleStatusChange(lead.id, 'converted')}>Converted</button></li>
                                                         <li><button className="dropdown-item text-danger" onClick={() => handleStatusChange(lead.id, 'lost')}>Lost</button></li>
                                                         <li><hr className="dropdown-divider" /></li>
@@ -1229,6 +1287,37 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
                                         <div className="col-md-6">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Company Name</label>
                                             <input type="text" className="form-control bg-light border-0" value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} />
+                                        </div>
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Property Interest</label>
+                                            <select
+                                                className="form-select bg-light border-0"
+                                                value={formData.propertyId}
+                                                onChange={(e) => setFormData({ ...formData, propertyId: e.target.value, unitId: '' })}
+                                            >
+                                                <option value="">No specific property</option>
+                                                {properties.map(p => (
+                                                    <option key={p.id} value={p.id}>
+                                                        {p.name || p.title}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <label className="form-label fw-bold small text-uppercase text-muted">Specific Unit {loadingUnits && <span className="spinner-border spinner-border-sm ms-2"></span>}</label>
+                                            <select
+                                                className="form-select bg-light border-0"
+                                                value={formData.unitId}
+                                                onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
+                                                disabled={!formData.propertyId || loadingUnits}
+                                            >
+                                                <option value="">Any available unit</option>
+                                                {units.map(u => (
+                                                    <option key={u.id} value={u.id}>
+                                                        {u.unitCode || u.name}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div className="col-md-6">
                                             <label className="form-label fw-bold small text-uppercase text-muted">Assign Agent</label>
@@ -1369,19 +1458,9 @@ export default function LeadsManager({ mode, initialView }: LeadsManagerProps) {
             )}
 
             <style jsx>{`
-            .bg-primary-soft { background-color: rgba(13, 110, 253, 0.1); }
-            .bg-info-soft { background-color: rgba(13, 202, 240, 0.1); }
-            .bg-warning-soft { background-color: rgba(255, 193, 7, 0.1); }
-            .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
-            .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
-            .bg-purple-soft { background-color: rgba(111, 66, 193, 0.1); }
-            .text-purple { color: #6f42c1; }
-            .border-purple { border-color: rgba(111, 66, 193, 0.2) !important; }
             .pulse-ai { animation: pulse-purple 2s infinite; cursor: pointer; }
-            .btn-white { background-color: #fff; border: 1px solid #dee2e6; }
-            .btn-white:hover { background-color: #f8f9fa; }
             .extra-small-badge { font-size: 0.6rem; padding: 0.2rem 0.5rem; letter-spacing: 0.5px; }
-            .bg-stale { background-color: rgba(220, 53, 69, 0.02); }
+            .bg-stale { background-color: rgba(230, 0, 38, 0.03); border-left: 3px solid #e60026 !important; }
             @keyframes pulse-purple {
                 0% { transform: scale(0.9); opacity: 0.6; }
                 50% { transform: scale(1.2); opacity: 1; }
