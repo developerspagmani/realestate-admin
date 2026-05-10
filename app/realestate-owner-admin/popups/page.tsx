@@ -3,7 +3,7 @@ import PopupManager from '@/components/modules/realestate/popups/PopupManager';
 import ModuleGuard from '@/components/common/ModuleGuard';
 export default function OwnerPopupsPage() {
     return (
-        <ModuleGuard moduleSlug="popups">
+        <ModuleGuard moduleSlug="website_cms">
             <PopupManager mode="owner" />
         </ModuleGuard>
     );

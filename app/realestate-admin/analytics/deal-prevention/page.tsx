@@ -3,7 +3,5 @@
 import DealPrevention from '@/components/modules/realestate/analytics/DealPrevention';
 
 export default function DealPreventionPage() {
-    return <DealPrevention mode="owner" />;
+    return <DealPrevention mode="admin" />;
 }
-
-

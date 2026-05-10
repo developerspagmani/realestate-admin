@@ -3,5 +3,5 @@
 import ForecastingAI from '@/components/modules/realestate/analytics/ForecastingAI';
 
 export default function ForecastingPage() {
-    return <ForecastingAI mode="owner" />;
+    return <ForecastingAI mode="admin" />;
 }

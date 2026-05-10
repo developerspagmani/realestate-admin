@@ -44,6 +44,8 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     return {};
   });
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   useEffect(() => {
     setMounted(true);
     const timer = setTimeout(() => setIsMounting(false), 50);
@@ -152,20 +154,6 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               ]
             },
             {
-              href: `${adminPrefix}/social`,
-              label: 'Social Media',
-              icon: 'bi-share-fill',
-              active: activePage === 'social' || activePage?.startsWith('social-'),
-              children: [
-                { href: `${adminPrefix}/social/accounts`, label: 'Accounts', icon: 'bi-person-badge', active: activePage === 'social-accounts' },
-                { href: `${adminPrefix}/social/analytics`, label: 'Analytics', icon: 'bi-graph-up', active: activePage === 'social-analytics' },
-                { href: `${adminPrefix}/social/campaigns`, label: 'Campaigns', icon: 'bi-megaphone', active: activePage === 'social-campaigns' },
-                { href: `${adminPrefix}/social/scheduled`, label: 'Scheduled', icon: 'bi-calendar-event', active: activePage === 'social-schedule' },
-                { href: `${adminPrefix}/social/automation`, label: 'Sales Automation', icon: 'bi-robot', active: activePage === 'social-automation' },
-              ]
-            },
-            { href: `${adminPrefix}/social/whatsapp`, label: 'WhatsApp', icon: 'bi-whatsapp', active: activePage === 'social-whatsapp' },
-            {
               href: `${adminPrefix}/marketing`,
               label: 'Email Campaigns',
               icon: 'bi-envelope-paper-heart-fill',
@@ -176,19 +164,27 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
                 { href: `${adminPrefix}/marketing/config`, label: 'Email Configuration', icon: 'bi-gear', active: activePage === 'email-config' },
               ]
             },
-            { href: isOwner ? '/realestate-owner-admin/chatbot-config' : '/realestate-admin/widgets', label: 'Chatbot', icon: 'bi-robot', active: activePage === 'chatbot-config' || activePage === 'widgets' },
             { href: `${adminPrefix}/brochures`, label: 'Brochures', icon: 'bi-file-earmark-pdf-fill', active: activePage === 'brochures' },
             { href: `${adminPrefix}/plot-map`, label: 'Plot Map Editor', icon: 'bi-map-fill', active: activePage === 'plot-map' },
-            { href: `${adminPrefix}/portals`, label: 'Portal Hub', icon: 'bi-cloud-arrow-up', active: activePage === 'portals' },
-            { href: `${adminPrefix}/matching/engine`, label: 'PropMatch™ Engine', icon: 'bi-lightning-charge-fill', active: activePage === 'matching-engine' },
             ...(isOwner ? [{ href: '/realestate-owner-admin/tasks', label: 'Task Management', icon: 'bi-check2-square', active: activePage === 'tasks' }] : []),
           ]
         },
         {
           title: 'Sales & Intelligence',
           items: [
-            { href: isOwner ? '/realestate-owner-admin/analytics' : '/realestate-admin/dashboard', label: 'Sales Analytics', icon: 'bi-graph-up-arrow', active: activePage === 'analytics' },
-            { href: `${adminPrefix}/analytics/prop-intel`, label: 'PropIntel™ AI', icon: 'bi-robot', active: activePage === 'prop-intel' },
+            {
+              href: `${adminPrefix}/analytics`,
+              label: 'Sales Analytics',
+              icon: 'bi-graph-up-arrow',
+              active: activePage === 'analytics' || activePage === 'deal-intelligence' || activePage === 'deal-prevention' || activePage === 'forecasting' || activePage === 'prop-intel' || activePage === 'propintel',
+              children: [
+                { href: `${adminPrefix}/analytics`, label: 'Performance Dashboard', icon: 'bi-speedometer2', active: activePage === 'analytics' },
+                { href: `${adminPrefix}/analytics/deal-intelligence`, label: 'Deal Intelligence', icon: 'bi-shield-x', active: activePage === 'deal-intelligence' },
+                { href: `${adminPrefix}/analytics/deal-prevention`, label: 'Deal Prevention', icon: 'bi-shield-check', active: activePage === 'deal-prevention' },
+                { href: `${adminPrefix}/analytics/forecasting`, label: 'Forecasting AI', icon: 'bi-magic', active: activePage === 'forecasting' },
+                { href: `${adminPrefix}/analytics/prop-intel`, label: 'PropIntel™ AI', icon: 'bi-robot', active: activePage === 'prop-intel' || activePage === 'propintel' },
+              ]
+            },
             { href: `${adminPrefix}/agents`, label: 'Sales Agents', icon: 'bi-people-fill', active: activePage === 'agents' },
           ]
         },
@@ -284,6 +280,21 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
     })
   }));
 
+  // Filter menu items based on search query
+  const filteredMenuItems = searchQuery.trim() === ''
+    ? menuItems
+    : menuItems.map((section: any) => ({
+      ...section,
+      items: section.items.filter((item: any) => {
+        const itemMatch = item.label.toLowerCase().includes(searchQuery.toLowerCase());
+        const childrenMatch = item.children?.some((child: any) => child.label.toLowerCase().includes(searchQuery.toLowerCase()));
+        return itemMatch || childrenMatch;
+      }).map((item: any) => ({
+        ...item,
+        children: item.children?.filter((child: any) => child.label.toLowerCase().includes(searchQuery.toLowerCase()))
+      }))
+    })).filter((section: any) => section.items.length > 0);
+
   if (!user) {
     return (
       <div className="sidebar bg-white border-end shadow-sm" style={{ width: collapsed ? '70px' : '280px', minHeight: '100vh', position: 'fixed' }}>
@@ -357,13 +368,40 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           )}
         </div>
 
+        {/* Search Bar Section */}
+        {(!collapsed || showMobile) && (
+          <div className="px-3 mb-3 mt-3">
+            <div className="input-group input-group-sm bg-light rounded-3 overflow-hidden border-0">
+              <span className="input-group-text bg-transparent border-1 pe-1">
+                <i className="bi bi-search text-muted small"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control bg-transparent border-1 ps-1 py-2 small"
+                placeholder="Quick Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ fontSize: '11px' }}
+              />
+              {searchQuery && (
+                <button
+                  className="btn btn-link btn-sm text-muted p-1 me-1 text-decoration-none"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <i className="bi bi-x-circle-fill opacity-50"></i>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Navigation Menu */}
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="flex-grow-1 overflow-auto px-2 py-4 custom-scrollbar"
+          className="flex-grow-1 overflow-auto px-2 py-2 custom-scrollbar"
         >
-          {menuItems.map((section: any, sectionIndex: number) => (
+          {filteredMenuItems.map((section: any, sectionIndex: number) => (
             <div key={sectionIndex} className="mb-4">
               {(!collapsed || showMobile) && (
                 <div className="px-3 mb-2">
@@ -375,7 +413,7 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
               {section.items.map((item: any) => {
                 const hasChildren = item.children && item.children.length > 0;
                 const isParentActive = item.active || (hasChildren && item.children.some((c: any) => c.active));
-                const isOpen = !!openMenus[item.label];
+                const isOpen = !!openMenus[item.label] || (searchQuery.trim() !== '' && hasChildren);
 
                 return (
                   <div key={item.label} className="mb-1">

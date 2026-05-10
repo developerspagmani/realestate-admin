@@ -20,8 +20,8 @@ interface TenantModuleEntry {
 
 // Derive tier from slug for labeling purposes
 function getModuleTier(slug: string): { label: string; color: string } {
-    const proPrefixes = ['social_', 'automation_', 'analytics_pro', 'discovery'];
-    const addonPrefixes = ['website_cms', 'social_whatsapp', 'social_interactions'];
+    const proPrefixes = ['analytics_pro', 'discovery'];
+    const addonPrefixes = ['website_cms'];
     if (addonPrefixes.some(p => slug.startsWith(p) || slug === p)) {
         return { label: 'Add-on', color: 'purple' };
     }
@@ -38,11 +38,6 @@ const MODULE_ICONS: Record<string, string> = {
     leads: 'bi-person-lines-fill',
     agents: 'bi-person-badge',
     payments: 'bi-credit-card',
-    social_all: 'bi-share',
-    social_posts: 'bi-megaphone',
-    social_whatsapp: 'bi-whatsapp',
-    social_interactions: 'bi-chat-dots',
-    automation_engine: 'bi-robot',
     website_cms: 'bi-globe',
     discovery: 'bi-compass',
     analytics_pro: 'bi-graph-up-arrow',

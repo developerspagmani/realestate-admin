@@ -27,7 +27,6 @@ export * from './upgradeRequest';
 export * from './partner';
 export { default as cmsService } from './cms';
 export * from './analyticsPro';
-export * from './portal';
 export * from './task';
 export * from './propIntel';
 export * from './popup';

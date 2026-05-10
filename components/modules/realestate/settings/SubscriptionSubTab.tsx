@@ -215,31 +215,6 @@ export default function SubscriptionSubTab({ showToast }: SubscriptionSubTabProp
                                                 Manage Widgets <i className="bi bi-arrow-right small"></i>
                                             </a>
                                         )}
-                                        {mod.slug === 'social_all' && (
-                                            <a href="/realestate-owner-admin/social" className="extra-small text-primary text-decoration-none d-block mt-1">
-                                                Manage Social <i className="bi bi-arrow-right small"></i>
-                                            </a>
-                                        )}
-                                        {mod.slug === 'automation_engine' && (
-                                            <a href="/realestate-owner-admin/social/automation" className="extra-small text-primary text-decoration-none d-block mt-1">
-                                                Manage Automation <i className="bi bi-arrow-right small"></i>
-                                            </a>
-                                        )}
-                                        {mod.slug === 'social_posts' && (
-                                            <a href="/realestate-owner-admin/social-posts" className="extra-small text-primary text-decoration-none d-block mt-1">
-                                                Manage Social Posts <i className="bi bi-arrow-right small"></i>
-                                            </a>
-                                        )}
-                                        {mod.slug === 'social_whatsapp' && (
-                                            <a href="/realestate-owner-admin/whatsapp-campaigns" className="extra-small text-primary text-decoration-none d-block mt-1">
-                                                Manage WhatsApp <i className="bi bi-arrow-right small"></i>
-                                            </a>
-                                        )}
-                                        {mod.slug === 'social_interactions' && (
-                                            <a href="/realestate-owner-admin/social-interactions" className="extra-small text-primary text-decoration-none d-block mt-1">
-                                                Manage Social Interactions <i className="bi bi-arrow-right small"></i>
-                                            </a>
-                                        )}
                                         {mod.slug === 'website_cms' && (
                                             <a href="/realestate-owner-admin/cms" className="extra-small text-primary text-decoration-none d-block mt-1">
                                                 Manage Website CMS <i className="bi bi-arrow-right small"></i>

@@ -509,16 +509,6 @@ export const upgradeRequestEndpoints = {
   updateStatus: (id: string) => `/upgrade-requests/${id}/status`,
 };
 
-// Portal Hub / Social Integration endpoints
-export const portalEndpoints = {
-  getListings: (params?: Record<string, any>) =>
-    params ? `/social/portals/listings?${buildQueryString(params)}` : '/social/portals/listings',
-  publish: () => '/social/portals/publish',
-  syncLeads: () => '/social/portals/sync-leads',
-  updateCredentials: () => '/social/portals/credentials',
-  getConnectedAccounts: (params?: Record<string, any>) =>
-    params ? `/social/accounts?${buildQueryString(params)}` : '/social/accounts',
-};
 
 // Task endpoints
 export const taskEndpoints = {
