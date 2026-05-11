@@ -227,13 +227,13 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
     const theme = website?.configuration?.theme || { primaryColor: '#6366f1', fontFamily: 'Outfit, sans-serif', template: 'modern' };
     const builder = website?.configuration?.builder || {};
     const chatbotConfig = {
-        ...(website?.tenant?.settings?.chatbotConfig || {}),
-        ...(data?.[0]?.metadata?.chatbotConfig || {}),
         ...(website?.configuration?.chatbot || {}),
-        welcomeMessage: website?.configuration?.chatbot?.welcomeMessage ||
+        ...(data?.[0]?.metadata?.chatbotConfig || {}),
+        ...(website?.tenant?.settings?.chatbotConfig || {}),
+        welcomeMessage: website?.tenant?.settings?.chatbotConfig?.welcomeMessage ||
+            website?.configuration?.chatbot?.welcomeMessage ||
             website?.configuration?.chatbot?.welcomeTitle ||
-            data?.[0]?.metadata?.chatbotConfig?.welcomeMessage ||
-            website?.tenant?.settings?.chatbotConfig?.welcomeMessage
+            data?.[0]?.metadata?.chatbotConfig?.welcomeMessage
     };
 
     const renderView = () => {
@@ -399,7 +399,10 @@ export default function StandaloneWebsitePage({ slugOrDomain }: StandaloneWebsit
                                 crossSellEnabled={chatbotConfig.crossSellEnabled}
                                 recommendationLogic={chatbotConfig.recommendationLogic}
                                 budgetRanges={chatbotConfig.budgetRanges}
+                                aiEnabled={chatbotConfig.aiEnabled}
+                                aiName={chatbotConfig.aiName}
                                 currencySymbol={currencySymbol}
+                                tenantId={website?.tenantId}
                                 onCreateLead={async (contact, name) => {
                                     try {
                                         const leadPayload: any = {

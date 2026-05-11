@@ -5,6 +5,7 @@ import { useAuthContext } from '@/app/contexts/AuthContext';
 import { partnerService } from '@/app/services/api';
 import MainLayout from '@/components/MainLayout';
 import Toast from '@/components/common/Toast';
+import { useRouter } from 'next/navigation';
 
 interface Partner {
     id: string;
@@ -26,6 +27,7 @@ export default function AdminPartnerManagement() {
     const { isAuthenticated, isAdmin } = useAuthContext();
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
     
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' as 'success' | 'error' | 'info' });
 
@@ -101,7 +103,7 @@ export default function AdminPartnerManagement() {
                                 ) : partners.length === 0 ? (
                                     <tr><td colSpan={4} className="text-center py-5 opacity-50">No partner applications found</td></tr>
                                 ) : partners.map((partner) => (
-                                    <tr key={partner.id}>
+                                    <tr key={partner.id} className="cursor-pointer" onClick={() => router.push(`/realestate-admin/partners/${partner.id}`)}>
                                         <td className="px-4 py-3">
                                             <div className="fw-bold text-dark">{partner.companyName || partner.name}</div>
                                             <div className="small text-muted">{partner.email}</div>
@@ -121,11 +123,15 @@ export default function AdminPartnerManagement() {
                                             )}
                                         </td>
                                         <td className="px-4 text-end">
-                                            <div className="dropdown">
+                                            <div className="dropdown" onClick={(e) => e.stopPropagation()}>
                                                 <button className="btn btn-light btn-sm rounded-3 px-3 shadow-none border" data-bs-toggle="dropdown">
                                                     Manage <i className="bi bi-chevron-down ms-1 small"></i>
                                                 </button>
                                                 <ul className="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3">
+                                                    <li><button className="dropdown-item py-2 fw-bold text-primary" onClick={() => router.push(`/realestate-admin/partners/${partner.id}`)}>
+                                                        <i className="bi bi-eye me-2"></i> View Details
+                                                    </button></li>
+                                                    <li><hr className="dropdown-divider" /></li>
                                                     <li><button className="dropdown-item py-2" onClick={() => handleUpdateStatus(partner.id, 1)}>
                                                         <i className="bi bi-check2-circle text-success me-2"></i> Approve Partner
                                                     </button></li>
@@ -161,6 +167,7 @@ export default function AdminPartnerManagement() {
                 .bg-danger-soft { background-color: rgba(239, 68, 68, 0.1); }
                 .bg-warning-soft { background-color: rgba(245, 158, 11, 0.1); }
                 .text-warning-dark { color: #b45309; }
+                .cursor-pointer { cursor: pointer; }
             `}</style>
         </MainLayout>
     );

@@ -16,15 +16,20 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
     const { user } = useAuthContext();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState<'general' | 'flow' | 'leads' | 'sales'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'flow' | 'personality' | 'leads' | 'sales'>('general');
     const [properties, setProperties] = useState<any[]>([]);
     const [tenant, setTenant] = useState<any>(null);
 
     const [config, setConfig] = useState<any>({
         enabled: true,
+        aiEnabled: false,
         primaryColor: '#0d6efd',
         welcomeMessage: "Looking for a new home?",
         welcomeSubtext: "I can find the perfect properties in seconds based on your specific requirements.",
+        configVersion: '1.0',
+        aiName: 'Virpa',
+        aiPersonality: 'Professional, helpful, and slightly enthusiastic.',
+        aiGuidelines: 'Only provide information based on property context. Keep responses concise.',
         leadCaptureMode: 'both', // 'email', 'mobile', 'both'
         flow: ['LOCATION', 'CITY', 'BUDGET'],
         upsellEnabled: true,
@@ -138,12 +143,13 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
 
                     <div className="card-body p-0">
                         <ul className="nav nav-tabs nav-fill border-0 bg-light p-1">
-                            {(['general', 'flow', 'leads', 'sales'] as const).map((tab) => (
+                            {['general', 'personality', 'flow', 'leads', 'sales'].map((tab) => (
                                 <li className="nav-item" key={tab}>
                                     <button
-                                        className={`nav-link border-0 rounded-3 py-3 small fw-bold text-uppercase ${activeTab === tab ? 'bg-white text-primary shadow-sm' : 'text-muted'}`}
-                                        onClick={() => setActiveTab(tab)}
+                                        className={`nav-link border-0 rounded-3 py-2 text-capitalize ${activeTab === tab ? 'bg-white shadow-sm text-primary fw-bold' : 'text-muted'}`}
+                                        onClick={() => setActiveTab(tab as any)}
                                     >
+                                        <i className={`bi ${tab === 'general' ? 'bi-sliders' : tab === 'personality' ? 'bi-person-badge' : tab === 'flow' ? 'bi-diagram-3' : tab === 'leads' ? 'bi-person-plus' : 'bi-graph-up'} me-2`}></i>
                                         {tab}
                                     </button>
                                 </li>
@@ -188,114 +194,207 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
                                 </div>
                             )}
 
+                            {activeTab === 'personality' && (
+                                <div className="animate-fade-in">
+                                    <h6 className="fw-bold mb-3">AI Personality & Persona</h6>
+                                    <p className="text-muted small mb-4">Define how your AI assistant should sound and behave during conversations.</p>
+
+                                    <div className="mb-4">
+                                        <label className="form-label fw-bold small">Assistant Name</label>
+                                        <div className="input-group shadow-sm rounded-3 overflow-hidden">
+                                            <span className="input-group-text bg-white border-end-0"><i className="bi bi-robot text-primary"></i></span>
+                                            <input
+                                                type="text"
+                                                className="form-control border-start-0 ps-0 py-2"
+                                                value={config.aiName || 'Virpa'}
+                                                onChange={(e) => setConfig({ ...config, aiName: e.target.value })}
+                                                placeholder="e.g. Virpa"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <label className="form-label fw-bold small">Tone & Personality</label>
+                                        <select 
+                                            className="form-select rounded-3 mb-3 shadow-sm border-light"
+                                            value={config.aiPersonality}
+                                            onChange={(e) => setConfig({ ...config, aiPersonality: e.target.value })}
+                                        >
+                                            <option value="Professional, helpful, and slightly enthusiastic.">Professional & Enthusiastic (Recommended)</option>
+                                            <option value="Direct, formal, and strictly factual.">Formal & Direct</option>
+                                            <option value="Friendly, casual, and using warm language.">Casual & Friendly</option>
+                                            <option value="Luxury-focused, sophisticated, and exclusive.">Luxury & Elite</option>
+                                        </select>
+                                        
+                                        <label className="form-label fw-bold extra-small text-muted mb-2">Behavioral Guidelines</label>
+                                        <textarea
+                                            className="form-control rounded-4 shadow-sm border-light"
+                                            rows={5}
+                                            value={config.aiGuidelines}
+                                            onChange={(e) => setConfig({ ...config, aiGuidelines: e.target.value })}
+                                            placeholder="Enter specific behavioral guidelines (e.g., 'Never mention competitors', 'Always suggest a phone call')..."
+                                            style={{ fontSize: '13px' }}
+                                        />
+                                    </div>
+
+                                    <div className="card border-0 bg-primary-soft rounded-4 p-3 border-start border-primary border-4">
+                                        <div className="d-flex align-items-center gap-2 mb-2 text-primary fw-bold small">
+                                            <i className="bi bi-stars"></i> Pro Intelligence Tip
+                                        </div>
+                                        <p className="extra-small text-muted mb-0 lh-base">
+                                            Keep instructions focused on business goals. For example: <span className="text-dark fw-semibold">"Always mention current 0% commission offers"</span> will help the AI drive more conversions.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {activeTab === 'flow' && (
                                 <div className="animate-fade-in">
                                     <h6 className="fw-bold mb-3">Default Conversation Steps</h6>
-                                    <p className="text-muted small mb-4">Choose the questions the bot should ask by default to qualify leads.</p>
 
-                                    {[
-                                        { id: 'LOCATION', label: 'Preferred Location/Neighborhood', icon: 'bi-geo-alt' },
-                                        { id: 'CITY', label: 'City Selection', icon: 'bi-building' },
-                                        { id: 'BUDGET', label: 'Budget Range', icon: 'bi-cash-coin' },
-                                        { id: 'BEDROOMS', label: 'Number of Bedrooms', icon: 'bi-door-closed' },
-                                        { id: 'TYPE', label: 'Property Type (Apartment, Villa, etc)', icon: 'bi-house-heart' }
-                                    ].map((step) => (
-                                        <div key={step.id} className="d-flex align-items-center justify-content-between p-3 border rounded-4 mb-2 bg-white hover-shadow-sm transition-all">
-                                            <div className="d-flex align-items-center gap-3">
-                                                <div className="bg-light rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                                                    <i className={`bi ${step.icon} text-primary`}></i>
-                                                </div>
-                                                <span className="fw-semibold small">{step.label}</span>
+                                    <div className="card border-0 bg-primary-soft rounded-4 mb-4 p-3 border-start border-primary border-4">
+                                        <div className="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <h6 className="fw-bold mb-1 text-primary"><i className="bi bi-robot me-2"></i> Neural AI Mode (Gemini 1.5)</h6>
+                                                <p className="extra-small text-muted mb-0 pe-5">Enable conversational AI to answer free-text questions about your properties instead of using a static question flow.</p>
                                             </div>
                                             <div className="form-check form-switch">
                                                 <input
                                                     className="form-check-input"
                                                     type="checkbox"
                                                     style={{ width: '40px', height: '20px', cursor: 'pointer' }}
-                                                    checked={config.flow.includes(step.id)}
-                                                    onChange={(e) => {
-                                                        const newFlow = e.target.checked
-                                                            ? [...config.flow, step.id]
-                                                            : config.flow.filter((f: string) => f !== step.id);
-                                                        setConfig({ ...config, flow: newFlow });
-                                                    }}
+                                                    checked={config.aiEnabled}
+                                                    onChange={(e) => setConfig({ ...config, aiEnabled: e.target.checked })}
                                                 />
                                             </div>
                                         </div>
-                                    ))}
+                                    </div>
 
-                                    {config.flow.includes('BUDGET') && (
-                                        <div className="mt-4 p-4 border rounded-4 bg-white animate-fade-in">
-                                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                                <h6 className="fw-bold mb-0">Customize Budget Ranges</h6>
-                                                <button 
-                                                    className="btn btn-sm btn-outline-primary rounded-pill px-3"
-                                                    onClick={() => {
-                                                        const newRanges = [...(config.budgetRanges || [])];
-                                                        newRanges.push({ label: 'New Range', min: 0, max: 1000 });
-                                                        setConfig({ ...config, budgetRanges: newRanges });
-                                                    }}
-                                                >
-                                                    <i className="bi bi-plus-lg me-1"></i> Add Range
-                                                </button>
-                                            </div>
-                                            <div className="row g-2">
-                                                {(config.budgetRanges || []).map((range: any, idx: number) => (
-                                                    <div key={idx} className="col-12 p-3 bg-light rounded-3 mb-2">
-                                                        <div className="row g-2 align-items-center">
-                                                            <div className="col-md-5">
-                                                                <label className="extra-small fw-bold text-muted mb-1">Label</label>
-                                                                <input 
-                                                                    type="text" 
-                                                                    className="form-control form-control-sm rounded-2" 
-                                                                    value={range.label}
-                                                                    onChange={(e) => {
-                                                                        const newRanges = [...config.budgetRanges];
-                                                                        newRanges[idx].label = e.target.value;
-                                                                        setConfig({ ...config, budgetRanges: newRanges });
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <div className="col-md-3">
-                                                                <label className="extra-small fw-bold text-muted mb-1">Min Price</label>
-                                                                <input 
-                                                                    type="number" 
-                                                                    className="form-control form-control-sm rounded-2" 
-                                                                    value={range.min}
-                                                                    onChange={(e) => {
-                                                                        const newRanges = [...config.budgetRanges];
-                                                                        newRanges[idx].min = Number(e.target.value);
-                                                                        setConfig({ ...config, budgetRanges: newRanges });
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <div className="col-md-3">
-                                                                <label className="extra-small fw-bold text-muted mb-1">Max Price</label>
-                                                                <input 
-                                                                    type="number" 
-                                                                    className="form-control form-control-sm rounded-2" 
-                                                                    value={range.max}
-                                                                    onChange={(e) => {
-                                                                        const newRanges = [...config.budgetRanges];
-                                                                        newRanges[idx].max = Number(e.target.value);
-                                                                        setConfig({ ...config, budgetRanges: newRanges });
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <div className="col-md-1 d-flex align-items-end justify-content-center">
-                                                                <button 
-                                                                    className="btn btn-sm btn-outline-danger border-0 rounded-circle"
-                                                                    onClick={() => {
-                                                                        const newRanges = config.budgetRanges.filter((_: any, i: number) => i !== idx);
-                                                                        setConfig({ ...config, budgetRanges: newRanges });
-                                                                    }}
-                                                                >
-                                                                    <i className="bi bi-trash"></i>
-                                                                </button>
-                                                            </div>
+                                    {!config.aiEnabled ? (
+                                        <div className="animate-fade-in">
+                                            <p className="text-muted small mb-4">Choose the questions the bot should ask by default to qualify leads.</p>
+
+                                            {[
+                                                { id: 'LOCATION', label: 'Preferred Location/Neighborhood', icon: 'bi-geo-alt' },
+                                                { id: 'CITY', label: 'City Selection', icon: 'bi-building' },
+                                                { id: 'BUDGET', label: 'Budget Range', icon: 'bi-cash-coin' },
+                                                { id: 'BEDROOMS', label: 'Number of Bedrooms', icon: 'bi-door-closed' },
+                                                { id: 'TYPE', label: 'Property Type (Apartment, Villa, etc)', icon: 'bi-house-heart' }
+                                            ].map((step) => (
+                                                <div key={step.id} className="d-flex align-items-center justify-content-between p-3 border rounded-4 mb-2 bg-white hover-shadow-sm transition-all">
+                                                    <div className="d-flex align-items-center gap-3">
+                                                        <div className="bg-light rounded-circle p-2 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                                                            <i className={`bi ${step.icon} text-primary`}></i>
                                                         </div>
+                                                        <span className="fw-semibold small">{step.label}</span>
                                                     </div>
-                                                ))}
+                                                    <div className="form-check form-switch">
+                                                        <input
+                                                            className="form-check-input"
+                                                            type="checkbox"
+                                                            style={{ width: '40px', height: '20px', cursor: 'pointer' }}
+                                                            checked={config.flow.includes(step.id)}
+                                                            onChange={(e) => {
+                                                                const newFlow = e.target.checked
+                                                                    ? [...config.flow, step.id]
+                                                                    : config.flow.filter((f: string) => f !== step.id);
+                                                                setConfig({ ...config, flow: newFlow });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {config.flow.includes('BUDGET') && (
+                                                <div className="mt-4 p-4 border rounded-4 bg-white animate-fade-in">
+                                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                                        <h6 className="fw-bold mb-0">Customize Budget Ranges</h6>
+                                                        <button
+                                                            className="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                                            onClick={() => {
+                                                                const newRanges = [...(config.budgetRanges || [])];
+                                                                newRanges.push({ label: 'New Range', min: 0, max: 1000 });
+                                                                setConfig({ ...config, budgetRanges: newRanges });
+                                                            }}
+                                                        >
+                                                            <i className="bi bi-plus-lg me-1"></i> Add Range
+                                                        </button>
+                                                    </div>
+                                                    <div className="row g-2">
+                                                        {(config.budgetRanges || []).map((range: any, idx: number) => (
+                                                            <div key={idx} className="col-12 p-3 bg-light rounded-3 mb-2">
+                                                                <div className="row g-2 align-items-center">
+                                                                    <div className="col-md-5">
+                                                                        <label className="extra-small fw-bold text-muted mb-1">Label</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="form-control form-control-sm rounded-2"
+                                                                            value={range.label}
+                                                                            onChange={(e) => {
+                                                                                const newRanges = [...config.budgetRanges];
+                                                                                newRanges[idx].label = e.target.value;
+                                                                                setConfig({ ...config, budgetRanges: newRanges });
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="col-md-3">
+                                                                        <label className="extra-small fw-bold text-muted mb-1">Min Price</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="form-control form-control-sm rounded-2"
+                                                                            value={range.min}
+                                                                            onChange={(e) => {
+                                                                                const newRanges = [...config.budgetRanges];
+                                                                                newRanges[idx].min = Number(e.target.value);
+                                                                                setConfig({ ...config, budgetRanges: newRanges });
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="col-md-3">
+                                                                        <label className="extra-small fw-bold text-muted mb-1">Max Price</label>
+                                                                        <input
+                                                                            type="number"
+                                                                            className="form-control form-control-sm rounded-2"
+                                                                            value={range.max}
+                                                                            onChange={(e) => {
+                                                                                const newRanges = [...config.budgetRanges];
+                                                                                newRanges[idx].max = Number(e.target.value);
+                                                                                setConfig({ ...config, budgetRanges: newRanges });
+                                                                            }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="col-md-1 d-flex align-items-end justify-content-center">
+                                                                        <button
+                                                                            className="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                                                                            onClick={() => {
+                                                                                const newRanges = config.budgetRanges.filter((_: any, i: number) => i !== idx);
+                                                                                setConfig({ ...config, budgetRanges: newRanges });
+                                                                            }}
+                                                                        >
+                                                                            <i className="bi bi-trash"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-5 animate-fade-in">
+                                            <div className="bg-light rounded-circle p-4 d-inline-flex mb-3 shadow-sm border border-white">
+                                                <i className="bi bi-cpu display-4 text-primary"></i>
+                                            </div>
+                                            <h6 className="fw-bold text-dark">Neural Core Active (Gemini 1.5 Flash)</h6>
+                                            <p className="text-muted small px-5 mx-auto" style={{ maxWidth: '400px' }}>
+                                                The assistant will now use generative AI to handle conversations.
+                                                It will automatically answer questions about your property portfolio using deep learning.
+                                            </p>
+                                            <div className="mt-2">
+                                                <span className="badge bg-success-soft text-success rounded-pill px-3 py-2 extra-small fw-bold border border-success border-opacity-10">
+                                                    <i className="bi bi-check-circle-fill me-1"></i> READY TO CHAT
+                                                </span>
                                             </div>
                                         </div>
                                     )}
@@ -427,6 +526,9 @@ export default function ChatbotConfigManager({ propertyId, onClose }: ChatbotCon
                                     crossSellEnabled={config.crossSellEnabled}
                                     recommendationLogic={config.recommendationLogic}
                                     budgetRanges={config.budgetRanges}
+                                    aiName={config.aiName}
+                                    aiEnabled={config.aiEnabled}
+                                    tenantId={user?.tenantId}
                                     previewMode={true}
                                 />
                             </div>

@@ -519,6 +519,16 @@ export default function PublicWidgetPage() {
                                     data?.[0]?.metadata?.chatbotConfig?.recommendationLogic ||
                                     widget?.tenant?.settings?.chatbotConfig?.recommendationLogic
                                 }
+                                aiEnabled={
+                                    widget?.tenant?.settings?.chatbotConfig?.aiEnabled !== undefined ?
+                                        widget?.tenant?.settings?.chatbotConfig?.aiEnabled :
+                                        data?.[0]?.metadata?.chatbotConfig?.aiEnabled
+                                }
+                                aiName={
+                                    widget?.tenant?.settings?.chatbotConfig?.aiName ||
+                                    data?.[0]?.metadata?.chatbotConfig?.aiName
+                                }
+                                tenantId={widget?.tenantId}
                             />
                         </div>
                     )}

@@ -201,9 +201,16 @@ export function middleware(request: NextRequest) {
     '/realestate-admin/media-library',
     '/realestate-admin/whatsapp-business',
     '/realestate-admin',
+  ];
+
+  // Shared routes accessible to all authenticated users
+  const sharedProtectedRoutes = [
     '/cart',
     '/checkout',
-    '/booking-confirmation'
+    '/booking-confirmation',
+    '/user/profile',
+    '/user/settings',
+    '/user/my-bookings',
   ];
 
   // owner-admin-only routes
@@ -288,18 +295,26 @@ export function middleware(request: NextRequest) {
     const isOwnerPath = ownerRoutes.some(route => pathname.startsWith(route));
     const isAgentPath = agentRoutes.some(route => pathname.startsWith(route));
     const isUserPath = userRoutes.some(route => pathname.startsWith(route));
+    const isSharedPath = sharedProtectedRoutes.some(route => pathname.startsWith(route));
 
     // Role-specific check: If a route is strictly for a role, block others.
     // If it's a shared route (in multiple lists), allow if user has ANY of those roles.
     let authorized = false;
 
-    if (isAdminPath && userRole === '2') authorized = true;
-    else if (isOwnerPath && userRole === '3') authorized = true;
-    else if (isAgentPath && userRole === '4') authorized = true;
-    else if (isUserPath && userRole === '1') authorized = true;
+    if (isAdminPath) {
+      if (userRole === '2') authorized = true;
+    } else if (isOwnerPath) {
+      if (userRole === '3' || userRole === '2') authorized = true;
+    } else if (isAgentPath) {
+      if (userRole === '4' || userRole === '2' || userRole === '3') authorized = true;
+    } else if (isUserPath) {
+      if (['1', '2', '3', '4', '5'].includes(userRole || '')) authorized = true;
+    } else if (isSharedPath) {
+      if (userRole) authorized = true; // Any authenticated role
+    }
 
     // If route is in a role list but user didn't match any of their allowed roles
-    if ((isAdminPath || isOwnerPath || isAgentPath || isUserPath) && !authorized) {
+    if ((isAdminPath || isOwnerPath || isAgentPath || isUserPath || isSharedPath) && !authorized) {
       return NextResponse.redirect(new URL('/unauthorized', request.url));
     }
 

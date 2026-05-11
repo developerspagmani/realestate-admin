@@ -274,7 +274,6 @@ export default function PopupRenderer({ websiteId, widgetId, theme, properties, 
         let displayBody = body;
 
         if (isIntelligentEnabled && matchedProperty) {
-            console.log('PopupRenderer - Intelligent Match ACTIVE');
             displayTitle = matchedProperty.title || matchedProperty.name || title;
             displayBody = matchedProperty.description || body || `We have great offers for this property. Drop your contact to get details.`;
         }

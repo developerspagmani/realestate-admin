@@ -173,6 +173,12 @@ export default function Sidebar({ activePage, onSidebarCollapse, showMobile, onM
           title: 'Sales & Intelligence',
           items: [
             {
+              href: `${adminPrefix}/chatbot-ai`,
+              label: 'Chatbot AI',
+              icon: 'bi-robot',
+              active: activePage === 'chatbot-ai'
+            },
+            {
               href: `${adminPrefix}/analytics`,
               label: 'Sales Analytics',
               icon: 'bi-graph-up-arrow',

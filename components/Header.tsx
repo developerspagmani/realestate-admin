@@ -6,7 +6,7 @@ import { useAuth } from '@/app/hooks/useAuth';
 
 export default function Header() {
   const router = useRouter();
-  const { user, isAuthenticated, logout, isAdmin, isOwner } = useAuth();
+  const { user, isAuthenticated, logout, isAdmin, isOwner, isAgent } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -100,6 +100,16 @@ export default function Header() {
                 </ul>
               </li>
             )}
+
+            {/* Agent (role 4) */}
+            {isAuthenticated && isAgent && (
+              <li className="nav-item">
+                <Link className="nav-link" href="/realestate-agent/dashboard">
+                  <i className="bi bi-person-badge me-1" />
+                  Agent Dashboard
+                </Link>
+              </li>
+            )}
           </ul>
 
           {/* Right Side */}
@@ -134,7 +144,7 @@ export default function Header() {
                     </Link>
                   </li>
                   <li>
-                    <Link className="dropdown-item" href="/user/dashboard">
+                    <Link className="dropdown-item" href={isAgent ? "/realestate-agent/dashboard" : "/user/dashboard"}>
                       <i className="bi bi-speedometer2 me-2" />
                       Dashboard
                     </Link>

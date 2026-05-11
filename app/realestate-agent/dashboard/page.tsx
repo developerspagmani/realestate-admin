@@ -11,7 +11,7 @@ import { useManagementContext } from '@/app/contexts/ManagementContext';
 
 export default function AgentDashboard() {
     const { user } = useAuthContext();
-    const { currencySymbol } = useManagementContext();
+    const { currencySymbol, activeTenant } = useManagementContext();
     const [stats, setStats] = useState({
         totalLeads: 0,
         activeLeads: 0,
@@ -62,7 +62,11 @@ export default function AgentDashboard() {
             <div className="container-fluid py-4">
                 <div className="mb-4">
                     <h3 className="fw-bold text-dark mb-1">Welcome back, {user?.name}!</h3>
-                    <p className="text-muted">Here's an overview of your sales performance.</p>
+                    <div className="d-flex align-items-center gap-2 text-muted mb-1">
+                        <i className="bi bi-building-fill text-primary"></i>
+                        <span className="fs-6">Sales Agent at <span className="fw-bold text-dark">{activeTenant?.name || 'Your Company'}</span></span>
+                    </div>
+                    <p className="text-muted extra-small">Here's an overview of your sales performance.</p>
                 </div>
 
                 {loading ? (

@@ -535,6 +535,17 @@ export default function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                         </>
                     )}
 
+                    {/* Company Display for Agents */}
+                    {isAgent && activeTenant && (
+                        <div className="d-flex align-items-center gap-2 bg-light p-2 rounded-3 border border-primary-subtle px-3 ms-2 shadow-sm">
+                            <i className="bi bi-building-fill text-primary"></i>
+                            <div>
+                                <div className="extra-small text-muted text-uppercase fw-bold" style={{ fontSize: '9px', lineHeight: '1' }}>Representing</div>
+                                <div className="fw-bold text-dark fs-14" style={{ lineHeight: '1.2' }}>{activeTenant.name}</div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Subscription Plan Display - Visible for both Admins (with selected owner) and Owners */}
                     {(isAdmin ? (activeOwnerId && !pathname.includes('/realestate-owner-admin')) : isOwner) && (
                         <div className="d-none d-xl-flex flex-column border-start ps-3 py-1 ms-2">

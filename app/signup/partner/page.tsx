@@ -14,7 +14,8 @@ export default function PartnerSignup() {
         website: '',
         monthlyClientBase: '',
         country: 'India',
-        salesCapability: ''
+        salesCapability: '',
+        tenantType: ''
     });
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -206,6 +207,15 @@ export default function PartnerSignup() {
                                                     <option value="11-50">11-50 SMB Accounts</option>
                                                     <option value="51-200">51-200 Prof. Units</option>
                                                     <option value="200+">200+ Enterprise Scale</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label extra-small fw-bold text-uppercase text-muted">Industry Focus</label>
+                                                <select name="tenantType" className="form-select" value={formData.tenantType} onChange={handleChange} required>
+                                                    <option value="">Select Platform Type</option>
+                                                    <option value="1">Real Estate Platform</option>
+                                                    <option value="2">Co-working Platform</option>
+                                                    <option value="3">Mixed Asset Platform</option>
                                                 </select>
                                             </div>
                                             <div className="col-12">

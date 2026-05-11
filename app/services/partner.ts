@@ -36,4 +36,14 @@ export const partnerService = {
             body: JSON.stringify(data),
         });
     },
+
+    adminGetById: async (id: string) => {
+        return await makeApiCall(`/partners/admin/${id}`);
+    },
+
+    adminSendConfirmation: async (id: string) => {
+        return await makeApiCall(`/partners/admin/${id}/send-confirmation`, {
+            method: 'POST'
+        });
+    },
 };

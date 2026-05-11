@@ -415,8 +415,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const targetUser = user || state.user;
     if (!targetUser) return '/login';
 
-    // Ensure we handle role as a number for the switch, even if it comes in as a string
-    const role = Number(targetUser.role);
+    // Ensure we handle role as a number for the switch. 
+    // Handle numeric strings ('4') and named strings ('AGENT')
+    let role: number;
+    const rawRole = (targetUser as any).role;
+
+    if (typeof rawRole === 'number') {
+      role = rawRole;
+    } else if (typeof rawRole === 'string') {
+      const roleMap: Record<string, number> = {
+        'USER': 1, 'ADMIN': 2, 'OWNER': 3, 'AGENT': 4, 'PARTNER': 5
+      };
+      const mappedRole = roleMap[rawRole.toUpperCase()];
+      if (mappedRole !== undefined) {
+        role = mappedRole;
+      } else {
+        const parsed = parseInt(rawRole, 10);
+        role = isNaN(parsed) ? 1 : parsed;
+      }
+    } else {
+      role = 1; // Default to User
+    }
 
     switch (role) {
       case 2: // Admin
